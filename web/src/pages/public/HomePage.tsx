@@ -19,9 +19,14 @@ export function HomePage() {
         <p className="mt-3 max-w-2xl text-xl">{t("landing.tagline")}</p>
       </div>
 
-      <Link to="/login" className={buttonClasses("primary", "lg")}>
-        {t("nav.login")}
-      </Link>
+      <div className="flex flex-wrap justify-center gap-3">
+        <Link to="/login" className={buttonClasses("primary", "lg")}>
+          {t("nav.login")}
+        </Link>
+        <Link to="/signup" className={buttonClasses("secondary", "lg")}>
+          {t("signup.action")}
+        </Link>
+      </div>
 
       <div className="grid w-full gap-4 md:grid-cols-3">
         {FEATURES.map(({ titleKey, icon: Icon }) => (

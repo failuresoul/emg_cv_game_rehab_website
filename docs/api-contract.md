@@ -21,6 +21,7 @@ This document lists every API route the server provides today, plus the routes r
 | ------ | ------------------------------------ | --------- | ------------------------------- |
 | GET    | `/api/health`                        | Public    | Check that the server is up     |
 | POST   | `/api/auth/login`                    | Public    | Log in                          |
+| POST   | `/api/auth/register`                 | Public    | Create a patient account        |
 | GET    | `/api/auth/me`                       | Any user  | Get the logged-in user          |
 | GET    | `/api/admin/patients`                | `admin`   | List or search patients         |
 | POST   | `/api/admin/patients`                | `admin`   | Create a patient                |
@@ -105,6 +106,33 @@ Response `200`:
 The token's payload holds `sub` (the user id, as a string), `role` and `exp`. It is signed with HS256.
 
 Errors: `401`, `422`.
+
+### POST /api/auth/register
+
+**Role:** public
+
+Creates a patient account and logs the patient in. The role is always `patient`.
+
+Request:
+
+```json
+{
+  "email": "amina@example.com",
+  "full_name": "Amina Rahman",
+  "password": "example-password",
+  "affected_side": "left",
+  "dominant_side": "right",
+  "age_band": "60-69",
+  "months_since_stroke": 6,
+  "language": "en"
+}
+```
+
+`months_since_stroke` and `language` (default `en`) are optional. Unknown fields, including `role` and `notes`, are rejected with `422`. The email and password rules are the same as for `POST /api/admin/patients`.
+
+Response `201`: the same shape as login.
+
+Errors: `409`, `422`.
 
 ### GET /api/auth/me
 

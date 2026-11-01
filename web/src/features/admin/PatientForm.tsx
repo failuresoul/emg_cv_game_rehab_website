@@ -13,6 +13,7 @@ const AGE_BANDS: AgeBand[] = ["18-29", "30-39", "40-49", "50-59", "60-69", "70+"
 const PASSWORD_MIN = 8;
 const PASSWORD_MAX = 128;
 const GENERATED_PASSWORD_LENGTH = 14;
+const BANGLA_TEXT = /\p{Script=Bengali}/u;
 // Leaves out look-alike characters (I, l, 1, O, 0) because the password is passed on by hand.
 const PASSWORD_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
 
@@ -119,7 +120,9 @@ interface PatientFormProps {
   isPending: boolean;
   serverError: unknown;
   onSubmit: (payload: PatientCreate) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
+  /** A patient creating their own account: no generated password and no therapist notes. */
+  isSignup?: boolean;
 }
 
 export function PatientForm({
@@ -128,16 +131,34 @@ export function PatientForm({
   serverError,
   onSubmit,
   onCancel,
+  isSignup = false,
 }: PatientFormProps) {
   const isEditing = patient !== undefined;
+  let passwordHint = t("patientForm.passwordHint");
+  if (isEditing) passwordHint = t("patientForm.passwordEditHint");
+  if (isSignup) passwordHint = t("signup.passwordHint");
+  let submitLabel = t("admin.addPatient");
+  if (isEditing) submitLabel = t("common.save");
+  if (isSignup) submitLabel = t("signup.submit");
   const [values, setValues] = useState(() => initialValues(patient));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [showPassword, setShowPassword] = useState(false);
+  // Once someone picks a language themselves, typing no longer changes it.
+  const [languageChosen, setLanguageChosen] = useState(false);
 
   const server = parseServerError(serverError);
 
   function setField(field: Field, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
+  }
+
+  function setTextField(field: "full_name" | "notes", value: string) {
+    setValues((current) => {
+      const next = { ...current, [field]: value };
+      if (languageChosen) return next;
+      const typedBangla = BANGLA_TEXT.test(next.full_name + next.notes);
+      return { ...next, language: typedBangla ? "bn" : (patient?.language ?? "en") };
+    });
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -161,7 +182,7 @@ export function PatientForm({
         autoComplete="off"
         value={values.full_name}
         error={errorFor("full_name")}
-        onChange={(event) => setField("full_name", event.target.value)}
+        onChange={(event) => setTextField("full_name", event.target.value)}
       />
       <Input
         label={t("patientForm.email")}
@@ -176,7 +197,7 @@ export function PatientForm({
           label={t("patientForm.password")}
           type={showPassword ? "text" : "password"}
           autoComplete="new-password"
-          hint={t(isEditing ? "patientForm.passwordEditHint" : "patientForm.passwordHint")}
+          hint={passwordHint}
           value={values.password}
           error={errorFor("password")}
           onChange={(event) => setField("password", event.target.value)}
@@ -191,18 +212,20 @@ export function PatientForm({
             </button>
           }
         />
-        <div>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setField("password", generatePassword());
-              setShowPassword(true);
-            }}
-          >
-            <KeyRound size={20} aria-hidden />
-            {t("patientForm.generatePassword")}
-          </Button>
-        </div>
+        {!isSignup && (
+          <div>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setField("password", generatePassword());
+                setShowPassword(true);
+              }}
+            >
+              <KeyRound size={20} aria-hidden />
+              {t("patientForm.generatePassword")}
+            </Button>
+          </div>
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Select
@@ -237,7 +260,10 @@ export function PatientForm({
           ]}
           value={values.language}
           error={errorFor("language")}
-          onChange={(event) => setField("language", event.target.value)}
+          onChange={(event) => {
+            setLanguageChosen(true);
+            setField("language", event.target.value);
+          }}
         />
       </div>
       <Input
@@ -249,23 +275,27 @@ export function PatientForm({
         error={errorFor("months_since_stroke")}
         onChange={(event) => setField("months_since_stroke", event.target.value)}
       />
-      <Textarea
-        label={t("patientForm.notes")}
-        value={values.notes}
-        error={errorFor("notes")}
-        onChange={(event) => setField("notes", event.target.value)}
-      />
+      {!isSignup && (
+        <Textarea
+          label={t("patientForm.notes")}
+          value={values.notes}
+          error={errorFor("notes")}
+          onChange={(event) => setTextField("notes", event.target.value)}
+        />
+      )}
       {server.form && (
         <p role="alert" className="text-danger font-medium">
           {server.form}
         </p>
       )}
       <div className="flex flex-wrap justify-end gap-2">
-        <Button variant="secondary" onClick={onCancel}>
-          {t("common.cancel")}
-        </Button>
-        <Button type="submit" loading={isPending}>
-          {t(isEditing ? "common.save" : "admin.addPatient")}
+        {onCancel && (
+          <Button variant="secondary" onClick={onCancel}>
+            {t("common.cancel")}
+          </Button>
+        )}
+        <Button type="submit" size={isSignup ? "lg" : "md"} loading={isPending}>
+          {submitLabel}
         </Button>
       </div>
     </form>

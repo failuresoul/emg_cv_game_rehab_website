@@ -7,8 +7,9 @@ from sqlmodel import select
 from app.api.deps import CurrentUser, SessionDep
 from app.core.security import create_access_token
 from app.models import PatientProfile
-from app.schemas.patient import PatientProfileRead
+from app.schemas.patient import PatientCreate, PatientProfileRead, PatientRegister
 from app.schemas.user import LoginResponse, MeRead, UserRead
+from app.services import patients
 from app.services.users import authenticate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -25,6 +26,23 @@ def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    return LoginResponse(
+        access_token=create_access_token(user.id, user.role),
+        user=UserRead.model_validate(user),
+    )
+
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+def register(payload: PatientRegister, session: SessionDep) -> LoginResponse:
+    try:
+        patients.create_patient(session, PatientCreate(**payload.model_dump()))
+    except patients.DuplicateEmailError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+        ) from None
+
+    user = authenticate(session, payload.email, payload.password)
+    assert user is not None and user.id is not None
     return LoginResponse(
         access_token=create_access_token(user.id, user.role),
         user=UserRead.model_validate(user),

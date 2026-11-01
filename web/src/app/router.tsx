@@ -21,6 +21,7 @@ import { PatientSessionDetailPage } from "@/pages/patient/PatientSessionDetailPa
 import { HomePage } from "@/pages/public/HomePage";
 import { LoginPage } from "@/pages/public/LoginPage";
 import { NotFoundPage } from "@/pages/public/NotFoundPage";
+import { SignupPage } from "@/pages/public/SignupPage";
 import { SessionCalibratePage } from "@/pages/session/SessionCalibratePage";
 import { SessionCooldownPage } from "@/pages/session/SessionCooldownPage";
 import { SessionGamePage } from "@/pages/session/SessionGamePage";
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <HomePage /> },
       { path: "/login", element: <LoginPage /> },
+      { path: "/signup", element: <SignupPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

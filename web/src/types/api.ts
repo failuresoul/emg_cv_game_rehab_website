@@ -63,6 +63,8 @@ export interface PatientCreate {
 
 export type PatientUpdate = Partial<PatientCreate>;
 
+export type PatientRegister = Omit<PatientCreate, "notes">;
+
 export interface AdminStats {
   total_patients: number;
   active_patients: number;

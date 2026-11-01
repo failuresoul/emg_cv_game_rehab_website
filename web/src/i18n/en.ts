@@ -64,7 +64,7 @@ export const en = {
   "patientForm.error.months": "Enter a whole number, 0 or more.",
   "patientForm.error.duplicateEmail": "This email is already registered.",
   "patientForm.error.invalidValue": "Please check this value.",
-  "patientForm.error.generic": "We could not save the patient. Please try again.",
+  "patientForm.error.generic": "We could not save these details. Please try again.",
 
   "patient.backToList": "Back to patients",
   "patient.headerTitle": "{code} · {name}",
@@ -160,6 +160,13 @@ export const en = {
   "login.submit": "Log in",
   "login.error.invalid": "Incorrect email or password.",
   "login.error.generic": "We could not log you in. Please try again.",
+  "login.noAccount": "New to MotionLab?",
+
+  "signup.title": "Create your account",
+  "signup.action": "Sign up",
+  "signup.submit": "Create account",
+  "signup.passwordHint": "At least 8 characters.",
+  "signup.haveAccount": "Already have an account?",
 
   "page.public.login.title": "Log in",
   "page.public.notFound.title": "Page not found",

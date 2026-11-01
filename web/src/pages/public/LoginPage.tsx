@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { type Location, Navigate, useLocation } from "react-router";
+import { Link, type Location, Navigate, useLocation } from "react-router";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -81,6 +81,12 @@ export function LoginPage() {
           {t("login.submit")}
         </Button>
       </form>
+      <p className="mt-6 text-center">
+        {t("login.noAccount")}{" "}
+        <Link to="/signup" className="text-primary font-semibold underline">
+          {t("signup.action")}
+        </Link>
+      </p>
     </Card>
   );
 }

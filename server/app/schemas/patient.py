@@ -28,6 +28,21 @@ class PatientCreate(BaseModel):
     notes: str | None = None
 
 
+class PatientRegister(BaseModel):
+    """Self sign-up. Notes are left out because they belong to the therapist."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: NormalizedEmail
+    full_name: FullName
+    password: Password
+    affected_side: Side
+    dominant_side: Side
+    age_band: AgeBand
+    months_since_stroke: MonthsSinceStroke | None = None
+    language: Language = "en"
+
+
 class PatientUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

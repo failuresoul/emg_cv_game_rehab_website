@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext, useState } from "react";
 
 import { api } from "@/lib/api";
-import type { LoginResponse, User } from "@/types/api";
+import type { LoginResponse, PatientRegister, User } from "@/types/api";
 
 import { clearToken, getToken, saveToken } from "./storage";
 
@@ -11,6 +11,7 @@ interface AuthContextValue {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (payload: PatientRegister) => Promise<void>;
   logout: () => void;
 }
 
@@ -40,15 +41,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = token !== null ? (meQuery.data ?? null) : null;
 
+  function startSession({ access_token: newToken, user: loggedInUser }: LoginResponse) {
+    saveToken(newToken);
+    queryClient.setQueryData(meQueryKey(newToken), loggedInUser);
+    setToken(newToken);
+  }
+
   async function login(email: string, password: string) {
     const response = await api.post<LoginResponse>(
       "/auth/login",
       new URLSearchParams({ username: email.trim(), password }),
     );
-    const { access_token: newToken, user: loggedInUser } = response.data;
-    saveToken(newToken);
-    queryClient.setQueryData(meQueryKey(newToken), loggedInUser);
-    setToken(newToken);
+    startSession(response.data);
+  }
+
+  async function register(payload: PatientRegister) {
+    const response = await api.post<LoginResponse>("/auth/register", payload);
+    startSession(response.data);
   }
 
   function logout() {
@@ -65,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token: user ? token : null,
         isLoading: token !== null && meQuery.isPending,
         login,
+        register,
         logout,
       }}
     >
