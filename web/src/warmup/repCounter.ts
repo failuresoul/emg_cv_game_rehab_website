@@ -87,6 +87,11 @@ export class RepCounter {
     return this.currentState;
   }
 
+  /** True while a movement cannot begin, because the arm has not yet been seen at rest. */
+  get awaitingRest(): boolean {
+    return this.currentState === "REST" && !this.armed;
+  }
+
   get fullReps(): number {
     return this.recorded.filter((rep) => rep.reachedTarget).length;
   }

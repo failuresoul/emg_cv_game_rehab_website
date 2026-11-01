@@ -2,6 +2,7 @@ import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { useEffect, useRef } from "react";
 
 import { t } from "@/i18n";
+import type { Side } from "@/types/api";
 
 import { type BodyFrame, fromBodyFrame, type Point } from "./geometry";
 import { isLandmarkVisible, POSE } from "./landmarks";
@@ -19,6 +20,8 @@ const Y_AXIS_COLOR = "#56CCF2";
 const AXIS_LINE_WIDTH = 4;
 const AXIS_FONT = "bold 22px sans-serif";
 const AXIS_LABEL_OFFSET = 6;
+const HIGHLIGHT_COLOR = "#F2C94C";
+const HIGHLIGHT_LINE_WIDTH = 12;
 const ARROW_COLOR = "#F2C94C";
 const ARROW_LENGTH_SW = 1.2;
 const ARROW_LINE_WIDTH = 12;
@@ -79,6 +82,28 @@ function drawPose(context: CanvasRenderingContext2D, pose: NormalizedLandmark[])
   context.lineWidth = POSE_LINE_WIDTH;
   context.lineCap = "round";
   for (const [start, end] of POSE_CONNECTIONS) {
+    if (isLandmarkVisible(pose[start]) && isLandmarkVisible(pose[end])) {
+      drawLine(context, pose[start], pose[end]);
+    }
+  }
+}
+
+function drawArmHighlight(
+  context: CanvasRenderingContext2D,
+  pose: NormalizedLandmark[],
+  side: Side,
+) {
+  const [shoulder, elbow, wrist] =
+    side === "left"
+      ? [POSE.LEFT_SHOULDER, POSE.LEFT_ELBOW, POSE.LEFT_WRIST]
+      : [POSE.RIGHT_SHOULDER, POSE.RIGHT_ELBOW, POSE.RIGHT_WRIST];
+  context.strokeStyle = HIGHLIGHT_COLOR;
+  context.lineWidth = HIGHLIGHT_LINE_WIDTH;
+  context.lineCap = "round";
+  for (const [start, end] of [
+    [shoulder, elbow],
+    [elbow, wrist],
+  ]) {
     if (isLandmarkVisible(pose[start]) && isLandmarkVisible(pose[end])) {
       drawLine(context, pose[start], pose[end]);
     }
@@ -181,10 +206,12 @@ interface SkeletonCanvasProps {
   bodyFrame?: BodyFrame | null;
   /** Draws a large arrow from the affected shoulder in this body-frame direction. */
   arrow?: { frame: BodyFrame; directionDeg: number } | null;
+  /** Draws this arm boldly, for the arm being exercised. */
+  highlightSide?: Side;
 }
 
 /** Draws landmarks only. The camera image is never shown. */
-export function SkeletonCanvas({ result, bodyFrame, arrow }: SkeletonCanvasProps) {
+export function SkeletonCanvas({ result, bodyFrame, arrow, highlightSide }: SkeletonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -201,11 +228,12 @@ export function SkeletonCanvas({ result, bodyFrame, arrow }: SkeletonCanvasProps
       );
     }
     if (result?.pose) drawPose(context, result.pose);
+    if (result?.pose && highlightSide) drawArmHighlight(context, result.pose, highlightSide);
     if (result?.hand) drawHand(context, result.hand);
     if (result && bodyFrame) {
       drawBodyFrame(context, bodyFrame, result.frameWidth, result.frameHeight);
     }
-  }, [result, bodyFrame, arrow]);
+  }, [result, bodyFrame, arrow, highlightSide]);
 
   return (
     <canvas

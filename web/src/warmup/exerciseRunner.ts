@@ -51,10 +51,13 @@ export interface ExerciseFrame {
 
 export interface ExerciseRunnerOptions {
   countdownMs?: number;
+  /** How long tracking must stay back before a tracking pause ends by itself. */
+  resumeDelayMs?: number;
   history?: readonly ExerciseResult[];
 }
 
 const DEFAULT_COUNTDOWN_MS = 3000;
+const DEFAULT_RESUME_DELAY_MS = 1000;
 const TRACKING_LOST_AFTER_MS = 500;
 // "Most of a rep" means more than half of the frames with a known plane.
 const OFF_PLANE_SHARE = 0.5;
@@ -80,6 +83,7 @@ export class ExerciseRunner {
   private readonly preset: ExercisePreset;
   private readonly thresholds: Thresholds;
   private readonly countdownMs: number;
+  private readonly resumeDelayMs: number;
   private readonly counter: RepCounter;
   private readonly listeners = new Set<(event: ExerciseEvent) => void>();
 
@@ -88,7 +92,8 @@ export class ExerciseRunner {
   private activeStart = 0;
   private lastSeenAt = 0;
   private pausedAt: number | null = null;
-  private pausedByUser = false;
+  private pausedByUserFlag = false;
+  private trackingBackAt: number | null = null;
   private pausedTimeMs = 0;
   private activeTimeMs = 0;
   private counterAtRest = true;
@@ -100,18 +105,33 @@ export class ExerciseRunner {
   constructor(
     definition: ExerciseDefinition,
     preset: ExercisePreset,
-    { countdownMs = DEFAULT_COUNTDOWN_MS, history }: ExerciseRunnerOptions = {},
+    {
+      countdownMs = DEFAULT_COUNTDOWN_MS,
+      resumeDelayMs = DEFAULT_RESUME_DELAY_MS,
+      history,
+    }: ExerciseRunnerOptions = {},
   ) {
     this.definition = definition;
     this.preset = preset;
     this.thresholds = getThresholds(definition, preset, history);
     this.countdownMs = countdownMs;
+    this.resumeDelayMs = resumeDelayMs;
     this.counter = new RepCounter({ direction: definition.direction, ...this.thresholds });
     this.counter.subscribe((event) => this.handleCounterEvent(event));
   }
 
   get state(): ExerciseState {
     return this.currentState;
+  }
+
+  /** A patient's own pause, rather than one caused by losing sight of the arm. */
+  get pausedByUser(): boolean {
+    return this.currentState === "PAUSED" && this.pausedByUserFlag;
+  }
+
+  /** True while the arm must first reach its starting position. */
+  get awaitingRest(): boolean {
+    return this.counter.awaitingRest;
   }
 
   get fullReps(): number {
@@ -144,7 +164,13 @@ export class ExerciseRunner {
       this.begin(timestamp);
     } else if (this.currentState === "PAUSED") {
       // Comes back by itself after tracking loss, but a patient's own pause is theirs to end.
-      if (value === null || this.pausedByUser) return;
+      if (this.pausedByUserFlag) return;
+      if (value === null) {
+        this.trackingBackAt = null;
+        return;
+      }
+      this.trackingBackAt ??= timestamp;
+      if (timestamp - this.trackingBackAt < this.resumeDelayMs) return;
       this.endPause(timestamp);
     } else if (this.currentState !== "ACTIVE") {
       return;
@@ -252,7 +278,8 @@ export class ExerciseRunner {
   private beginPause(timestamp: number, byUser: boolean): void {
     this.counter.pause();
     this.pausedAt = timestamp;
-    this.pausedByUser = byUser;
+    this.pausedByUserFlag = byUser;
+    this.trackingBackAt = null;
     this.setState("PAUSED");
   }
 
@@ -266,7 +293,8 @@ export class ExerciseRunner {
   private closePause(timestamp: number): void {
     if (this.pausedAt !== null) this.pausedTimeMs += timestamp - this.pausedAt;
     this.pausedAt = null;
-    this.pausedByUser = false;
+    this.pausedByUserFlag = false;
+    this.trackingBackAt = null;
   }
 
   private checkTimeout(timestamp: number): void {

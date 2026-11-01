@@ -163,8 +163,38 @@ describe("ExerciseRunner pausing", () => {
     expect(runner.state).toBe("PAUSED");
 
     runner.update({ timestamp: 2501, value: 10 });
+    runner.update({ timestamp: 3500, value: 10 });
+    expect(runner.state).toBe("PAUSED");
+    runner.update({ timestamp: 3501, value: 10 });
     expect(runner.state).toBe("ACTIVE");
     expect(runner.fullReps).toBe(0);
+  });
+
+  it("restarts the one-second wait if tracking drops again", () => {
+    const runner = activeRunner();
+    runner.update({ timestamp: 501, value: null });
+
+    runner.update({ timestamp: 1000, value: 10 });
+    runner.update({ timestamp: 1900, value: null });
+    runner.update({ timestamp: 2000, value: 10 });
+    runner.update({ timestamp: 2900, value: 10 });
+    expect(runner.state).toBe("PAUSED");
+
+    runner.update({ timestamp: 3000, value: 10 });
+    expect(runner.state).toBe("ACTIVE");
+  });
+
+  it("tells a tracking pause from a patient's own", () => {
+    const runner = activeRunner();
+    runner.update({ timestamp: 501, value: null });
+    expect(runner.pausedByUser).toBe(false);
+
+    runner.update({ timestamp: 600, value: 10 });
+    runner.update({ timestamp: 1600, value: 10 });
+    runner.pause(1700);
+    expect(runner.pausedByUser).toBe(true);
+    runner.resume(1800);
+    expect(runner.pausedByUser).toBe(false);
   });
 
   it("does not complete a rep across a tracking loss", () => {
@@ -175,6 +205,7 @@ describe("ExerciseRunner pausing", () => {
     runner.update({ timestamp: lastSeen + 600, value: null });
     expect(runner.state).toBe("PAUSED");
     runner.update({ timestamp: lastSeen + 2000, value: 10 });
+    runner.update({ timestamp: lastSeen + 3000, value: 10 });
 
     expect(runner.state).toBe("ACTIVE");
     expect(runner.fullReps).toBe(0);
@@ -235,6 +266,18 @@ describe("ExerciseRunner pausing", () => {
     feed(runner, cycles({ rest: 10, peak: 120, cycles: 2, startTs: 300 }));
 
     expect(runner.fullReps).toBe(2);
+  });
+});
+
+describe("ExerciseRunner waiting for rest", () => {
+  it("reports when the arm has not yet been at rest, until it is", () => {
+    const runner = new ExerciseRunner(FLEXION, "standard");
+    runner.startCountdown(-COUNTDOWN_MS);
+    runner.update({ timestamp: 0, value: 70 });
+    expect(runner.awaitingRest).toBe(true);
+
+    runner.update({ timestamp: 33, value: 10 });
+    expect(runner.awaitingRest).toBe(false);
   });
 });
 

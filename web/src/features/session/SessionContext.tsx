@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { createContext, type ReactNode, useContext } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useState } from "react";
 
 import { useAuth } from "@/features/auth/AuthContext";
 import {
@@ -10,6 +10,8 @@ import {
 } from "@/features/patient/usePatientData";
 import { api } from "@/lib/api";
 import type { Calibration, CalibrationCreate, DeviceInfo, SessionRecord, Side } from "@/types/api";
+
+import type { ExerciseResult } from "@/warmup/exerciseRunner";
 
 import { browserName } from "./calibration";
 
@@ -41,6 +43,9 @@ interface SessionContextValue {
   calibration: Calibration | null;
   /** The patient's most recent calibration, which may be from an earlier session. */
   latestCalibration: Calibration | null;
+  /** One result for each exercise done or skipped this session, held in memory for now. */
+  warmupResults: ExerciseResult[];
+  addWarmupResult: (result: ExerciseResult) => void;
   isLoading: boolean;
   isError: boolean;
   retry: () => void;
@@ -60,6 +65,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   });
 
   const latest = useLatestCalibration();
+  const [warmupResults, setWarmupResults] = useState<ExerciseResult[]>([]);
+  const addWarmupResult = useCallback((result: ExerciseResult) => {
+    setWarmupResults((current) => [
+      ...current.filter((item) => item.exerciseId !== result.exerciseId),
+      result,
+    ]);
+  }, []);
 
   const sessionId = session.data?.id ?? null;
   const latestCalibration = latest.data ?? null;
@@ -71,6 +83,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         affectedSide: user?.patient_profile?.affected_side ?? null,
         calibration: latestCalibration?.session_id === sessionId ? latestCalibration : null,
         latestCalibration,
+        warmupResults,
+        addWarmupResult,
         isLoading: session.isPending || latest.isPending,
         // Only a failed first load: a failed background refresh must not wipe a page in progress.
         isError: session.isLoadingError || latest.isLoadingError,
