@@ -35,6 +35,9 @@ export interface VisionResult {
   delegate: VisionDelegate;
   /** Average brightness of the frame, 0-255. Stays in the browser, like the frame itself. */
   brightness: number | null;
+  /** The camera's actual size, which may differ from the size requested. */
+  frameWidth: number;
+  frameHeight: number;
 }
 
 export interface VisionOptions {
@@ -245,7 +248,16 @@ class VisionEngine {
           lastBrightnessAt = timestamp;
         }
 
-        const result = { timestamp, hand, pose, fps, delegate: tasks.delegate, brightness };
+        const result = {
+          timestamp,
+          hand,
+          pose,
+          fps,
+          delegate: tasks.delegate,
+          brightness,
+          frameWidth: video.videoWidth,
+          frameHeight: video.videoHeight,
+        };
         this.resultListeners.forEach((listener) => listener(result));
       } catch {
         this.fail("detectionFailed");

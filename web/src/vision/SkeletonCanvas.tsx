@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 
 import { t } from "@/i18n";
 
+import { type BodyFrame, fromBodyFrame, type Point } from "./geometry";
 import { isLandmarkVisible, POSE } from "./landmarks";
 import type { VisionResult } from "./visionEngine";
 
@@ -13,6 +14,11 @@ const HAND_COLOR = "#D9682B";
 const POSE_LINE_WIDTH = 5;
 const HAND_LINE_WIDTH = 3;
 const POINT_RADIUS = 5;
+const X_AXIS_COLOR = "#F2C94C";
+const Y_AXIS_COLOR = "#56CCF2";
+const AXIS_LINE_WIDTH = 4;
+const AXIS_FONT = "bold 22px sans-serif";
+const AXIS_LABEL_OFFSET = 6;
 
 const POSE_CONNECTIONS: [number, number][] = [
   [POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER],
@@ -50,8 +56,8 @@ const HAND_CONNECTIONS: [number, number][] = [
 ];
 
 // Mirrored, so moving your right hand moves the skeleton on the right, like a mirror.
-const toX = (landmark: NormalizedLandmark) => (1 - landmark.x) * WIDTH;
-const toY = (landmark: NormalizedLandmark) => landmark.y * HEIGHT;
+const toX = (landmark: Point) => (1 - landmark.x) * WIDTH;
+const toY = (landmark: Point) => landmark.y * HEIGHT;
 
 function drawLine(
   context: CanvasRenderingContext2D,
@@ -90,8 +96,46 @@ function drawHand(context: CanvasRenderingContext2D, hand: NormalizedLandmark[])
   }
 }
 
+function drawAxis(
+  context: CanvasRenderingContext2D,
+  from: Point,
+  to: Point,
+  color: string,
+  label: string,
+) {
+  context.strokeStyle = color;
+  context.fillStyle = color;
+  context.lineWidth = AXIS_LINE_WIDTH;
+  context.beginPath();
+  context.moveTo(toX(from), toY(from));
+  context.lineTo(toX(to), toY(to));
+  context.stroke();
+  context.font = AXIS_FONT;
+  context.fillText(label, toX(to) + AXIS_LABEL_OFFSET, toY(to) - AXIS_LABEL_OFFSET);
+}
+
+function drawBodyFrame(
+  context: CanvasRenderingContext2D,
+  frame: BodyFrame,
+  frameWidth: number,
+  frameHeight: number,
+) {
+  const normalise = (point: Point) => ({ x: point.x / frameWidth, y: point.y / frameHeight });
+  const origin = normalise(frame.origin);
+  const xEnd = normalise(fromBodyFrame({ x: 1, y: 0 }, frame));
+  const yEnd = normalise(fromBodyFrame({ x: 0, y: 1 }, frame));
+  drawAxis(context, origin, xEnd, X_AXIS_COLOR, t("setup.debug.axisX"));
+  drawAxis(context, origin, yEnd, Y_AXIS_COLOR, t("setup.debug.axisY"));
+}
+
+interface SkeletonCanvasProps {
+  result: VisionResult | null;
+  /** Draws one shoulder width of each body-frame axis, for debugging. */
+  bodyFrame?: BodyFrame | null;
+}
+
 /** Draws landmarks only. The camera image is never shown. */
-export function SkeletonCanvas({ result }: { result: VisionResult | null }) {
+export function SkeletonCanvas({ result, bodyFrame }: SkeletonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -100,7 +144,10 @@ export function SkeletonCanvas({ result }: { result: VisionResult | null }) {
     context.clearRect(0, 0, WIDTH, HEIGHT);
     if (result?.pose) drawPose(context, result.pose);
     if (result?.hand) drawHand(context, result.hand);
-  }, [result]);
+    if (result && bodyFrame) {
+      drawBodyFrame(context, bodyFrame, result.frameWidth, result.frameHeight);
+    }
+  }, [result, bodyFrame]);
 
   return (
     <canvas
@@ -109,7 +156,7 @@ export function SkeletonCanvas({ result }: { result: VisionResult | null }) {
       height={HEIGHT}
       role="img"
       aria-label={t("vision.skeletonLabel")}
-      className="aspect-[4/3] w-full rounded-xl border border-white/20"
+      className="aspect-4/3 w-full rounded-xl border border-white/20"
     />
   );
 }

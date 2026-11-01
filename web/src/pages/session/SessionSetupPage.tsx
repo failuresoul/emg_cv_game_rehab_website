@@ -9,7 +9,8 @@ import { Spinner } from "@/components/ui/Spinner";
 import { t, type TranslationKey } from "@/i18n";
 import { evaluateSetupChecks, type SetupChecks } from "@/vision/setupChecks";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
-import { useVision } from "@/vision/useVision";
+import type { TrackingState } from "@/vision/tracking";
+import { useTracking } from "@/vision/useTracking";
 import type { VisionErrorCode } from "@/vision/visionEngine";
 
 const REQUIRED_GREEN_MS = 2000;
@@ -75,10 +76,39 @@ function Checklist({ checks }: { checks: SetupChecks }) {
   );
 }
 
+function TrackingInfo({ tracking }: { tracking: TrackingState | null }) {
+  const notAvailable = t("setup.debug.notAvailable");
+  const fingertip = tracking?.fingertipRawSw;
+  const rows: { labelKey: TranslationKey; value: string }[] = [
+    {
+      labelKey: "setup.debug.shoulderWidth",
+      value: tracking?.shoulderWidthPx?.toFixed(1) ?? notAvailable,
+    },
+    { labelKey: "setup.debug.fingertipX", value: fingertip?.x.toFixed(2) ?? notAvailable },
+    { labelKey: "setup.debug.fingertipY", value: fingertip?.y.toFixed(2) ?? notAvailable },
+    {
+      labelKey: "setup.debug.handLost",
+      value: tracking ? Math.round(tracking.handLostMs).toString() : notAvailable,
+    },
+  ];
+
+  return (
+    <dl className="flex flex-col gap-1">
+      {rows.map(({ labelKey, value }) => (
+        <div key={labelKey} className="flex justify-between gap-4">
+          <dt className="text-muted">{t(labelKey)}</dt>
+          <dd className="font-semibold tabular-nums">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 function LiveCheck() {
   const navigate = useNavigate();
-  const { status, result, retry } = useVision();
+  const { status, result, retry, tracking } = useTracking();
   const [passed, setPassed] = useState(false);
+  const [showTracking, setShowTracking] = useState(false);
 
   const checks = evaluateSetupChecks(result);
   const allGreen = Object.values(checks).every(Boolean);
@@ -123,7 +153,7 @@ function LiveCheck() {
   return (
     <div className="mx-auto grid w-full max-w-6xl flex-1 items-start gap-4 lg:grid-cols-3">
       <div className="relative lg:col-span-2">
-        <SkeletonCanvas result={result} />
+        <SkeletonCanvas result={result} bodyFrame={showTracking ? tracking?.frame : null} />
         <p className="absolute top-2 right-3 rounded bg-black/60 px-2 text-white">
           {t("setup.performance", {
             fps: Math.round(result?.fps ?? 0),
@@ -138,6 +168,14 @@ function LiveCheck() {
           {t("setup.continue")}
         </Button>
         {!passed && <p className="text-muted">{t("setup.checklist.hint")}</p>}
+        <Button
+          variant="ghost"
+          aria-pressed={showTracking}
+          onClick={() => setShowTracking((shown) => !shown)}
+        >
+          {t(showTracking ? "setup.debug.hide" : "setup.debug.show")}
+        </Button>
+        {showTracking && <TrackingInfo tracking={tracking} />}
       </Card>
     </div>
   );

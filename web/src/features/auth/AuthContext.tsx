@@ -3,12 +3,12 @@ import { createContext, Fragment, type ReactNode, useContext, useState } from "r
 
 import { setLanguage } from "@/i18n";
 import { api } from "@/lib/api";
-import type { LoginResponse, Me, PatientRegister, User } from "@/types/api";
+import type { LoginResponse, Me, PatientRegister } from "@/types/api";
 
 import { clearToken, getToken, saveToken } from "./storage";
 
 interface AuthContextValue {
-  user: User | null;
+  user: Me | null;
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
