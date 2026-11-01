@@ -14,7 +14,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://localhost:8000",
+      "/api": process.env.VITE_API_TARGET ?? "http://localhost:8000",
+    },
+    watch: {
+      // File change events do not reach Docker containers on Windows.
+      usePolling: process.env.CHOKIDAR_USEPOLLING === "true",
     },
   },
 });

@@ -96,3 +96,43 @@ pytest
 npm run lint
 npm run build
 ```
+
+## Run with Docker
+
+Docker is optional. The steps above keep working without it.
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/). On Windows, choose the WSL 2 option.
+2. Create `server/.env` as described in [1. Backend](#1-backend), if you have not already. Both Docker setups read it.
+
+**Open the site through `localhost`.** Browsers only allow the camera on `localhost` or HTTPS, so an address like `http://192.168.1.10:5173` will not work.
+
+### Development
+
+Code changes reload automatically. Stop any local `uvicorn` or `npm run dev` first, because the ports are the same.
+
+| Task                 | Command                                                 |
+| -------------------- | ------------------------------------------------------- |
+| Start                | `docker compose up --build`, then <http://localhost:5173> |
+| Seed demo patients   | `docker compose exec server python scripts/seed_demo.py` |
+| Follow server logs   | `docker compose logs -f server`                         |
+| Stop                 | `docker compose down`                                   |
+
+Seed from a second terminal while the app is running, and save the passwords it prints.
+
+If you add a dependency to `requirements.txt` or `package.json`, restart with `docker compose up --build`. For a new frontend dependency, also add `-V` so that Docker rebuilds the `node_modules` volume.
+
+### Production-like
+
+```sh
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Then open <http://localhost:8080>. The containers restart automatically until you stop them:
+
+```sh
+docker compose -f docker-compose.prod.yml down
+```
+
+### Reset the data
+
+Local runs and both Docker setups share one database, `data/motionlab.db`. To start again, stop the app and delete that file. The admin is created again on the next start, and you can then seed the demo patients again.
