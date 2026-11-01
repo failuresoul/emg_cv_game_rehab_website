@@ -113,6 +113,40 @@ export const en = {
 
   "session.exit": "Exit",
 
+  "vision.skeletonLabel": "Live outline of your body and hand, drawn from the camera",
+
+  "setup.intro.title": "Let's check your camera",
+  "setup.intro.description":
+    "We use your camera to follow your arm and hand. You will see an outline of your movement, not your picture.",
+  "setup.intro.allow": "Allow camera",
+  "setup.waitingForCamera": "Waiting for your camera…",
+  "setup.loadingModels": "Loading models…",
+  "setup.checklist.title": "Getting ready",
+  "setup.checklist.hint": "All checks need to stay green for 2 seconds.",
+  "setup.check.cameraOn": "Camera on",
+  "setup.check.handVisible": "Hand visible",
+  "setup.check.shouldersVisible": "Both shoulders visible",
+  "setup.check.goodDistance": "Good distance",
+  "setup.check.enoughLight": "Enough light",
+  "setup.check.passed": "Passed",
+  "setup.check.notPassed": "Not passed yet",
+  "setup.performance": "{fps} FPS · {delegate}",
+  "setup.continue": "Continue to warm-up",
+  "setup.error.title": "The camera check could not start",
+  "setup.error.permissionDenied":
+    "Camera permission was denied. Click the camera icon in your browser's address bar, allow the camera, then try again.",
+  "setup.error.noCamera": "We could not find a camera. Connect a camera, then try again.",
+  "setup.error.cameraInUse":
+    "Your camera is being used by another app. Close other apps that use the camera, then try again.",
+  "setup.error.cameraLost":
+    "The camera stopped working. Check that it is connected, then try again.",
+  "setup.error.unsupported":
+    "This browser cannot use the camera here. Use a recent version of Chrome or Edge, and open the site from a secure (https) address.",
+  "setup.error.modelsFailed":
+    "We could not download the movement tracking files. Check your internet connection, then try again.",
+  "setup.error.detectionFailed": "Movement tracking stopped unexpectedly. Please try again.",
+  "setup.error.unknown": "Something went wrong while starting the camera. Please try again.",
+
   "landing.tagline": "Home rehabilitation for your arm and hand, guided by your webcam",
   "landing.feature.warmup": "Webcam-guided warm-up",
   "landing.feature.games": "Rehabilitation games that adapt to you",
