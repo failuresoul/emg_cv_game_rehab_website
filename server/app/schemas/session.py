@@ -102,6 +102,10 @@ class CalibrationRead(BaseModel):
     created_at: UtcDatetime
 
 
+class SessionDetail(SessionSummary):
+    calibration: CalibrationRead | None
+
+
 class AdminCalibrationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

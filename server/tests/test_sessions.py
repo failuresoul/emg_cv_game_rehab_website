@@ -411,6 +411,42 @@ def test_patient_sessions_newest_first_with_hull_area(
     assert body[1]["duration_seconds"] >= 0
 
 
+def test_patient_session_detail_includes_calibration(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    started = start(client, patient_headers)
+    client.post(
+        f"/api/sessions/{started['id']}/calibration",
+        json=calibration_payload(),
+        headers=patient_headers,
+    )
+
+    response = client.get(f"/api/patient/sessions/{started['id']}", headers=patient_headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == started["id"]
+    assert body["hull_area_sw2"] == 0.5
+    assert body["calibration"]["reach_radii_sw"] == calibration_payload()["reach_radii_sw"]
+
+
+def test_patient_session_detail_without_calibration(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    started = start(client, patient_headers)
+
+    body = client.get(f"/api/patient/sessions/{started['id']}", headers=patient_headers).json()
+
+    assert body["calibration"] is None
+    assert body["hull_area_sw2"] is None
+
+
+def test_patient_session_detail_unknown_is_404(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    assert client.get("/api/patient/sessions/999", headers=patient_headers).status_code == 404
+
+
 # Another patient's data
 
 
@@ -432,6 +468,16 @@ def test_patient_cannot_end_another_patients_session(
     assert response.status_code == 404
     current = client.get("/api/sessions/current", headers=patient_headers)
     assert current.json()["status"] == "active"
+
+
+def test_patient_cannot_read_another_patients_session_detail(
+    client: TestClient, patient_headers: Headers, other_headers: Headers
+) -> None:
+    started = start(client, patient_headers)
+
+    response = client.get(f"/api/patient/sessions/{started['id']}", headers=other_headers)
+
+    assert response.status_code == 404
 
 
 def test_patient_cannot_update_another_patients_device_info(
@@ -489,6 +535,7 @@ PATIENT_ROUTES = [
     ("POST", "/api/sessions/1/calibration"),
     ("GET", "/api/patient/calibration/latest"),
     ("GET", "/api/patient/sessions"),
+    ("GET", "/api/patient/sessions/1"),
 ]
 
 

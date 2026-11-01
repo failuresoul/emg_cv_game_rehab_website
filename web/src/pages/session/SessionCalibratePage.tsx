@@ -13,6 +13,7 @@ import {
   buildCalibration,
   compareArea,
   decideAttempt,
+  DIRECTION_KEYS,
   type DirectionResult,
   DIRECTIONS_DEG,
   HOLD_WINDOW_MS,
@@ -21,8 +22,9 @@ import {
   updateWindow,
 } from "@/features/session/calibration";
 import { useSaveCalibration, useSession } from "@/features/session/SessionContext";
-import { t, type TranslationKey } from "@/i18n";
+import { t } from "@/i18n";
 import { playBeep, prepareAudio } from "@/lib/beep";
+import { formatNumber } from "@/lib/format";
 import type { DeviceInfo, Side } from "@/types/api";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
 import { useTracking } from "@/vision/useTracking";
@@ -32,17 +34,6 @@ import { visionEngine } from "@/vision/visionEngine";
 const COUNTDOWN_FROM = 3;
 const COUNTDOWN_STEP_MS = 1000;
 const DIRECTION_COUNT = DIRECTIONS_DEG.length;
-
-const DIRECTION_KEYS: TranslationKey[] = [
-  "calibrate.direction.0",
-  "calibrate.direction.45",
-  "calibrate.direction.90",
-  "calibrate.direction.135",
-  "calibrate.direction.180",
-  "calibrate.direction.225",
-  "calibrate.direction.270",
-  "calibrate.direction.315",
-];
 
 type Tracking = ReturnType<typeof useTracking>;
 
@@ -320,7 +311,7 @@ function ResultView({
             valid={calibration.quality.valid}
           />
           <p className="text-lg font-semibold">
-            {t("calibrate.result.area", { area: calibration.hull_area_sw2.toFixed(2) })}
+            {t("calibrate.result.area", { area: formatNumber(calibration.hull_area_sw2) })}
           </p>
           {previousArea !== null && (
             <p>

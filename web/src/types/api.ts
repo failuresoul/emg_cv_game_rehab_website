@@ -119,6 +119,24 @@ export interface Calibration extends CalibrationCreate {
   created_at: string;
 }
 
+export interface SessionSummary extends SessionRecord {
+  duration_seconds: number | null;
+  hull_area_sw2: number | null;
+}
+
+export interface SessionDetail extends SessionSummary {
+  calibration: Calibration | null;
+}
+
+export interface AdminCalibration {
+  id: number;
+  session_id: number;
+  created_at: string;
+  reach_radii_sw: number[];
+  hull_sw: PointPair[];
+  hull_area_sw2: number;
+}
+
 export interface LastSession {
   date: string;
   status: SessionStatus;

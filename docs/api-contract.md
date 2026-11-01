@@ -35,6 +35,7 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/patient/dashboard`             | `patient` | Get the patient's home page data |
 | GET    | `/api/patient/calibration/latest`    | `patient` | Get own latest calibration      |
 | GET    | `/api/patient/sessions`              | `patient` | List own sessions               |
+| GET    | `/api/patient/sessions/{id}`         | `patient` | Get own session with its calibration |
 | POST   | `/api/sessions`                      | `patient` | Start or resume a session       |
 | GET    | `/api/sessions/current`              | `patient` | Get own active session          |
 | PATCH  | `/api/sessions/{id}/device-info`     | `patient` | Save browser, FPS and GPU/CPU   |
@@ -382,6 +383,12 @@ Response `200`: an array of session summaries, newest first. The admin session l
   }
 ]
 ```
+
+### GET /api/patient/sessions/{id}
+
+Response `200`: a session summary, plus `calibration`, which is the calibration object or `null`. Another patient's session returns `404`.
+
+Errors: `404`.
 
 ## Sessions
 

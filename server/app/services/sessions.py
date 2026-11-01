@@ -11,9 +11,11 @@ from app.models.user import utc_now
 from app.schemas.common import as_utc
 from app.schemas.session import (
     CalibrationCreate,
+    CalibrationRead,
     DeviceInfo,
     LastSession,
     LatestCalibration,
+    SessionDetail,
     SessionRead,
     SessionStart,
     SessionSummary,
@@ -38,6 +40,14 @@ def _duration_seconds(record: SessionRecord) -> float | None:
     if record.ended_at is None:
         return None
     return (as_utc(record.ended_at) - as_utc(record.started_at)).total_seconds()
+
+
+def _summary(record: SessionRecord, hull_area: float | None) -> SessionSummary:
+    return SessionSummary(
+        **SessionRead.model_validate(record).model_dump(),
+        duration_seconds=_duration_seconds(record),
+        hull_area_sw2=hull_area,
+    )
 
 
 def get_active_session(session: Session, patient_id: int) -> SessionRecord | None:
@@ -164,14 +174,18 @@ def list_sessions(session: Session, patient_id: int) -> list[SessionSummary]:
         .where(SessionRecord.patient_id == patient_id)
         .order_by(col(SessionRecord.started_at).desc(), col(SessionRecord.id).desc())
     )
-    return [
-        SessionSummary(
-            **SessionRead.model_validate(record).model_dump(),
-            duration_seconds=_duration_seconds(record),
-            hull_area_sw2=hull_area,
-        )
-        for record, hull_area in session.exec(statement).all()
-    ]
+    return [_summary(record, hull_area) for record, hull_area in session.exec(statement).all()]
+
+
+def get_session_detail(session: Session, record: SessionRecord) -> SessionDetail:
+    calibration = session.exec(
+        select(Calibration).where(Calibration.session_id == record.id)
+    ).first()
+    summary = _summary(record, calibration.hull_area_sw2 if calibration else None)
+    return SessionDetail(
+        **summary.model_dump(),
+        calibration=CalibrationRead.model_validate(calibration) if calibration else None,
+    )
 
 
 def get_last_session(session: Session, patient_id: int) -> LastSession | None:

@@ -104,6 +104,9 @@ export function ReachMap({
         textAnchor="middle"
         fontSize={15}
         fill="var(--color-ink)"
+        stroke="var(--color-surface)"
+        strokeWidth={4}
+        paintOrder="stroke"
       >
         {t("reachMap.shoulder")}
       </text>

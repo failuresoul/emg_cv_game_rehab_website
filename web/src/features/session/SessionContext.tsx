@@ -3,14 +3,17 @@ import axios from "axios";
 import { createContext, type ReactNode, useContext } from "react";
 
 import { useAuth } from "@/features/auth/AuthContext";
+import {
+  LATEST_CALIBRATION_KEY,
+  PATIENT_KEY,
+  useLatestCalibration,
+} from "@/features/patient/usePatientData";
 import { api } from "@/lib/api";
 import type { Calibration, CalibrationCreate, DeviceInfo, SessionRecord, Side } from "@/types/api";
 
 import { browserName } from "./calibration";
 
 const SESSION_KEY = ["session", "current"];
-const LATEST_CALIBRATION_KEY = ["patient", "calibration", "latest"];
-const DASHBOARD_KEY = ["patient", "dashboard"];
 
 function isStatus(error: unknown, ...statuses: number[]): boolean {
   const status = axios.isAxiosError(error) ? error.response?.status : undefined;
@@ -56,19 +59,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     refetchOnWindowFocus: false,
   });
 
-  const latest = useQuery({
-    queryKey: LATEST_CALIBRATION_KEY,
-    queryFn: async (): Promise<Calibration | null> => {
-      try {
-        return (await api.get<Calibration>("/patient/calibration/latest")).data;
-      } catch (error) {
-        if (isStatus(error, 404)) return null;
-        throw error;
-      }
-    },
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-  });
+  const latest = useLatestCalibration();
 
   const sessionId = session.data?.id ?? null;
   const latestCalibration = latest.data ?? null;
@@ -112,7 +103,7 @@ export function useEndSession() {
         if (!isStatus(error, 404, 409)) throw error;
       }
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: PATIENT_KEY }),
   });
 }
 
@@ -140,7 +131,7 @@ export function useSaveCalibration() {
     },
     onSuccess: (saved) => {
       queryClient.setQueryData(LATEST_CALIBRATION_KEY, saved);
-      void queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
+      void queryClient.invalidateQueries({ queryKey: PATIENT_KEY });
     },
   });
 }

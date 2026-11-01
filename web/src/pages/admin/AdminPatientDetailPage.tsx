@@ -14,6 +14,8 @@ import { Tabs } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
 import { usePatient, useSetPatientActive } from "@/features/admin/hooks";
 import { EditPatientModal } from "@/features/admin/PatientModals";
+import { PatientProgressTab } from "@/features/admin/PatientProgressTab";
+import { PatientSessionsTab } from "@/features/admin/PatientSessionsTab";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
 import { QueryError } from "@/components/ui/QueryError";
 import { t, type TranslationKey } from "@/i18n";
@@ -197,9 +199,10 @@ export function AdminPatientDetailPage() {
           value={tab}
           onChange={setTab}
         >
-          {tab === "overview" ? (
-            <OverviewTab patient={patient.data} />
-          ) : (
+          {tab === "overview" && <OverviewTab patient={patient.data} />}
+          {tab === "sessions" && <PatientSessionsTab patientId={patient.data.id} />}
+          {tab === "progress" && <PatientProgressTab patient={patient.data} />}
+          {(tab === "programme" || tab === "reports") && (
             <EmptyState title={t("patient.tab.emptyUntilSessions")} />
           )}
         </Tabs>

@@ -9,6 +9,7 @@ import {
   decideAttempt,
   type DirectionResult,
   DIRECTIONS_DEG,
+  reachPointsFromRadii,
   startWindow,
   updateWindow,
 } from "./calibration";
@@ -207,6 +208,18 @@ describe("buildCalibration", () => {
 
   it("returns null if the shoulders were never seen", () => {
     expect(buildCalibration(eight(measured(1, { shoulderWidthPx: null })), "left")).toBeNull();
+  });
+});
+
+describe("reachPointsFromRadii", () => {
+  it("places each radius on its direction", () => {
+    const points = reachPointsFromRadii([2, 1, 3, 1, 1, 1, 1, 1]);
+
+    expect(points).toHaveLength(8);
+    expect(points[0][0]).toBeCloseTo(2);
+    expect(points[0][1]).toBeCloseTo(0);
+    expect(points[2][0]).toBeCloseTo(0);
+    expect(points[2][1]).toBeCloseTo(3);
   });
 });
 

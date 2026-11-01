@@ -1,9 +1,21 @@
+import type { TranslationKey } from "@/i18n";
 import type { CalibrationCreate, PointPair, Side } from "@/types/api";
 import { convexHull, median, type Point, polygonArea, projectOnDirection } from "@/vision/geometry";
 import type { TrackingState } from "@/vision/tracking";
 
 export const DIRECTIONS_DEG = [0, 45, 90, 135, 180, 225, 270, 315] as const;
 export type DirectionDeg = (typeof DIRECTIONS_DEG)[number];
+
+export const DIRECTION_KEYS: TranslationKey[] = [
+  "calibrate.direction.0",
+  "calibrate.direction.45",
+  "calibrate.direction.90",
+  "calibrate.direction.135",
+  "calibrate.direction.180",
+  "calibrate.direction.225",
+  "calibrate.direction.270",
+  "calibrate.direction.315",
+];
 
 export const HOLD_WINDOW_MS = 3000;
 const MAX_LOST_MS = 500;
@@ -85,6 +97,11 @@ function directionPoint(deg: number, radius: number): Point {
 }
 
 const toPair = (point: Point): PointPair => [point.x, point.y];
+
+/** Reach points on their directions, for stored data that only keeps the radii. */
+export function reachPointsFromRadii(radii: readonly number[]): PointPair[] {
+  return radii.map((radius, index) => toPair(directionPoint(DIRECTIONS_DEG[index], radius)));
+}
 
 /**
  * Builds what the server stores. Each reach point lies on its direction at the measured radius,

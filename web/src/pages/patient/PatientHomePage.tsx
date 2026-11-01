@@ -16,9 +16,12 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { ProgressChart } from "@/features/patient/ProgressChart";
 import { usePatientDashboard } from "@/features/patient/usePatientDashboard";
+import { useLatestCalibration } from "@/features/patient/usePatientData";
+import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { StartSessionButton } from "@/features/session/StartSessionButton";
 import { t, type TranslationKey } from "@/i18n";
-import type { TodayPlanStep } from "@/types/api";
+import { formatDateTime, formatNumber } from "@/lib/format";
+import type { Side, TodayPlanStep } from "@/types/api";
 
 const STEP_DISPLAY: Partial<Record<string, { labelKey: TranslationKey; icon: LucideIcon }>> = {
   camera_check: { labelKey: "patient.step.cameraCheck", icon: Camera },
@@ -68,6 +71,34 @@ function TodayCard({ plan }: { plan: TodayPlanStep[] }) {
   );
 }
 
+function ReachMapCard({ affectedSide }: { affectedSide: Side }) {
+  const latest = useLatestCalibration();
+
+  return (
+    <Card className="lg:col-span-3">
+      <h2 className="mb-2 text-xl font-bold">{t("calibrate.result.title")}</h2>
+      {latest.isPending && <Skeleton className="h-64" />}
+      {latest.isError && <QueryError onRetry={() => void latest.refetch()} />}
+      {latest.isSuccess && !latest.data && (
+        <EmptyState icon={Target} title={t("patient.reachMap.empty")} />
+      )}
+      {latest.data && (
+        <div className="mx-auto max-w-2xl">
+          <CalibrationReachMap
+            radii={latest.data.reach_radii_sw}
+            hull={latest.data.hull_sw}
+            valid={latest.data.quality.valid}
+            affectedSide={affectedSide}
+          />
+          <p className="text-center font-semibold">
+            {t("calibrate.result.area", { area: formatNumber(latest.data.hull_area_sw2) })}
+          </p>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function StreakCard({ days }: { days: number }) {
   return (
     <Card className="flex flex-col items-center justify-center gap-2 text-center">
@@ -85,6 +116,7 @@ export function PatientHomePage() {
   const { user } = useAuth();
   const dashboard = usePatientDashboard();
   const firstName = user?.full_name.split(" ")[0] ?? "";
+  const lastSession = dashboard.data?.last_session;
 
   return (
     <>
@@ -109,10 +141,20 @@ export function PatientHomePage() {
         <div className="grid gap-4 lg:grid-cols-3">
           <TodayCard plan={dashboard.data.today_plan} />
           <StreakCard days={dashboard.data.streak_days} />
+          <ReachMapCard affectedSide={dashboard.data.profile.affected_side} />
           <Card className="lg:col-span-2">
             <h2 className="mb-2 text-xl font-bold">{t("patient.progress.title")}</h2>
-            {/* The API has no progress data until sessions are recorded. */}
-            <ProgressChart points={[]} />
+            {lastSession && (
+              <p className="text-muted mb-2">
+                {t("patient.progress.lastSession", { date: formatDateTime(lastSession.date) })}
+              </p>
+            )}
+            {/* Charts for patients come later; only the admin area shows them for now. */}
+            <ProgressChart
+              points={[]}
+              seriesName={t("patient.progress.title")}
+              emptyTitle={t(lastSession ? "patient.progress.chartLater" : "patient.progress.empty")}
+            />
           </Card>
           <Card>
             <h2 className="mb-2 text-xl font-bold">{t("patient.feedback.title")}</h2>

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.api.deps import CurrentPatient, SessionDep
 from app.schemas.patient import PatientDashboard, PatientProfileRead, TodayPlanStep
-from app.schemas.session import CalibrationRead, SessionSummary
+from app.schemas.session import CalibrationRead, SessionDetail, SessionSummary
 from app.services import sessions
 
 router = APIRouter(prefix="/patient", tags=["patient"])
@@ -40,3 +40,12 @@ def latest_calibration(patient: CurrentPatient, session: SessionDep) -> Calibrat
 def list_sessions(patient: CurrentPatient, session: SessionDep) -> list[SessionSummary]:
     assert patient.id is not None
     return sessions.list_sessions(session, patient.id)
+
+
+@router.get("/sessions/{session_id}")
+def get_session(session_id: int, patient: CurrentPatient, session: SessionDep) -> SessionDetail:
+    assert patient.id is not None
+    record = sessions.get_own_session(session, patient.id, session_id)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    return sessions.get_session_detail(session, record)

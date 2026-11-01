@@ -1,7 +1,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
-import type { AdminStats, Patient, PatientCreate, PatientUpdate } from "@/types/api";
+import type {
+  AdminCalibration,
+  AdminStats,
+  Patient,
+  PatientCreate,
+  PatientUpdate,
+  SessionSummary,
+} from "@/types/api";
 
 const ADMIN_KEY = "admin";
 
@@ -33,6 +40,21 @@ export function usePatient(id: string) {
   return useQuery({
     queryKey: [ADMIN_KEY, "patient", id],
     queryFn: async () => (await api.get<Patient>(`/admin/patients/${id}`)).data,
+  });
+}
+
+export function usePatientSessions(id: number) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "patient", id, "sessions"],
+    queryFn: async () => (await api.get<SessionSummary[]>(`/admin/patients/${id}/sessions`)).data,
+  });
+}
+
+export function usePatientCalibrations(id: number) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "patient", id, "calibrations"],
+    queryFn: async () =>
+      (await api.get<AdminCalibration[]>(`/admin/patients/${id}/calibrations`)).data,
   });
 }
 
