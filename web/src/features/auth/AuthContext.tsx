@@ -2,15 +2,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext, useState } from "react";
 
 import { api } from "@/lib/api";
-import type { User } from "@/types/user";
+import type { LoginResponse, User } from "@/types/api";
 
 import { clearToken, getToken, saveToken } from "./storage";
-
-interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  user: User;
-}
 
 interface AuthContextValue {
   user: User | null;

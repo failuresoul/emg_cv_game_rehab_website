@@ -1,5 +1,133 @@
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
+import { Activity, BellRing, CalendarCheck, ChevronRight, Plus, Users } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router";
+
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { StatCard } from "@/components/ui/StatCard";
+import { usePatients, useStats } from "@/features/admin/hooks";
+import { AddPatientModal } from "@/features/admin/PatientModals";
+import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
+import { QueryError } from "@/features/admin/QueryError";
+import { t } from "@/i18n";
+
+const RECENT_PATIENT_COUNT = 5;
+
+function Stats() {
+  const stats = useStats();
+
+  if (stats.isPending) {
+    return (
+      <>
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton key={index} className="h-32 rounded-xl" />
+        ))}
+      </>
+    );
+  }
+  if (stats.isError) {
+    return (
+      <Card className="sm:col-span-2 xl:col-span-4">
+        <QueryError onRetry={() => void stats.refetch()} />
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <StatCard
+        label={t("admin.stats.totalPatients")}
+        value={stats.data.total_patients}
+        icon={Users}
+      />
+      <StatCard
+        label={t("admin.stats.activePatients")}
+        value={stats.data.active_patients}
+        icon={Activity}
+      />
+      <StatCard
+        label={t("admin.stats.sessionsToday")}
+        value={stats.data.sessions_today}
+        icon={CalendarCheck}
+      />
+      <StatCard
+        label={t("admin.stats.openAlerts")}
+        value={stats.data.open_alerts}
+        icon={BellRing}
+      />
+    </>
+  );
+}
+
+function RecentPatients() {
+  const patients = usePatients();
+
+  if (patients.isPending) {
+    return (
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: RECENT_PATIENT_COUNT }, (_, index) => (
+          <Skeleton key={index} className="h-11" />
+        ))}
+      </div>
+    );
+  }
+  if (patients.isError) return <QueryError onRetry={() => void patients.refetch()} />;
+  if (patients.data.length === 0) {
+    return <EmptyState title={t("patients.empty")} description={t("patients.emptyDescription")} />;
+  }
+
+  // The API lists the oldest patient first.
+  const recent = patients.data.slice(-RECENT_PATIENT_COUNT).reverse();
+  return (
+    <ul className="divide-y divide-black/10">
+      {recent.map((patient) => (
+        <li key={patient.id}>
+          <Link
+            to={`/admin/patients/${patient.id}`}
+            className="hover:bg-primary-light flex min-h-11 items-center gap-3 rounded-lg px-2 py-2"
+          >
+            <span className="text-primary font-semibold">{patient.patient_code}</span>
+            <span className="min-w-0 flex-1 truncate">{patient.user.full_name}</span>
+            <PatientStatusBadge isActive={patient.user.is_active} />
+            <ChevronRight size={20} aria-hidden className="text-muted shrink-0" />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function AdminOverviewPage() {
-  return <PlaceholderPage titleKey="page.admin.overview.title" />;
+  const [addOpen, setAddOpen] = useState(false);
+
+  return (
+    <>
+      <PageHeader
+        title={t("page.admin.overview.title")}
+        actions={
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus size={20} aria-hidden />
+            {t("admin.addPatient")}
+          </Button>
+        }
+      />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stats />
+      </div>
+      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+        <Card>
+          <h2 className="mb-3 text-xl font-bold">{t("admin.recentPatients")}</h2>
+          <RecentPatients />
+        </Card>
+        <Card>
+          <h2 className="mb-3 text-xl font-bold">{t("admin.alerts")}</h2>
+          <EmptyState icon={BellRing} title={t("admin.alerts.empty")} />
+        </Card>
+      </div>
+      <AddPatientModal open={addOpen} onClose={() => setAddOpen(false)} />
+    </>
+  );
 }

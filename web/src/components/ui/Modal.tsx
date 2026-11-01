@@ -31,7 +31,7 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
         // A click on the dialog element itself, not its content, is on the backdrop.
         if (event.target === dialogRef.current) onClose();
       }}
-      className="bg-surface text-ink m-auto w-full max-w-lg rounded-xl p-0 backdrop:bg-black/50"
+      className="bg-surface text-ink m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-xl p-0 backdrop:bg-black/50"
     >
       <div className="p-6">
         <div className="mb-4 flex items-start justify-between gap-4">

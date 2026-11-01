@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 
 import { Spinner } from "@/components/ui/Spinner";
-import type { Role } from "@/types/user";
+import type { Role } from "@/types/api";
 
 import { useAuth } from "./AuthContext";
 
