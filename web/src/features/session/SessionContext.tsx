@@ -72,7 +72,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         calibration: latestCalibration?.session_id === sessionId ? latestCalibration : null,
         latestCalibration,
         isLoading: session.isPending || latest.isPending,
-        isError: session.isError || latest.isError,
+        // Only a failed first load: a failed background refresh must not wipe a page in progress.
+        isError: session.isLoadingError || latest.isLoadingError,
         retry: () => {
           void session.refetch();
           void latest.refetch();

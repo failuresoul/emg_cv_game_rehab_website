@@ -59,3 +59,13 @@ pytest
 ```
 
 Tests use an in-memory SQLite database and do not read `.env`.
+
+## Smoke test
+
+With the server running in another terminal:
+
+```sh
+python scripts/smoke_test.py
+```
+
+It checks the main API flow step by step, using the admin login from `.env`, and exits with code 1 on any failure. Each run adds one test patient and one session to the database, and deactivates the patient at the end.

@@ -164,6 +164,44 @@ describe("body frame", () => {
   });
 });
 
+describe("affected-side symmetry", () => {
+  const leftFrame = createBodyFrame(LEFT_SHOULDER, RIGHT_SHOULDER, "left", WIDTH);
+  const rightFrame = createBodyFrame(LEFT_SHOULDER, RIGHT_SHOULDER, "right", WIDTH);
+  const directions = [0, 45, 90, 135, 180, 225, 270, 315];
+
+  it.each(directions)("gives mirrored patients the same reach at %i degrees", (degrees) => {
+    const radians = (degrees * Math.PI) / 180;
+    const dx = WIDTH * 1.3 * Math.cos(radians);
+    const dy = WIDTH * 1.3 * Math.sin(radians);
+
+    // The left side's outward is the image's +x, and the right side's is -x. Up is the same.
+    const left = toBodyFrame({ x: LEFT_SHOULDER.x + dx, y: LEFT_SHOULDER.y - dy }, leftFrame);
+    const right = toBodyFrame({ x: RIGHT_SHOULDER.x - dx, y: RIGHT_SHOULDER.y - dy }, rightFrame);
+
+    expect(left.x).toBeCloseTo(right.x);
+    expect(left.y).toBeCloseTo(right.y);
+    expect(projectOnDirection(left, degrees)).toBeCloseTo(1.3);
+    expect(projectOnDirection(right, degrees)).toBeCloseTo(1.3);
+  });
+
+  it("uses the same up for both sides", () => {
+    expect(leftFrame.yAxis).toEqual(rightFrame.yAxis);
+    expect(leftFrame.xAxis.x).toBe(-rightFrame.xAxis.x);
+  });
+
+  it("gives a mirrored reach map the same area", () => {
+    const points = [
+      { x: 1.2, y: 0.1 },
+      { x: 0.2, y: 1.1 },
+      { x: -0.9, y: 0.3 },
+      { x: 0.1, y: -1.4 },
+    ];
+    const mirrored = points.map((point) => ({ x: -point.x, y: point.y }));
+
+    expect(polygonArea(convexHull(mirrored))).toBeCloseTo(polygonArea(convexHull(points)));
+  });
+});
+
 describe("small helpers", () => {
   it("converts normalised landmarks to pixels", () => {
     expect(toPixel({ x: 0.5, y: 0.25 }, 640, 480)).toEqual({ x: 320, y: 120 });

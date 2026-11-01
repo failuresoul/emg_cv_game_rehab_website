@@ -55,7 +55,7 @@ Errors other than 422 have a `detail` string:
 | 409    | Email already in use                                             | `Email already registered`        |
 | 422    | Invalid input                                                    | See below                         |
 
-A 422 response lists each problem. `loc` names the field:
+A 422 response usually lists each problem, and `loc` names the field. The submitted value is never repeated back:
 
 ```json
 {
@@ -470,7 +470,7 @@ Request:
 }
 ```
 
-- `affected_side` must match the patient's profile.
+- `affected_side` must match the patient's profile. If it does not, the 422 `detail` is a plain string.
 - `directions_deg` must be exactly the eight angles shown.
 - `reach_radii_sw`, `reach_points_sw` and `quality.valid` must each have exactly 8 items.
 - Each radius must be between 0.2 and 3.0 SW.

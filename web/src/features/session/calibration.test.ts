@@ -235,6 +235,20 @@ describe("compareArea", () => {
   });
 });
 
+describe("compareArea edge cases", () => {
+  it("counts equal areas as similar", () => {
+    expect(compareArea(2.5, 2.5)).toBe("similar");
+  });
+
+  it("measures the change against the earlier map, not the new one", () => {
+    // +10% of 10 is 11, but 11 to 10 is only -9.1%, so the two directions are not mirror images.
+    expect(compareArea(11, 10)).toBe("similar");
+    expect(compareArea(10, 11)).toBe("similar");
+    expect(compareArea(8.99, 10)).toBe("smaller");
+    expect(compareArea(11.01, 10)).toBe("larger");
+  });
+});
+
 describe("browserName", () => {
   it.each([
     [
