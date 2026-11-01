@@ -27,7 +27,20 @@ export const en = {
 
   "session.exit": "Exit",
 
-  "page.public.home.title": "Welcome to MotionLab",
+  "landing.tagline": "Home rehabilitation for your arm and hand, guided by your webcam",
+  "landing.feature.warmup": "Webcam-guided warm-up",
+  "landing.feature.games": "Rehabilitation games that adapt to you",
+  "landing.feature.progress": "Progress you can see",
+  "landing.privacy": "Your camera video never leaves your computer",
+
+  "login.email": "Email",
+  "login.password": "Password",
+  "login.showPassword": "Show password",
+  "login.hidePassword": "Hide password",
+  "login.submit": "Log in",
+  "login.error.invalid": "Incorrect email or password.",
+  "login.error.generic": "We could not log you in. Please try again.",
+
   "page.public.login.title": "Log in",
   "page.public.notFound.title": "Page not found",
   "page.public.notFound.description": "We could not find the page you asked for.",

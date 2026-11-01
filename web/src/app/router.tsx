@@ -4,6 +4,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { PatientLayout } from "@/components/layout/PatientLayout";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { SessionLayout, type SessionRouteHandle } from "@/components/layout/SessionLayout";
+import { RequireAuth, RequireRole } from "@/features/auth/guards";
 import { AdminGamesPage } from "@/pages/admin/AdminGamesPage";
 import { AdminOverviewPage } from "@/pages/admin/AdminOverviewPage";
 import { AdminPatientDetailPage } from "@/pages/admin/AdminPatientDetailPage";
@@ -40,57 +41,84 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: "/patient",
-    element: <PatientLayout />,
+    element: <RequireAuth />,
     children: [
-      { index: true, element: <PatientHomePage /> },
-      { path: "progress", element: <PatientProgressPage /> },
-      { path: "history", element: <PatientHistoryPage /> },
-      { path: "history/:sessionId", element: <PatientSessionDetailPage /> },
-      { path: "reports", element: <PatientReportsPage /> },
-      { path: "profile", element: <PatientProfilePage /> },
-    ],
-  },
-  {
-    path: "/session",
-    element: <SessionLayout />,
-    children: [
-      { path: "setup", element: <SessionSetupPage />, handle: step("page.session.setup.title") },
       {
-        path: "calibrate",
-        element: <SessionCalibratePage />,
-        handle: step("page.session.calibrate.title"),
+        element: <RequireRole role="patient" />,
+        children: [
+          {
+            path: "/patient",
+            element: <PatientLayout />,
+            children: [
+              { index: true, element: <PatientHomePage /> },
+              { path: "progress", element: <PatientProgressPage /> },
+              { path: "history", element: <PatientHistoryPage /> },
+              { path: "history/:sessionId", element: <PatientSessionDetailPage /> },
+              { path: "reports", element: <PatientReportsPage /> },
+              { path: "profile", element: <PatientProfilePage /> },
+            ],
+          },
+          {
+            path: "/session",
+            element: <SessionLayout />,
+            children: [
+              {
+                path: "setup",
+                element: <SessionSetupPage />,
+                handle: step("page.session.setup.title"),
+              },
+              {
+                path: "calibrate",
+                element: <SessionCalibratePage />,
+                handle: step("page.session.calibrate.title"),
+              },
+              {
+                path: "warmup",
+                element: <SessionWarmupPage />,
+                handle: step("page.session.warmup.title"),
+              },
+              {
+                path: "plan",
+                element: <SessionPlanPage />,
+                handle: step("page.session.plan.title"),
+              },
+              {
+                path: "game/:gameId",
+                element: <SessionGamePage />,
+                handle: step("page.session.game.title"),
+              },
+              {
+                path: "cooldown",
+                element: <SessionCooldownPage />,
+                handle: step("page.session.cooldown.title"),
+              },
+              {
+                path: "summary",
+                element: <SessionSummaryPage />,
+                handle: step("page.session.summary.title"),
+              },
+            ],
+          },
+        ],
       },
-      { path: "warmup", element: <SessionWarmupPage />, handle: step("page.session.warmup.title") },
-      { path: "plan", element: <SessionPlanPage />, handle: step("page.session.plan.title") },
       {
-        path: "game/:gameId",
-        element: <SessionGamePage />,
-        handle: step("page.session.game.title"),
+        element: <RequireRole role="admin" />,
+        children: [
+          {
+            path: "/admin",
+            element: <AdminLayout />,
+            children: [
+              { index: true, element: <AdminOverviewPage /> },
+              { path: "patients", element: <AdminPatientsPage /> },
+              { path: "patients/:id", element: <AdminPatientDetailPage /> },
+              { path: "sessions/:id", element: <AdminSessionDetailPage /> },
+              { path: "games", element: <AdminGamesPage /> },
+              { path: "research", element: <AdminResearchPage /> },
+              { path: "system", element: <AdminSystemPage /> },
+            ],
+          },
+        ],
       },
-      {
-        path: "cooldown",
-        element: <SessionCooldownPage />,
-        handle: step("page.session.cooldown.title"),
-      },
-      {
-        path: "summary",
-        element: <SessionSummaryPage />,
-        handle: step("page.session.summary.title"),
-      },
-    ],
-  },
-  {
-    path: "/admin",
-    element: <AdminLayout />,
-    children: [
-      { index: true, element: <AdminOverviewPage /> },
-      { path: "patients", element: <AdminPatientsPage /> },
-      { path: "patients/:id", element: <AdminPatientDetailPage /> },
-      { path: "sessions/:id", element: <AdminSessionDetailPage /> },
-      { path: "games", element: <AdminGamesPage /> },
-      { path: "research", element: <AdminResearchPage /> },
-      { path: "system", element: <AdminSystemPage /> },
     ],
   },
 ]);

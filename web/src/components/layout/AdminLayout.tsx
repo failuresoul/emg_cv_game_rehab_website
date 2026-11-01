@@ -3,7 +3,6 @@ import {
   FlaskConical,
   Gamepad2,
   LayoutDashboard,
-  LogOut,
   type LucideIcon,
   Menu,
   Settings,
@@ -11,14 +10,13 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router";
+import { NavLink, Outlet } from "react-router";
 
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { clearAuth, getStoredUser } from "@/features/auth/storage";
 import { t, type TranslationKey } from "@/i18n";
 
 import { Logo } from "./Logo";
+import { UserMenu } from "./UserMenu";
 
 const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }[] = [
   { to: "/admin", labelKey: "nav.admin.overview", icon: LayoutDashboard, end: true },
@@ -30,13 +28,6 @@ const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?:
 
 export function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigate = useNavigate();
-  const user = getStoredUser();
-
-  function logout() {
-    clearAuth();
-    void navigate("/login");
-  }
 
   return (
     <div className="flex min-h-dvh">
@@ -99,13 +90,8 @@ export function AdminLayout() {
           >
             <Menu size={24} aria-hidden />
           </Button>
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
-            {user && <span className="font-medium">{user.full_name}</span>}
-            <Badge>{t("role.admin")}</Badge>
-            <Button variant="ghost" onClick={logout}>
-              <LogOut size={20} aria-hidden />
-              {t("nav.logout")}
-            </Button>
+          <div className="ml-auto">
+            <UserMenu />
           </div>
         </header>
         <main className="flex-1 p-4 lg:p-8">

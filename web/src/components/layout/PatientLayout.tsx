@@ -6,6 +6,7 @@ import { buttonClasses } from "@/components/ui/buttonStyles";
 import { t, type TranslationKey } from "@/i18n";
 
 import { Logo } from "./Logo";
+import { UserMenu } from "./UserMenu";
 
 const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }[] = [
   { to: "/patient", labelKey: "nav.patient.home", icon: House, end: true },
@@ -46,6 +47,7 @@ export function PatientLayout() {
             <Play size={22} aria-hidden />
             {t("nav.patient.startSession")}
           </Link>
+          <UserMenu />
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
