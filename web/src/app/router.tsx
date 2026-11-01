@@ -33,6 +33,17 @@ import { SessionWarmupPage } from "@/pages/session/SessionWarmupPage";
 const step = (stepKey: SessionRouteHandle["stepKey"]): SessionRouteHandle => ({ stepKey });
 
 export const router = createBrowserRouter([
+  // Vite replaces DEV with false in a production build, which removes this route and its code.
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: "/dev/exercise-lab",
+          lazy: async () => ({
+            Component: (await import("@/dev/ExerciseLabPage")).ExerciseLabPage,
+          }),
+        },
+      ]
+    : []),
   {
     element: <PublicLayout />,
     children: [
