@@ -1,0 +1,96 @@
+import { createBrowserRouter } from "react-router";
+
+import { AdminLayout } from "@/components/layout/AdminLayout";
+import { PatientLayout } from "@/components/layout/PatientLayout";
+import { PublicLayout } from "@/components/layout/PublicLayout";
+import { SessionLayout, type SessionRouteHandle } from "@/components/layout/SessionLayout";
+import { AdminGamesPage } from "@/pages/admin/AdminGamesPage";
+import { AdminOverviewPage } from "@/pages/admin/AdminOverviewPage";
+import { AdminPatientDetailPage } from "@/pages/admin/AdminPatientDetailPage";
+import { AdminPatientsPage } from "@/pages/admin/AdminPatientsPage";
+import { AdminResearchPage } from "@/pages/admin/AdminResearchPage";
+import { AdminSessionDetailPage } from "@/pages/admin/AdminSessionDetailPage";
+import { AdminSystemPage } from "@/pages/admin/AdminSystemPage";
+import { PatientHistoryPage } from "@/pages/patient/PatientHistoryPage";
+import { PatientHomePage } from "@/pages/patient/PatientHomePage";
+import { PatientProfilePage } from "@/pages/patient/PatientProfilePage";
+import { PatientProgressPage } from "@/pages/patient/PatientProgressPage";
+import { PatientReportsPage } from "@/pages/patient/PatientReportsPage";
+import { PatientSessionDetailPage } from "@/pages/patient/PatientSessionDetailPage";
+import { HomePage } from "@/pages/public/HomePage";
+import { LoginPage } from "@/pages/public/LoginPage";
+import { NotFoundPage } from "@/pages/public/NotFoundPage";
+import { SessionCalibratePage } from "@/pages/session/SessionCalibratePage";
+import { SessionCooldownPage } from "@/pages/session/SessionCooldownPage";
+import { SessionGamePage } from "@/pages/session/SessionGamePage";
+import { SessionPlanPage } from "@/pages/session/SessionPlanPage";
+import { SessionSetupPage } from "@/pages/session/SessionSetupPage";
+import { SessionSummaryPage } from "@/pages/session/SessionSummaryPage";
+import { SessionWarmupPage } from "@/pages/session/SessionWarmupPage";
+
+const step = (stepKey: SessionRouteHandle["stepKey"]): SessionRouteHandle => ({ stepKey });
+
+export const router = createBrowserRouter([
+  {
+    element: <PublicLayout />,
+    children: [
+      { path: "/", element: <HomePage /> },
+      { path: "/login", element: <LoginPage /> },
+      { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+  {
+    path: "/patient",
+    element: <PatientLayout />,
+    children: [
+      { index: true, element: <PatientHomePage /> },
+      { path: "progress", element: <PatientProgressPage /> },
+      { path: "history", element: <PatientHistoryPage /> },
+      { path: "history/:sessionId", element: <PatientSessionDetailPage /> },
+      { path: "reports", element: <PatientReportsPage /> },
+      { path: "profile", element: <PatientProfilePage /> },
+    ],
+  },
+  {
+    path: "/session",
+    element: <SessionLayout />,
+    children: [
+      { path: "setup", element: <SessionSetupPage />, handle: step("page.session.setup.title") },
+      {
+        path: "calibrate",
+        element: <SessionCalibratePage />,
+        handle: step("page.session.calibrate.title"),
+      },
+      { path: "warmup", element: <SessionWarmupPage />, handle: step("page.session.warmup.title") },
+      { path: "plan", element: <SessionPlanPage />, handle: step("page.session.plan.title") },
+      {
+        path: "game/:gameId",
+        element: <SessionGamePage />,
+        handle: step("page.session.game.title"),
+      },
+      {
+        path: "cooldown",
+        element: <SessionCooldownPage />,
+        handle: step("page.session.cooldown.title"),
+      },
+      {
+        path: "summary",
+        element: <SessionSummaryPage />,
+        handle: step("page.session.summary.title"),
+      },
+    ],
+  },
+  {
+    path: "/admin",
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <AdminOverviewPage /> },
+      { path: "patients", element: <AdminPatientsPage /> },
+      { path: "patients/:id", element: <AdminPatientDetailPage /> },
+      { path: "sessions/:id", element: <AdminSessionDetailPage /> },
+      { path: "games", element: <AdminGamesPage /> },
+      { path: "research", element: <AdminResearchPage /> },
+      { path: "system", element: <AdminSystemPage /> },
+    ],
+  },
+]);

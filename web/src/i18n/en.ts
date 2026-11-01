@@ -1,0 +1,58 @@
+export const en = {
+  "app.name": "MotionLab",
+
+  "common.close": "Close",
+  "common.loading": "Loading",
+  "common.comingSoon": "This page is coming soon.",
+
+  "role.admin": "Admin",
+  "role.patient": "Patient",
+
+  "nav.login": "Log in",
+  "nav.logout": "Log out",
+  "nav.openMenu": "Open menu",
+  "nav.closeMenu": "Close menu",
+  "nav.main": "Main navigation",
+  "nav.admin.overview": "Overview",
+  "nav.admin.patients": "Patients",
+  "nav.admin.games": "Games",
+  "nav.admin.research": "Research",
+  "nav.admin.system": "System",
+  "nav.patient.home": "Home",
+  "nav.patient.progress": "Progress",
+  "nav.patient.history": "History",
+  "nav.patient.reports": "Reports",
+  "nav.patient.profile": "Profile",
+  "nav.patient.startSession": "Start session",
+
+  "session.exit": "Exit",
+
+  "page.public.home.title": "Welcome to MotionLab",
+  "page.public.login.title": "Log in",
+  "page.public.notFound.title": "Page not found",
+  "page.public.notFound.description": "We could not find the page you asked for.",
+  "page.public.notFound.action": "Go to the home page",
+
+  "page.patient.home.title": "Home",
+  "page.patient.progress.title": "Progress",
+  "page.patient.history.title": "History",
+  "page.patient.sessionDetail.title": "Session details",
+  "page.patient.reports.title": "Reports",
+  "page.patient.profile.title": "Profile",
+
+  "page.session.setup.title": "Camera check",
+  "page.session.calibrate.title": "Reach calibration",
+  "page.session.warmup.title": "Warm-up",
+  "page.session.plan.title": "Today's plan",
+  "page.session.game.title": "Game",
+  "page.session.cooldown.title": "Cool-down",
+  "page.session.summary.title": "Summary",
+
+  "page.admin.overview.title": "Overview",
+  "page.admin.patients.title": "Patients",
+  "page.admin.patientDetail.title": "Patient details",
+  "page.admin.sessionDetail.title": "Session details",
+  "page.admin.games.title": "Games",
+  "page.admin.research.title": "Research",
+  "page.admin.system.title": "System",
+} as const;

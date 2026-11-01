@@ -6,8 +6,8 @@ MotionLab is a web platform for home-based arm and hand rehabilitation after str
 
 | Folder      | Purpose                                                       | Status  |
 | ----------- | ------------------------------------------------------------- | ------- |
-| `web/`      | React + TypeScript + Vite front end                           | Planned |
-| `server/`   | FastAPI + SQLModel back end; all API routes start with `/api` | Planned |
+| `web/`      | React + TypeScript + Vite front end                           | Started |
+| `server/`   | FastAPI + SQLModel back end; all API routes start with `/api` | Started |
 | `firmware/` | ESP32 firmware for the EMG muscle sensor                      | Started |
 | `analysis/` | Offline data analysis                                         | Started |
 | `docs/`     | Project documentation and daily logs                          | Started |
@@ -19,8 +19,11 @@ MotionLab is a web platform for home-based arm and hand rehabilitation after str
 
 Runs on port 8000.
 
+See [server/README.md](server/README.md) for setup.
+
 ```sh
-# TODO: add server setup and run commands once server/ exists
+cd server
+uvicorn app.main:app --reload --port 8000
 ```
 
 ### Web
@@ -28,5 +31,7 @@ Runs on port 8000.
 Runs on port 5173 and proxies `/api` to the server.
 
 ```sh
-# TODO: add web setup and run commands once web/ exists
+cd web
+npm install
+npm run dev
 ```
