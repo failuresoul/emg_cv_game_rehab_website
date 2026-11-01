@@ -19,6 +19,10 @@ const Y_AXIS_COLOR = "#56CCF2";
 const AXIS_LINE_WIDTH = 4;
 const AXIS_FONT = "bold 22px sans-serif";
 const AXIS_LABEL_OFFSET = 6;
+const ARROW_COLOR = "#F2C94C";
+const ARROW_LENGTH_SW = 1.2;
+const ARROW_LINE_WIDTH = 12;
+const ARROW_HEAD_SIZE = 34;
 
 const POSE_CONNECTIONS: [number, number][] = [
   [POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER],
@@ -128,26 +132,80 @@ function drawBodyFrame(
   drawAxis(context, origin, yEnd, Y_AXIS_COLOR, t("setup.debug.axisY"));
 }
 
+function drawDirectionArrow(
+  context: CanvasRenderingContext2D,
+  frame: BodyFrame,
+  directionDeg: number,
+  frameWidth: number,
+  frameHeight: number,
+) {
+  const radians = (directionDeg * Math.PI) / 180;
+  const end = fromBodyFrame(
+    { x: ARROW_LENGTH_SW * Math.cos(radians), y: ARROW_LENGTH_SW * Math.sin(radians) },
+    frame,
+  );
+  // Going through toX means the arrow is mirrored along with the skeleton.
+  const fromX = toX({ x: frame.origin.x / frameWidth, y: 0 });
+  const fromY = toY({ x: 0, y: frame.origin.y / frameHeight });
+  const tipX = toX({ x: end.x / frameWidth, y: 0 });
+  const tipY = toY({ x: 0, y: end.y / frameHeight });
+  const angle = Math.atan2(tipY - fromY, tipX - fromX);
+
+  context.strokeStyle = ARROW_COLOR;
+  context.fillStyle = ARROW_COLOR;
+  context.lineWidth = ARROW_LINE_WIDTH;
+  context.lineCap = "round";
+  context.beginPath();
+  context.moveTo(fromX, fromY);
+  context.lineTo(tipX, tipY);
+  context.stroke();
+
+  context.beginPath();
+  context.moveTo(
+    tipX + ARROW_HEAD_SIZE * 0.6 * Math.cos(angle),
+    tipY + ARROW_HEAD_SIZE * 0.6 * Math.sin(angle),
+  );
+  for (const side of [-1, 1]) {
+    context.lineTo(
+      tipX - ARROW_HEAD_SIZE * Math.cos(angle + (side * Math.PI) / 4),
+      tipY - ARROW_HEAD_SIZE * Math.sin(angle + (side * Math.PI) / 4),
+    );
+  }
+  context.closePath();
+  context.fill();
+}
+
 interface SkeletonCanvasProps {
   result: VisionResult | null;
   /** Draws one shoulder width of each body-frame axis, for debugging. */
   bodyFrame?: BodyFrame | null;
+  /** Draws a large arrow from the affected shoulder in this body-frame direction. */
+  arrow?: { frame: BodyFrame; directionDeg: number } | null;
 }
 
 /** Draws landmarks only. The camera image is never shown. */
-export function SkeletonCanvas({ result, bodyFrame }: SkeletonCanvasProps) {
+export function SkeletonCanvas({ result, bodyFrame, arrow }: SkeletonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const context = canvasRef.current?.getContext("2d");
     if (!context) return;
     context.clearRect(0, 0, WIDTH, HEIGHT);
+    if (result && arrow) {
+      drawDirectionArrow(
+        context,
+        arrow.frame,
+        arrow.directionDeg,
+        result.frameWidth,
+        result.frameHeight,
+      );
+    }
     if (result?.pose) drawPose(context, result.pose);
     if (result?.hand) drawHand(context, result.hand);
     if (result && bodyFrame) {
       drawBodyFrame(context, bodyFrame, result.frameWidth, result.frameHeight);
     }
-  }, [result, bodyFrame]);
+  }, [result, bodyFrame, arrow]);
 
   return (
     <canvas

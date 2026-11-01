@@ -37,6 +37,7 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/patient/sessions`              | `patient` | List own sessions               |
 | POST   | `/api/sessions`                      | `patient` | Start or resume a session       |
 | GET    | `/api/sessions/current`              | `patient` | Get own active session          |
+| PATCH  | `/api/sessions/{id}/device-info`     | `patient` | Save browser, FPS and GPU/CPU   |
 | POST   | `/api/sessions/{id}/end`             | `patient` | End own session                 |
 | POST   | `/api/sessions/{id}/calibration`     | `patient` | Save a calibration              |
 
@@ -412,6 +413,20 @@ Errors: `422`.
 Response `200`: the active session. Expired sessions are marked `aborted`, as above.
 
 Errors: `404` if there is no active session.
+
+### PATCH /api/sessions/{id}/device-info
+
+Replaces the session's device info. FPS and GPU/CPU are only known once the camera has been running.
+
+Request:
+
+```json
+{ "browser": "Chrome 140", "fps": 30.0, "delegate": "GPU" }
+```
+
+Response `200`: the session.
+
+Errors: `404`, `422`.
 
 ### POST /api/sessions/{id}/end
 

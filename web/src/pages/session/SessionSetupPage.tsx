@@ -1,30 +1,17 @@
-import { Camera, CircleAlert, CircleCheck, CircleX, ShieldCheck } from "lucide-react";
+import { Camera, CircleCheck, CircleX, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Spinner } from "@/components/ui/Spinner";
 import { t, type TranslationKey } from "@/i18n";
 import { evaluateSetupChecks, type SetupChecks } from "@/vision/setupChecks";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
 import type { TrackingState } from "@/vision/tracking";
 import { useTracking } from "@/vision/useTracking";
-import type { VisionErrorCode } from "@/vision/visionEngine";
+import { VisionStatusCard } from "@/vision/VisionStatusCard";
 
 const REQUIRED_GREEN_MS = 2000;
-
-const ERROR_MESSAGES: Record<VisionErrorCode, TranslationKey> = {
-  permissionDenied: "setup.error.permissionDenied",
-  noCamera: "setup.error.noCamera",
-  cameraInUse: "setup.error.cameraInUse",
-  cameraLost: "setup.error.cameraLost",
-  unsupported: "setup.error.unsupported",
-  modelsFailed: "setup.error.modelsFailed",
-  detectionFailed: "setup.error.detectionFailed",
-  unknown: "setup.error.unknown",
-};
 
 const CHECK_LABELS: { key: keyof SetupChecks; labelKey: TranslationKey }[] = [
   { key: "cameraOn", labelKey: "setup.check.cameraOn" },
@@ -120,35 +107,7 @@ function LiveCheck() {
     return () => clearTimeout(timer);
   }, [allGreen]);
 
-  if (status.phase === "error") {
-    return (
-      <Card className="m-auto max-w-xl">
-        <EmptyState
-          icon={CircleAlert}
-          title={t("setup.error.title")}
-          description={t(ERROR_MESSAGES[status.error])}
-          action={
-            <Button size="lg" onClick={retry}>
-              {t("common.retry")}
-            </Button>
-          }
-        />
-      </Card>
-    );
-  }
-
-  if (status.phase !== "running") {
-    return (
-      <Card role="status" className="m-auto flex max-w-xl flex-col items-center gap-4 text-center">
-        <span className="text-primary">
-          <Spinner size={48} />
-        </span>
-        <p className="text-lg font-medium">
-          {t(status.phase === "loading" ? "setup.loadingModels" : "setup.waitingForCamera")}
-        </p>
-      </Card>
-    );
-  }
+  if (status.phase !== "running") return <VisionStatusCard status={status} retry={retry} />;
 
   return (
     <div className="mx-auto grid w-full max-w-6xl flex-1 items-start gap-4 lg:grid-cols-3">
@@ -164,7 +123,7 @@ function LiveCheck() {
       <Card className="flex flex-col gap-4">
         <h1 className="text-xl font-bold">{t("setup.checklist.title")}</h1>
         <Checklist checks={checks} />
-        <Button size="lg" disabled={!passed} onClick={() => void navigate("/session/warmup")}>
+        <Button size="lg" disabled={!passed} onClick={() => void navigate("/session/calibrate")}>
           {t("setup.continue")}
         </Button>
         {!passed && <p className="text-muted">{t("setup.checklist.hint")}</p>}

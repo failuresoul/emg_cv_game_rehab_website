@@ -2,7 +2,14 @@ from fastapi import APIRouter, HTTPException, Response, status
 
 from app.api.deps import CurrentPatient, SessionDep
 from app.models import Session as SessionRecord
-from app.schemas.session import CalibrationCreate, CalibrationRead, SessionEnd, SessionRead, SessionStart
+from app.schemas.session import (
+    CalibrationCreate,
+    CalibrationRead,
+    DeviceInfo,
+    SessionEnd,
+    SessionRead,
+    SessionStart,
+)
 from app.services import sessions
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -44,6 +51,14 @@ def current_session(session: SessionDep, patient: CurrentPatient) -> SessionRead
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active session")
     return SessionRead.model_validate(record)
+
+
+@router.patch("/{session_id}/device-info")
+def update_device_info(
+    session_id: int, payload: DeviceInfo, session: SessionDep, patient: CurrentPatient
+) -> SessionRead:
+    record = _get_own_session_or_404(session, patient, session_id)
+    return SessionRead.model_validate(sessions.update_device_info(session, record, payload))
 
 
 @router.post("/{session_id}/end")

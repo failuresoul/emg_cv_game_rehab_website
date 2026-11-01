@@ -11,6 +11,7 @@ from app.models.user import utc_now
 from app.schemas.common import as_utc
 from app.schemas.session import (
     CalibrationCreate,
+    DeviceInfo,
     LastSession,
     LatestCalibration,
     SessionRead,
@@ -86,6 +87,16 @@ def get_own_session(session: Session, patient_id: int, session_id: int) -> Sessi
     """Another patient's session looks the same as one that does not exist."""
     record = session.get(SessionRecord, session_id)
     return record if record is not None and record.patient_id == patient_id else None
+
+
+def update_device_info(
+    session: Session, record: SessionRecord, device_info: DeviceInfo
+) -> SessionRecord:
+    """FPS and GPU/CPU are only known once the camera has been running."""
+    record.device_info = device_info.model_dump()
+    session.add(record)
+    session.commit()
+    return record
 
 
 def end_session(session: Session, record: SessionRecord, status: str) -> SessionRecord:

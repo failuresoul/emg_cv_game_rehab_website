@@ -5,13 +5,10 @@ import {
   type LucideIcon,
   MessageSquareText,
   Move,
-  Play,
   Sparkles,
   Target,
 } from "lucide-react";
-import { Link } from "react-router";
 
-import { buttonClasses } from "@/components/ui/buttonStyles";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
@@ -19,6 +16,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { ProgressChart } from "@/features/patient/ProgressChart";
 import { usePatientDashboard } from "@/features/patient/usePatientDashboard";
+import { StartSessionButton } from "@/features/session/StartSessionButton";
 import { t, type TranslationKey } from "@/i18n";
 import type { TodayPlanStep } from "@/types/api";
 
@@ -65,10 +63,7 @@ function TodayCard({ plan }: { plan: TodayPlanStep[] }) {
           );
         })}
       </ul>
-      <Link to="/session/setup" className={buttonClasses("primary", "lg", "w-full text-xl")}>
-        <Play size={24} aria-hidden />
-        {t("nav.patient.startSession")}
-      </Link>
+      <StartSessionButton className="w-full text-xl" />
     </Card>
   );
 }

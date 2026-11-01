@@ -186,6 +186,42 @@ def test_end_unknown_session_is_404(client: TestClient, patient_headers: Headers
     assert response.status_code == 404
 
 
+# Device info
+
+
+def test_update_device_info(client: TestClient, patient_headers: Headers) -> None:
+    started = start(client, patient_headers)
+    info = {"browser": "Chrome 140", "fps": 28.5, "delegate": "CPU"}
+
+    response = client.patch(
+        f"/api/sessions/{started['id']}/device-info", json=info, headers=patient_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["device_info"] == info
+
+
+def test_update_device_info_invalid_is_422(client: TestClient, patient_headers: Headers) -> None:
+    started = start(client, patient_headers)
+
+    response = client.patch(
+        f"/api/sessions/{started['id']}/device-info",
+        json={"delegate": "TPU"},
+        headers=patient_headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_device_info_unknown_session_is_404(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    response = client.patch(
+        "/api/sessions/999/device-info", json={"fps": 30}, headers=patient_headers
+    )
+    assert response.status_code == 404
+
+
 # Saving a calibration
 
 
@@ -398,6 +434,18 @@ def test_patient_cannot_end_another_patients_session(
     assert current.json()["status"] == "active"
 
 
+def test_patient_cannot_update_another_patients_device_info(
+    client: TestClient, patient_headers: Headers, other_headers: Headers
+) -> None:
+    started = start(client, patient_headers)
+
+    response = client.patch(
+        f"/api/sessions/{started['id']}/device-info", json={"fps": 1}, headers=other_headers
+    )
+
+    assert response.status_code == 404
+
+
 def test_patient_cannot_calibrate_another_patients_session(
     client: TestClient, patient_headers: Headers, other_headers: Headers
 ) -> None:
@@ -436,6 +484,7 @@ def test_starting_does_not_resume_another_patients_session(
 PATIENT_ROUTES = [
     ("POST", "/api/sessions"),
     ("GET", "/api/sessions/current"),
+    ("PATCH", "/api/sessions/1/device-info"),
     ("POST", "/api/sessions/1/end"),
     ("POST", "/api/sessions/1/calibration"),
     ("GET", "/api/patient/calibration/latest"),

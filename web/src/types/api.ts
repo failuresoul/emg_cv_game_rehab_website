@@ -77,14 +77,56 @@ export interface TodayPlanStep {
   minutes: number;
 }
 
+export type SessionStatus = "active" | "completed" | "aborted";
+export type PointPair = [number, number];
+
+export interface DeviceInfo {
+  browser?: string | null;
+  fps?: number | null;
+  delegate?: "GPU" | "CPU" | null;
+}
+
+export interface SessionRecord {
+  id: number;
+  patient_id: number;
+  started_at: string;
+  ended_at: string | null;
+  status: SessionStatus;
+  device_info: DeviceInfo | null;
+  notes: string | null;
+}
+
+export interface CalibrationQuality {
+  valid: boolean[];
+  retries: number;
+  max_trunk_displacement_sw: number;
+}
+
+export interface CalibrationCreate {
+  affected_side: Side;
+  shoulder_width_px: number;
+  directions_deg: number[];
+  reach_radii_sw: number[];
+  reach_points_sw: PointPair[];
+  hull_sw: PointPair[];
+  hull_area_sw2: number;
+  quality: CalibrationQuality;
+}
+
+export interface Calibration extends CalibrationCreate {
+  id: number;
+  session_id: number;
+  created_at: string;
+}
+
 export interface LastSession {
   date: string;
-  status: "active" | "completed" | "aborted";
+  status: SessionStatus;
   duration_seconds: number | null;
 }
 
 export interface LatestCalibration {
-  hull_sw: [number, number][];
+  hull_sw: PointPair[];
   hull_area_sw2: number;
 }
 

@@ -1,8 +1,8 @@
 import clsx from "clsx";
-import { FileText, History, House, type LucideIcon, Play, TrendingUp, User } from "lucide-react";
-import { Link, NavLink, Outlet, useMatch } from "react-router";
+import { FileText, History, House, type LucideIcon, TrendingUp, User } from "lucide-react";
+import { NavLink, Outlet, useMatch } from "react-router";
 
-import { buttonClasses } from "@/components/ui/buttonStyles";
+import { StartSessionButton } from "@/features/session/StartSessionButton";
 import { t, type TranslationKey } from "@/i18n";
 
 import { Logo } from "./Logo";
@@ -46,12 +46,7 @@ export function PatientLayout() {
               </NavLink>
             ))}
           </nav>
-          {!isHome && (
-            <Link to="/session/setup" className={buttonClasses("primary", "lg")}>
-              <Play size={22} aria-hidden />
-              {t("nav.patient.startSession")}
-            </Link>
-          )}
+          {!isHome && <StartSessionButton />}
           <UserMenu />
         </div>
       </header>
