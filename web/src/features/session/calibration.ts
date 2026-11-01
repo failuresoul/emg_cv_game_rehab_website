@@ -1,7 +1,6 @@
 import type { TranslationKey } from "@/i18n";
 import type { CalibrationCreate, PointPair, Side } from "@/types/api";
-import { convexHull, median, type Point, polygonArea, projectOnDirection } from "@/vision/geometry";
-import type { TrackingState } from "@/vision/tracking";
+import { convexHull, median, type Point, polygonArea } from "@/vision/geometry";
 
 export const DIRECTIONS_DEG = [0, 45, 90, 135, 180, 225, 270, 315] as const;
 export type DirectionDeg = (typeof DIRECTIONS_DEG)[number];
@@ -17,70 +16,10 @@ export const DIRECTION_KEYS: TranslationKey[] = [
   "calibrate.direction.315",
 ];
 
-export const HOLD_WINDOW_MS = 3000;
-const MAX_LOST_MS = 500;
-const MAX_TRUNK_DISPLACEMENT_SW = 0.15;
-const MAX_TRUNK_REPEATS = 2;
 // The server accepts radii in this range.
 const MIN_RADIUS_SW = 0.2;
 const MAX_RADIUS_SW = 3.0;
 const SIMILAR_AREA_RATIO = 0.1;
-
-export interface ReachWindow {
-  directionDeg: number;
-  startedAt: number;
-  lastPoseOkAt: number;
-  /** The largest projection of the raw fingertip seen so far. */
-  bestProjectionSw: number | null;
-  maxTrunkSw: number;
-  shoulderWidthPx: number | null;
-}
-
-export type WindowOutcome = "measuring" | "lost" | "finished";
-
-export function startWindow(directionDeg: number, timestamp: number): ReachWindow {
-  return {
-    directionDeg,
-    startedAt: timestamp,
-    lastPoseOkAt: timestamp,
-    bestProjectionSw: null,
-    maxTrunkSw: 0,
-    shoulderWidthPx: null,
-  };
-}
-
-/** Adds one tracking frame. Uses raw positions only, never the smoothed cursor. */
-export function updateWindow(
-  window: ReachWindow,
-  state: TrackingState,
-): { window: ReachWindow; outcome: WindowOutcome } {
-  const next = { ...window, shoulderWidthPx: state.shoulderWidthPx ?? window.shoulderWidthPx };
-  if (state.poseOk) next.lastPoseOkAt = state.timestamp;
-
-  if (state.poseOk && state.fingertipRawSw) {
-    const projection = projectOnDirection(state.fingertipRawSw, window.directionDeg);
-    next.bestProjectionSw = Math.max(next.bestProjectionSw ?? -Infinity, projection);
-  }
-  if (state.trunkMidpointSw) {
-    const trunk = Math.hypot(state.trunkMidpointSw.x, state.trunkMidpointSw.y);
-    next.maxTrunkSw = Math.max(next.maxTrunkSw, trunk);
-  }
-
-  if (state.handLostMs > MAX_LOST_MS || state.timestamp - next.lastPoseOkAt > MAX_LOST_MS) {
-    return { window: next, outcome: "lost" };
-  }
-  if (state.timestamp - window.startedAt < HOLD_WINDOW_MS) {
-    return { window: next, outcome: "measuring" };
-  }
-  return { window: next, outcome: next.bestProjectionSw === null ? "lost" : "finished" };
-}
-
-export type AttemptDecision = "accept" | "acceptFlagged" | "repeat";
-
-export function decideAttempt(maxTrunkSw: number, trunkRepeatsSoFar: number): AttemptDecision {
-  if (maxTrunkSw <= MAX_TRUNK_DISPLACEMENT_SW) return "accept";
-  return trunkRepeatsSoFar >= MAX_TRUNK_REPEATS ? "acceptFlagged" : "repeat";
-}
 
 export interface DirectionResult {
   /** Null if the direction was skipped without a measurement. */

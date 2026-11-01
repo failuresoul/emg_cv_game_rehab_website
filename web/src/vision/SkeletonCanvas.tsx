@@ -22,10 +22,11 @@ const AXIS_FONT = "bold 22px sans-serif";
 const AXIS_LABEL_OFFSET = 6;
 const HIGHLIGHT_COLOR = "#F2C94C";
 const HIGHLIGHT_LINE_WIDTH = 12;
-const ARROW_COLOR = "#F2C94C";
-const ARROW_LENGTH_SW = 1.2;
-const ARROW_LINE_WIDTH = 12;
-const ARROW_HEAD_SIZE = 34;
+const STAR_COLOR = "#F2C94C";
+const STAR_UNLIT_COLOR = "#9AA7AB";
+const STAR_RADIUS = 18;
+const STAR_LIT_RADIUS = 26;
+const WRIST_RADIUS = 12;
 
 const POSE_CONNECTIONS: [number, number][] = [
   [POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER],
@@ -157,83 +158,102 @@ function drawBodyFrame(
   drawAxis(context, origin, yEnd, Y_AXIS_COLOR, t("setup.debug.axisY"));
 }
 
-function drawDirectionArrow(
+function drawStar(context: CanvasRenderingContext2D, x: number, y: number, radius: number) {
+  context.beginPath();
+  for (let point = 0; point < 10; point++) {
+    const distance = point % 2 === 0 ? radius : radius * 0.45;
+    const angle = (point * Math.PI) / 5 - Math.PI / 2;
+    context.lineTo(x + distance * Math.cos(angle), y + distance * Math.sin(angle));
+  }
+  context.closePath();
+}
+
+function drawStars(
   context: CanvasRenderingContext2D,
-  frame: BodyFrame,
-  directionDeg: number,
+  { frame, points, lit }: StarField,
   frameWidth: number,
   frameHeight: number,
 ) {
-  const radians = (directionDeg * Math.PI) / 180;
-  const end = fromBodyFrame(
-    { x: ARROW_LENGTH_SW * Math.cos(radians), y: ARROW_LENGTH_SW * Math.sin(radians) },
-    frame,
-  );
-  // Going through toX means the arrow is mirrored along with the skeleton.
-  const fromX = toX({ x: frame.origin.x / frameWidth, y: 0 });
-  const fromY = toY({ x: 0, y: frame.origin.y / frameHeight });
-  const tipX = toX({ x: end.x / frameWidth, y: 0 });
-  const tipY = toY({ x: 0, y: end.y / frameHeight });
-  const angle = Math.atan2(tipY - fromY, tipX - fromX);
+  points.forEach((point, index) => {
+    const position = fromBodyFrame(point, frame);
+    const x = toX({ x: position.x / frameWidth, y: 0 });
+    const y = toY({ x: 0, y: position.y / frameHeight });
+    const isLit = lit[index];
+    drawStar(context, x, y, isLit ? STAR_LIT_RADIUS : STAR_RADIUS);
+    if (isLit) {
+      context.fillStyle = STAR_COLOR;
+      context.fill();
+    } else {
+      context.strokeStyle = STAR_UNLIT_COLOR;
+      context.lineWidth = 3;
+      context.stroke();
+    }
+  });
+}
 
-  context.strokeStyle = ARROW_COLOR;
-  context.fillStyle = ARROW_COLOR;
-  context.lineWidth = ARROW_LINE_WIDTH;
-  context.lineCap = "round";
+function drawWrist(
+  context: CanvasRenderingContext2D,
+  wrist: Point,
+  frame: BodyFrame,
+  frameWidth: number,
+  frameHeight: number,
+) {
+  const position = fromBodyFrame(wrist, frame);
+  context.fillStyle = HAND_COLOR;
   context.beginPath();
-  context.moveTo(fromX, fromY);
-  context.lineTo(tipX, tipY);
-  context.stroke();
-
-  context.beginPath();
-  context.moveTo(
-    tipX + ARROW_HEAD_SIZE * 0.6 * Math.cos(angle),
-    tipY + ARROW_HEAD_SIZE * 0.6 * Math.sin(angle),
+  context.arc(
+    toX({ x: position.x / frameWidth, y: 0 }),
+    toY({ x: 0, y: position.y / frameHeight }),
+    WRIST_RADIUS,
+    0,
+    Math.PI * 2,
   );
-  for (const side of [-1, 1]) {
-    context.lineTo(
-      tipX - ARROW_HEAD_SIZE * Math.cos(angle + (side * Math.PI) / 4),
-      tipY - ARROW_HEAD_SIZE * Math.sin(angle + (side * Math.PI) / 4),
-    );
-  }
-  context.closePath();
   context.fill();
+}
+
+export interface StarField {
+  frame: BodyFrame;
+  /** In the body frame. */
+  points: readonly Point[];
+  lit: readonly boolean[];
 }
 
 interface SkeletonCanvasProps {
   result: VisionResult | null;
   /** Draws one shoulder width of each body-frame axis, for debugging. */
   bodyFrame?: BodyFrame | null;
-  /** Draws a large arrow from the affected shoulder in this body-frame direction. */
-  arrow?: { frame: BodyFrame; directionDeg: number } | null;
+  stars?: StarField | null;
+  /** The wrist in the body frame, drawn as a large dot on top of the stars. */
+  wristSw?: Point | null;
   /** Draws this arm boldly, for the arm being exercised. */
   highlightSide?: Side;
 }
 
 /** Draws landmarks only. The camera image is never shown. */
-export function SkeletonCanvas({ result, bodyFrame, arrow, highlightSide }: SkeletonCanvasProps) {
+export function SkeletonCanvas({
+  result,
+  bodyFrame,
+  stars,
+  wristSw,
+  highlightSide,
+}: SkeletonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const context = canvasRef.current?.getContext("2d");
     if (!context) return;
     context.clearRect(0, 0, WIDTH, HEIGHT);
-    if (result && arrow) {
-      drawDirectionArrow(
-        context,
-        arrow.frame,
-        arrow.directionDeg,
-        result.frameWidth,
-        result.frameHeight,
-      );
-    }
+    if (result && stars) drawStars(context, stars, result.frameWidth, result.frameHeight);
     if (result?.pose) drawPose(context, result.pose);
     if (result?.pose && highlightSide) drawArmHighlight(context, result.pose, highlightSide);
     if (result?.hand) drawHand(context, result.hand);
+    if (result && stars && wristSw) {
+      drawWrist(context, wristSw, stars.frame, result.frameWidth, result.frameHeight);
+    }
     if (result && bodyFrame) {
       drawBodyFrame(context, bodyFrame, result.frameWidth, result.frameHeight);
     }
-  }, [result, bodyFrame, arrow, highlightSide]);
+  }, [result, bodyFrame, stars, wristSw, highlightSide]);
 
   return (
     <canvas

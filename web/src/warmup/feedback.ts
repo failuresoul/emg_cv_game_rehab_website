@@ -23,6 +23,13 @@ export function feedbackKey(feedback: ExerciseFeedback, direction: RepDirection)
   }
 }
 
+/** One to three stars, so that any effort earns something. */
+export function starsFor(fullReps: number, targetReps: number): number {
+  if (fullReps <= 0) return 0;
+  if (fullReps >= targetReps) return 3;
+  return fullReps >= targetReps / 2 ? 2 : 1;
+}
+
 /** Shown while the arm has to reach its starting position before a rep can count. */
 export function awaitingRestKey(direction: RepDirection): TranslationKey {
   return direction === "up" ? "warmup.waiting.lower" : "warmup.waiting.straighten";

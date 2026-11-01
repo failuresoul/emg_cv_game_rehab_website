@@ -20,9 +20,8 @@ export function getLocale(): string {
   return LOCALES[currentLanguage];
 }
 
-/** For the voice instructions, which are always read in English. */
-export function tEnglish(key: TranslationKey): string {
-  return en[key];
+export function getLanguage(): Language {
+  return currentLanguage;
 }
 
 export function t(key: TranslationKey, params?: Record<string, string | number>): string {

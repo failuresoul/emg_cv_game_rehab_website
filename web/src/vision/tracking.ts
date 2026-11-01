@@ -11,7 +11,7 @@ import {
   toBodyFrame,
   toPixel,
 } from "./geometry";
-import { HAND, POSE } from "./landmarks";
+import { HAND, isLandmarkVisible, POSE } from "./landmarks";
 import { OneEuroFilter2D } from "./oneEuro";
 
 const HAND_LOST_AFTER_MS = 500;
@@ -27,6 +27,8 @@ export interface TrackingState {
   fingertipRawSw: Point | null;
   /** On-screen cursor only. Holds its last position through gaps of under 500 ms. */
   fingertipSmoothSw: Point | null;
+  /** The affected wrist from the body tracker, needing no hand detection. Raw, for saved data. */
+  wristRawSw: Point | null;
   shoulderWidthPx: number | null;
   /** The last valid frame. Check poseOk to see whether it comes from the current frame. */
   frame: BodyFrame | null;
@@ -98,6 +100,22 @@ export class Tracker {
       trunkMidpointSw = { x: current.x - start.x, y: current.y - start.y };
     }
 
+    // Reaching across can hide the other shoulder, which only sets the unit and outward direction.
+    const isLeft = this.affectedSide === "left";
+    const affectedShoulder = pose?.[isLeft ? POSE.LEFT_SHOULDER : POSE.RIGHT_SHOULDER];
+    if (!poseOk && this.frame && affectedShoulder && isLandmarkVisible(affectedShoulder)) {
+      this.frame = {
+        ...this.frame,
+        origin: toPixel(affectedShoulder, frameWidth, frameHeight),
+      };
+    }
+    const wrist = pose?.[isLeft ? POSE.LEFT_WRIST : POSE.RIGHT_WRIST];
+    const shoulderIsCurrent = poseOk || isLandmarkVisible(affectedShoulder);
+    const wristRawSw =
+      this.frame && shoulderIsCurrent && isLandmarkVisible(wrist) && wrist
+        ? toBodyFrame(toPixel(wrist, frameWidth, frameHeight), this.frame)
+        : null;
+
     const fingertip = hand?.[HAND.INDEX_TIP];
     if (fingertip) this.lastSeenAt = timestamp;
     const handLostMs = timestamp - (this.lastSeenAt ?? this.firstTimestamp);
@@ -121,6 +139,7 @@ export class Tracker {
       handLostMs,
       fingertipRawSw,
       fingertipSmoothSw: this.lastSmooth,
+      wristRawSw,
       shoulderWidthPx: this.shoulderWidth.value(),
       frame: this.frame,
       trunkMidpointSw,

@@ -7,9 +7,9 @@ import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useSession } from "@/features/session/SessionContext";
-import { t, tEnglish, type TranslationKey } from "@/i18n";
+import { getLanguage, t, type TranslationKey } from "@/i18n";
 import { playBeep, playChime, playTick, prepareAudio, setMuted } from "@/lib/beep";
-import { isSpeechAvailable, speak, stopSpeaking } from "@/lib/speech";
+import { canSpeak, onVoicesChanged, speak, stopSpeaking } from "@/lib/speech";
 import type { Side } from "@/types/api";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
 import { type JointAngleState, useJointAngles } from "@/vision/useJointAngles";
@@ -127,7 +127,7 @@ function ExerciseStep({
       } else if (event.type === "repCompleted") {
         setFullReps(runner.fullReps);
         playTick();
-        if (voiceOn) speak(String(runner.fullReps));
+        if (voiceOn) speak(t("warmup.counterCurrent", { current: runner.fullReps }), getLanguage());
       } else if (event.type === "feedback") {
         showFeedback(event.feedback);
       }
@@ -155,7 +155,7 @@ function ExerciseStep({
 
   useEffect(() => {
     if (!voiceOn || stage !== "INTRO" || startAtCountdown) return;
-    speak(exercise.instructionKeys.map((key) => tEnglish(key)).join(" "));
+    speak(exercise.instructionKeys.map((key) => t(key)).join(" "), getLanguage());
   }, [voiceOn, stage, startAtCountdown, exercise]);
 
   function openSkipDialog() {
@@ -315,11 +315,13 @@ function WarmupRun({ affectedSide, onFinished }: { affectedSide: Side; onFinishe
   const [startAtCountdown, setStartAtCountdown] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [muted, setMutedState] = useState(false);
+  const [voiceAvailable, setVoiceAvailable] = useState(() => canSpeak(getLanguage()));
 
   const id = EXERCISE_ORDER[position];
   const preset = presets[id] ?? "standard";
 
   useEffect(() => stopSpeaking, []);
+  useEffect(() => onVoicesChanged(() => setVoiceAvailable(canSpeak(getLanguage()))), []);
   useEffect(() => () => setMuted(false), []);
 
   const handleNext = useCallback(() => {
@@ -343,7 +345,7 @@ function WarmupRun({ affectedSide, onFinished }: { affectedSide: Side; onFinishe
         <p className="mr-auto font-medium">
           {t("warmup.progress", { current: position + 1, total: EXERCISE_ORDER.length })}
         </p>
-        {isSpeechAvailable() && (
+        {voiceAvailable && (
           <Button
             variant="secondary"
             aria-pressed={voiceOn}

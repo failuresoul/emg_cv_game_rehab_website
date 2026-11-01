@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useAuth } from "@/features/auth/AuthContext";
 import { t, type TranslationKey } from "@/i18n";
 import { evaluateSetupChecks, type SetupChecks } from "@/vision/setupChecks";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
@@ -15,9 +16,8 @@ const REQUIRED_GREEN_MS = 2000;
 
 const CHECK_LABELS: { key: keyof SetupChecks; labelKey: TranslationKey }[] = [
   { key: "cameraOn", labelKey: "setup.check.cameraOn" },
-  { key: "handVisible", labelKey: "setup.check.handVisible" },
-  { key: "shouldersVisible", labelKey: "setup.check.shouldersVisible" },
-  { key: "goodDistance", labelKey: "setup.check.goodDistance" },
+  { key: "upperBodyVisible", labelKey: "setup.check.upperBody" },
+  { key: "armVisible", labelKey: "setup.check.arm" },
   { key: "enoughLight", labelKey: "setup.check.enoughLight" },
 ];
 
@@ -65,18 +65,14 @@ function Checklist({ checks }: { checks: SetupChecks }) {
 
 function TrackingInfo({ tracking }: { tracking: TrackingState | null }) {
   const notAvailable = t("setup.debug.notAvailable");
-  const fingertip = tracking?.fingertipRawSw;
+  const wrist = tracking?.wristRawSw;
   const rows: { labelKey: TranslationKey; value: string }[] = [
     {
       labelKey: "setup.debug.shoulderWidth",
       value: tracking?.shoulderWidthPx?.toFixed(1) ?? notAvailable,
     },
-    { labelKey: "setup.debug.fingertipX", value: fingertip?.x.toFixed(2) ?? notAvailable },
-    { labelKey: "setup.debug.fingertipY", value: fingertip?.y.toFixed(2) ?? notAvailable },
-    {
-      labelKey: "setup.debug.handLost",
-      value: tracking ? Math.round(tracking.handLostMs).toString() : notAvailable,
-    },
+    { labelKey: "setup.debug.wristX", value: wrist?.x.toFixed(2) ?? notAvailable },
+    { labelKey: "setup.debug.wristY", value: wrist?.y.toFixed(2) ?? notAvailable },
   ];
 
   return (
@@ -97,7 +93,8 @@ function LiveCheck() {
   const [passed, setPassed] = useState(false);
   const [showTracking, setShowTracking] = useState(false);
 
-  const checks = evaluateSetupChecks(result);
+  const { user } = useAuth();
+  const checks = evaluateSetupChecks(result, user?.patient_profile?.affected_side ?? null);
   const allGreen = Object.values(checks).every(Boolean);
 
   // Once passed it stays passed: reaching for the mouse takes the hand out of view.

@@ -58,6 +58,64 @@ describe("StableShoulderWidth", () => {
   });
 });
 
+describe("Tracker wrist", () => {
+  function poseWithWrist(side: "left" | "right", x: number, y: number, visibility = 1) {
+    const pose = makePose();
+    pose[side === "left" ? POSE.LEFT_WRIST : POSE.RIGHT_WRIST] = landmark(x, y, visibility);
+    return pose;
+  }
+
+  it("measures the affected wrist with no hand detected", () => {
+    // The left shoulder is at x 0.625. One shoulder width is 160 px, or 0.25 of the frame's width.
+    const state = new Tracker("left").process(
+      input(0, { pose: poseWithWrist("left", 0.875, 0.5) }),
+    );
+
+    expect(state.wristRawSw?.x).toBeCloseTo(1);
+    expect(state.wristRawSw?.y).toBeCloseTo(0);
+    expect(state.handPresent).toBe(false);
+  });
+
+  it("gives outward +x on the right side too", () => {
+    const state = new Tracker("right").process(
+      input(0, { pose: poseWithWrist("right", 0.125, 0.5) }),
+    );
+
+    expect(state.wristRawSw?.x).toBeCloseTo(1);
+  });
+
+  it("has no wrist when it is not visible", () => {
+    const state = new Tracker("left").process(
+      input(0, { pose: poseWithWrist("left", 0.875, 0.5, 0.1) }),
+    );
+
+    expect(state.wristRawSw).toBeNull();
+  });
+
+  it("keeps measuring if only the other shoulder is hidden, following the affected one", () => {
+    const tracker = new Tracker("left");
+    tracker.process(input(0, { pose: poseWithWrist("left", 0.875, 0.5) }));
+
+    const pose = poseWithWrist("left", 0.5, 0.5);
+    pose[POSE.RIGHT_SHOULDER] = landmark(0.375, 0.5, 0.1);
+    pose[POSE.LEFT_SHOULDER] = landmark(0.25, 0.5);
+    const state = tracker.process(input(33, { pose }));
+
+    expect(state.poseOk).toBe(false);
+    expect(state.wristRawSw?.x).toBeCloseTo(1);
+  });
+
+  it("has no wrist when the affected shoulder is hidden", () => {
+    const tracker = new Tracker("left");
+    tracker.process(input(0, { pose: poseWithWrist("left", 0.875, 0.5) }));
+
+    const pose = poseWithWrist("left", 0.875, 0.5);
+    pose[POSE.LEFT_SHOULDER] = landmark(0.625, 0.5, 0.1);
+
+    expect(tracker.process(input(33, { pose })).wristRawSw).toBeNull();
+  });
+});
+
 describe("Tracker", () => {
   it("gives the same +x for the same outward reach on both affected sides", () => {
     const left = new Tracker("left").process(input(0, { hand: [...makeHand(0.875, 0.5)] }));

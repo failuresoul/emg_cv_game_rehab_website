@@ -1,33 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { TrackingState } from "@/vision/tracking";
-
 import {
   browserName,
   buildCalibration,
   compareArea,
-  decideAttempt,
   type DirectionResult,
   DIRECTIONS_DEG,
   reachPointsFromRadii,
-  startWindow,
-  updateWindow,
 } from "./calibration";
-
-function frame(timestamp: number, overrides: Partial<TrackingState> = {}): TrackingState {
-  return {
-    timestamp,
-    handPresent: true,
-    handLostMs: 0,
-    fingertipRawSw: { x: 1, y: 0 },
-    fingertipSmoothSw: { x: 0, y: 0 },
-    shoulderWidthPx: 160,
-    frame: null,
-    trunkMidpointSw: { x: 0, y: 0 },
-    poseOk: true,
-    ...overrides,
-  };
-}
 
 function measured(radius: number, overrides: Partial<DirectionResult> = {}): DirectionResult {
   return {
@@ -39,91 +19,6 @@ function measured(radius: number, overrides: Partial<DirectionResult> = {}): Dir
     ...overrides,
   };
 }
-
-describe("updateWindow", () => {
-  it("keeps the largest projection of the raw fingertip, ignoring the smoothed cursor", () => {
-    let window = startWindow(0, 0);
-    for (const [time, x] of [
-      [100, 0.5],
-      [200, 1.4],
-      [300, 0.9],
-    ]) {
-      window = updateWindow(
-        window,
-        frame(time, { fingertipRawSw: { x, y: 0 }, fingertipSmoothSw: { x: 9, y: 9 } }),
-      ).window;
-    }
-
-    expect(window.bestProjectionSw).toBeCloseTo(1.4);
-  });
-
-  it("projects onto the direction being measured", () => {
-    const { window } = updateWindow(
-      startWindow(90, 0),
-      frame(100, { fingertipRawSw: { x: 2, y: 0.7 } }),
-    );
-
-    expect(window.bestProjectionSw).toBeCloseTo(0.7);
-  });
-
-  it("keeps the maximum trunk displacement", () => {
-    let window = startWindow(0, 0);
-    window = updateWindow(window, frame(100, { trunkMidpointSw: { x: 0.3, y: 0.4 } })).window;
-    window = updateWindow(window, frame(200, { trunkMidpointSw: { x: 0, y: 0.1 } })).window;
-
-    expect(window.maxTrunkSw).toBeCloseTo(0.5);
-  });
-
-  it("finishes after three seconds, not before", () => {
-    const window = startWindow(0, 1000);
-
-    expect(updateWindow(window, frame(3999)).outcome).toBe("measuring");
-    expect(updateWindow(window, frame(4000)).outcome).toBe("finished");
-  });
-
-  it("allows a hand gap of 500 ms and reports lost above that", () => {
-    const window = startWindow(0, 0);
-
-    expect(updateWindow(window, frame(100, { handLostMs: 500 })).outcome).toBe("measuring");
-    expect(updateWindow(window, frame(100, { handLostMs: 501 })).outcome).toBe("lost");
-  });
-
-  it("reports lost when the shoulders are missing for over 500 ms", () => {
-    const window = startWindow(0, 0);
-    const noPose = { poseOk: false, trunkMidpointSw: null };
-
-    expect(updateWindow(window, frame(500, noPose)).outcome).toBe("measuring");
-    expect(updateWindow(window, frame(501, noPose)).outcome).toBe("lost");
-  });
-
-  it("does not measure the fingertip against an out-of-date body frame", () => {
-    const { window } = updateWindow(startWindow(0, 0), frame(100, { poseOk: false }));
-
-    expect(window.bestProjectionSw).toBeNull();
-  });
-
-  it("reports lost if a full window produced no measurement", () => {
-    const { outcome } = updateWindow(startWindow(0, 0), frame(3000, { fingertipRawSw: null }));
-
-    expect(outcome).toBe("lost");
-  });
-});
-
-describe("decideAttempt", () => {
-  it("accepts up to 0.15 SW of trunk movement", () => {
-    expect(decideAttempt(0.15, 0)).toBe("accept");
-  });
-
-  it("repeats twice, then accepts and flags", () => {
-    expect(decideAttempt(0.16, 0)).toBe("repeat");
-    expect(decideAttempt(0.16, 1)).toBe("repeat");
-    expect(decideAttempt(0.16, 2)).toBe("acceptFlagged");
-  });
-
-  it("does not flag a good attempt after earlier repeats", () => {
-    expect(decideAttempt(0.1, 2)).toBe("accept");
-  });
-});
 
 describe("buildCalibration", () => {
   const eight = (result: DirectionResult) => Array.from({ length: 8 }, () => result);

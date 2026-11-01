@@ -1,8 +1,11 @@
+import { Star } from "lucide-react";
+
 import { t } from "@/i18n";
 import { formatNumber } from "@/lib/format";
 
 import type { ExerciseResult } from "./exerciseRunner";
 import { EXERCISES } from "./exercises";
+import { starsFor } from "./feedback";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -15,10 +18,27 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export function ExerciseSummary({ result }: { result: ExerciseResult }) {
   const none = t("common.notSet");
+  const stars = starsFor(result.fullReps, EXERCISES[result.exerciseId].targetReps);
 
   return (
     <div className="flex flex-col gap-2">
       <h2 className="text-lg font-bold">{t(EXERCISES[result.exerciseId].nameKey)}</h2>
+      {!result.skipped && (
+        <div
+          role="img"
+          aria-label={t("warmup.summary.stars", { count: stars })}
+          className="flex gap-1"
+        >
+          {[1, 2, 3].map((position) => (
+            <Star
+              key={position}
+              size={28}
+              aria-hidden
+              className={position <= stars ? "fill-accent text-accent" : "text-muted/40"}
+            />
+          ))}
+        </div>
+      )}
       {result.skipped ? (
         <p className="text-muted">{t("warmup.summary.skipped")}</p>
       ) : (

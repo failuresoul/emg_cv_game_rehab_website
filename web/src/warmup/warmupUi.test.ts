@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { poseAt, gaugeArc, gaugePoint } from "./demo";
 import { EXERCISES } from "./exercises";
-import { awaitingRestKey, feedbackKey } from "./feedback";
+import { awaitingRestKey, feedbackKey, starsFor } from "./feedback";
 
 const FRAMES = EXERCISES.shoulder_flexion.demoKeyframes;
 
@@ -51,6 +51,17 @@ describe("gauge geometry", () => {
     expect(gaugeArc(30, 90, 100, 100, 50)).toBe(
       `M ${start.x} ${start.y} A 50 50 0 0 1 ${end.x} ${end.y}`,
     );
+  });
+});
+
+describe("starsFor", () => {
+  it("gives stars for any effort", () => {
+    expect(starsFor(0, 10)).toBe(0);
+    expect(starsFor(1, 10)).toBe(1);
+    expect(starsFor(4, 10)).toBe(1);
+    expect(starsFor(5, 10)).toBe(2);
+    expect(starsFor(9, 10)).toBe(2);
+    expect(starsFor(10, 10)).toBe(3);
   });
 });
 

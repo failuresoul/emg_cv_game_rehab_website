@@ -2,6 +2,9 @@ const BEEP_SECONDS = 0.15;
 const BEEP_VOLUME = 0.05;
 const BEEP_HZ = 520;
 
+const STAR_BASE_HZ = 440;
+const STAR_STEP_HZ = 50;
+const STAR_SECONDS = 0.18;
 const TICK_HZ = 880;
 const TICK_SECONDS = 0.06;
 const CHIME_NOTES_HZ = [523, 659, 784];
@@ -46,6 +49,11 @@ export function prepareAudio(): void {
 /** A soft beep. If sound is unavailable it does nothing, because the countdown is also on screen. */
 export function playBeep(): void {
   playTone(BEEP_HZ, BEEP_SECONDS);
+}
+
+/** A note that climbs with each star lit. */
+export function playStar(starNumber: number): void {
+  playTone(STAR_BASE_HZ + starNumber * STAR_STEP_HZ, STAR_SECONDS);
 }
 
 /** A short tick for each rep. */
