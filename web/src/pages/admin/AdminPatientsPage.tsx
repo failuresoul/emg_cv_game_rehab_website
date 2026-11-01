@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { usePatients } from "@/features/admin/hooks";
 import { AddPatientModal } from "@/features/admin/PatientModals";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
-import { QueryError } from "@/features/admin/QueryError";
+import { QueryError } from "@/components/ui/QueryError";
 import { t, type TranslationKey } from "@/i18n";
 import { formatRelativeTime } from "@/lib/format";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";

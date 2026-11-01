@@ -11,7 +11,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { usePatients, useStats } from "@/features/admin/hooks";
 import { AddPatientModal } from "@/features/admin/PatientModals";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
-import { QueryError } from "@/features/admin/QueryError";
+import { QueryError } from "@/components/ui/QueryError";
 import { t } from "@/i18n";
 
 const RECENT_PATIENT_COUNT = 5;

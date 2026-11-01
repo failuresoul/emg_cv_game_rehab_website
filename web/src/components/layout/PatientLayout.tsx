@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { FileText, History, House, type LucideIcon, Play, TrendingUp, User } from "lucide-react";
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useMatch } from "react-router";
 
 import { buttonClasses } from "@/components/ui/buttonStyles";
 import { t, type TranslationKey } from "@/i18n";
@@ -17,6 +17,9 @@ const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?:
 ];
 
 export function PatientLayout() {
+  // The home page has its own Start session button: one main action per screen.
+  const isHome = useMatch("/patient") !== null;
+
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="bg-surface border-b border-black/10">
@@ -43,10 +46,12 @@ export function PatientLayout() {
               </NavLink>
             ))}
           </nav>
-          <Link to="/session/setup" className={buttonClasses("primary", "lg")}>
-            <Play size={22} aria-hidden />
-            {t("nav.patient.startSession")}
-          </Link>
+          {!isHome && (
+            <Link to="/session/setup" className={buttonClasses("primary", "lg")}>
+              <Play size={22} aria-hidden />
+              {t("nav.patient.startSession")}
+            </Link>
+          )}
           <UserMenu />
         </div>
       </header>

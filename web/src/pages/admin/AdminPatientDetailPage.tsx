@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { usePatient, useSetPatientActive } from "@/features/admin/hooks";
 import { EditPatientModal } from "@/features/admin/PatientModals";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
-import { QueryError } from "@/features/admin/QueryError";
+import { QueryError } from "@/components/ui/QueryError";
 import { t, type TranslationKey } from "@/i18n";
 import { formatDate, formatRelativeTime } from "@/lib/format";
 import type { Patient } from "@/types/api";
