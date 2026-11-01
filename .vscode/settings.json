@@ -11,5 +11,6 @@
   },
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "python.terminal.useEnvFile": true
 }

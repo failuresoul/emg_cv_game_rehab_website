@@ -1,0 +1,11 @@
+fastapi~=0.162.0
+uvicorn[standard]~=0.54.0
+sqlmodel~=0.0.48
+pydantic-settings~=2.16.2
+python-multipart~=0.0.33
+PyJWT~=2.15.1
+pwdlib[argon2]~=0.3.1
+email-validator~=2.3.0
+psycopg[binary]~=3.3.6
+pytest~=9.2.0
+httpx~=0.28.1
