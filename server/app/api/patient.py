@@ -1,11 +1,9 @@
-from typing import Annotated
+from fastapi import APIRouter, HTTPException, status
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import select
-
-from app.api.deps import SessionDep, require_patient
-from app.models import PatientProfile, User
+from app.api.deps import CurrentPatient, SessionDep
 from app.schemas.patient import PatientDashboard, PatientProfileRead, TodayPlanStep
+from app.schemas.session import CalibrationRead, SessionSummary
+from app.services import sessions
 
 router = APIRouter(prefix="/patient", tags=["patient"])
 
@@ -19,13 +17,26 @@ TODAY_PLAN = [
 
 
 @router.get("/dashboard")
-def dashboard(
-    user: Annotated[User, Depends(require_patient)], session: SessionDep
-) -> PatientDashboard:
-    profile = session.exec(select(PatientProfile).where(PatientProfile.user_id == user.id)).first()
-    if profile is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+def dashboard(patient: CurrentPatient, session: SessionDep) -> PatientDashboard:
+    assert patient.id is not None
     return PatientDashboard(
-        profile=PatientProfileRead.model_validate(profile),
+        profile=PatientProfileRead.model_validate(patient),
         today_plan=TODAY_PLAN,
+        last_session=sessions.get_last_session(session, patient.id),
+        latest_calibration=sessions.get_latest_calibration_summary(session, patient.id),
     )
+
+
+@router.get("/calibration/latest")
+def latest_calibration(patient: CurrentPatient, session: SessionDep) -> CalibrationRead:
+    assert patient.id is not None
+    calibration = sessions.get_latest_calibration(session, patient.id)
+    if calibration is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No calibration yet")
+    return CalibrationRead.model_validate(calibration)
+
+
+@router.get("/sessions")
+def list_sessions(patient: CurrentPatient, session: SessionDep) -> list[SessionSummary]:
+    assert patient.id is not None
+    return sessions.list_sessions(session, patient.id)

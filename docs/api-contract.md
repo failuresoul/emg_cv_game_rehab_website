@@ -30,7 +30,15 @@ This document lists every API route the server provides today, plus the routes r
 | POST   | `/api/admin/patients/{id}/deactivate` | `admin`  | Block a patient from logging in |
 | POST   | `/api/admin/patients/{id}/activate`  | `admin`   | Allow a patient to log in again |
 | GET    | `/api/admin/stats`                   | `admin`   | Get dashboard counts            |
+| GET    | `/api/admin/patients/{id}/sessions`  | `admin`   | List a patient's sessions       |
+| GET    | `/api/admin/patients/{id}/calibrations` | `admin` | List a patient's calibrations  |
 | GET    | `/api/patient/dashboard`             | `patient` | Get the patient's home page data |
+| GET    | `/api/patient/calibration/latest`    | `patient` | Get own latest calibration      |
+| GET    | `/api/patient/sessions`              | `patient` | List own sessions               |
+| POST   | `/api/sessions`                      | `patient` | Start or resume a session       |
+| GET    | `/api/sessions/current`              | `patient` | Get own active session          |
+| POST   | `/api/sessions/{id}/end`             | `patient` | End own session                 |
+| POST   | `/api/sessions/{id}/calibration`     | `patient` | Save a calibration              |
 
 ## Errors
 
@@ -53,9 +61,7 @@ A 422 response lists each problem. `loc` names the field:
     {
       "type": "string_too_short",
       "loc": ["body", "password"],
-      "msg": "String should have at least 8 characters",
-      "input": "short",
-      "ctx": { "min_length": 8 }
+      "msg": "String should have at least 8 characters"
     }
   ]
 }
@@ -279,7 +285,32 @@ Response `200`:
 }
 ```
 
-`sessions_today` and `open_alerts` are always `0` for now.
+`sessions_today` counts sessions started since midnight UTC. `open_alerts` is always `0` for now.
+
+### GET /api/admin/patients/{id}/sessions
+
+Response `200`: an array of session summaries, newest first. See `GET /api/patient/sessions` for the shape.
+
+Errors: `404`.
+
+### GET /api/admin/patients/{id}/calibrations
+
+Response `200`, newest first:
+
+```json
+[
+  {
+    "id": 1,
+    "session_id": 1,
+    "created_at": "2026-11-02T09:03:00Z",
+    "reach_radii_sw": [1.0, 1.1, 1.2, 1.3, 1.4, 1.3, 1.2, 1.1],
+    "hull_sw": [[1.0, 0.0], [0.0, 1.2], [-1.4, 0.0], [0.0, -1.2]],
+    "hull_area_sw2": 2.88
+  }
+]
+```
+
+Errors: `404`.
 
 ## Patient
 
@@ -310,12 +341,123 @@ Response `200`:
     { "step": "games", "minutes": 15 },
     { "step": "feedback", "minutes": 2 }
   ],
-  "last_session": null,
+  "last_session": {
+    "date": "2026-11-02T09:00:00Z",
+    "status": "completed",
+    "duration_seconds": 1560.0
+  },
+  "latest_calibration": {
+    "hull_sw": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+    "hull_area_sw2": 0.5
+  },
   "streak_days": 0
 }
 ```
 
-`today_plan` is a fixed list for now. `last_session` is always `null` and `streak_days` is always `0` until sessions are recorded.
+`last_session` and `latest_calibration` are `null` until they exist. `duration_seconds` is `null` for a session with no `ended_at`. `today_plan` is a fixed list and `streak_days` is always `0` for now.
+
+### GET /api/patient/calibration/latest
+
+Response `200`: the calibration object below.
+
+Errors: `404` if the patient has no calibration yet.
+
+### GET /api/patient/sessions
+
+Response `200`: an array of session summaries, newest first. The admin session list returns the same shape.
+
+```json
+[
+  {
+    "id": 1,
+    "patient_id": 1,
+    "started_at": "2026-11-02T09:00:00Z",
+    "ended_at": "2026-11-02T09:26:00Z",
+    "status": "completed",
+    "device_info": { "browser": "Chrome", "fps": 30.0, "delegate": "GPU" },
+    "notes": null,
+    "duration_seconds": 1560.0,
+    "hull_area_sw2": 0.5
+  }
+]
+```
+
+## Sessions
+
+These routes are for patients and act only on the patient's own sessions. They return `401` without a valid token and `403` for an admin. Another patient's session returns `404`, the same as one that does not exist.
+
+`status` is one of `active`, `completed` or `aborted`.
+
+### POST /api/sessions
+
+The body is optional:
+
+```json
+{
+  "device_info": { "browser": "Chrome", "fps": 30.0, "delegate": "GPU" },
+  "notes": null
+}
+```
+
+- If the patient has an active session started less than 2 hours ago, it is returned with status `200`, and the body is ignored.
+- Otherwise a new session is created and returned with status `201`.
+- Active sessions 2 hours old or more are marked `aborted`, and their `ended_at` stays `null` because the real end time is unknown.
+
+The response has the same fields as a session summary, without `duration_seconds` and `hull_area_sw2`.
+
+Errors: `422`.
+
+### GET /api/sessions/current
+
+Response `200`: the active session. Expired sessions are marked `aborted`, as above.
+
+Errors: `404` if there is no active session.
+
+### POST /api/sessions/{id}/end
+
+Request:
+
+```json
+{ "status": "completed" }
+```
+
+`status` must be `completed` or `aborted`. Response `200`: the session, with `ended_at` set.
+
+Errors: `404`, `409` if the session has already ended, `422`.
+
+### POST /api/sessions/{id}/calibration
+
+Positions use the body frame: the origin is the affected shoulder, the unit is shoulder width (SW), +x points away from the body midline on the affected side, and +y points up.
+
+Request:
+
+```json
+{
+  "affected_side": "left",
+  "shoulder_width_px": 180.5,
+  "directions_deg": [0, 45, 90, 135, 180, 225, 270, 315],
+  "reach_radii_sw": [1.0, 1.1, 1.2, 1.3, 1.4, 1.3, 1.2, 1.1],
+  "reach_points_sw": [[1.0, 0.0], [0.78, 0.78], [0.0, 1.2], [-0.92, 0.92], [-1.4, 0.0], [-0.92, -0.92], [0.0, -1.2], [0.78, -0.78]],
+  "hull_sw": [[1.0, 0.0], [0.0, 1.2], [-1.4, 0.0], [0.0, -1.2]],
+  "hull_area_sw2": 2.88,
+  "quality": {
+    "valid": [true, true, true, true, true, true, true, true],
+    "retries": 1,
+    "max_trunk_displacement_sw": 0.05
+  }
+}
+```
+
+- `affected_side` must match the patient's profile.
+- `directions_deg` must be exactly the eight angles shown.
+- `reach_radii_sw`, `reach_points_sw` and `quality.valid` must each have exactly 8 items.
+- Each radius must be between 0.2 and 3.0 SW.
+- `hull_sw` must have at least 3 points.
+- `shoulder_width_px` and `hull_area_sw2` must be greater than 0.
+
+Response `201`: the same fields, plus `id`, `session_id` and `created_at`.
+
+Errors: `404`, `409` if the session already has a calibration or has ended, `422`.
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

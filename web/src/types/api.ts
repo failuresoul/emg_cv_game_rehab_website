@@ -77,9 +77,21 @@ export interface TodayPlanStep {
   minutes: number;
 }
 
+export interface LastSession {
+  date: string;
+  status: "active" | "completed" | "aborted";
+  duration_seconds: number | null;
+}
+
+export interface LatestCalibration {
+  hull_sw: [number, number][];
+  hull_area_sw2: number;
+}
+
 export interface PatientDashboard {
   profile: PatientProfile;
   today_plan: TodayPlanStep[];
-  last_session: null;
+  last_session: LastSession | null;
+  latest_calibration: LatestCalibration | null;
   streak_days: number;
 }

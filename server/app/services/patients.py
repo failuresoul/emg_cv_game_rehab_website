@@ -12,6 +12,7 @@ from app.schemas.patient import (
     PatientUpdate,
     PatientUserRead,
 )
+from app.services.sessions import count_sessions_today
 from app.services.users import get_user_by_email
 
 _MAX_CODE_ATTEMPTS = 5
@@ -142,4 +143,8 @@ def get_stats(session: Session) -> AdminStats:
         .select_from(User)
         .where(User.role == "patient", col(User.is_active).is_(True))
     ).one()
-    return AdminStats(total_patients=total, active_patients=active)
+    return AdminStats(
+        total_patients=total,
+        active_patients=active,
+        sessions_today=count_sessions_today(session),
+    )

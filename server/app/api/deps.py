@@ -2,11 +2,11 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.db import get_session
 from app.core.security import decode_user_id
-from app.models import User
+from app.models import PatientProfile, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -38,3 +38,15 @@ def require_patient(user: CurrentUser) -> User:
     if user.role != "patient":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patient access required")
     return user
+
+
+def get_current_patient(
+    user: Annotated[User, Depends(require_patient)], session: SessionDep
+) -> PatientProfile:
+    profile = session.exec(select(PatientProfile).where(PatientProfile.user_id == user.id)).first()
+    if profile is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+    return profile
+
+
+CurrentPatient = Annotated[PatientProfile, Depends(get_current_patient)]

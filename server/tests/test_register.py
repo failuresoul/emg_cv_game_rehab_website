@@ -49,6 +49,16 @@ def test_register_duplicate_email_is_409(client: TestClient) -> None:
     assert client.post("/api/auth/register", json=payload).status_code == 409
 
 
+def test_validation_error_does_not_echo_the_password(client: TestClient) -> None:
+    payload = {**VALID_PAYLOAD, "password": "secret7"}
+
+    response = client.post("/api/auth/register", json=payload)
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "password"]
+    assert "secret7" not in response.text
+
+
 @pytest.mark.parametrize(
     "change",
     [

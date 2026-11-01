@@ -1,0 +1,120 @@
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.schemas.common import Side, UtcDatetime
+
+SessionStatus = Literal["active", "completed", "aborted"]
+Point = tuple[float, float]
+ReachRadius = Annotated[float, Field(ge=0.2, le=3.0)]
+
+DIRECTIONS_DEG = [0, 45, 90, 135, 180, 225, 270, 315]
+DIRECTION_COUNT = len(DIRECTIONS_DEG)
+
+
+class DeviceInfo(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    browser: str | None = None
+    fps: float | None = None
+    delegate: Literal["GPU", "CPU"] | None = None
+
+
+class SessionStart(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    device_info: DeviceInfo | None = None
+    notes: str | None = None
+
+
+class SessionEnd(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["completed", "aborted"]
+
+
+class SessionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    patient_id: int
+    started_at: UtcDatetime
+    ended_at: UtcDatetime | None
+    status: SessionStatus
+    device_info: DeviceInfo | None
+    notes: str | None
+
+
+class SessionSummary(SessionRead):
+    duration_seconds: float | None
+    hull_area_sw2: float | None
+
+
+class LastSession(BaseModel):
+    date: UtcDatetime
+    status: SessionStatus
+    duration_seconds: float | None
+
+
+class CalibrationQuality(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    valid: list[bool] = Field(min_length=DIRECTION_COUNT, max_length=DIRECTION_COUNT)
+    retries: int = Field(ge=0)
+    max_trunk_displacement_sw: float = Field(ge=0)
+
+
+class CalibrationCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    affected_side: Side
+    shoulder_width_px: float = Field(gt=0)
+    directions_deg: list[float]
+    reach_radii_sw: list[ReachRadius] = Field(
+        min_length=DIRECTION_COUNT, max_length=DIRECTION_COUNT
+    )
+    reach_points_sw: list[Point] = Field(min_length=DIRECTION_COUNT, max_length=DIRECTION_COUNT)
+    hull_sw: list[Point] = Field(min_length=3)
+    hull_area_sw2: float = Field(gt=0)
+    quality: CalibrationQuality
+
+    @field_validator("directions_deg")
+    @classmethod
+    def directions_must_be_the_eight_standard_angles(cls, value: list[float]) -> list[float]:
+        if value != DIRECTIONS_DEG:
+            raise ValueError(f"directions_deg must be {DIRECTIONS_DEG}")
+        return value
+
+
+class CalibrationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    session_id: int
+    affected_side: Side
+    shoulder_width_px: float
+    directions_deg: list[float]
+    reach_radii_sw: list[float]
+    reach_points_sw: list[Point]
+    hull_sw: list[Point]
+    hull_area_sw2: float
+    quality: CalibrationQuality
+    created_at: UtcDatetime
+
+
+class AdminCalibrationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    session_id: int
+    created_at: UtcDatetime
+    reach_radii_sw: list[float]
+    hull_sw: list[Point]
+    hull_area_sw2: float
+
+
+class LatestCalibration(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    hull_sw: list[Point]
+    hull_area_sw2: float

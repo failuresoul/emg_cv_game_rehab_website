@@ -16,9 +16,9 @@ FullName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1,
 MonthsSinceStroke = Annotated[int, Field(ge=0)]
 
 
-def _as_utc(value: datetime) -> datetime:
+def as_utc(value: datetime) -> datetime:
     # SQLite drops the timezone; every stored datetime is UTC.
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
-UtcDatetime = Annotated[datetime, AfterValidator(_as_utc)]
+UtcDatetime = Annotated[datetime, AfterValidator(as_utc)]
