@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local data
+data/*
+!data/.gitkeep
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
