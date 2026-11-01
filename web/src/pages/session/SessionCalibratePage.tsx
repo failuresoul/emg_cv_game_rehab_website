@@ -47,10 +47,12 @@ function StarRow({ lit }: { lit: readonly boolean[] }) {
 }
 
 function StarGame({
+  affectedSide,
   voiceOn,
   deviceRef,
   onFinished,
 }: {
+  affectedSide: Side;
   voiceOn: boolean;
   deviceRef: { current: DeviceInfo };
   onFinished: (results: DirectionResult[], litCount: number) => void;
@@ -63,6 +65,11 @@ function StarGame({
   const [secondsLeft, setSecondsLeft] = useState(SWEEP_MS / 1000);
   const [armLost, setArmLost] = useState(false);
   const isRunning = status.phase === "running";
+  const instruction = t(
+    affectedSide === "left"
+      ? "calibrate.game.instruction.left"
+      : "calibrate.game.instruction.right",
+  );
 
   useEffect(
     () =>
@@ -88,8 +95,8 @@ function StarGame({
 
   useEffect(() => {
     if (!isRunning || !voiceOn) return;
-    speak(t("calibrate.game.instruction"), getLanguage());
-  }, [isRunning, voiceOn]);
+    speak(instruction, getLanguage());
+  }, [isRunning, voiceOn, instruction]);
 
   useEffect(() => {
     if (!playing) return;
@@ -139,7 +146,7 @@ function StarGame({
         )}
       </div>
       <Card className="flex flex-col items-center gap-4 text-center">
-        <h1 className="text-2xl font-bold">{t("calibrate.game.instruction")}</h1>
+        <h1 className="text-2xl font-bold">{instruction}</h1>
         <div aria-live="polite" className="flex min-h-28 flex-col items-center justify-center">
           {playing ? (
             <>
@@ -297,7 +304,9 @@ export function SessionCalibratePage() {
       <Card className="m-auto flex max-w-xl flex-col items-center gap-4 text-center">
         <Star size={56} aria-hidden className="fill-accent text-accent" />
         <h1 className="text-2xl font-bold">{t("calibrate.intro.title")}</h1>
-        <p>{t("calibrate.intro.body")}</p>
+        <p>
+          {t(affectedSide === "left" ? "calibrate.intro.body.left" : "calibrate.intro.body.right")}
+        </p>
         {voiceAvailable && (
           <Button variant="secondary" aria-pressed={voiceOn} onClick={() => setVoiceOn(!voiceOn)}>
             {t(voiceOn ? "warmup.voiceOn" : "warmup.voiceOff")}
@@ -318,7 +327,13 @@ export function SessionCalibratePage() {
 
   if (phase.name === "playing") {
     return (
-      <StarGame key={attempt} voiceOn={voiceOn} deviceRef={deviceRef} onFinished={handleFinished} />
+      <StarGame
+        key={attempt}
+        affectedSide={affectedSide}
+        voiceOn={voiceOn}
+        deviceRef={deviceRef}
+        onFinished={handleFinished}
+      />
     );
   }
 

@@ -204,9 +204,12 @@ export const bn: Record<TranslationKey, string> = {
   "warmup.complete.continue": "এগিয়ে যান",
 
   "calibrate.intro.title": "তারাগুলো জ্বালিয়ে দিন",
-  "calibrate.intro.body":
-    "ধীরে ধীরে, আরামে আপনার হাত চারপাশে ঘোরান। যে তারার কাছে পৌঁছাবেন সেটিই জ্বলে উঠবে!",
-  "calibrate.game.instruction": "হাত ঘুরিয়ে তারাগুলো জ্বালিয়ে দিন",
+  "calibrate.intro.body.left":
+    "ধীরে ধীরে, আরামে আপনার বাম হাত চারপাশে ঘোরান। যে তারার কাছে পৌঁছাবেন সেটিই জ্বলে উঠবে!",
+  "calibrate.intro.body.right":
+    "ধীরে ধীরে, আরামে আপনার ডান হাত চারপাশে ঘোরান। যে তারার কাছে পৌঁছাবেন সেটিই জ্বলে উঠবে!",
+  "calibrate.game.instruction.left": "বাম হাত ঘুরিয়ে তারাগুলো জ্বালিয়ে দিন",
+  "calibrate.game.instruction.right": "ডান হাত ঘুরিয়ে তারাগুলো জ্বালিয়ে দিন",
   "calibrate.game.stars": "{count} / {total}",
   "calibrate.game.secondsLeft": "আর {seconds} সেকেন্ড",
   "calibrate.result.stars": "আপনি {total}টির মধ্যে {count}টি তারা জ্বালিয়েছেন!",
@@ -214,6 +217,10 @@ export const bn: Record<TranslationKey, string> = {
   "calibrate.result.tryAgain": "আবার চেষ্টা করুন",
   "setup.check.upperBody": "কাঁধ দেখা যাচ্ছে",
   "setup.check.arm": "হাত দেখা যাচ্ছে",
+  "setup.check.arm.left": "বাম হাত দেখা যাচ্ছে",
+  "setup.check.arm.right": "ডান হাত দেখা যাচ্ছে",
+  "setup.armHint.left": "আপনার বাম হাত তুলুন, যাতে ক্যামেরা কবজি দেখতে পায়।",
+  "setup.armHint.right": "আপনার ডান হাত তুলুন, যাতে ক্যামেরা কবজি দেখতে পায়।",
   "setup.debug.wristX": "কবজি x (SW)",
   "setup.debug.wristY": "কবজি y (SW)",
   "patient.profile.tip.visible": "আপনার কাঁধ ও হাত যেন দেখা যায়",

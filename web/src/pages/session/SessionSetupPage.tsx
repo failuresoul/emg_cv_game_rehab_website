@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/features/auth/AuthContext";
 import { t, type TranslationKey } from "@/i18n";
+import type { Side } from "@/types/api";
 import { evaluateSetupChecks, type SetupChecks } from "@/vision/setupChecks";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
 import type { TrackingState } from "@/vision/tracking";
@@ -38,7 +39,13 @@ function Intro({ onAllow }: { onAllow: () => void }) {
   );
 }
 
-function Checklist({ checks }: { checks: SetupChecks }) {
+function armLabelKey(side: Side | null): TranslationKey {
+  if (side === "left") return "setup.check.arm.left";
+  if (side === "right") return "setup.check.arm.right";
+  return "setup.check.arm";
+}
+
+function Checklist({ checks, side }: { checks: SetupChecks; side: Side | null }) {
   return (
     <ul className="flex flex-col gap-3">
       {CHECK_LABELS.map(({ key, labelKey }) => (
@@ -56,7 +63,7 @@ function Checklist({ checks }: { checks: SetupChecks }) {
               className="text-danger shrink-0"
             />
           )}
-          {t(labelKey)}
+          {t(key === "armVisible" ? armLabelKey(side) : labelKey)}
         </li>
       ))}
     </ul>
@@ -94,7 +101,8 @@ function LiveCheck() {
   const [showTracking, setShowTracking] = useState(false);
 
   const { user } = useAuth();
-  const checks = evaluateSetupChecks(result, user?.patient_profile?.affected_side ?? null);
+  const side = user?.patient_profile?.affected_side ?? null;
+  const checks = evaluateSetupChecks(result, side);
   const allGreen = Object.values(checks).every(Boolean);
 
   // Once passed it stays passed: reaching for the mouse takes the hand out of view.
@@ -109,7 +117,11 @@ function LiveCheck() {
   return (
     <div className="mx-auto grid w-full max-w-6xl flex-1 items-start gap-4 lg:grid-cols-3">
       <div className="relative lg:col-span-2">
-        <SkeletonCanvas result={result} bodyFrame={showTracking ? tracking?.frame : null} />
+        <SkeletonCanvas
+          result={result}
+          bodyFrame={showTracking ? tracking?.frame : null}
+          highlightSide={side ?? undefined}
+        />
         <p className="absolute top-2 right-3 rounded bg-black/60 px-2 text-white">
           {t("setup.performance", {
             fps: Math.round(result?.fps ?? 0),
@@ -119,7 +131,12 @@ function LiveCheck() {
       </div>
       <Card className="flex flex-col gap-4">
         <h1 className="text-xl font-bold">{t("setup.checklist.title")}</h1>
-        <Checklist checks={checks} />
+        <Checklist checks={checks} side={side} />
+        {!passed && !checks.armVisible && side && (
+          <p role="status" className="text-accent text-lg font-semibold">
+            {t(side === "left" ? "setup.armHint.left" : "setup.armHint.right")}
+          </p>
+        )}
         <Button size="lg" disabled={!passed} onClick={() => void navigate("/session/calibrate")}>
           {t("setup.continue")}
         </Button>

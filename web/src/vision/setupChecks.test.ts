@@ -45,6 +45,10 @@ describe("evaluateSetupChecks", () => {
     expect(evaluateSetupChecks(leftHidden, "right").armVisible).toBe(true);
   });
 
+  it("needs the wrist but not the elbow", () => {
+    expect(evaluateSetupChecks(result([POSE.LEFT_ELBOW]), "left").armVisible).toBe(true);
+  });
+
   it("needs both shoulders in view", () => {
     expect(evaluateSetupChecks(result([POSE.RIGHT_SHOULDER]), "left").upperBodyVisible).toBe(false);
   });

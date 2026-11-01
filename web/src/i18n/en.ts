@@ -203,9 +203,12 @@ export const en = {
   "warmup.complete.continue": "Continue",
 
   "calibrate.intro.title": "Light up the stars",
-  "calibrate.intro.body":
-    "Move your arm around you, slowly and comfortably. Every star you reach lights up!",
-  "calibrate.game.instruction": "Move your arm to light up the stars",
+  "calibrate.intro.body.left":
+    "Move your left arm around you, slowly and comfortably. Every star you reach lights up!",
+  "calibrate.intro.body.right":
+    "Move your right arm around you, slowly and comfortably. Every star you reach lights up!",
+  "calibrate.game.instruction.left": "Move your left arm to light up the stars",
+  "calibrate.game.instruction.right": "Move your right arm to light up the stars",
   "calibrate.game.stars": "{count} / {total}",
   "calibrate.game.secondsLeft": "{seconds} seconds left",
   "calibrate.result.stars": "You lit {count} of {total} stars!",
@@ -213,6 +216,10 @@ export const en = {
   "calibrate.result.tryAgain": "Try again",
   "setup.check.upperBody": "Shoulders in view",
   "setup.check.arm": "Arm in view",
+  "setup.check.arm.left": "Left arm in view",
+  "setup.check.arm.right": "Right arm in view",
+  "setup.armHint.left": "Raise your left arm so the camera can see your wrist.",
+  "setup.armHint.right": "Raise your right arm so the camera can see your wrist.",
   "setup.debug.wristX": "Wrist x (SW)",
   "setup.debug.wristY": "Wrist y (SW)",
   "patient.profile.tip.visible": "Keep your shoulders and your arm in view",

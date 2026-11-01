@@ -16,7 +16,6 @@ export interface SetupChecks {
 /** Only what tracking needs: the hand does not matter, and neither does exact distance. */
 export function evaluateSetupChecks(result: VisionResult | null, side: Side | null): SetupChecks {
   const pose = result?.pose;
-  const elbow = side === "right" ? POSE.RIGHT_ELBOW : POSE.LEFT_ELBOW;
   const wrist = side === "right" ? POSE.RIGHT_WRIST : POSE.LEFT_WRIST;
 
   return {
@@ -24,7 +23,8 @@ export function evaluateSetupChecks(result: VisionResult | null, side: Side | nu
     upperBodyVisible:
       isLandmarkVisible(pose?.[POSE.LEFT_SHOULDER]) &&
       isLandmarkVisible(pose?.[POSE.RIGHT_SHOULDER]),
-    armVisible: isLandmarkVisible(pose?.[elbow]) && isLandmarkVisible(pose?.[wrist]),
+    // Reach is measured at the wrist. The elbow is often below the frame on a laptop camera.
+    armVisible: isLandmarkVisible(pose?.[wrist]),
     enoughLight: (result?.brightness ?? 0) >= MIN_BRIGHTNESS,
   };
 }
