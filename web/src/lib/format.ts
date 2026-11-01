@@ -1,4 +1,4 @@
-import { LOCALE } from "@/i18n";
+import { getLocale } from "@/i18n";
 
 const UNITS: { unit: Intl.RelativeTimeFormatUnit; seconds: number }[] = [
   { unit: "year", seconds: 31_536_000 },
@@ -9,7 +9,7 @@ const UNITS: { unit: Intl.RelativeTimeFormatUnit; seconds: number }[] = [
 ];
 
 export function formatRelativeTime(iso: string): string {
-  const formatter = new Intl.RelativeTimeFormat(LOCALE, { numeric: "auto" });
+  const formatter = new Intl.RelativeTimeFormat(getLocale(), { numeric: "auto" });
   const elapsedSeconds = (new Date(iso).getTime() - Date.now()) / 1000;
   for (const { unit, seconds } of UNITS) {
     if (Math.abs(elapsedSeconds) >= seconds) {
@@ -20,5 +20,5 @@ export function formatRelativeTime(iso: string): string {
 }
 
 export function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat(LOCALE, { dateStyle: "medium" }).format(new Date(iso));
+  return new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(new Date(iso));
 }

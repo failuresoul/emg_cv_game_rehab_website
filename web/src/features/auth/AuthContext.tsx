@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, type ReactNode, useContext, useState } from "react";
+import { createContext, Fragment, type ReactNode, useContext, useState } from "react";
 
+import { setLanguage } from "@/i18n";
 import { api } from "@/lib/api";
-import type { LoginResponse, PatientRegister, User } from "@/types/api";
+import type { LoginResponse, Me, PatientRegister, User } from "@/types/api";
 
 import { clearToken, getToken, saveToken } from "./storage";
 
@@ -25,9 +26,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const meQuery = useQuery({
     queryKey: meQueryKey(token),
-    queryFn: async (): Promise<User | null> => {
+    queryFn: async (): Promise<Me | null> => {
       try {
-        const response = await api.get<User>("/auth/me");
+        const response = await api.get<Me>("/auth/me");
         return response.data;
       } catch {
         clearToken();
@@ -41,9 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = token !== null ? (meQuery.data ?? null) : null;
 
-  function startSession({ access_token: newToken, user: loggedInUser }: LoginResponse) {
+  // Set during render so that every t() below this provider uses the right language.
+  const language = user?.patient_profile?.language ?? "en";
+  setLanguage(language);
+
+  // The new token triggers /auth/me, which also brings the patient's language.
+  function startSession({ access_token: newToken }: LoginResponse) {
     saveToken(newToken);
-    queryClient.setQueryData(meQueryKey(newToken), loggedInUser);
     setToken(newToken);
   }
 
@@ -78,7 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
       }}
     >
-      {children}
+      {/* The key redraws the whole app when the language changes. */}
+      <Fragment key={language}>{children}</Fragment>
     </AuthContext.Provider>
   );
 }
