@@ -159,6 +159,20 @@ export const en = {
   "calibrate.result.flagged": "Check",
   "calibrate.result.save": "Save and continue",
 
+  "exercise.shoulderFlexion.name": "Raise your arm forward",
+  "exercise.shoulderFlexion.step1": "Start with your arm relaxed at your side.",
+  "exercise.shoulderFlexion.step2": "Raise your arm in front of you as far as is comfortable.",
+  "exercise.shoulderFlexion.step3": "Lower it slowly back down.",
+  "exercise.shoulderAbduction.name": "Raise your arm out to the side",
+  "exercise.shoulderAbduction.step1": "Start with your arm relaxed at your side.",
+  "exercise.shoulderAbduction.step2": "Raise your arm out to the side as far as is comfortable.",
+  "exercise.shoulderAbduction.step3": "Lower it slowly back down.",
+  "exercise.elbowFlexion.name": "Bend and straighten your elbow",
+  "exercise.elbowFlexion.step1": "Start with your arm relaxed and straight.",
+  "exercise.elbowFlexion.step2": "Bend your elbow, bringing your hand towards your shoulder.",
+  "exercise.elbowFlexion.step3": "Straighten your arm slowly.",
+  "exercise.elbowFlexion.tip": "Keep your upper arm still",
+
   "reachMap.label": "Map of how far you reached in eight directions from your shoulder",
   "reachMap.shoulder": "Shoulder",
 

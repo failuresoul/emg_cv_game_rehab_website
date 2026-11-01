@@ -159,6 +159,20 @@ export const bn: Record<TranslationKey, string> = {
   "calibrate.result.flagged": "দেখে নিন",
   "calibrate.result.save": "সংরক্ষণ করে এগিয়ে যান",
 
+  "exercise.shoulderFlexion.name": "হাত সামনের দিকে তুলুন",
+  "exercise.shoulderFlexion.step1": "হাত আরামে শরীরের পাশে রেখে শুরু করুন।",
+  "exercise.shoulderFlexion.step2": "যতদূর আরামে পারেন হাত সামনের দিকে তুলুন।",
+  "exercise.shoulderFlexion.step3": "ধীরে ধীরে হাত নামিয়ে আনুন।",
+  "exercise.shoulderAbduction.name": "হাত পাশের দিকে তুলুন",
+  "exercise.shoulderAbduction.step1": "হাত আরামে শরীরের পাশে রেখে শুরু করুন।",
+  "exercise.shoulderAbduction.step2": "যতদূর আরামে পারেন হাত পাশের দিকে তুলুন।",
+  "exercise.shoulderAbduction.step3": "ধীরে ধীরে হাত নামিয়ে আনুন।",
+  "exercise.elbowFlexion.name": "কনুই ভাঁজ করুন ও সোজা করুন",
+  "exercise.elbowFlexion.step1": "হাত আরামে সোজা রেখে শুরু করুন।",
+  "exercise.elbowFlexion.step2": "কনুই ভাঁজ করে হাত কাঁধের দিকে আনুন।",
+  "exercise.elbowFlexion.step3": "ধীরে ধীরে হাত সোজা করুন।",
+  "exercise.elbowFlexion.tip": "বাহুর উপরের অংশ স্থির রাখুন",
+
   "reachMap.label": "আপনার কাঁধ থেকে আট দিকে কতদূর নাগাল পেয়েছেন তার মানচিত্র",
   "reachMap.shoulder": "কাঁধ",
 
