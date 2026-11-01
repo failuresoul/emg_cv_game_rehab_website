@@ -1,0 +1,64 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.api.deps import SessionDep, require_admin
+from app.models import PatientProfile, User
+from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
+from app.services import patients
+
+router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+
+
+def _get_patient_or_404(session: SessionDep, patient_id: int) -> tuple[PatientProfile, User]:
+    patient = patients.get_patient(session, patient_id)
+    if patient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    return patient
+
+
+def _duplicate_email() -> HTTPException:
+    return HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+
+@router.get("/patients")
+def list_patients(session: SessionDep, search: str | None = None) -> list[PatientRead]:
+    return patients.list_patients(session, search)
+
+
+@router.post("/patients", status_code=status.HTTP_201_CREATED)
+def create_patient(payload: PatientCreate, session: SessionDep) -> PatientRead:
+    try:
+        return patients.create_patient(session, payload)
+    except patients.DuplicateEmailError:
+        raise _duplicate_email() from None
+
+
+@router.get("/patients/{patient_id}")
+def get_patient(patient_id: int, session: SessionDep) -> PatientRead:
+    profile, user = _get_patient_or_404(session, patient_id)
+    return patients.to_patient_read(profile, user)
+
+
+@router.patch("/patients/{patient_id}")
+def update_patient(patient_id: int, payload: PatientUpdate, session: SessionDep) -> PatientRead:
+    profile, user = _get_patient_or_404(session, patient_id)
+    try:
+        return patients.update_patient(session, profile, user, payload)
+    except patients.DuplicateEmailError:
+        raise _duplicate_email() from None
+
+
+@router.post("/patients/{patient_id}/deactivate")
+def deactivate_patient(patient_id: int, session: SessionDep) -> PatientRead:
+    profile, user = _get_patient_or_404(session, patient_id)
+    return patients.set_patient_active(session, profile, user, False)
+
+
+@router.post("/patients/{patient_id}/activate")
+def activate_patient(patient_id: int, session: SessionDep) -> PatientRead:
+    profile, user = _get_patient_or_404(session, patient_id)
+    return patients.set_patient_active(session, profile, user, True)
+
+
+@router.get("/stats")
+def stats(session: SessionDep) -> AdminStats:
+    return patients.get_stats(session)

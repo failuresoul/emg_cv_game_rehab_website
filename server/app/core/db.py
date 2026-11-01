@@ -4,6 +4,7 @@ from pathlib import Path
 from sqlalchemy import URL, Engine, make_url
 from sqlmodel import Session, SQLModel, create_engine
 
+from app import models  # noqa: F401  (registers the tables on SQLModel.metadata)
 from app.core.config import SERVER_DIR, settings
 
 

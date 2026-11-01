@@ -42,6 +42,16 @@ uvicorn app.main:app --reload --port 8000
 
 Health check: <http://localhost:8000/api/health>
 
+On startup the server creates the admin from `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME` if no admin exists. Changing these settings later does not update an existing admin.
+
+## Demo patients
+
+```sh
+python scripts/seed_demo.py
+```
+
+Creates two demo patients, one left side and one right side, if they are missing. Each new patient gets a random password, which is printed only once.
+
 ## Test
 
 ```sh
