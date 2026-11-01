@@ -1,4 +1,9 @@
-import type { HandLandmarker, NormalizedLandmark, PoseLandmarker } from "@mediapipe/tasks-vision";
+import type {
+  HandLandmarker,
+  Landmark,
+  NormalizedLandmark,
+  PoseLandmarker,
+} from "@mediapipe/tasks-vision";
 
 import { HAND_MODEL_URL, POSE_MODEL_URL, WASM_URL } from "./config";
 
@@ -31,6 +36,8 @@ export interface VisionResult {
   timestamp: number;
   hand: NormalizedLandmark[] | null;
   pose: NormalizedLandmark[] | null;
+  /** The same pose in 3D: metres, with the origin between the hips. */
+  poseWorld: Landmark[] | null;
   fps: number;
   delegate: VisionDelegate;
   /** Average brightness of the frame, 0-255. Stays in the browser, like the frame itself. */
@@ -210,6 +217,7 @@ class VisionEngine {
     let lastTimestamp = -1;
     let frameCount = 0;
     let pose: NormalizedLandmark[] | null = null;
+    let poseWorld: Landmark[] | null = null;
     let fps = 0;
     let fpsWindowStart = performance.now();
     let fpsWindowFrames = 0;
@@ -231,7 +239,9 @@ class VisionEngine {
       try {
         const hand = tasks.hand.detectForVideo(video, timestamp).landmarks[0] ?? null;
         if (frameCount % poseEvery === 0) {
-          pose = tasks.pose.detectForVideo(video, timestamp).landmarks[0] ?? null;
+          const detected = tasks.pose.detectForVideo(video, timestamp);
+          pose = detected.landmarks[0] ?? null;
+          poseWorld = detected.worldLandmarks[0] ?? null;
         }
         frameCount++;
 
@@ -252,6 +262,7 @@ class VisionEngine {
           timestamp,
           hand,
           pose,
+          poseWorld,
           fps,
           delegate: tasks.delegate,
           brightness,
