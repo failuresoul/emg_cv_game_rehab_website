@@ -29,6 +29,8 @@ export interface ExerciseResult {
   partialReps: number;
   /** The furthest point of any recorded movement, or null if there were none. */
   bestPeak: number | null;
+  /** The same, from unfiltered angles. Use this for saved data. */
+  bestRawPeak: number | null;
   /** The mean duration of full reps, or null if there were none. */
   meanDurationMs: number | null;
   activeTimeMs: number;
@@ -42,8 +44,10 @@ export interface ExerciseResult {
 /** One tracking frame. A null value means the measure was unavailable in this frame. */
 export interface ExerciseFrame {
   timestamp: number;
-  /** The filtered angle of the exercise's measure. */
+  /** The filtered angle of the exercise's measure, which is what gets counted. */
   value: number | null;
+  /** The unfiltered angle, kept in the results only. */
+  rawValue?: number | null;
   planeDeg?: number | null;
   source?: AngleSource | null;
   trunkReference?: TrunkReference | null;
@@ -158,7 +162,9 @@ export class ExerciseRunner {
   }
 
   update(frame: ExerciseFrame): void {
-    const { timestamp, value } = frame;
+    const { timestamp } = frame;
+    // A broken value is the same as no measure at all.
+    const value = frame.value !== null && Number.isFinite(frame.value) ? frame.value : null;
     if (this.currentState === "COUNTDOWN") {
       if (timestamp - this.countdownStart < this.countdownMs) return;
       this.begin(timestamp);
@@ -184,7 +190,7 @@ export class ExerciseRunner {
 
     this.lastSeenAt = timestamp;
     this.recordFrame(frame);
-    this.counter.update(value, timestamp);
+    this.counter.update(value, timestamp, frame.rawValue ?? value);
 
     if (this.counter.fullReps >= this.definition.targetReps) this.finish("DONE", timestamp);
     else this.checkTimeout(timestamp);
@@ -209,6 +215,7 @@ export class ExerciseRunner {
 
     const reps = [...this.counter.reps];
     const peaks = reps.map((rep) => rep.peakValue);
+    const rawPeaks = reps.map((rep) => rep.rawPeakValue);
     const pickBest = this.definition.direction === "up" ? Math.max : Math.min;
     const fullDurations = reps.filter((rep) => rep.reachedTarget).map((rep) => rep.durationMs);
 
@@ -220,6 +227,7 @@ export class ExerciseRunner {
       fullReps: this.counter.fullReps,
       partialReps: this.counter.partialReps,
       bestPeak: peaks.length > 0 ? pickBest(...peaks) : null,
+      bestRawPeak: rawPeaks.length > 0 ? pickBest(...rawPeaks) : null,
       meanDurationMs:
         fullDurations.length > 0
           ? fullDurations.reduce((total, duration) => total + duration, 0) / fullDurations.length
@@ -246,6 +254,7 @@ export class ExerciseRunner {
 
     const preferred = this.definition.preferredPlane;
     if (!preferred || planeDeg === null || planeDeg === undefined) return;
+    if (!Number.isFinite(planeDeg)) return;
     if (this.counter.state === "REST") return;
     if (planeDeg >= preferred.minDeg && planeDeg <= preferred.maxDeg) this.onPlane++;
     else this.offPlane++;

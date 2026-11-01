@@ -329,3 +329,140 @@ describe("RepCounter, direction down", () => {
     expect(run(DOWN, samples).counter.fullReps).toBe(1);
   });
 });
+
+describe("RepCounter, bad input", () => {
+  it.each([
+    ["swapped", 90, 30],
+    ["equal", 60, 60],
+    ["not a number", NaN, 90],
+  ])("rejects thresholds that are %s", (_, low, high) => {
+    expect(() => new RepCounter({ direction: "up", low, high })).toThrow(RangeError);
+  });
+
+  it.each([NaN, Infinity, -Infinity])("ignores an angle of %s", (bad) => {
+    const counter = new RepCounter(UP);
+    counter.update(10, 0);
+
+    counter.update(bad, 100);
+
+    expect(counter.state).toBe("REST");
+    for (const { value, timestamp } of cycles({ rest: 10, peak: 120, cycles: 1, startTs: 200 })) {
+      counter.update(value, timestamp);
+    }
+    expect(counter.fullReps).toBe(1);
+    expect(counter.reps[0].peakValue).toBeCloseTo(120, 0);
+  });
+
+  it("keeps a movement going through a bad angle", () => {
+    const counter = new RepCounter(UP);
+    counter.update(10, 0);
+    counter.update(100, 300);
+
+    counter.update(NaN, 400);
+
+    expect(counter.state).toBe("AT_TARGET");
+    counter.update(10, 1000);
+    expect(counter.fullReps).toBe(1);
+  });
+});
+
+describe("RepCounter, more pause cases", () => {
+  it("does not start a rep during a pause", () => {
+    const counter = new RepCounter(UP);
+    counter.update(10, 0);
+    counter.pause();
+
+    counter.update(100, 500);
+    expect(counter.state).toBe("REST");
+
+    counter.resume();
+    counter.update(100, 800);
+    counter.update(10, 1500);
+
+    expect(counter.fullReps).toBe(0);
+    expect(counter.partialReps).toBe(0);
+  });
+
+  it("does not count a movement already raised when resuming, until back at rest", () => {
+    const counter = new RepCounter(UP);
+    counter.update(10, 0);
+    counter.pause();
+    counter.resume();
+    expect(counter.awaitingRest).toBe(true);
+
+    counter.update(100, 500);
+    expect(counter.state).toBe("REST");
+
+    counter.update(10, 1000);
+    expect(counter.awaitingRest).toBe(false);
+    expect(counter.fullReps).toBe(0);
+  });
+
+  it("emits no rep or feedback events when paused during a movement", () => {
+    const counter = new RepCounter(UP);
+    const events: RepEvent[] = [];
+    counter.update(10, 0);
+    counter.update(100, 300);
+    counter.subscribe((event) => events.push(event));
+
+    counter.pause();
+
+    expect(events).toEqual([{ type: "stateChanged", state: "REST" }]);
+  });
+
+  it("handles pausing twice and resuming without a pause", () => {
+    const counter = new RepCounter(UP);
+    counter.pause();
+    counter.pause();
+    counter.resume();
+    counter.resume();
+
+    for (const { value, timestamp } of cycles({ rest: 10, peak: 120, cycles: 1 })) {
+      counter.update(value, timestamp);
+    }
+
+    expect(counter.fullReps).toBe(1);
+  });
+});
+
+describe("RepCounter, raw peaks", () => {
+  it("keeps the raw peak alongside the filtered one", () => {
+    const counter = new RepCounter(UP);
+    counter.update(10, 0, 11);
+    counter.update(95, 300, 104);
+    counter.update(100, 500, 101);
+    counter.update(10, 1000, 9);
+
+    expect(counter.reps[0].peakValue).toBe(100);
+    expect(counter.reps[0].rawPeakValue).toBe(104);
+  });
+
+  it("uses the smallest raw value for the elbow", () => {
+    const counter = new RepCounter(DOWN);
+    counter.update(170, 0, 170);
+    counter.update(60, 300, 52);
+    counter.update(55, 500, 58);
+    counter.update(170, 1000, 170);
+
+    expect(counter.reps[0].peakValue).toBe(55);
+    expect(counter.reps[0].rawPeakValue).toBe(52);
+  });
+
+  it("uses the filtered value when there is no raw value", () => {
+    const counter = new RepCounter(UP);
+    counter.update(10, 0);
+    counter.update(100, 500);
+    counter.update(10, 1200);
+
+    expect(counter.reps[0].rawPeakValue).toBe(100);
+  });
+
+  it("ignores a bad raw value", () => {
+    const counter = new RepCounter(UP);
+    counter.update(10, 0, 10);
+    counter.update(100, 500, NaN);
+    counter.update(10, 1200, 10);
+
+    expect(counter.reps[0].rawPeakValue).toBe(100);
+  });
+});

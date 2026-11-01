@@ -89,6 +89,7 @@ function ExerciseStep({
       runner.update({
         timestamp: state.timestamp,
         value,
+        rawValue: state.raw[measure]?.value,
         planeDeg: state.filtered.elevationPlaneDeg,
         source: state.raw[measure]?.source,
         trunkReference: state.raw[measure]?.trunkReference,

@@ -51,3 +51,12 @@ describe("JointAngleFilter", () => {
     });
   });
 });
+
+describe("AngleFilter, bad input", () => {
+  it.each([NaN, Infinity, -Infinity])(
+    "treats %s as a gap, without poisoning later values",
+    (bad) => {
+      expect(run([10, bad, 20, 20])).toEqual([10, null, 20, 20]);
+    },
+  );
+});

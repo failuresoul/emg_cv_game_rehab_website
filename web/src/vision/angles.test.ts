@@ -340,3 +340,65 @@ describe("2D fallback", () => {
     expect(compute(pose, world).armElevationDeg).toBeNull();
   });
 });
+
+describe("bad landmarks", () => {
+  const compute = (poseWorld: JointAngleInput["poseWorld"]) =>
+    computeJointAngles({ pose: null, poseWorld, frameWidth: 640, frameHeight: 480 }, "left");
+  const sideways: Arm = { elbow: [ARM_LENGTH, 0, 0], wrist: [2 * ARM_LENGTH, 0, 0] };
+
+  /** A copy of the pose with one landmark changed. */
+  function withLandmark(index: number, changes: Partial<Vec3 & { visibility: number }>) {
+    const pose = (worldPose("left", sideways) ?? []).map((landmark) => ({ ...landmark }));
+    pose[index] = { ...pose[index], ...changes };
+    return pose;
+  }
+
+  it("returns null rather than NaN when the elbow's position is NaN", () => {
+    const angles = compute(withLandmark(POSE.LEFT_ELBOW, { x: NaN }));
+
+    expect(angles.armElevationDeg).toBeNull();
+    expect(angles.elevationPlaneDeg).toBeNull();
+    expect(angles.elbowFlexionDeg).toBeNull();
+  });
+
+  it("returns null only for the elbow measure when the wrist's position is NaN", () => {
+    const angles = compute(withLandmark(POSE.LEFT_WRIST, { y: NaN }));
+
+    expect(angles.elbowFlexionDeg).toBeNull();
+    expect(angles.armElevationDeg?.value).toBeCloseTo(90);
+  });
+
+  it("treats a NaN visibility as not visible", () => {
+    expect(compute(withLandmark(POSE.LEFT_ELBOW, { visibility: NaN })).armElevationDeg).toBeNull();
+  });
+
+  it("returns null when the elbow sits exactly on the shoulder", () => {
+    const shoulder = (worldPose("left", sideways) ?? [])[POSE.LEFT_SHOULDER];
+    const angles = compute(withLandmark(POSE.LEFT_ELBOW, { ...shoulder, visibility: 1 }));
+
+    expect(angles.armElevationDeg).toBeNull();
+    expect(angles.elbowFlexionDeg).toBeNull();
+  });
+
+  it("returns nulls for a pose missing landmarks", () => {
+    const angles = compute(Array.from({ length: 12 }, () => ({ x: 0, y: 0, z: 0, visibility: 1 })));
+
+    expect(angles.armElevationDeg).toBeNull();
+    expect(angles.elbowFlexionDeg).toBeNull();
+  });
+
+  it("uses the hip of the affected side, ignoring the other one", () => {
+    const pose = withLandmark(POSE.RIGHT_HIP, { visibility: 0.1 });
+
+    expect(compute(pose).armElevationDeg?.trunkReference).toBe("hip");
+    expect(
+      compute(withLandmark(POSE.LEFT_HIP, { visibility: 0.1 })).armElevationDeg?.trunkReference,
+    ).toBe("vertical");
+  });
+
+  it("does not use a hip exactly at 0.5 visibility as hidden", () => {
+    const angles = compute(withLandmark(POSE.LEFT_HIP, { visibility: 0.5 }));
+
+    expect(angles.armElevationDeg?.trunkReference).toBe("hip");
+  });
+});

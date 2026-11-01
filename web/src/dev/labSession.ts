@@ -205,7 +205,7 @@ export class LabSession {
         this.log("tracking back, resumed");
       }
       this.lastSeenAt = timestamp;
-      this.counter.update(value, timestamp);
+      this.counter.update(value, timestamp, raw[EXERCISES[this.config.exerciseId].measure]?.value);
     }
 
     this.addToChart(timestamp, value);

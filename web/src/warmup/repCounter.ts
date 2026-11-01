@@ -9,8 +9,10 @@ export interface RepRecord {
   peakTs: number;
   endTs: number;
   durationMs: number;
-  /** The maximum for "up" and the minimum for "down". */
+  /** The filtered angle's furthest point: the maximum for "up" and the minimum for "down". */
   peakValue: number;
+  /** The unfiltered angle's furthest point in the same movement. Use this for saved data. */
+  rawPeakValue: number;
   reachedTarget: boolean;
 }
 
@@ -60,6 +62,7 @@ export class RepCounter {
   private startTs = 0;
   private peakTs = 0;
   private peak = 0;
+  private rawPeak = -Infinity;
   private reachedTarget = false;
   private readonly recorded: RepRecord[] = [];
 
@@ -71,6 +74,7 @@ export class RepCounter {
     maxRepMs = DEFAULT_MAX_REP_MS,
     partialFraction = DEFAULT_PARTIAL_FRACTION,
   }: RepCounterConfig) {
+    if (!(low < high)) throw new RangeError(`low (${low}) must be below high (${high})`);
     const isUp = direction === "up";
     this.sign = isUp ? 1 : -1;
     this.restLine = isUp ? low : -high;
@@ -110,9 +114,11 @@ export class RepCounter {
     return () => this.listeners.delete(listener);
   }
 
-  update(value: number, timestamp: number): void {
-    if (this.isPaused) return;
+  /** Counts from the filtered value. The raw value is only kept for the rep's record. */
+  update(value: number, timestamp: number, rawValue: number = value): void {
+    if (this.isPaused || !Number.isFinite(value)) return;
     const scaled = value * this.sign;
+    const scaledRaw = Number.isFinite(rawValue) ? rawValue * this.sign : scaled;
 
     if (this.currentState === "REST") {
       if (scaled <= this.restLine) this.armed = true;
@@ -120,6 +126,7 @@ export class RepCounter {
       // Carries on below, because a single frame can jump straight past the target.
       this.beginMovement(scaled, timestamp);
     }
+    this.rawPeak = Math.max(this.rawPeak, scaledRaw);
 
     if (timestamp - this.startTs > this.maxRepMs) {
       this.abandonMovement();
@@ -161,6 +168,7 @@ export class RepCounter {
     this.startTs = timestamp;
     this.peakTs = timestamp;
     this.peak = scaled;
+    this.rawPeak = -Infinity;
     this.reachedTarget = false;
     this.setState("MOVING");
   }
@@ -186,6 +194,7 @@ export class RepCounter {
       endTs: timestamp,
       durationMs,
       peakValue: this.peak * this.sign,
+      rawPeakValue: this.rawPeak * this.sign,
       reachedTarget: this.reachedTarget,
     };
     this.recorded.push(rep);

@@ -14,7 +14,7 @@ export class AngleFilter {
 
   /** A missing value clears the history, so old values do not leak in after a gap. */
   add(value: number | null): number | null {
-    if (value === null) {
+    if (value === null || !Number.isFinite(value)) {
       this.reset();
       return null;
     }

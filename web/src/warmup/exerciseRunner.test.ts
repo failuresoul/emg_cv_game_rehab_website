@@ -411,3 +411,75 @@ describe("ExerciseRunner plane feedback", () => {
     expect(feedbackOf(list)).toEqual(["good"]);
   });
 });
+
+describe("ExerciseRunner, bad input and raw values", () => {
+  it("treats NaN as no measure, pausing like any tracking loss", () => {
+    const runner = activeRunner();
+
+    runner.update({ timestamp: 300, value: NaN });
+    expect(runner.state).toBe("ACTIVE");
+    runner.update({ timestamp: 501, value: NaN });
+
+    expect(runner.state).toBe("PAUSED");
+    expect(runner.fullReps).toBe(0);
+  });
+
+  it("does not resume from a tracking pause on NaN", () => {
+    const runner = activeRunner();
+    runner.update({ timestamp: 501, value: null });
+
+    runner.update({ timestamp: 700, value: NaN });
+    runner.update({ timestamp: 2000, value: NaN });
+
+    expect(runner.state).toBe("PAUSED");
+  });
+
+  it("does not let null or NaN create a rep", () => {
+    const runner = activeRunner();
+    for (let t = 100; t < 400; t += 100) runner.update({ timestamp: t, value: null });
+    runner.update({ timestamp: 400, value: 10 });
+    for (let t = 500; t < 800; t += 100) runner.update({ timestamp: t, value: NaN });
+
+    expect(runner.fullReps).toBe(0);
+    expect(runner.partialReps).toBe(0);
+  });
+
+  it("does not count a bad plane against a rep", () => {
+    const runner = activeRunner();
+    const list = events(runner);
+
+    feed(runner, cycles({ rest: 10, peak: 120, cycles: 1, startTs: FRAME_MS }), { planeDeg: NaN });
+
+    expect(feedbackOf(list)).toEqual(["good"]);
+  });
+
+  it("keeps the raw peak in the result, while counting from the filtered value", () => {
+    const runner = activeRunner();
+    runner.update({ timestamp: 100, value: 10, rawValue: 12 });
+    // Filtered stays below the target, although raw passes it, so this is not a full rep.
+    runner.update({ timestamp: 500, value: 80, rawValue: 95 });
+    runner.update({ timestamp: 1200, value: 10, rawValue: 9 });
+
+    const partial = runner.partialReps;
+    runner.update({ timestamp: 1500, value: 100, rawValue: 112 });
+    runner.update({ timestamp: 2200, value: 10, rawValue: 9 });
+    runner.skip(2300);
+
+    const result = runner.getResult();
+    expect(partial).toBe(1);
+    expect(result?.fullReps).toBe(1);
+    expect(result?.reps[0].rawPeakValue).toBe(95);
+    expect(result?.reps[1].peakValue).toBe(100);
+    expect(result?.reps[1].rawPeakValue).toBe(112);
+    expect(result?.bestPeak).toBe(100);
+    expect(result?.bestRawPeak).toBe(112);
+  });
+
+  it("has no best raw peak with no movements", () => {
+    const runner = new ExerciseRunner(FLEXION, "standard");
+
+    runner.skip(0);
+
+    expect(runner.getResult()?.bestRawPeak).toBeNull();
+  });
+});
