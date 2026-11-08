@@ -5,7 +5,8 @@ Start the server first, then run from server/ with the virtual environment activ
     python scripts/smoke_test.py [base_url]
 
 The default base_url is http://localhost:8000. The admin login comes from server/.env. Each run
-adds one test patient and one session to the database, and deactivates the patient at the end.
+adds one test patient with one session (a calibration and six warm-up results) to the database,
+and deactivates the patient at the end.
 The exit code is 0 if every step passes and 1 otherwise.
 """
 
@@ -21,6 +22,15 @@ import httpx
 
 DEFAULT_BASE_URL = "http://localhost:8000"
 DIRECTIONS_DEG = [0, 45, 90, 135, 180, 225, 270, 315]
+# Every warm-up exercise, with its unit, thresholds and target reps.
+WARMUP_EXERCISES: list[tuple[str, str, float, float, int]] = [
+    ("shoulder_flexion", "deg", 30, 90, 10),
+    ("shoulder_abduction", "deg", 30, 80, 10),
+    ("elbow_flexion", "deg", 70, 140, 10),
+    ("forward_reach", "arm_ratio", 0.45, 0.8, 10),
+    ("hand_open_close", "palm_ratio", 1.2, 1.6, 10),
+    ("thumb_opposition", "palm_ratio", 0.25, 0.4, 5),
+]
 
 
 class StepFailed(Exception):
@@ -66,6 +76,47 @@ def calibration_payload(affected_side: str) -> dict[str, Any]:
         "hull_area_sw2": 2.0,
         "quality": {"valid": [True] * 8, "retries": 0, "max_trunk_displacement_sw": 0.05},
     }
+
+
+def warmup_payload() -> list[dict[str, Any]]:
+    """Six results as the web app saves them: every target reached, 10% of reps compensated."""
+    results = []
+    for exercise_id, unit, low, high, target_reps in WARMUP_EXERCISES:
+        hand = unit == "palm_ratio"
+        results.append(
+            {
+                "exercise_id": exercise_id,
+                "preset": "standard",
+                "thresholds": {"low": low, "high": high, "unit": unit},
+                "personalisation": {
+                    "previous_high": None,
+                    "new_high": low if exercise_id in ("elbow_flexion", "thumb_opposition") else high,
+                    "reason": "first time: standard target",
+                },
+                "full_reps": target_reps,
+                "partial_reps": 0,
+                "target_reps": target_reps,
+                "best_peak": high,
+                "mean_duration_ms": 2500.0,
+                "active_time_ms": 40000.0,
+                "paused_time_ms": 0.0,
+                "measure_source": "3d",
+                "trunk_reference": "n/a" if hand else "hip",
+                "compensated_reps": 1,
+                "compensation_rate": 1 / target_reps,
+                "reps": [
+                    {
+                        "index": 1,
+                        "peak": high,
+                        "duration_ms": 2500.0,
+                        "compensated": True,
+                        "compensation_type": "trunk",
+                    }
+                ],
+                "skipped": False,
+            }
+        )
+    return results
 
 
 def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool:
@@ -124,6 +175,32 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(body["session_id"] == state["session_id"], "latest is from another session")
         require(body["hull_area_sw2"] == 2.0, "hull area differs from what was saved")
 
+    def save_warmup() -> None:
+        url = f"/api/sessions/{state['session_id']}/warmup"
+        body = expect(client.post(url, json=warmup_payload(), headers=bearer("patient")), 200)
+        require(len(body) == len(WARMUP_EXERCISES), f"saved {len(body)} results, not 6")
+
+    def read_session_warmup() -> None:
+        url = f"/api/sessions/{state['session_id']}/warmup"
+        body = expect(client.get(url, headers=bearer("patient")), 200)
+        saved = {item["exercise_id"] for item in body}
+        require(saved == {exercise[0] for exercise in WARMUP_EXERCISES}, "an exercise is missing")
+
+    def read_warmup_history() -> None:
+        params = {"exercise_id": "thumb_opposition", "limit": 5}
+        url = "/api/patient/warmup/history"
+        body = expect(client.get(url, params=params, headers=bearer("patient")), 200)
+        require(len(body) == 1, f"expected 1 result in the history, got {len(body)}")
+        require(body[0]["session_id"] == state["session_id"], "history is from another session")
+        require(body[0]["target_reps"] == 5, "thumb opposition does not have 5 target reps")
+
+    def dashboard_last_warmup() -> None:
+        body = expect(client.get("/api/patient/dashboard", headers=bearer("patient")), 200)
+        last = body["last_warmup"]
+        require(last is not None, "last_warmup is empty")
+        require(last["session_id"] == state["session_id"], "last_warmup is another session")
+        require(last["goals_reached"] == 6, f"expected 6 goals reached, got {last['goals_reached']}")
+
     def end_session() -> None:
         url = f"/api/sessions/{state['session_id']}/end"
         body = expect(client.post(url, json={"status": "completed"}, headers=bearer("patient")), 200)
@@ -135,12 +212,27 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         body = expect(client.get(url, headers=bearer("admin")), 200)
         require(len(body) == 1 and body[0]["id"] == state["session_id"], "session is not listed")
         require(body[0]["hull_area_sw2"] == 2.0, "hull area is missing")
+        summary = body[0]["warmup_summary"]
+        require(summary is not None, "warm-up summary is missing")
+        require(summary["exercises_total"] == 6, "warm-up summary does not count six exercises")
 
     def admin_lists_calibrations() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/calibrations"
         body = expect(client.get(url, headers=bearer("admin")), 200)
         require(len(body) == 1, "calibration is not listed")
         require(body[0]["session_id"] == state["session_id"], "calibration is for another session")
+
+    def admin_reads_warmup_history() -> None:
+        url = f"/api/admin/patients/{state['patient_id']}/warmup"
+        body = expect(client.get(url, headers=bearer("admin")), 200)
+        exercises = {item["exercise_id"] for item in body}
+        require(len(exercises) == 6, f"expected 6 exercises, got {len(exercises)}")
+        points = [point for item in body for point in item["points"]]
+        require(all(point["goal_reached"] for point in points), "a goal is not marked reached")
+        require(
+            all(point["personalisation"] is not None for point in points),
+            "a personalisation decision is missing",
+        )
 
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
@@ -156,9 +248,14 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Patient starts a session", start_session),
         ("Patient saves a valid calibration", save_calibration),
         ("Patient gets the latest calibration", latest_calibration),
+        ("Patient saves six warm-up results", save_warmup),
+        ("Patient reads the session's warm-up", read_session_warmup),
+        ("Patient reads warm-up history", read_warmup_history),
+        ("Dashboard shows the last warm-up", dashboard_last_warmup),
         ("Patient ends the session", end_session),
         ("Admin lists the patient's sessions", admin_lists_sessions),
         ("Admin lists the patient's calibrations", admin_lists_calibrations),
+        ("Admin reads the patient's warm-up history", admin_reads_warmup_history),
         ("Admin deactivates the test patient", deactivate_patient),
     ]
 

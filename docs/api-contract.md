@@ -32,15 +32,19 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/admin/stats`                   | `admin`   | Get dashboard counts            |
 | GET    | `/api/admin/patients/{id}/sessions`  | `admin`   | List a patient's sessions       |
 | GET    | `/api/admin/patients/{id}/calibrations` | `admin` | List a patient's calibrations  |
+| GET    | `/api/admin/patients/{id}/warmup`    | `admin`   | A patient's warm-up history per exercise |
 | GET    | `/api/patient/dashboard`             | `patient` | Get the patient's home page data |
 | GET    | `/api/patient/calibration/latest`    | `patient` | Get own latest calibration      |
 | GET    | `/api/patient/sessions`              | `patient` | List own sessions               |
 | GET    | `/api/patient/sessions/{id}`         | `patient` | Get own session with its calibration |
+| GET    | `/api/patient/warmup/history`        | `patient` | Own latest results for one exercise |
 | POST   | `/api/sessions`                      | `patient` | Start or resume a session       |
 | GET    | `/api/sessions/current`              | `patient` | Get own active session          |
 | PATCH  | `/api/sessions/{id}/device-info`     | `patient` | Save browser, FPS and GPU/CPU   |
 | POST   | `/api/sessions/{id}/end`             | `patient` | End own session                 |
 | POST   | `/api/sessions/{id}/calibration`     | `patient` | Save a calibration              |
+| POST   | `/api/sessions/{id}/warmup`          | `patient` | Save or replace warm-up results |
+| GET    | `/api/sessions/{id}/warmup`          | `patient` | Get a session's warm-up results |
 
 ## Errors
 
@@ -339,24 +343,40 @@ Response `200`:
   "today_plan": [
     { "step": "camera_check", "minutes": 1 },
     { "step": "calibration", "minutes": 2 },
-    { "step": "warmup", "minutes": 6 },
+    { "step": "warmup", "minutes": 10 },
     { "step": "games", "minutes": 15 },
     { "step": "feedback", "minutes": 2 }
   ],
   "last_session": {
     "date": "2026-11-02T09:00:00Z",
     "status": "completed",
-    "duration_seconds": 1560.0
+    "duration_seconds": 1560.0,
+    "warmup_summary": {
+      "exercises_done": 5,
+      "exercises_total": 6,
+      "total_reps": 46,
+      "goals_reached": 4,
+      "mean_compensation_rate": 0.12
+    }
   },
   "latest_calibration": {
     "hull_sw": [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
     "hull_area_sw2": 0.5
   },
+  "last_warmup": {
+    "session_id": 1,
+    "date": "2026-11-02T09:00:00Z",
+    "exercises_done": 5,
+    "exercises_total": 6,
+    "total_reps": 46,
+    "goals_reached": 4,
+    "mean_compensation_rate": 0.12
+  },
   "streak_days": 0
 }
 ```
 
-`last_session` and `latest_calibration` are `null` until they exist. `duration_seconds` is `null` for a session with no `ended_at`. `today_plan` is a fixed list and `streak_days` is always `0` for now.
+`last_session` and `latest_calibration` are `null` until they exist. `last_session.warmup_summary` is `null` if that session has no warm-up results. `last_warmup` is the most recent session that has any warm-up results, so it can be an earlier session than `last_session`; it is `null` until the first warm-up is saved. See [Warm-up summaries](#warm-up-summaries). `duration_seconds` is `null` for a session with no `ended_at`. `today_plan` is a fixed list and `streak_days` is always `0` for now.
 
 ### GET /api/patient/calibration/latest
 
@@ -379,16 +399,27 @@ Response `200`: an array of session summaries, newest first. The admin session l
     "device_info": { "browser": "Chrome", "fps": 30.0, "delegate": "GPU" },
     "notes": null,
     "duration_seconds": 1560.0,
-    "hull_area_sw2": 0.5
+    "hull_area_sw2": 0.5,
+    "warmup_summary": null
   }
 ]
 ```
+
+`warmup_summary` is a [warm-up summary](#warm-up-summaries), or `null` for a session without warm-up results.
 
 ### GET /api/patient/sessions/{id}
 
 Response `200`: a session summary, plus `calibration`, which is the calibration object or `null`. Another patient's session returns `404`.
 
 Errors: `404`.
+
+### GET /api/patient/warmup/history
+
+Query: `exercise_id` (required, one of the [exercise ids](#warm-up-results)) and `limit` (1–50, default 5).
+
+Response `200`: the patient's own warm-up results for that exercise, newest first, without skipped ones. The web app uses them to personalise today's targets.
+
+Errors: `422` for a missing or unknown `exercise_id`, or a `limit` out of range.
 
 ## Sessions
 
@@ -480,6 +511,118 @@ Request:
 Response `201`: the same fields, plus `id`, `session_id` and `created_at`.
 
 Errors: `404`, `409` if the session already has a calibration or has ended, `422`.
+
+## Warm-up results
+
+### POST /api/sessions/{id}/warmup
+
+The body is a list of 1–20 results, one per exercise. Saving an exercise again in the same session replaces its earlier result, so the web app can save after each exercise and again at the end.
+
+```json
+[
+  {
+    "exercise_id": "shoulder_flexion",
+    "preset": "personal",
+    "thresholds": { "low": 30, "high": 95, "unit": "deg" },
+    "personalisation": {
+      "previous_high": 90,
+      "new_high": 95,
+      "reason": "raised: 10/10 reps, 10% compensated"
+    },
+    "full_reps": 9,
+    "partial_reps": 1,
+    "target_reps": 10,
+    "best_peak": 101.5,
+    "mean_duration_ms": 2400.0,
+    "active_time_ms": 41000.0,
+    "paused_time_ms": 1500.0,
+    "measure_source": "3d",
+    "trunk_reference": "hip",
+    "compensated_reps": 1,
+    "compensation_rate": 0.1,
+    "reps": [
+      {
+        "index": 1,
+        "peak": 98.0,
+        "duration_ms": 2300.0,
+        "compensated": true,
+        "compensation_type": "trunk+shoulder"
+      }
+    ],
+    "skipped": false
+  }
+]
+```
+
+- **`exercise_id`:** `shoulder_flexion`, `shoulder_abduction`, `elbow_flexion`, `forward_reach`, `hand_open_close` or `thumb_opposition`. Each may appear only once in a body.
+- **`preset`:** `standard`, `gentle` or `personal`.
+- **`thresholds.unit`:** `deg` for angles, `arm_ratio` for forward reach (a share of arm length) and `palm_ratio` for hand measures (palm lengths). `low` must be below `high`.
+- **The target line:** exercises that rise to a target (shoulder raises, reach, hand opening) use `high`. Elbow flexion and thumb opposition fall to a target and use `low`. `personalisation.previous_high` and `new_high` hold that target line, whichever it is; `previous_high` is `null` the first time.
+- **Peaks are unfiltered values,** in the exercise's unit. For thumb opposition a peak is the loosest of a sequence's four touches, so smaller is better.
+- **`trunk_reference`:** `hip`, `vertical` or `n/a` (hand exercises); it and `measure_source` (`3d`, `2d`) may be `null` when nothing was measured.
+- **`best_peak` and `mean_duration_ms`** may be `null`, for example for a skipped exercise.
+- **Counts and times** must not be negative, `target_reps` is at least 1, `compensation_rate` is from 0 to 1, and `compensated_reps` cannot exceed `full_reps + partial_reps`.
+- **`compensation_type`** joins the kinds seen in a rep with `+`: `trunk`, `lean` and `shoulder`.
+- **NaN and infinite numbers,** and unknown fields, are rejected.
+
+Response `200`: every warm-up result of the session, in the order they were first saved, each with `id`, `session_id` and `created_at` added.
+
+Errors: `404` (not the patient's session), `409` (the session has ended, or the same exercise was saved by two requests at once), `422`.
+
+### GET /api/sessions/{id}/warmup
+
+Response `200`: the session's warm-up results, as above; an empty list if there are none.
+
+Errors: `404`.
+
+### Warm-up summaries
+
+Session summaries, the dashboard and the admin history share these figures. Skipped exercises count only towards `exercises_total`.
+
+| Field | Meaning |
+| --- | --- |
+| `exercises_done` | Exercises not skipped |
+| `exercises_total` | Every exercise with a result |
+| `total_reps` | Full reps of the exercises done |
+| `goals_reached` | Exercises with at least 90% of their target reps done in full (9 of 10, 5 of 5) |
+| `mean_compensation_rate` | The mean of the done exercises' rates, or `null` if none were done |
+
+### GET /api/admin/patients/{id}/warmup
+
+Query: `exercise_id` (optional) to return one exercise only.
+
+Response `200`: one entry per exercise, each with its points oldest first, for charting. Skipped results are left out.
+
+```json
+[
+  {
+    "exercise_id": "shoulder_flexion",
+    "points": [
+      {
+        "session_id": 1,
+        "date": "2026-11-02T09:05:00Z",
+        "preset": "personal",
+        "best_peak": 101.5,
+        "target_high": 95.0,
+        "thresholds": { "low": 30.0, "high": 95.0, "unit": "deg" },
+        "full_reps": 9,
+        "target_reps": 10,
+        "goal_reached": true,
+        "compensation_rate": 0.1,
+        "personalisation": {
+          "previous_high": 90.0,
+          "new_high": 95.0,
+          "reason": "raised: 10/10 reps, 10% compensated"
+        }
+      }
+    ]
+  }
+]
+```
+
+`target_high` is always `thresholds.high`. For elbow flexion and thumb opposition the target is `thresholds.low`; see the target line above.
+
+Errors: `404` (no such patient), `422` (unknown `exercise_id`).
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

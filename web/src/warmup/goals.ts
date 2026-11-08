@@ -9,10 +9,17 @@ import {
   type ThresholdPreset,
 } from "./exercises";
 import { formatMeasure } from "./feedback";
-import { type PersonalisedTargets, targetOf, type WarmupHistoryEntry } from "./personalise";
+import {
+  LOWER_COMPENSATION,
+  type PersonalisedTargets,
+  RAISE_MAX_COMPENSATION,
+  RAISE_SUCCESS,
+  targetOf,
+  type WarmupHistoryEntry,
+} from "./personalise";
 
-/** A goal is reached with 90% of the target reps done in full, as on the server. */
-export const GOAL_SHARE = 0.9;
+/** A goal is reached with the share of reps that raises the next target, as on the server. */
+export const GOAL_SHARE = RAISE_SUCCESS;
 
 export function goalReached(fullReps: number, targetReps: number, skipped = false): boolean {
   return !skipped && targetReps > 0 && fullReps >= GOAL_SHARE * targetReps;
@@ -114,8 +121,8 @@ export type CompensationLevel = "low" | "some" | "high";
 
 /** Matches personalisation: under 20% raises a target, and over 30% lowers it. */
 export function compensationLevel(rate: number): CompensationLevel {
-  if (rate < 0.2) return "low";
-  return rate <= 0.3 ? "some" : "high";
+  if (rate < RAISE_MAX_COMPENSATION) return "low";
+  return rate <= LOWER_COMPENSATION ? "some" : "high";
 }
 
 /** One exercise's line in a warm-up table, from a live result or a saved one. */

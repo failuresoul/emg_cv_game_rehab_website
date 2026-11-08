@@ -156,6 +156,26 @@ describe("compensation values", () => {
 });
 
 describe("CompensationMonitor", () => {
+  it("takes every threshold and timing from its config", () => {
+    const strict = {
+      ...COMPENSATION_CONFIG,
+      baselineMs: 500,
+      sustainMs: 100,
+      thresholds: { trunkDisplacement: 0.05, trunkLeanDeg: 3, shoulderHike: 0.02 },
+    };
+    const monitor = new CompensationMonitor("shoulder_flexion", strict);
+    for (const { timestamp } of hold(0, 500)) monitor.addSample(posture(), timestamp);
+    expect(monitor.baseline).not.toBeNull();
+
+    // 0.1 SW is under the shared 0.15 SW, but over this config's 0.05 SW, held past 100 ms.
+    for (let time = 600; time < 800; time += FRAME_MS) {
+      monitor.addSample(posture({ forward: 0.1 }), time);
+    }
+    // Moving the shoulders forward over still hips also tilts the trunk past this config's 3°.
+    expect(monitor.reading.sustained).toContain("trunk");
+    expect(monitor.thresholds).toBe(strict.thresholds);
+  });
+
   it("has no values until the 2-second baseline is done", () => {
     const monitor = new CompensationMonitor("shoulder_flexion");
 

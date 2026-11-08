@@ -8,6 +8,7 @@ import {
   reasonSummary,
   reasonTexts,
   stepFor,
+  targetOf,
   type WarmupHistoryEntry,
 } from "./personalise";
 
@@ -273,3 +274,67 @@ describe("getTargets", () => {
     expect(getTargets(FLEXION, "gentle", [entry()]).personalisation).toBeNull();
   });
 });
+
+describe("personaliseThresholds bounds, across every exercise", () => {
+  const shares = [0, 0.3, 0.59, 0.6, 0.89, 0.9, 1];
+  const compensations = [0, 0.19, 0.2, 0.3, 0.31, 0.8];
+
+  it.each(Object.values(EXERCISES).map((exercise) => [exercise.id, exercise] as const))(
+    "%s stays within its ceilings, floor and gap",
+    (_, exercise) => {
+      const sign = exercise.direction === "up" ? 1 : -1;
+      const step = stepFor(exercise);
+      const standard = targetOf(exercise, exercise.presets.standard);
+      const gentle = targetOf(exercise, exercise.presets.gentle);
+      const hardest = sign * standard * (1 + sign * 0.15);
+      const span = Math.abs(standard - gentle) + 4 * step;
+      const previousTargets = [-2, -1, 0, 1, 2, 3].map((n) => standard + sign * n * (span / 2));
+      const peaks = [null, gentle - sign * span, gentle, standard, standard + sign * span];
+
+      for (const previous of previousTargets) {
+        for (const bestPeak of peaks) {
+          for (const share of shares) {
+            for (const compensationRate of compensations) {
+              const history = [
+                entry({
+                  fullReps: Math.round(share * exercise.targetReps),
+                  targetReps: exercise.targetReps,
+                  compensationRate,
+                  bestPeak,
+                  thresholds: withTargetLine(exercise, previous),
+                }),
+              ];
+              const targets = personaliseThresholds(exercise, history);
+              const difficulty = sign * targets.newHigh;
+              const ceiling = bestPeak === null ? Infinity : sign * bestPeak + step;
+              const tolerance = 1e-6;
+
+              // The floor wins over every ceiling.
+              expect(difficulty).toBeGreaterThanOrEqual(sign * gentle - tolerance);
+              if (difficulty > sign * gentle + tolerance) {
+                expect(difficulty).toBeLessThanOrEqual(Math.min(ceiling, hardest) + tolerance);
+              }
+              // A rule step is never more than one step.
+              if (targets.limit === null) {
+                expect(Math.abs(targets.newHigh - previous)).toBeLessThanOrEqual(step + tolerance);
+              }
+              expect(targets.low).toBeLessThan(targets.high);
+              if (exercise.counter !== "sequence") {
+                const gap = exercise.unit === "deg" ? 25 : 0.2;
+                expect(targets.high - targets.low).toBeGreaterThanOrEqual(gap - tolerance);
+              }
+              expect(reasonTexts(targets).length).toBeGreaterThan(0);
+            }
+          }
+        }
+      }
+    },
+  );
+});
+
+function withTargetLine(exercise: (typeof EXERCISES)[keyof typeof EXERCISES], target: number) {
+  const base = exercise.presets.standard;
+  return exercise.direction === "up"
+    ? { low: base.low, high: target }
+    : { low: target, high: base.high };
+}

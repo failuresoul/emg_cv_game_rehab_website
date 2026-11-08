@@ -47,10 +47,11 @@ export interface PersonalisedTargets extends Thresholds {
   evidence: { fullReps: number; targetReps: number; compensationRate: number } | null;
 }
 
-const RAISE_SUCCESS = 0.9;
-const RAISE_MAX_COMPENSATION = 0.2;
-const LOWER_SUCCESS = 0.6;
-const LOWER_COMPENSATION = 0.3;
+/** Rule thresholds, shared with the summary so that "goal reached" and the colours agree. */
+export const RAISE_SUCCESS = 0.9;
+export const RAISE_MAX_COMPENSATION = 0.2;
+export const LOWER_SUCCESS = 0.6;
+export const LOWER_COMPENSATION = 0.3;
 /** The hardest a target may get, as a share past the standard target. */
 const MAX_PAST_STANDARD = 0.15;
 const ANGLE_STEP = 5;
