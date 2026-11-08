@@ -38,15 +38,17 @@ import {
   EXERCISE_ORDER,
   type ExerciseDefinition,
   type ExerciseId,
-  type ExercisePreset,
   EXERCISES,
+  type ThresholdPreset,
 } from "@/warmup/exercises";
 import { ExerciseSummary } from "@/warmup/ExerciseSummary";
 import { exerciseFeedbackKey, exerciseWaitingKey, trackingLostKey } from "@/warmup/feedback";
 import { displayValue, frameForExercise } from "@/warmup/frames";
+import { type WarmupHistoryEntry, reasonTexts } from "@/warmup/personalise";
 import { PostureIndicator, type PostureStatus } from "@/warmup/PostureIndicator";
 import { RepCounterRing } from "@/warmup/RepCounterRing";
 import { SequenceProgress } from "@/warmup/SequenceProgress";
+import { useSaveWarmupResults, useWarmupHistories } from "@/warmup/warmupApi";
 
 const COUNTDOWN_FROM = 3;
 const COUNTDOWN_STEP_MS = 1000;
@@ -63,7 +65,9 @@ const EXERCISE_ICONS = {
 
 interface ExerciseStepProps {
   exercise: ExerciseDefinition;
-  preset: ExercisePreset;
+  preset: ThresholdPreset;
+  /** This exercise's earlier results, newest first, for a personal target. */
+  history: readonly WarmupHistoryEntry[];
   /** After switching to the easier preset, there is no need to read the instructions again. */
   startAtCountdown: boolean;
   affectedSide: Side;
@@ -77,6 +81,7 @@ interface ExerciseStepProps {
 function ExerciseStep({
   exercise,
   preset,
+  history,
   startAtCountdown,
   affectedSide,
   visionResult,
@@ -85,7 +90,7 @@ function ExerciseStep({
   onResult,
   onNext,
 }: ExerciseStepProps) {
-  const [runner] = useState(() => new ExerciseRunner(exercise, preset));
+  const [runner] = useState(() => new ExerciseRunner(exercise, preset, { history }));
   const [stage, setStage] = useState(runner.state);
   const [fullReps, setFullReps] = useState(0);
   const [sequenceStep, setSequenceStep] = useState(0);
@@ -100,7 +105,8 @@ function ExerciseStep({
   const lastPlaneFeedbackAt = useRef(-Infinity);
   const { direction, targetReps } = exercise;
   const isSequence = exercise.counter === "sequence";
-  const thresholds = exercise.presets[preset];
+  const thresholds = runner.currentThresholds;
+  const personalisation = runner.currentPersonalisation;
   const bestOf = direction === "up" ? Math.max : Math.min;
 
   const onFrame = useCallback(
@@ -189,7 +195,7 @@ function ExerciseStep({
     pausedForDialog.current = false;
   }
 
-  const easierLink = preset === "standard" && (
+  const easierLink = preset !== "gentle" && (
     <button
       type="button"
       className="text-primary min-h-11 cursor-pointer font-medium underline"
@@ -209,6 +215,13 @@ function ExerciseStep({
           ))}
         </ol>
         {exercise.tipKey && <p className="font-medium">{t(exercise.tipKey)}</p>}
+        {personalisation && (
+          <p className="text-muted">
+            {reasonTexts(personalisation)
+              .map(({ key, params }) => t(key, params))
+              .join(". ")}
+          </p>
+        )}
         <p className="bg-primary-light text-primary rounded-lg p-3 font-medium">
           {t("warmup.reminder")}
         </p>
@@ -339,18 +352,25 @@ function ExerciseStep({
   );
 }
 
-function WarmupRun({ affectedSide, onFinished }: { affectedSide: Side; onFinished: () => void }) {
+interface WarmupRunProps {
+  affectedSide: Side;
+  histories: Record<ExerciseId, WarmupHistoryEntry[]>;
+  onResult: (result: ExerciseResult) => void;
+  onFinished: () => void;
+}
+
+function WarmupRun({ affectedSide, histories, onResult, onFinished }: WarmupRunProps) {
   const { status, result, retry } = useVision();
-  const { addWarmupResult } = useSession();
   const [position, setPosition] = useState(0);
-  const [presets, setPresets] = useState<Partial<Record<ExerciseId, ExercisePreset>>>({});
+  const [presets, setPresets] = useState<Partial<Record<ExerciseId, ThresholdPreset>>>({});
   const [startAtCountdown, setStartAtCountdown] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [muted, setMutedState] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState(() => canSpeak(getLanguage()));
 
   const id = EXERCISE_ORDER[position];
-  const preset = presets[id] ?? "standard";
+  // Personal by default: with no history it falls back to the standard preset by itself.
+  const preset = presets[id] ?? "personal";
 
   useEffect(() => stopSpeaking, []);
   useEffect(() => onVoicesChanged(() => setVoiceAvailable(canSpeak(getLanguage()))), []);
@@ -398,6 +418,7 @@ function WarmupRun({ affectedSide, onFinished }: { affectedSide: Side; onFinishe
         key={`${id}-${preset}`}
         exercise={EXERCISES[id]}
         preset={preset}
+        history={histories[id]}
         startAtCountdown={startAtCountdown}
         affectedSide={affectedSide}
         visionResult={result}
@@ -406,7 +427,7 @@ function WarmupRun({ affectedSide, onFinished }: { affectedSide: Side; onFinishe
           setStartAtCountdown(fromActive);
           setPresets((current) => ({ ...current, [id]: "gentle" }));
         }}
-        onResult={addWarmupResult}
+        onResult={onResult}
         onNext={handleNext}
       />
     </div>
@@ -416,7 +437,25 @@ function WarmupRun({ affectedSide, onFinished }: { affectedSide: Side; onFinishe
 export function SessionWarmupPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { warmupResults } = useSession();
+  const { sessionId, warmupResults, addWarmupResult } = useSession();
+  const historyQueries = useWarmupHistories();
+  // Fixed at the start, so a result saved during the warm-up does not move later targets.
+  const [histories, setHistories] = useState<Record<ExerciseId, WarmupHistoryEntry[]> | null>(null);
+  const save = useSaveWarmupResults();
+  const { mutate: saveResults } = save;
+  const handleResult = useCallback(
+    (result: ExerciseResult) => {
+      addWarmupResult(result);
+      if (sessionId === null) return;
+      // Everything so far: saving replaces earlier rows, so an earlier failure is retried too.
+      const all = [
+        ...warmupResults.filter((item) => item.exerciseId !== result.exerciseId),
+        result,
+      ];
+      saveResults({ sessionId, results: all });
+    },
+    [addWarmupResult, sessionId, warmupResults, saveResults],
+  );
   const affectedSide = user?.patient_profile?.affected_side;
   const finished = EXERCISE_ORDER.every((id) =>
     warmupResults.some((result) => result.exerciseId === id),
@@ -452,8 +491,10 @@ export function SessionWarmupPage() {
         </ul>
         <Button
           size="lg"
+          loading={historyQueries.isPending}
           onClick={() => {
             prepareAudio();
+            setHistories(historyQueries.histories);
             setPhase("running");
           }}
         >
@@ -464,7 +505,14 @@ export function SessionWarmupPage() {
   }
 
   if (phase === "running") {
-    return <WarmupRun affectedSide={affectedSide} onFinished={handleFinished} />;
+    return (
+      <WarmupRun
+        affectedSide={affectedSide}
+        histories={histories ?? historyQueries.histories}
+        onResult={handleResult}
+        onFinished={handleFinished}
+      />
+    );
   }
 
   return (
@@ -475,6 +523,21 @@ export function SessionWarmupPage() {
           const result = warmupResults.find((item) => item.exerciseId === id);
           return result ? [<ExerciseSummary key={id} result={result} />] : [];
         })}
+      </div>
+      <div aria-live="polite" className="flex flex-wrap items-center gap-3">
+        {save.isPending && <p className="text-muted">{t("warmup.saving")}</p>}
+        {save.isSuccess && <p className="text-muted">{t("warmup.saved")}</p>}
+        {save.isError && sessionId !== null && (
+          <>
+            <p>{t("warmup.saveFailed")}</p>
+            <Button
+              variant="secondary"
+              onClick={() => saveResults({ sessionId, results: warmupResults })}
+            >
+              {t("warmup.saveRetry")}
+            </Button>
+          </>
+        )}
       </div>
       <Button size="lg" onClick={() => void navigate("/session/plan")}>
         {t("warmup.complete.continue")}

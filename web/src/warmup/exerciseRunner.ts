@@ -4,10 +4,11 @@ import type { PostureSample } from "@/vision/posture";
 import {
   type ExerciseDefinition,
   type ExerciseId,
-  type ExercisePreset,
-  getThresholds,
+  getTargets,
+  type ThresholdPreset,
   type Thresholds,
 } from "./exercises";
+import type { PersonalisedTargets, WarmupHistoryEntry } from "./personalise";
 import { CompensationMonitor, type CompensationReading, type ExerciseRep } from "./compensation";
 import {
   type CounterEvent,
@@ -38,8 +39,10 @@ export type ExerciseEvent =
 
 export interface ExerciseResult {
   exerciseId: ExerciseId;
-  preset: ExercisePreset;
+  preset: ThresholdPreset;
   thresholds: Thresholds;
+  /** How a personal target was chosen; null for a fixed preset. */
+  personalisation: PersonalisedTargets | null;
   /** Every recorded movement, full and partial, with what was seen of the posture. */
   reps: ExerciseRep[];
   fullReps: number;
@@ -78,7 +81,8 @@ export interface ExerciseRunnerOptions {
   countdownMs?: number;
   /** How long tracking must stay back before a tracking pause ends by itself. */
   resumeDelayMs?: number;
-  history?: readonly ExerciseResult[];
+  /** This exercise's earlier results, newest first, for the "personal" preset. */
+  history?: readonly WarmupHistoryEntry[];
 }
 
 const DEFAULT_COUNTDOWN_MS = 3000;
@@ -105,8 +109,9 @@ function mostCommon<T extends string>(counts: Map<T, number>): T | null {
  */
 export class ExerciseRunner {
   private readonly definition: ExerciseDefinition;
-  private readonly preset: ExercisePreset;
+  private readonly preset: ThresholdPreset;
   private readonly thresholds: Thresholds;
+  private readonly personalisation: PersonalisedTargets | null;
   private readonly countdownMs: number;
   private readonly resumeDelayMs: number;
   private readonly counter: ExerciseCounter;
@@ -131,7 +136,7 @@ export class ExerciseRunner {
 
   constructor(
     definition: ExerciseDefinition,
-    preset: ExercisePreset,
+    preset: ThresholdPreset,
     {
       countdownMs = DEFAULT_COUNTDOWN_MS,
       resumeDelayMs = DEFAULT_RESUME_DELAY_MS,
@@ -139,13 +144,28 @@ export class ExerciseRunner {
     }: ExerciseRunnerOptions = {},
   ) {
     this.definition = definition;
-    this.preset = preset;
-    this.thresholds = getThresholds(definition, preset, history);
+    const targets = getTargets(definition, preset, history);
+    this.preset = targets.preset;
+    this.thresholds = targets.thresholds;
+    this.personalisation = targets.personalisation;
     this.countdownMs = countdownMs;
     this.resumeDelayMs = resumeDelayMs;
     this.counter = createCounter(definition, this.thresholds);
     this.monitor = new CompensationMonitor(definition.id);
     this.counter.subscribe((event) => this.handleCounterEvent(event));
+  }
+
+  /** The thresholds in use, which may be personalised. */
+  get currentThresholds(): Thresholds {
+    return this.thresholds;
+  }
+
+  get currentPreset(): ThresholdPreset {
+    return this.preset;
+  }
+
+  get currentPersonalisation(): PersonalisedTargets | null {
+    return this.personalisation;
   }
 
   get state(): ExerciseState {
@@ -265,6 +285,7 @@ export class ExerciseRunner {
       exerciseId: this.definition.id,
       preset: this.preset,
       thresholds: this.thresholds,
+      personalisation: this.personalisation,
       reps,
       fullReps: this.counter.fullReps,
       partialReps: this.counter.partialReps,

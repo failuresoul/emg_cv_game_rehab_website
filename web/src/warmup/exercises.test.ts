@@ -166,7 +166,7 @@ describe("getThresholds", () => {
     expect(getThresholds(EXERCISES.elbow_flexion, "gentle")).toEqual({ low: 90, high: 125 });
   });
 
-  it("ignores history for now", () => {
+  it("uses a fixed preset as it is, whatever the history", () => {
     expect(getThresholds(EXERCISES.shoulder_abduction, "gentle", [])).toEqual({
       low: 30,
       high: 50,

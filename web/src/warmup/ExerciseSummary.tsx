@@ -74,6 +74,9 @@ export function ExerciseSummary({ result }: { result: ExerciseResult }) {
       {result.preset === "gentle" && !result.skipped && (
         <p className="text-muted">{t("warmup.summary.gentle")}</p>
       )}
+      {result.preset === "personal" && !result.skipped && (
+        <p className="text-muted">{t("warmup.summary.personal")}</p>
+      )}
     </div>
   );
 }

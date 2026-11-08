@@ -1,7 +1,12 @@
 import type { TranslationKey } from "@/i18n";
 import type { Point } from "@/vision/geometry";
 
-import type { ExerciseFeedback, ExerciseResult } from "./exerciseRunner";
+import type { ExerciseFeedback } from "./exerciseRunner";
+import {
+  type PersonalisedTargets,
+  personaliseThresholds,
+  type WarmupHistoryEntry,
+} from "./personalise";
 import type { RepDirection } from "./repCounter";
 
 export type ExerciseId =
@@ -11,7 +16,10 @@ export type ExerciseId =
   | "forward_reach"
   | "hand_open_close"
   | "thumb_opposition";
+/** The fixed presets each exercise defines. */
 export type ExercisePreset = "standard" | "gentle";
+/** What a result can use: a fixed preset, or one personalised from the patient's history. */
+export type ThresholdPreset = ExercisePreset | "personal";
 export type ExerciseMeasure =
   | "armElevationDeg"
   | "elbowFlexionDeg"
@@ -366,12 +374,35 @@ export const EXERCISE_ORDER: ExerciseId[] = [
 /** Every exercise, for tools such as the Exercise Lab. */
 export const ALL_EXERCISE_IDS = Object.keys(EXERCISES) as ExerciseId[];
 
+export interface ExerciseTargets {
+  thresholds: Thresholds;
+  /** The preset actually used: "personal" falls back to "standard" with no history. */
+  preset: ThresholdPreset;
+  /** Why the thresholds are what they are; null for a fixed preset chosen directly. */
+  personalisation: PersonalisedTargets | null;
+}
+
+/** The thresholds to use today, and how they were chosen. */
+export function getTargets(
+  exercise: ExerciseDefinition,
+  preset: ThresholdPreset,
+  history: readonly WarmupHistoryEntry[] = [],
+): ExerciseTargets {
+  if (preset !== "personal") {
+    return { thresholds: exercise.presets[preset], preset, personalisation: null };
+  }
+  const personalised = personaliseThresholds(exercise, history);
+  return {
+    thresholds: { low: personalised.low, high: personalised.high },
+    preset: personalised.preset,
+    personalisation: personalised,
+  };
+}
+
 export function getThresholds(
   exercise: ExerciseDefinition,
-  preset: ExercisePreset,
-  history?: readonly ExerciseResult[],
+  preset: ThresholdPreset,
+  history?: readonly WarmupHistoryEntry[],
 ): Thresholds {
-  // TODO(Day 4): personalise these from the patient's earlier results in `history`.
-  void history;
-  return exercise.presets[preset];
+  return getTargets(exercise, preset, history).thresholds;
 }

@@ -141,6 +141,69 @@ export interface LastSession {
   date: string;
   status: SessionStatus;
   duration_seconds: number | null;
+  warmup_summary?: WarmupSummary | null;
+}
+
+export type WarmupExerciseId =
+  | "shoulder_flexion"
+  | "shoulder_abduction"
+  | "elbow_flexion"
+  | "forward_reach"
+  | "hand_open_close"
+  | "thumb_opposition";
+export type WarmupPreset = "standard" | "gentle" | "personal";
+export type ThresholdUnit = "deg" | "arm_ratio" | "palm_ratio";
+
+export interface WarmupThresholds {
+  low: number;
+  high: number;
+  unit: ThresholdUnit;
+}
+
+export interface WarmupPersonalisation {
+  previous_high: number | null;
+  new_high: number;
+  reason: string;
+}
+
+export interface WarmupRep {
+  index: number;
+  peak: number;
+  duration_ms: number;
+  compensated: boolean;
+  compensation_type: string | null;
+}
+
+export interface WarmupResultCreate {
+  exercise_id: WarmupExerciseId;
+  preset: WarmupPreset;
+  thresholds: WarmupThresholds;
+  personalisation: WarmupPersonalisation | null;
+  full_reps: number;
+  partial_reps: number;
+  target_reps: number;
+  best_peak: number | null;
+  mean_duration_ms: number | null;
+  active_time_ms: number;
+  paused_time_ms: number;
+  measure_source: "3d" | "2d" | null;
+  trunk_reference: "hip" | "vertical" | "n/a" | null;
+  compensated_reps: number;
+  compensation_rate: number;
+  reps: WarmupRep[];
+  skipped: boolean;
+}
+
+export interface WarmupResult extends WarmupResultCreate {
+  id: number;
+  session_id: number;
+  created_at: string;
+}
+
+export interface WarmupSummary {
+  exercises_done: number;
+  total_reps: number;
+  mean_compensation_rate: number | null;
 }
 
 export interface LatestCalibration {
