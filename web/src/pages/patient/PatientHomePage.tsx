@@ -1,4 +1,6 @@
 import {
+  Activity,
+  ArrowRight,
   Camera,
   Flame,
   Gamepad2,
@@ -8,7 +10,9 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
+import { Link } from "react-router";
 
+import { buttonClasses } from "@/components/ui/buttonStyles";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
@@ -21,7 +25,7 @@ import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { StartSessionButton } from "@/features/session/StartSessionButton";
 import { t, type TranslationKey } from "@/i18n";
 import { formatDateTime, formatNumber } from "@/lib/format";
-import type { Side, TodayPlanStep } from "@/types/api";
+import type { LastWarmup, Side, TodayPlanStep } from "@/types/api";
 
 const STEP_DISPLAY: Partial<Record<string, { labelKey: TranslationKey; icon: LucideIcon }>> = {
   camera_check: { labelKey: "patient.step.cameraCheck", icon: Camera },
@@ -75,7 +79,7 @@ function ReachMapCard({ affectedSide }: { affectedSide: Side }) {
   const latest = useLatestCalibration();
 
   return (
-    <Card className="lg:col-span-3">
+    <Card className="lg:col-span-2">
       <h2 className="mb-2 text-xl font-bold">{t("calibrate.result.title")}</h2>
       {latest.isPending && <Skeleton className="h-64" />}
       {latest.isError && <QueryError onRetry={() => void latest.refetch()} />}
@@ -94,6 +98,57 @@ function ReachMapCard({ affectedSide }: { affectedSide: Side }) {
             {t("calibrate.result.area", { area: formatNumber(latest.data.hull_area_sw2) })}
           </p>
         </div>
+      )}
+    </Card>
+  );
+}
+
+function WarmupStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-2xl font-bold tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+function LastWarmupCard({ warmup }: { warmup: LastWarmup | null }) {
+  return (
+    <Card className="flex flex-col gap-3">
+      <h2 className="text-xl font-bold">{t("patient.lastWarmup.title")}</h2>
+      {warmup ? (
+        <>
+          <p className="text-muted">{formatDateTime(warmup.date)}</p>
+          <dl className="flex flex-col gap-2">
+            <WarmupStat
+              label={t("patient.lastWarmup.exercises")}
+              value={t("patient.lastWarmup.exercisesValue", {
+                done: warmup.exercises_done,
+                total: warmup.exercises_total,
+              })}
+            />
+            <WarmupStat
+              label={t("patient.lastWarmup.reps")}
+              value={formatNumber(warmup.total_reps, 0)}
+            />
+            <WarmupStat
+              label={t("patient.lastWarmup.goals")}
+              value={t("patient.lastWarmup.exercisesValue", {
+                done: warmup.goals_reached,
+                total: warmup.exercises_total,
+              })}
+            />
+          </dl>
+          <Link
+            to={`/patient/history/${warmup.session_id}`}
+            className={buttonClasses("secondary", "md", "mt-auto")}
+          >
+            {t("patient.lastWarmup.details")}
+            <ArrowRight size={20} aria-hidden />
+          </Link>
+        </>
+      ) : (
+        <EmptyState icon={Activity} title={t("patient.lastWarmup.empty")} />
       )}
     </Card>
   );
@@ -142,6 +197,7 @@ export function PatientHomePage() {
           <TodayCard plan={dashboard.data.today_plan} />
           <StreakCard days={dashboard.data.streak_days} />
           <ReachMapCard affectedSide={dashboard.data.profile.affected_side} />
+          <LastWarmupCard warmup={dashboard.data.last_warmup} />
           <Card className="lg:col-span-2">
             <h2 className="mb-2 text-xl font-bold">{t("patient.progress.title")}</h2>
             {lastSession && (

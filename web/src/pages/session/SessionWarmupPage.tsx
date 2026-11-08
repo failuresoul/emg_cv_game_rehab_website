@@ -1,4 +1,5 @@
 import {
+  Check,
   Dumbbell,
   Hand,
   Move,
@@ -44,15 +45,20 @@ import {
 import { ExerciseSummary } from "@/warmup/ExerciseSummary";
 import { exerciseFeedbackKey, exerciseWaitingKey, trackingLostKey } from "@/warmup/feedback";
 import { displayValue, frameForExercise } from "@/warmup/frames";
-import { type WarmupHistoryEntry, reasonTexts } from "@/warmup/personalise";
+import { reasonTexts, targetOf, type WarmupHistoryEntry } from "@/warmup/personalise";
 import { PostureIndicator, type PostureStatus } from "@/warmup/PostureIndicator";
 import { RepCounterRing } from "@/warmup/RepCounterRing";
 import { SequenceProgress } from "@/warmup/SequenceProgress";
-import { useSaveWarmupResults, useWarmupHistories } from "@/warmup/warmupApi";
+import { encouragement, goalText, rowsFromResults } from "@/warmup/goals";
+import { RestScreen } from "@/warmup/RestScreen";
+import { historiesBefore, useSaveWarmupResults, useWarmupHistories } from "@/warmup/warmupApi";
+import { WarmupResultsTable } from "@/warmup/WarmupResultsTable";
 
 const COUNTDOWN_FROM = 3;
 const COUNTDOWN_STEP_MS = 1000;
 const FEEDBACK_SHOW_MS = 3000;
+// Three more attempts after a failure, 1, 2 and 4 seconds apart.
+const SAVE_RETRIES = 3;
 
 const EXERCISE_ICONS = {
   shoulder_flexion: MoveUpRight,
@@ -75,7 +81,8 @@ interface ExerciseStepProps {
   voiceOn: boolean;
   onEasier: (startAtCountdown: boolean) => void;
   onResult: (result: ExerciseResult) => void;
-  onNext: () => void;
+  /** `rest` is true after a finished exercise, and false after skipping one. */
+  onNext: (rest: boolean) => void;
 }
 
 function ExerciseStep({
@@ -108,6 +115,13 @@ function ExerciseStep({
   const thresholds = runner.currentThresholds;
   const personalisation = runner.currentPersonalisation;
   const bestOf = direction === "up" ? Math.max : Math.min;
+  // The goal sentence already gives the numbers; only a limit needs saying as well.
+  const limitText = personalisation?.limit
+    ? reasonTexts(personalisation)
+        .slice(1)
+        .map(({ key, params }) => t(key, params))
+        .join(" ")
+    : null;
 
   const onFrame = useCallback(
     (state: JointAngleState) => {
@@ -145,7 +159,7 @@ function ExerciseStep({
             onResult(finished);
           }
           if (event.state === "DONE") playChime();
-          else onNext();
+          else onNext(false);
         }
       } else if (event.type === "repCompleted") {
         setFullReps(runner.fullReps);
@@ -215,13 +229,10 @@ function ExerciseStep({
           ))}
         </ol>
         {exercise.tipKey && <p className="font-medium">{t(exercise.tipKey)}</p>}
-        {personalisation && (
-          <p className="text-muted">
-            {reasonTexts(personalisation)
-              .map(({ key, params }) => t(key, params))
-              .join(". ")}
-          </p>
-        )}
+        <p className="text-primary text-xl font-bold">
+          {goalText(exercise, targetOf(exercise, thresholds), personalisation)}
+        </p>
+        {limitText && <p className="text-muted">{limitText}</p>}
         <p className="bg-primary-light text-primary rounded-lg p-3 font-medium">
           {t("warmup.reminder")}
         </p>
@@ -251,7 +262,7 @@ function ExerciseStep({
     return (
       <Card className="m-auto flex w-full max-w-xl flex-col gap-4">
         <ExerciseSummary result={result} />
-        <Button size="lg" onClick={onNext}>
+        <Button size="lg" onClick={() => onNext(true)}>
           {t("warmup.next")}
         </Button>
       </Card>
@@ -367,6 +378,7 @@ function WarmupRun({ affectedSide, histories, onResult, onFinished }: WarmupRunP
   const [voiceOn, setVoiceOn] = useState(false);
   const [muted, setMutedState] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState(() => canSpeak(getLanguage()));
+  const [resting, setResting] = useState(false);
 
   const id = EXERCISE_ORDER[position];
   // Personal by default: with no history it falls back to the standard preset by itself.
@@ -376,11 +388,19 @@ function WarmupRun({ affectedSide, histories, onResult, onFinished }: WarmupRunP
   useEffect(() => onVoicesChanged(() => setVoiceAvailable(canSpeak(getLanguage()))), []);
   useEffect(() => () => setMuted(false), []);
 
-  const handleNext = useCallback(() => {
-    setStartAtCountdown(false);
-    if (position + 1 < EXERCISE_ORDER.length) setPosition(position + 1);
-    else onFinished();
-  }, [position, onFinished]);
+  const handleNext = useCallback(
+    (rest: boolean) => {
+      setStartAtCountdown(false);
+      if (position + 1 >= EXERCISE_ORDER.length) onFinished();
+      else if (rest) setResting(true);
+      else setPosition(position + 1);
+    },
+    [position, onFinished],
+  );
+  const endRest = useCallback(() => {
+    setResting(false);
+    setPosition((current) => current + 1);
+  }, []);
 
   function toggleMute() {
     const next = !muted;
@@ -414,22 +434,29 @@ function WarmupRun({ affectedSide, histories, onResult, onFinished }: WarmupRunP
           {t(muted ? "warmup.unmute" : "warmup.mute")}
         </Button>
       </div>
-      <ExerciseStep
-        key={`${id}-${preset}`}
-        exercise={EXERCISES[id]}
-        preset={preset}
-        history={histories[id]}
-        startAtCountdown={startAtCountdown}
-        affectedSide={affectedSide}
-        visionResult={result}
-        voiceOn={voiceOn}
-        onEasier={(fromActive) => {
-          setStartAtCountdown(fromActive);
-          setPresets((current) => ({ ...current, [id]: "gentle" }));
-        }}
-        onResult={onResult}
-        onNext={handleNext}
-      />
+      {resting ? (
+        <RestScreen
+          nextName={t(EXERCISES[EXERCISE_ORDER[position + 1]].nameKey)}
+          onDone={endRest}
+        />
+      ) : (
+        <ExerciseStep
+          key={`${id}-${preset}`}
+          exercise={EXERCISES[id]}
+          preset={preset}
+          history={histories[id]}
+          startAtCountdown={startAtCountdown}
+          affectedSide={affectedSide}
+          visionResult={result}
+          voiceOn={voiceOn}
+          onEasier={(fromActive) => {
+            setStartAtCountdown(fromActive);
+            setPresets((current) => ({ ...current, [id]: "gentle" }));
+          }}
+          onResult={onResult}
+          onNext={handleNext}
+        />
+      )}
     </div>
   );
 }
@@ -441,8 +468,12 @@ export function SessionWarmupPage() {
   const historyQueries = useWarmupHistories();
   // Fixed at the start, so a result saved during the warm-up does not move later targets.
   const [histories, setHistories] = useState<Record<ExerciseId, WarmupHistoryEntry[]> | null>(null);
-  const save = useSaveWarmupResults();
-  const { mutate: saveResults } = save;
+  // A quiet save after each exercise, so little is lost if the page closes part way.
+  const { mutate: saveResults } = useSaveWarmupResults();
+  // The save the summary reports on, with retries.
+  const finalSave = useSaveWarmupResults({ retries: SAVE_RETRIES });
+  const { mutate: saveFinal } = finalSave;
+  const savedOnOpen = useRef(false);
   const handleResult = useCallback(
     (result: ExerciseResult) => {
       addWarmupResult(result);
@@ -464,6 +495,13 @@ export function SessionWarmupPage() {
     finished ? "complete" : "overview",
   );
   const handleFinished = useCallback(() => setPhase("complete"), []);
+
+  useEffect(() => {
+    if (phase !== "complete" || savedOnOpen.current) return;
+    if (sessionId === null || warmupResults.length === 0) return;
+    savedOnOpen.current = true;
+    saveFinal({ sessionId, results: warmupResults });
+  }, [phase, sessionId, warmupResults, saveFinal]);
 
   if (!affectedSide) {
     return (
@@ -494,7 +532,7 @@ export function SessionWarmupPage() {
           loading={historyQueries.isPending}
           onClick={() => {
             prepareAudio();
-            setHistories(historyQueries.histories);
+            setHistories(historiesBefore(historyQueries.histories, sessionId));
             setPhase("running");
           }}
         >
@@ -515,26 +553,41 @@ export function SessionWarmupPage() {
     );
   }
 
+  const earlier = histories ?? historiesBefore(historyQueries.histories, sessionId);
+  const ordered = EXERCISE_ORDER.flatMap((id) =>
+    warmupResults.filter((result) => result.exerciseId === id),
+  );
+  const rows = rowsFromResults(
+    ordered,
+    Object.fromEntries(EXERCISE_ORDER.map((id) => [id, earlier[id][0]])),
+  );
+  const cheer = encouragement(rows);
+
   return (
-    <Card className="m-auto flex w-full max-w-4xl flex-col gap-4">
+    <Card className="m-auto flex w-full max-w-6xl flex-col gap-4">
       <h1 className="text-2xl font-bold">{t("warmup.complete.title")}</h1>
-      <div className="grid gap-6 md:grid-cols-3">
-        {EXERCISE_ORDER.flatMap((id) => {
-          const result = warmupResults.find((item) => item.exerciseId === id);
-          return result ? [<ExerciseSummary key={id} result={result} />] : [];
-        })}
-      </div>
-      <div aria-live="polite" className="flex flex-wrap items-center gap-3">
-        {save.isPending && <p className="text-muted">{t("warmup.saving")}</p>}
-        {save.isSuccess && <p className="text-muted">{t("warmup.saved")}</p>}
-        {save.isError && sessionId !== null && (
+      <p className="text-primary text-xl font-semibold">{t(cheer.key, cheer.params)}</p>
+      <WarmupResultsTable rows={rows} showChange />
+      <div aria-live="polite" className="flex min-h-11 flex-wrap items-center gap-3">
+        {finalSave.isPending && (
+          <p className="text-muted">
+            {t(finalSave.failureCount > 0 ? "warmup.saveRetrying" : "warmup.saving")}
+          </p>
+        )}
+        {finalSave.isSuccess && (
+          <p className="text-success inline-flex items-center gap-1 font-semibold">
+            <Check size={20} aria-hidden />
+            {t("warmup.saved")}
+          </p>
+        )}
+        {finalSave.isError && sessionId !== null && (
           <>
             <p>{t("warmup.saveFailed")}</p>
             <Button
               variant="secondary"
-              onClick={() => saveResults({ sessionId, results: warmupResults })}
+              onClick={() => saveFinal({ sessionId, results: warmupResults })}
             >
-              {t("warmup.saveRetry")}
+              {t("warmup.saveTryAgain")}
             </Button>
           </>
         )}

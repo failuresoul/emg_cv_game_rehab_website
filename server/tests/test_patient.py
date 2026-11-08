@@ -11,7 +11,7 @@ def test_dashboard(client: TestClient, patient_headers: Headers) -> None:
     assert body["today_plan"] == [
         {"step": "camera_check", "minutes": 1},
         {"step": "calibration", "minutes": 2},
-        {"step": "warmup", "minutes": 6},
+        {"step": "warmup", "minutes": 10},
         {"step": "games", "minutes": 15},
         {"step": "feedback", "minutes": 2},
     ]

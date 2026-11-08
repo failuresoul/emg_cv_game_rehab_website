@@ -21,6 +21,7 @@ from app.schemas.session import (
     SessionSummary,
 )
 from app.schemas.warmup import WarmupSummary
+from app.services.warmup_summary import summaries_for_sessions
 
 ACTIVE_SESSION_LIFETIME = timedelta(hours=2)
 
@@ -43,11 +44,16 @@ def _duration_seconds(record: SessionRecord) -> float | None:
     return (as_utc(record.ended_at) - as_utc(record.started_at)).total_seconds()
 
 
-def _summary(record: SessionRecord, hull_area: float | None) -> SessionSummary:
+def _summary(
+    record: SessionRecord,
+    hull_area: float | None,
+    warmup_summary: WarmupSummary | None = None,
+) -> SessionSummary:
     return SessionSummary(
         **SessionRead.model_validate(record).model_dump(),
         duration_seconds=_duration_seconds(record),
         hull_area_sw2=hull_area,
+        warmup_summary=warmup_summary,
     )
 
 
@@ -175,14 +181,21 @@ def list_sessions(session: Session, patient_id: int) -> list[SessionSummary]:
         .where(SessionRecord.patient_id == patient_id)
         .order_by(col(SessionRecord.started_at).desc(), col(SessionRecord.id).desc())
     )
-    return [_summary(record, hull_area) for record, hull_area in session.exec(statement).all()]
+    rows = session.exec(statement).all()
+    warmups = summaries_for_sessions(session, (record.id for record, _ in rows if record.id))
+    return [
+        _summary(record, hull_area, warmups.get(record.id) if record.id else None)
+        for record, hull_area in rows
+    ]
 
 
 def get_session_detail(session: Session, record: SessionRecord) -> SessionDetail:
     calibration = session.exec(
         select(Calibration).where(Calibration.session_id == record.id)
     ).first()
-    summary = _summary(record, calibration.hull_area_sw2 if calibration else None)
+    assert record.id is not None
+    warmup = summaries_for_sessions(session, [record.id]).get(record.id)
+    summary = _summary(record, calibration.hull_area_sw2 if calibration else None, warmup)
     return SessionDetail(
         **summary.model_dump(),
         calibration=CalibrationRead.model_validate(calibration) if calibration else None,

@@ -49,6 +49,7 @@ class SessionRead(BaseModel):
 class SessionSummary(SessionRead):
     duration_seconds: float | None
     hull_area_sw2: float | None
+    warmup_summary: WarmupSummary | None = None
 
 
 class LastSession(BaseModel):

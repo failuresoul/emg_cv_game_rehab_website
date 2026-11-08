@@ -13,6 +13,7 @@ from app.schemas.common import (
     UtcDatetime,
 )
 from app.schemas.session import LastSession, LatestCalibration
+from app.schemas.warmup import LastWarmup
 
 
 class PatientCreate(BaseModel):
@@ -111,4 +112,5 @@ class PatientDashboard(BaseModel):
     today_plan: list[TodayPlanStep]
     last_session: LastSession | None = None
     latest_calibration: LatestCalibration | None = None
+    last_warmup: LastWarmup | None = None
     streak_days: int = 0

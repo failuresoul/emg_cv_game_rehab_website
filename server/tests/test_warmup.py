@@ -470,8 +470,12 @@ def test_admin_history_per_exercise_oldest_first(
         "preset": "standard",
         "best_peak": 80.0,
         "target_high": 90.0,
+        "thresholds": {"low": 30.0, "high": 90.0, "unit": "deg"},
         "full_reps": 6,
+        "target_reps": 10,
+        "goal_reached": False,
         "compensation_rate": 0.1,
+        "personalisation": None,
     }
     assert flexion[1]["target_high"] == 95.0
     assert flexion[0]["date"].endswith("Z")
@@ -576,7 +580,13 @@ def test_dashboard_summary_when_everything_skipped(
         "last_session"
     ]["warmup_summary"]
 
-    assert summary == {"exercises_done": 0, "total_reps": 0, "mean_compensation_rate": None}
+    assert summary == {
+        "exercises_done": 0,
+        "exercises_total": 1,
+        "total_reps": 0,
+        "goals_reached": 0,
+        "mean_compensation_rate": None,
+    }
 
 
 def test_dashboard_summary_is_for_the_last_session_only(
@@ -588,3 +598,126 @@ def test_dashboard_summary_is_for_the_last_session_only(
     response = client.get("/api/patient/dashboard", headers=patient_headers)
 
     assert response.json()["last_session"]["warmup_summary"] is None
+
+
+# Goals, summaries on session lists, and the last warm-up
+
+
+def test_admin_history_has_goal_and_personalisation(
+    client: TestClient,
+    create_patient: CreatePatient,
+    login: Login,
+    admin_headers: Headers,
+) -> None:
+    patient = create_patient(email="bob@example.com")
+    headers = login("bob@example.com", PATIENT_PASSWORD)
+    decision = {"previous_high": 90, "new_high": 95, "reason": "raised: 10/10 reps"}
+    save_in_new_session(
+        client,
+        headers,
+        [result_payload(preset="personal", full_reps=9, partial_reps=1, personalisation=decision)],
+    )
+
+    response = client.get(f"/api/admin/patients/{patient['id']}/warmup", headers=admin_headers)
+
+    [point] = response.json()[0]["points"]
+    # 9 of 10 is 90% of the target, which reaches the goal.
+    assert point["goal_reached"] is True
+    assert point["personalisation"] == {**decision, "previous_high": 90.0, "new_high": 95.0}
+
+
+@pytest.mark.parametrize(
+    ("full_reps", "target_reps", "reached"),
+    [(10, 10, True), (9, 10, True), (8, 10, False), (5, 5, True), (4, 5, False), (0, 5, False)],
+)
+def test_goal_reached_needs_90_percent(
+    client: TestClient,
+    patient_headers: Headers,
+    full_reps: int,
+    target_reps: int,
+    reached: bool,
+) -> None:
+    session_id = start(client, patient_headers)
+    payload = result_payload(
+        full_reps=full_reps, partial_reps=0, target_reps=target_reps, compensated_reps=0
+    )
+    save(client, patient_headers, session_id, [payload])
+
+    summary = client.get("/api/patient/dashboard", headers=patient_headers).json()[
+        "last_session"
+    ]["warmup_summary"]
+
+    assert summary["goals_reached"] == (1 if reached else 0)
+
+
+def test_skipped_exercise_never_reaches_its_goal(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    session_id = start(client, patient_headers)
+    save(client, patient_headers, session_id, [result_payload(full_reps=10, skipped=True)])
+
+    summary = client.get("/api/patient/dashboard", headers=patient_headers).json()[
+        "last_session"
+    ]["warmup_summary"]
+
+    assert summary["goals_reached"] == 0
+    assert summary["exercises_total"] == 1
+
+
+def test_session_lists_include_warmup_summary(
+    client: TestClient,
+    create_patient: CreatePatient,
+    login: Login,
+    admin_headers: Headers,
+) -> None:
+    patient = create_patient(email="bob@example.com")
+    headers = login("bob@example.com", PATIENT_PASSWORD)
+    with_warmup = save_in_new_session(
+        client, headers, [result_payload(), result_payload("elbow_flexion", full_reps=4)]
+    )
+    without = start(client, headers)
+
+    own = {item["id"]: item for item in client.get("/api/patient/sessions", headers=headers).json()}
+    admin = {
+        item["id"]: item
+        for item in client.get(
+            f"/api/admin/patients/{patient['id']}/sessions", headers=admin_headers
+        ).json()
+    }
+    detail = client.get(f"/api/patient/sessions/{with_warmup}", headers=headers).json()
+
+    expected = {
+        "exercises_done": 2,
+        "exercises_total": 2,
+        "total_reps": 12,
+        "goals_reached": 0,
+        "mean_compensation_rate": pytest.approx(0.1),
+    }
+    assert own[with_warmup]["warmup_summary"] == expected
+    assert admin[with_warmup]["warmup_summary"] == expected
+    assert detail["warmup_summary"] == expected
+    assert own[without]["warmup_summary"] is None
+
+
+def test_dashboard_last_warmup_skips_sessions_without_one(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    with_warmup = save_in_new_session(client, patient_headers, [result_payload(full_reps=10)])
+    start(client, patient_headers)
+
+    body = client.get("/api/patient/dashboard", headers=patient_headers).json()
+
+    assert body["last_session"]["warmup_summary"] is None
+    last = body["last_warmup"]
+    assert last["session_id"] == with_warmup
+    assert last["goals_reached"] == 1
+    assert last["total_reps"] == 10
+    assert last["date"].endswith("Z")
+
+
+def test_dashboard_last_warmup_is_null_without_any(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    start(client, patient_headers)
+
+    assert client.get("/api/patient/dashboard", headers=patient_headers).json()["last_warmup"] is None

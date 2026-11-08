@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ArrowLeft, SearchX, Target } from "lucide-react";
+import { Activity, ArrowLeft, SearchX, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
@@ -15,6 +15,10 @@ import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { t } from "@/i18n";
 import { formatDateTime, formatDuration, formatNumber } from "@/lib/format";
+import { EXERCISE_ORDER } from "@/warmup/exercises";
+import { rowsFromSaved } from "@/warmup/goals";
+import { useSessionWarmup } from "@/warmup/warmupApi";
+import { WarmupResultsTable } from "@/warmup/WarmupResultsTable";
 
 function BackLink() {
   return (
@@ -22,6 +26,29 @@ function BackLink() {
       <ArrowLeft size={20} aria-hidden />
       {t("history.back")}
     </Link>
+  );
+}
+
+function WarmupCard({ sessionId }: { sessionId: number }) {
+  const warmup = useSessionWarmup(sessionId);
+  const order = (id: string) => EXERCISE_ORDER.indexOf(id as (typeof EXERCISE_ORDER)[number]);
+
+  return (
+    <Card className="lg:col-span-3">
+      <h2 className="mb-2 text-xl font-bold">{t("history.warmupTitle")}</h2>
+      {warmup.isPending && <Skeleton className="h-48" />}
+      {warmup.isError && <QueryError onRetry={() => void warmup.refetch()} />}
+      {warmup.isSuccess && warmup.data.length === 0 && (
+        <EmptyState icon={Activity} title={t("history.noWarmup")} />
+      )}
+      {warmup.isSuccess && warmup.data.length > 0 && (
+        <WarmupResultsTable
+          rows={rowsFromSaved(
+            [...warmup.data].sort((a, b) => order(a.exercise_id) - order(b.exercise_id)),
+          )}
+        />
+      )}
+    </Card>
   );
 }
 
@@ -102,6 +129,7 @@ export function PatientSessionDetailPage() {
             <EmptyState icon={Target} title={t("history.noMap")} />
           )}
         </Card>
+        <WarmupCard sessionId={session.data.id} />
       </div>
     </>
   );

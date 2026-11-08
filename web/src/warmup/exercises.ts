@@ -364,11 +364,14 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
   },
 };
 
-/** The first exercises of the warm-up, in order. */
+/** The warm-up's exercises, in order. */
 export const EXERCISE_ORDER: ExerciseId[] = [
   "shoulder_flexion",
   "shoulder_abduction",
   "elbow_flexion",
+  "forward_reach",
+  "hand_open_close",
+  "thumb_opposition",
 ];
 
 /** Every exercise, for tools such as the Exercise Lab. */

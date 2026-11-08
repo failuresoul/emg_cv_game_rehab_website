@@ -122,6 +122,7 @@ export interface Calibration extends CalibrationCreate {
 export interface SessionSummary extends SessionRecord {
   duration_seconds: number | null;
   hull_area_sw2: number | null;
+  warmup_summary: WarmupSummary | null;
 }
 
 export interface SessionDetail extends SessionSummary {
@@ -202,8 +203,36 @@ export interface WarmupResult extends WarmupResultCreate {
 
 export interface WarmupSummary {
   exercises_done: number;
+  /** Every exercise with a result, skipped or not. */
+  exercises_total: number;
   total_reps: number;
+  goals_reached: number;
   mean_compensation_rate: number | null;
+}
+
+export interface LastWarmup extends WarmupSummary {
+  session_id: number;
+  date: string;
+}
+
+export interface AdminWarmupPoint {
+  session_id: number;
+  date: string;
+  preset: WarmupPreset;
+  best_peak: number | null;
+  target_high: number;
+  thresholds: WarmupThresholds;
+  full_reps: number;
+  target_reps: number;
+  goal_reached: boolean;
+  compensation_rate: number;
+  personalisation: WarmupPersonalisation | null;
+}
+
+export interface AdminWarmupHistory {
+  exercise_id: WarmupExerciseId;
+  /** Oldest first. */
+  points: AdminWarmupPoint[];
 }
 
 export interface LatestCalibration {
@@ -216,5 +245,6 @@ export interface PatientDashboard {
   today_plan: TodayPlanStep[];
   last_session: LastSession | null;
   latest_calibration: LatestCalibration | null;
+  last_warmup: LastWarmup | null;
   streak_days: number;
 }

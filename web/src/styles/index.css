@@ -13,6 +13,19 @@
   --color-background: #f4f7f7;
   --color-session-bg: #0b1416;
 
+  /* Four seconds in, four seconds out, for the rest between warm-up exercises. */
+  --animate-breathe: breathe 8s ease-in-out infinite;
+
+  @keyframes breathe {
+    0%,
+    100% {
+      transform: scale(0.6);
+    }
+    50% {
+      transform: scale(1);
+    }
+  }
+
   --font-sans:
     "Inter", "Noto Sans Bengali", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     sans-serif;

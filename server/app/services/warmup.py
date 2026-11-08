@@ -6,15 +6,18 @@ from sqlmodel import Session, col, select
 from app.models import Session as SessionRecord
 from app.models import WarmupResult
 from app.models.user import utc_now
+from app.schemas.common import as_utc
 from app.schemas.warmup import (
     AdminWarmupHistory,
     AdminWarmupPoint,
     ExerciseId,
+    LastWarmup,
     WarmupResultCreate,
     WarmupResultRead,
     WarmupSummary,
 )
 from app.services.sessions import SessionEndedError
+from app.services.warmup_summary import goal_reached, summarise
 
 
 class DuplicateExerciseError(Exception):
@@ -105,8 +108,12 @@ def get_admin_history(
                 preset=read.preset,
                 best_peak=read.best_peak,
                 target_high=read.thresholds.high,
+                thresholds=read.thresholds,
                 full_reps=read.full_reps,
+                target_reps=read.target_reps,
+                goal_reached=goal_reached(row),
                 compensation_rate=read.compensation_rate,
+                personalisation=read.personalisation,
             )
         )
     return [
@@ -117,14 +124,23 @@ def get_admin_history(
 
 def get_summary(session: Session, session_id: int) -> WarmupSummary | None:
     """None if the session has no warm-up results at all."""
-    results = list_session_results(session, session_id)
-    if not results:
+    return summarise(list_session_results(session, session_id))
+
+
+def get_last_warmup(session: Session, patient_id: int) -> LastWarmup | None:
+    """The patient's most recent session with any warm-up results, skipped or not."""
+    statement = (
+        select(SessionRecord)
+        .join(WarmupResult, col(WarmupResult.session_id) == col(SessionRecord.id))
+        .where(SessionRecord.patient_id == patient_id)
+        .order_by(col(SessionRecord.started_at).desc(), col(SessionRecord.id).desc())
+    )
+    record = session.exec(statement).first()
+    if record is None or record.id is None:
         return None
-    done = [result for result in results if not result.skipped]
-    return WarmupSummary(
-        exercises_done=len(done),
-        total_reps=sum(result.full_reps for result in done),
-        mean_compensation_rate=(
-            sum(result.compensation_rate for result in done) / len(done) if done else None
-        ),
+    summary = get_summary(session, record.id)
+    if summary is None:
+        return None
+    return LastWarmup(
+        **summary.model_dump(), session_id=record.id, date=as_utc(record.started_at)
     )

@@ -13,7 +13,7 @@ router = APIRouter(prefix="/patient", tags=["patient"])
 TODAY_PLAN = [
     TodayPlanStep(step="camera_check", minutes=1),
     TodayPlanStep(step="calibration", minutes=2),
-    TodayPlanStep(step="warmup", minutes=6),
+    TodayPlanStep(step="warmup", minutes=10),
     TodayPlanStep(step="games", minutes=15),
     TodayPlanStep(step="feedback", minutes=2),
 ]
@@ -32,6 +32,7 @@ def dashboard(patient: CurrentPatient, session: SessionDep) -> PatientDashboard:
         today_plan=TODAY_PLAN,
         last_session=last_session,
         latest_calibration=sessions.get_latest_calibration_summary(session, patient.id),
+        last_warmup=warmup.get_last_warmup(session, patient.id),
     )
 
 

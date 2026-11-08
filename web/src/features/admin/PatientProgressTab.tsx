@@ -9,6 +9,7 @@ import { formatDate, formatDifference, formatNumber } from "@/lib/format";
 import type { AdminCalibration, Patient } from "@/types/api";
 
 import { usePatientCalibrations } from "./hooks";
+import { PatientWarmupSection } from "./PatientWarmupSection";
 
 const RADII_COLUMNS: TranslationKey[] = [
   "adminProgress.column.direction",
@@ -60,7 +61,20 @@ function RadiiTable({
   );
 }
 
+/** Calibration first, then warm-up; each shows on its own, so either can be empty. */
 export function PatientProgressTab({ patient }: { patient: Patient }) {
+  return (
+    <div className="flex flex-col gap-10">
+      <CalibrationProgress patient={patient} />
+      <section>
+        <h2 className="mb-4 text-xl font-bold">{t("adminWarmup.title")}</h2>
+        <PatientWarmupSection patientId={patient.id} />
+      </section>
+    </div>
+  );
+}
+
+function CalibrationProgress({ patient }: { patient: Patient }) {
   const calibrations = usePatientCalibrations(patient.id);
 
   if (calibrations.isPending) return <Skeleton className="h-64" />;

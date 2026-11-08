@@ -11,6 +11,8 @@ export interface WarmupHistoryEntry {
   /** The best unfiltered peak, in the measure's unit; null if nothing was recorded. */
   bestPeak: number | null;
   thresholds: Thresholds;
+  /** The session it came from, so that today's own results can be left out. */
+  sessionId?: number;
 }
 
 /** Why today's target is what it is. */

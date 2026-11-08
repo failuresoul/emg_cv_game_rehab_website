@@ -109,11 +109,22 @@ class WarmupResultRead(BaseModel):
 
 
 class WarmupSummary(BaseModel):
-    """Skipped exercises are left out of every figure."""
+    """Skipped exercises are left out of every figure except exercises_total."""
 
     exercises_done: int
+    #: Every exercise with a result, skipped or not.
+    exercises_total: int
     total_reps: int
+    #: Exercises with at least 90% of their target reps done in full.
+    goals_reached: int
     mean_compensation_rate: float | None
+
+
+class LastWarmup(WarmupSummary):
+    """The most recent session that has any warm-up results."""
+
+    session_id: int
+    date: UtcDatetime
 
 
 class AdminWarmupPoint(BaseModel):
@@ -122,8 +133,12 @@ class AdminWarmupPoint(BaseModel):
     preset: WarmupPreset
     best_peak: float | None
     target_high: float
+    thresholds: WarmupThresholds
     full_reps: int
+    target_reps: int
+    goal_reached: bool
     compensation_rate: float
+    personalisation: WarmupPersonalisation | None
 
 
 class AdminWarmupHistory(BaseModel):

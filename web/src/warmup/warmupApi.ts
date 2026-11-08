@@ -1,4 +1,4 @@
-import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { PATIENT_KEY } from "@/features/patient/usePatientData";
 import { api } from "@/lib/api";
@@ -26,7 +26,21 @@ export function toHistoryEntry(result: WarmupResult): WarmupHistoryEntry {
     compensationRate: result.compensation_rate,
     bestPeak: result.best_peak,
     thresholds: { low: result.thresholds.low, high: result.thresholds.high },
+    sessionId: result.session_id,
   };
+}
+
+/** Each exercise's history without the given session, so a warm-up is not compared with itself. */
+export function historiesBefore(
+  histories: Record<ExerciseId, WarmupHistoryEntry[]>,
+  sessionId: number | null,
+): Record<ExerciseId, WarmupHistoryEntry[]> {
+  return Object.fromEntries(
+    Object.entries(histories).map(([exerciseId, entries]) => [
+      exerciseId,
+      entries.filter((entry) => sessionId === null || entry.sessionId !== sessionId),
+    ]),
+  ) as Record<ExerciseId, WarmupHistoryEntry[]>;
 }
 
 export interface WarmupHistories {
@@ -101,10 +115,20 @@ export function toWarmupPayload(
   };
 }
 
+export interface SaveOptions {
+  /** Further attempts after a failure, waiting 1, 2, 4… seconds between them. */
+  retries?: number;
+}
+
+/** 1, 2, 4… seconds, so a brief network problem has time to clear. */
+export const saveRetryDelay = (attempt: number) => 1000 * 2 ** attempt;
+
 /** Saves results; saving an exercise again replaces its earlier result in this session. */
-export function useSaveWarmupResults() {
+export function useSaveWarmupResults({ retries = 0 }: SaveOptions = {}) {
   const queryClient = useQueryClient();
   return useMutation({
+    retry: retries,
+    retryDelay: saveRetryDelay,
     mutationFn: async ({ sessionId, results }: { sessionId: number; results: ExerciseResult[] }) =>
       (
         await api.post<WarmupResult[]>(
@@ -113,5 +137,14 @@ export function useSaveWarmupResults() {
         )
       ).data,
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: PATIENT_KEY }),
+  });
+}
+
+/** One saved session's warm-up results, for its history page. */
+export function useSessionWarmup(sessionId: number | null) {
+  return useQuery({
+    queryKey: [...PATIENT_KEY, "sessions", sessionId, "warmup"],
+    queryFn: async () => (await api.get<WarmupResult[]>(`/sessions/${sessionId}/warmup`)).data,
+    enabled: sessionId !== null,
   });
 }

@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { WarmupResult } from "@/types/api";
 
 import { ExerciseRunner, type ExerciseResult } from "./exerciseRunner";
-import { EXERCISES } from "./exercises";
-import { personaliseThresholds } from "./personalise";
+import { ALL_EXERCISE_IDS, type ExerciseId, EXERCISES } from "./exercises";
+import { personaliseThresholds, type WarmupHistoryEntry } from "./personalise";
 import { cycles, FRAME_MS } from "./testSignals";
-import { toHistoryEntry, toWarmupPayload } from "./warmupApi";
+import { historiesBefore, saveRetryDelay, toHistoryEntry, toWarmupPayload } from "./warmupApi";
 
 function result(changes: Partial<ExerciseResult> = {}): ExerciseResult {
   return {
@@ -160,9 +160,27 @@ describe("toHistoryEntry", () => {
       compensationRate: 1,
       bestPeak: 104,
       thresholds: { low: 30, high: 90 },
+      sessionId: 2,
     });
   });
 });
+
+describe("historiesBefore", () => {
+  it("leaves out the given session, so a warm-up is not compared with itself", () => {
+    const today = { ...toHistoryEntry({ ...savedResult(), session_id: 7 }) };
+    const before = { ...toHistoryEntry({ ...savedResult(), session_id: 6 }) };
+    const histories = Object.fromEntries(
+      ALL_EXERCISE_IDS.map((id) => [id, id === "shoulder_flexion" ? [today, before] : []]),
+    ) as Record<ExerciseId, WarmupHistoryEntry[]>;
+
+    expect(historiesBefore(histories, 7).shoulder_flexion).toEqual([before]);
+    expect(historiesBefore(histories, null).shoulder_flexion).toEqual([today, before]);
+  });
+});
+
+function savedResult(): WarmupResult {
+  return { ...toWarmupPayload(result()), id: 1, session_id: 2, created_at: "2026-11-09T10:00:00Z" };
+}
 
 describe("ExerciseRunner with a personal target", () => {
   it("counts against the personalised threshold and records why", () => {
@@ -193,5 +211,11 @@ describe("ExerciseRunner with a personal target", () => {
       partialReps: 2,
       personalisation: { previousHigh: 90, newHigh: 95, reason: "raised" },
     });
+  });
+});
+
+describe("saveRetryDelay", () => {
+  it("backs off 1, 2 and 4 seconds", () => {
+    expect([0, 1, 2].map(saveRetryDelay)).toEqual([1000, 2000, 4000]);
   });
 });

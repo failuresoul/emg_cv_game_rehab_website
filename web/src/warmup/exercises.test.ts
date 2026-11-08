@@ -4,6 +4,8 @@ import { angleBetween } from "@/vision/angles";
 
 import { EXERCISE_ORDER, type ExerciseId, EXERCISES, getThresholds } from "./exercises";
 
+const ARM_EXERCISES = EXERCISE_ORDER.filter((id) => EXERCISES[id].demo.kind === "arm");
+
 function armFrames(id: ExerciseId) {
   const { demo } = EXERCISES[id];
   if (demo.kind !== "arm") throw new Error(`${id} has no arm demo`);
@@ -46,16 +48,27 @@ describe("exercise definitions", () => {
     expect(EXERCISES.elbow_flexion.tipKey).toBeDefined();
   });
 
-  it.each(EXERCISE_ORDER)("%s has 10 reps, 90 seconds and 3 steps", (id) => {
+  it("runs all six exercises in the agreed order", () => {
+    expect(EXERCISE_ORDER).toEqual([
+      "shoulder_flexion",
+      "shoulder_abduction",
+      "elbow_flexion",
+      "forward_reach",
+      "hand_open_close",
+      "thumb_opposition",
+    ]);
+  });
+
+  it.each(EXERCISE_ORDER)("%s has its reps, 90 seconds and 3 steps", (id) => {
     const exercise = EXERCISES[id];
 
     expect(exercise.id).toBe(id);
-    expect(exercise.targetReps).toBe(10);
+    expect(exercise.targetReps).toBe(id === "thumb_opposition" ? 5 : 10);
     expect(exercise.maxDurationSec).toBe(90);
     expect(exercise.instructionKeys).toHaveLength(3);
   });
 
-  it.each(EXERCISE_ORDER)("%s has a demo that loops and keeps the arm's length", (id) => {
+  it.each(ARM_EXERCISES)("%s has a demo that loops and keeps the arm's length", (id) => {
     const frames = armFrames(id);
     const first = frames[0];
     const last = frames[frames.length - 1];

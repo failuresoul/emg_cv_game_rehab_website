@@ -12,6 +12,7 @@ const COLUMNS: TranslationKey[] = [
   "sessions.column.status",
   "sessions.column.duration",
   "sessions.column.area",
+  "sessions.column.warmup",
 ];
 
 export function PatientSessionsTab({ patientId }: { patientId: number }) {
@@ -59,6 +60,15 @@ export function PatientSessionsTab({ patientId }: { patientId: number }) {
               </td>
               <td className="px-3 py-3 tabular-nums">
                 {session.hull_area_sw2 === null ? notRecorded : formatNumber(session.hull_area_sw2)}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap tabular-nums">
+                {session.warmup_summary
+                  ? t("sessions.warmupValue", {
+                      reps: session.warmup_summary.total_reps,
+                      goals: session.warmup_summary.goals_reached,
+                      total: session.warmup_summary.exercises_total,
+                    })
+                  : notRecorded}
               </td>
             </tr>
           ))}
