@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.common import Side, UtcDatetime
+from app.schemas.warmup import WarmupSummary
 
 SessionStatus = Literal["active", "completed", "aborted"]
 Point = tuple[float, float]
@@ -54,6 +55,7 @@ class LastSession(BaseModel):
     date: UtcDatetime
     status: SessionStatus
     duration_seconds: float | None
+    warmup_summary: WarmupSummary | None = None
 
 
 class CalibrationQuality(BaseModel):

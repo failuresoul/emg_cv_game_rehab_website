@@ -20,6 +20,7 @@ from app.schemas.session import (
     SessionStart,
     SessionSummary,
 )
+from app.schemas.warmup import WarmupSummary
 
 ACTIVE_SESSION_LIFETIME = timedelta(hours=2)
 
@@ -188,20 +189,24 @@ def get_session_detail(session: Session, record: SessionRecord) -> SessionDetail
     )
 
 
-def get_last_session(session: Session, patient_id: int) -> LastSession | None:
+def get_last_session_record(session: Session, patient_id: int) -> SessionRecord | None:
     statement = (
         select(SessionRecord)
         .where(SessionRecord.patient_id == patient_id)
         .order_by(col(SessionRecord.started_at).desc(), col(SessionRecord.id).desc())
     )
-    record = session.exec(statement).first()
-    if record is None:
-        return None
+    return session.exec(statement).first()
+
+
+def to_last_session(
+    record: SessionRecord, warmup_summary: WarmupSummary | None = None
+) -> LastSession:
     read = SessionRead.model_validate(record)
     return LastSession(
         date=read.started_at,
         status=read.status,
         duration_seconds=_duration_seconds(record),
+        warmup_summary=warmup_summary,
     )
 
 

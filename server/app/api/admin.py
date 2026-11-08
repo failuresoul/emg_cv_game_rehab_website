@@ -4,7 +4,8 @@ from app.api.deps import SessionDep, require_admin
 from app.models import PatientProfile, User
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
 from app.schemas.session import AdminCalibrationRead, SessionSummary
-from app.services import patients, sessions
+from app.schemas.warmup import AdminWarmupHistory, ExerciseId
+from app.services import patients, sessions, warmup
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -73,6 +74,15 @@ def list_patient_calibrations(patient_id: int, session: SessionDep) -> list[Admi
         AdminCalibrationRead.model_validate(calibration)
         for calibration in sessions.list_calibrations(session, patient_id)
     ]
+
+
+@router.get("/patients/{patient_id}/warmup")
+def list_patient_warmup(
+    patient_id: int, session: SessionDep, exercise_id: ExerciseId | None = None
+) -> list[AdminWarmupHistory]:
+    """Per exercise, oldest first, without skipped exercises."""
+    _get_patient_or_404(session, patient_id)
+    return warmup.get_admin_history(session, patient_id, exercise_id)
 
 
 @router.get("/stats")

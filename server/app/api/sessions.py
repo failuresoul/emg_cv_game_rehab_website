@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from typing import Annotated
+
+from fastapi import APIRouter, Body, HTTPException, Response, status
 
 from app.api.deps import CurrentPatient, SessionDep
 from app.models import Session as SessionRecord
@@ -10,7 +12,8 @@ from app.schemas.session import (
     SessionRead,
     SessionStart,
 )
-from app.services import sessions
+from app.schemas.warmup import WarmupResultCreate, WarmupResultRead
+from app.services import sessions, warmup
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -91,3 +94,40 @@ def save_calibration(
             detail="affected_side does not match the patient's profile",
         ) from None
     return CalibrationRead.model_validate(calibration)
+
+
+@router.post("/{session_id}/warmup")
+def save_warmup(
+    session_id: int,
+    payload: Annotated[list[WarmupResultCreate], Body(min_length=1, max_length=20)],
+    session: SessionDep,
+    patient: CurrentPatient,
+) -> list[WarmupResultRead]:
+    """Saving an exercise again replaces its earlier result. Returns all of the session's results."""
+    record = _get_own_session_or_404(session, patient, session_id)
+    try:
+        results = warmup.save_results(session, record, payload)
+    except sessions.SessionEndedError:
+        raise _session_ended() from None
+    except warmup.DuplicateExerciseError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Each exercise_id may appear only once",
+        ) from None
+    except warmup.WarmupConflictError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Warm-up was saved at the same time"
+        ) from None
+    return [WarmupResultRead.model_validate(result) for result in results]
+
+
+@router.get("/{session_id}/warmup")
+def get_warmup(
+    session_id: int, session: SessionDep, patient: CurrentPatient
+) -> list[WarmupResultRead]:
+    record = _get_own_session_or_404(session, patient, session_id)
+    assert record.id is not None
+    return [
+        WarmupResultRead.model_validate(result)
+        for result in warmup.list_session_results(session, record.id)
+    ]
