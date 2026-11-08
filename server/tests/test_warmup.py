@@ -267,6 +267,25 @@ def test_every_known_exercise_is_accepted(client: TestClient, patient_headers: H
     assert len(response.json()) == len(known)
 
 
+def test_ratio_units_are_accepted(client: TestClient, patient_headers: Headers) -> None:
+    session_id = start(client, patient_headers)
+    results = [
+        result_payload(
+            "forward_reach", thresholds={"low": 0.45, "high": 0.8, "unit": "arm_ratio"}
+        ),
+        result_payload(
+            "hand_open_close",
+            thresholds={"low": 1.2, "high": 1.6, "unit": "palm_ratio"},
+            trunk_reference="n/a",
+        ),
+    ]
+
+    response = save(client, patient_headers, session_id, results)
+
+    assert response.status_code == 200, response.text
+    assert [item["thresholds"]["unit"] for item in response.json()] == ["arm_ratio", "palm_ratio"]
+
+
 def test_same_exercise_twice_in_one_body_is_422(
     client: TestClient, patient_headers: Headers
 ) -> None:

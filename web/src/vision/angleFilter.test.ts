@@ -42,12 +42,14 @@ describe("JointAngleFilter", () => {
       armElevationDeg: { value: 30, ...quality },
       elevationPlaneDeg: null,
       elbowFlexionDeg: { value: 170, ...quality },
+      forwardReachRatio: { value: 0.5, ...quality },
     });
 
     expect(output).toEqual({
       armElevationDeg: 30,
       elevationPlaneDeg: null,
       elbowFlexionDeg: 170,
+      forwardReachRatio: 0.5,
     });
   });
 });

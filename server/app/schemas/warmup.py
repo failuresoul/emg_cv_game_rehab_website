@@ -13,8 +13,8 @@ ExerciseId = Literal[
     "thumb_opposition",
 ]
 WarmupPreset = Literal["standard", "gentle", "personal"]
-# Angles in degrees; hand distances as a ratio of palm length.
-ThresholdUnit = Literal["deg", "palm_ratio"]
+# Angles in degrees; forward reach as a share of arm length; hand distances in palm lengths.
+ThresholdUnit = Literal["deg", "arm_ratio", "palm_ratio"]
 MeasureSource = Literal["3d", "2d"]
 TrunkReference = Literal["hip", "vertical", "n/a"]
 

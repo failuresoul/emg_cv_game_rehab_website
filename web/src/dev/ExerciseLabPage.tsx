@@ -21,7 +21,12 @@ import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
 import { useVision } from "@/vision/useVision";
 import { visionEngine } from "@/vision/visionEngine";
 import { VisionStatusCard } from "@/vision/VisionStatusCard";
-import { EXERCISE_ORDER, type ExerciseId, type ExercisePreset } from "@/warmup/exercises";
+import {
+  ALL_EXERCISE_IDS,
+  type ExerciseId,
+  type ExercisePreset,
+  EXERCISES,
+} from "@/warmup/exercises";
 
 import { type ChartPoint, LabSession, type LabSnapshot } from "./labSession";
 
@@ -29,16 +34,20 @@ const PRIMARY = "var(--color-primary)";
 const MUTED = "var(--color-muted)";
 const LOW_COLOR = "var(--color-warning)";
 const HIGH_COLOR = "var(--color-success)";
-const MIN_THRESHOLD_GAP = 5;
+// The smallest gap between low and high, as a share of the measure's range.
+const MIN_THRESHOLD_GAP_SHARE = 0.03;
+const FINGER_NAMES = ["index", "middle", "ring", "little"] as const;
 
 const AngleChart = memo(function AngleChart({
   points,
   low,
   high,
+  range,
 }: {
   points: readonly ChartPoint[];
   low: number;
   high: number;
+  range: { min: number; max: number };
 }) {
   return (
     <div className="h-64">
@@ -56,8 +65,12 @@ const AngleChart = memo(function AngleChart({
             unit=" s"
           />
           <YAxis
-            domain={[0, 180]}
-            ticks={[0, 45, 90, 135, 180]}
+            domain={[range.min, range.max]}
+            ticks={Array.from(
+              { length: 5 },
+              (_, index) => range.min + ((range.max - range.min) * index) / 4,
+            )}
+            tickFormatter={(tick: number) => (range.max > 10 ? tick.toFixed(0) : tick.toFixed(2))}
             width={48}
             tick={{ fill: MUTED }}
             tickLine={false}
@@ -81,7 +94,7 @@ const AngleChart = memo(function AngleChart({
           <Line
             type="linear"
             dataKey="value"
-            name="Filtered angle"
+            name="Filtered value"
             stroke={PRIMARY}
             strokeWidth={2}
             dot={false}
@@ -101,18 +114,20 @@ function MeasureRow({
   name,
   raw,
   filtered,
+  digits = 1,
 }: {
   name: string;
-  raw: AngleMeasure | null | undefined;
+  raw: Partial<AngleMeasure> | null | undefined;
   filtered: number | null | undefined;
+  digits?: number;
 }) {
   return (
     <tr>
       <th scope="row" className="py-1 pr-3 text-left font-medium">
         {name}
       </th>
-      <td className="px-2 py-1 tabular-nums">{number(raw?.value)}</td>
-      <td className="px-2 py-1 tabular-nums">{number(filtered)}</td>
+      <td className="px-2 py-1 tabular-nums">{number(raw?.value, digits)}</td>
+      <td className="px-2 py-1 tabular-nums">{number(filtered, digits)}</td>
       <td className="px-2 py-1">{raw?.source ?? "–"}</td>
       <td className="px-2 py-1">{raw?.trunkReference ?? "–"}</td>
       <td className="px-2 py-1 tabular-nums">{number(raw?.confidence, 2)}</td>
@@ -163,11 +178,18 @@ function LiveLab() {
     setThresholds(session.currentThresholds);
   }
 
+  const exercise = EXERCISES[config.exerciseId];
+  const range = exercise.gauge;
+  const isDegrees = exercise.unit === "deg";
+  const step = isDegrees ? 1 : 0.01;
+  const digits = isDegrees ? 0 : 2;
+
   function changeThreshold(which: "low" | "high", value: number) {
+    const gap = (range.max - range.min) * MIN_THRESHOLD_GAP_SHARE;
     const next =
       which === "low"
-        ? { low: Math.min(value, thresholds.high - MIN_THRESHOLD_GAP), high: thresholds.high }
-        : { low: thresholds.low, high: Math.max(value, thresholds.low + MIN_THRESHOLD_GAP) };
+        ? { low: Math.min(value, thresholds.high - gap), high: thresholds.high }
+        : { low: thresholds.low, high: Math.max(value, thresholds.low + gap) };
     session.setThresholds(next);
     setThresholds(next);
   }
@@ -212,6 +234,37 @@ function LiveLab() {
                 raw={snapshot?.raw.elbowFlexionDeg}
                 filtered={snapshot?.filtered.elbowFlexionDeg}
               />
+              <MeasureRow
+                name="Forward reach"
+                raw={snapshot?.raw.forwardReachRatio}
+                filtered={snapshot?.filtered.forwardReachRatio}
+                digits={2}
+              />
+              <MeasureRow
+                name="Hand aperture"
+                raw={
+                  snapshot?.hand.raw && {
+                    value: snapshot.hand.raw.handApertureRatio,
+                    source: snapshot.hand.raw.source,
+                  }
+                }
+                filtered={snapshot?.hand.filtered.handApertureRatio}
+                digits={2}
+              />
+              {FINGER_NAMES.map((finger, index) => (
+                <MeasureRow
+                  key={finger}
+                  name={`Thumb to ${finger}`}
+                  raw={
+                    snapshot?.hand.raw && {
+                      value: snapshot.hand.raw.thumbFingerDistances[index],
+                      source: snapshot.hand.raw.source,
+                    }
+                  }
+                  filtered={snapshot?.hand.filtered.thumbFingerDistances?.[index]}
+                  digits={2}
+                />
+              ))}
             </tbody>
           </table>
           <p className="mt-3 font-medium">
@@ -226,7 +279,7 @@ function LiveLab() {
             <Select
               label="Exercise"
               value={config.exerciseId}
-              options={EXERCISE_ORDER.map((id) => ({ value: id, label: id }))}
+              options={ALL_EXERCISE_IDS.map((id) => ({ value: id, label: id }))}
               onChange={(event) => changeConfig({ exerciseId: event.target.value as ExerciseId })}
             />
             <Select
@@ -251,12 +304,14 @@ function LiveLab() {
           {(["low", "high"] as const).map((which) => (
             <label key={which} className="flex items-center gap-3 font-medium">
               <span className="w-24">
-                {which} {thresholds[which]}°
+                {which} {thresholds[which].toFixed(digits)}
+                {isDegrees ? "°" : ""}
               </span>
               <input
                 type="range"
-                min={0}
-                max={180}
+                min={range.min}
+                max={range.max}
+                step={step}
                 value={thresholds[which]}
                 onChange={(event) => changeThreshold(which, Number(event.target.value))}
                 className="min-h-11 flex-1"
@@ -267,6 +322,13 @@ function LiveLab() {
 
         <Card className="flex flex-col gap-4">
           <Stat label="State" value={snapshot?.counterState ?? "–"} />
+          {exercise.counter === "sequence" && (
+            <p className="font-medium">
+              Sequence: {snapshot?.sequenceStep ?? 0} of {FINGER_NAMES.length} touched, next{" "}
+              {FINGER_NAMES[snapshot?.sequenceStep ?? 0]} (touch below {thresholds.low.toFixed(2)},
+              release above {thresholds.high.toFixed(2)})
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Stat label="Full" value={full} />
             <Stat label="Partial" value={snapshot?.partialReps ?? 0} />
@@ -315,8 +377,17 @@ function LiveLab() {
         </Card>
 
         <Card>
-          <h2 className="mb-2 font-bold">Filtered angle, last 10 seconds</h2>
-          <AngleChart points={snapshot?.chart ?? []} low={thresholds.low} high={thresholds.high} />
+          <h2 className="mb-2 font-bold">
+            {exercise.counter === "sequence"
+              ? "Filtered thumb distance to the next finger, last 10 seconds"
+              : `Filtered ${exercise.measure}, last 10 seconds`}
+          </h2>
+          <AngleChart
+            points={snapshot?.chart ?? []}
+            low={thresholds.low}
+            high={thresholds.high}
+            range={range}
+          />
         </Card>
 
         <Card>

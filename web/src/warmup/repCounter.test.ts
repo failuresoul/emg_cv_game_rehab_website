@@ -466,3 +466,42 @@ describe("RepCounter, raw peaks", () => {
     expect(counter.reps[0].rawPeakValue).toBe(100);
   });
 });
+
+describe("RepCounter, hysteresis", () => {
+  it("counts small ratio movements with a small hysteresis", () => {
+    const counter = new RepCounter({ direction: "up", low: 1.2, high: 1.6, hysteresis: 0.04 });
+    for (const { value, timestamp } of cycles({ rest: 1.0, peak: 1.8, cycles: 3 })) {
+      counter.update(value, timestamp);
+    }
+
+    expect(counter.fullReps).toBe(3);
+  });
+
+  it("cannot count them with the default, which suits degrees", () => {
+    // A movement must rise 3 above the rest line before it starts: 4.2, beyond any hand opening.
+    const counter = new RepCounter({ direction: "up", low: 1.2, high: 1.6 });
+    for (const { value, timestamp } of cycles({ rest: 1.0, peak: 1.8, cycles: 3 })) {
+      counter.update(value, timestamp);
+    }
+
+    expect(counter.fullReps).toBe(0);
+  });
+
+  it("does not double-count ratio jitter around the target", () => {
+    const counter = new RepCounter({ direction: "up", low: 1.2, high: 1.6, hysteresis: 0.04 });
+    const signal = [
+      ...ramp([
+        [0, 1.0],
+        [800, 1.6],
+      ]),
+      ...hold(1.6, 1000, 833, 0.03),
+      ...ramp([
+        [1866, 1.6],
+        [2666, 1.0],
+      ]),
+    ];
+    for (const { value, timestamp } of signal) counter.update(value, timestamp);
+
+    expect(counter.fullReps).toBe(1);
+  });
+});

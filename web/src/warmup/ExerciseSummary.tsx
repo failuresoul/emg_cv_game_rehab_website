@@ -5,7 +5,7 @@ import { formatNumber } from "@/lib/format";
 
 import type { ExerciseResult } from "./exerciseRunner";
 import { EXERCISES } from "./exercises";
-import { starsFor } from "./feedback";
+import { formatMeasure, starsFor } from "./feedback";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -18,7 +18,10 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export function ExerciseSummary({ result }: { result: ExerciseResult }) {
   const none = t("common.notSet");
-  const stars = starsFor(result.fullReps, EXERCISES[result.exerciseId].targetReps);
+  const exercise = EXERCISES[result.exerciseId];
+  const stars = starsFor(result.fullReps, exercise.targetReps);
+  const bestKey =
+    exercise.text?.best === undefined ? "warmup.summary.bestAngle" : exercise.text.best;
 
   return (
     <div className="flex flex-col gap-2">
@@ -48,14 +51,14 @@ export function ExerciseSummary({ result }: { result: ExerciseResult }) {
             label={t("warmup.summary.partialReps")}
             value={formatNumber(result.partialReps, 0)}
           />
-          <Row
-            label={t("warmup.summary.bestAngle")}
-            value={
-              result.bestPeak === null
-                ? none
-                : t("warmup.gauge.degrees", { value: formatNumber(result.bestPeak, 0) })
-            }
-          />
+          {bestKey && (
+            <Row
+              label={t(bestKey)}
+              value={
+                result.bestPeak === null ? none : formatMeasure(result.bestPeak, exercise.unit)
+              }
+            />
+          )}
           <Row
             label={t("warmup.summary.averageTime")}
             value={

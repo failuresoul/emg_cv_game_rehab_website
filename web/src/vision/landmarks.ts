@@ -1,5 +1,3 @@
-import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
-
 export const HAND = {
   WRIST: 0,
   THUMB_TIP: 4,
@@ -23,8 +21,15 @@ export const POSE = {
 
 const MIN_VISIBILITY = 0.5;
 
+/** Any landmark with an image position; visibility is optional, as in world or test landmarks. */
+export interface VisibleLandmark {
+  x: number;
+  y: number;
+  visibility?: number;
+}
+
 /** True if a pose landmark is inside the frame and the model is confident it can see it. */
-export function isLandmarkVisible(landmark: NormalizedLandmark | undefined): boolean {
+export function isLandmarkVisible(landmark: VisibleLandmark | undefined): boolean {
   if (!landmark) return false;
   const inFrame = landmark.x >= 0 && landmark.x <= 1 && landmark.y >= 0 && landmark.y <= 1;
   return inFrame && (landmark.visibility ?? 1) >= MIN_VISIBILITY;

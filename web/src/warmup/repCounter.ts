@@ -1,3 +1,5 @@
+import type { CounterFrame, ExerciseCounter } from "./counter";
+
 export type RepDirection = "up" | "down";
 export type RepState = "REST" | "MOVING" | "AT_TARGET" | "RETURNING";
 export type RepFeedback = "higher" | "lower" | "slow" | "almost" | "good";
@@ -29,13 +31,15 @@ export interface RepCounterConfig {
   minRepMs?: number;
   maxRepMs?: number;
   partialFraction?: number;
+  /** Noise smaller than this cannot start a movement or turn it around. In the measure's unit. */
+  hysteresis?: number;
 }
 
 const DEFAULT_MIN_REP_MS = 600;
 const DEFAULT_MAX_REP_MS = 8000;
 const DEFAULT_PARTIAL_FRACTION = 0.6;
-// Noise smaller than this cannot start a movement or turn it around.
-const HYSTERESIS_DEG = 3;
+// The default suits angles in degrees; ratios need a much smaller value.
+const DEFAULT_HYSTERESIS = 3;
 // A movement smaller than this share of the way is treated as noise, and gets no feedback.
 const MIN_FEEDBACK_FRACTION = 0.25;
 
@@ -44,7 +48,8 @@ const MIN_FEEDBACK_FRACTION = 0.25;
  * rises towards the target: "down" simply negates the angle. Comparing the two rest and target
  * lines, rather than one threshold, means noise around either line cannot count twice.
  */
-export class RepCounter {
+export class RepCounter implements ExerciseCounter {
+  readonly sequenceStep = null;
   private readonly listeners = new Set<(event: RepEvent) => void>();
   private readonly sign: 1 | -1;
   private readonly restLine: number;
@@ -54,6 +59,7 @@ export class RepCounter {
   private readonly smallMovementFeedback: RepFeedback;
   private readonly minRepMs: number;
   private readonly maxRepMs: number;
+  private readonly hysteresis: number;
 
   private currentState: RepState = "REST";
   private isPaused = false;
@@ -73,6 +79,7 @@ export class RepCounter {
     minRepMs = DEFAULT_MIN_REP_MS,
     maxRepMs = DEFAULT_MAX_REP_MS,
     partialFraction = DEFAULT_PARTIAL_FRACTION,
+    hysteresis = DEFAULT_HYSTERESIS,
   }: RepCounterConfig) {
     if (!(low < high)) throw new RangeError(`low (${low}) must be below high (${high})`);
     const isUp = direction === "up";
@@ -85,6 +92,7 @@ export class RepCounter {
     this.smallMovementFeedback = isUp ? "higher" : "lower";
     this.minRepMs = minRepMs;
     this.maxRepMs = maxRepMs;
+    this.hysteresis = hysteresis;
   }
 
   get state(): RepState {
@@ -114,6 +122,11 @@ export class RepCounter {
     return () => this.listeners.delete(listener);
   }
 
+  feed(frame: CounterFrame): void {
+    if (frame.value === null) return;
+    this.update(frame.value, frame.timestamp, frame.rawValue ?? frame.value);
+  }
+
   /** Counts from the filtered value. The raw value is only kept for the rep's record. */
   update(value: number, timestamp: number, rawValue: number = value): void {
     if (this.isPaused || !Number.isFinite(value)) return;
@@ -122,7 +135,7 @@ export class RepCounter {
 
     if (this.currentState === "REST") {
       if (scaled <= this.restLine) this.armed = true;
-      if (!this.armed || scaled <= this.restLine + HYSTERESIS_DEG) return;
+      if (!this.armed || scaled <= this.restLine + this.hysteresis) return;
       // Carries on below, because a single frame can jump straight past the target.
       this.beginMovement(scaled, timestamp);
     }
@@ -144,7 +157,7 @@ export class RepCounter {
     } else if (scaled >= this.targetLine) {
       this.reachedTarget = true;
       this.setState("AT_TARGET");
-    } else if (scaled < this.peak - HYSTERESIS_DEG) {
+    } else if (scaled < this.peak - this.hysteresis) {
       this.setState("RETURNING");
     } else if (this.currentState === "RETURNING" && scaled >= this.peak) {
       // It turned back towards the target, past its earlier best.

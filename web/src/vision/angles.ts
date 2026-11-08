@@ -1,5 +1,6 @@
 import type { Side } from "@/types/api";
 
+import { median } from "./geometry";
 import { POSE } from "./landmarks";
 
 export interface Vec3 {
@@ -69,6 +70,34 @@ export interface JointAngles {
   armElevationDeg: AngleMeasure | null;
   elevationPlaneDeg: AngleMeasure | null;
   elbowFlexionDeg: AngleMeasure | null;
+  /** How far the wrist is in front of the shoulder, as a share of arm length. 3D only. */
+  forwardReachRatio: AngleMeasure | null;
+}
+
+const ARM_LENGTH_FRAMES = 30;
+
+/**
+ * Arm length (upper arm + forearm, in metres) as the median of the last 30 valid frames, so one
+ * badly estimated frame does not change every reach ratio.
+ */
+export class ArmLengthTracker {
+  private readonly lengths: number[] = [];
+
+  add(length: number): number {
+    if (Number.isFinite(length) && length > 0) {
+      this.lengths.push(length);
+      if (this.lengths.length > ARM_LENGTH_FRAMES) this.lengths.shift();
+    }
+    return this.value() ?? length;
+  }
+
+  value(): number | null {
+    return this.lengths.length > 0 ? median(this.lengths) : null;
+  }
+
+  reset(): void {
+    this.lengths.length = 0;
+  }
 }
 
 interface LandmarkLike extends Vec3 {
@@ -86,7 +115,11 @@ export interface JointAngleInput {
  * Measures the affected arm. World landmarks are used when available. Otherwise image landmarks
  * are used, scaled to pixels so that the camera's aspect ratio does not distort the angles.
  */
-export function computeJointAngles(input: JointAngleInput, affectedSide: Side): JointAngles {
+export function computeJointAngles(
+  input: JointAngleInput,
+  affectedSide: Side,
+  armLengths: ArmLengthTracker = new ArmLengthTracker(),
+): JointAngles {
   const { pose, poseWorld, frameWidth, frameHeight } = input;
   const useWorld = Boolean(poseWorld?.length);
   const source: AngleSource = useWorld ? "3d" : "2d";
@@ -123,7 +156,12 @@ export function computeJointAngles(input: JointAngleInput, affectedSide: Side): 
         }
       : null;
 
-  const empty = { armElevationDeg: null, elevationPlaneDeg: null, elbowFlexionDeg: null };
+  const empty = {
+    armElevationDeg: null,
+    elevationPlaneDeg: null,
+    elbowFlexionDeg: null,
+    forwardReachRatio: null,
+  };
   if (!isVisible(shoulder) || !isVisible(elbow)) return empty;
 
   const shoulderPosition = positionOf(shoulder);
@@ -150,7 +188,58 @@ export function computeJointAngles(input: JointAngleInput, affectedSide: Side): 
           [shoulder, elbow, wrist],
         )
       : null,
+    forwardReachRatio:
+      useWorld && isVisible(wrist)
+        ? measureForwardReach(shoulderPosition, positionOf(elbow), positionOf(wrist), trunkDown, {
+            positionOf,
+            isVisible,
+            armLengths,
+            toMeasure: (value) =>
+              measure(value, [...trunkLandmarks, wrist, POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER]),
+          })
+        : // A flat image has no depth, so it cannot tell how far forward the hand is.
+          null,
   };
+}
+
+/** Up, the person's left, and out of their chest, from the trunk and the shoulder line. */
+function bodyAxes(
+  trunkDown: Vec3,
+  positionOf: (index: number) => Vec3,
+): { up: Vec3; personsLeft: Vec3; forward: Vec3 } {
+  const up = normalise({ x: -trunkDown.x, y: -trunkDown.y, z: -trunkDown.z });
+  const personsLeft = normalise(
+    projectOntoPlane(subtract(positionOf(POSE.LEFT_SHOULDER), positionOf(POSE.RIGHT_SHOULDER)), up),
+  );
+  // In these axes, the person's left crossed with up points out of their chest.
+  return { up, personsLeft, forward: cross(personsLeft, up) };
+}
+
+/**
+ * The wrist's distance in front of the shoulder, along the body's forward axis, divided by arm
+ * length: about 0 with the arm down or out to the side, and 1 with it straight forward. Only the
+ * forward part counts, so reaching sideways or hanging the arm straight down does not.
+ */
+function measureForwardReach(
+  shoulder: Vec3,
+  elbow: Vec3,
+  wrist: Vec3,
+  trunkDown: Vec3,
+  helpers: {
+    positionOf: (index: number) => Vec3;
+    isVisible: (index: number) => boolean;
+    armLengths: ArmLengthTracker;
+    toMeasure: (value: number) => AngleMeasure | null;
+  },
+): AngleMeasure | null {
+  const { positionOf, isVisible, armLengths, toMeasure } = helpers;
+  if (!isVisible(POSE.LEFT_SHOULDER) || !isVisible(POSE.RIGHT_SHOULDER)) return null;
+
+  const armLength = armLengths.add(norm(subtract(elbow, shoulder)) + norm(subtract(wrist, elbow)));
+  if (!Number.isFinite(armLength) || armLength <= 0) return null;
+
+  const { forward } = bodyAxes(trunkDown, positionOf);
+  return toMeasure(dot(subtract(wrist, shoulder), forward) / armLength);
 }
 
 /** 0 is straight out to the side and 90 is straight forward, on either affected side. */
@@ -172,12 +261,7 @@ function measurePlane(
     return null;
   }
 
-  const up = normalise({ x: -trunkDown.x, y: -trunkDown.y, z: -trunkDown.z });
-  const personsLeft = normalise(
-    projectOntoPlane(subtract(positionOf(POSE.LEFT_SHOULDER), positionOf(POSE.RIGHT_SHOULDER)), up),
-  );
-  // In these axes, the person's left crossed with up points out of their chest.
-  const forward = cross(personsLeft, up);
+  const { up, personsLeft, forward } = bodyAxes(trunkDown, positionOf);
   const outward = isLeft
     ? personsLeft
     : { x: -personsLeft.x, y: -personsLeft.y, z: -personsLeft.z };

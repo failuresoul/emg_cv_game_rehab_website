@@ -483,3 +483,130 @@ describe("ExerciseRunner, bad input and raw values", () => {
     expect(runner.getResult()?.bestRawPeak).toBeNull();
   });
 });
+
+describe("ExerciseRunner with the sequence counter", () => {
+  const THUMB = EXERCISES.thumb_opposition;
+  const OPEN = 0.9;
+
+  /** All four fingers apart, except `finger` at this distance. */
+  const fingers = (finger: number | null, distance: number) =>
+    [0, 1, 2, 3].map((index) => (index === finger ? distance : OPEN));
+
+  /** Touches each finger in order, `rounds` times, from time `start`. */
+  function touchAll(runner: ExerciseRunner, rounds: number, start = FRAME_MS): number {
+    let time = start;
+    const step = (values: number[]) => {
+      runner.update({ timestamp: time, value: null, values });
+      time += FRAME_MS;
+    };
+    for (let round = 0; round < rounds; round++) {
+      for (let finger = 0; finger < 4; finger++) {
+        for (const { value } of cycles({ rest: OPEN, peak: 0.1, cycles: 1, periodMs: 600 })) {
+          step(fingers(finger, value));
+        }
+        for (let frame = 0; frame < 6; frame++) step(fingers(null, OPEN));
+      }
+    }
+    return time;
+  }
+
+  function activeThumbRunner() {
+    const runner = new ExerciseRunner(THUMB, "standard");
+    runner.startCountdown(-COUNTDOWN_MS);
+    runner.update({ timestamp: 0, value: null, values: fingers(null, OPEN) });
+    expect(runner.state).toBe("ACTIVE");
+    return runner;
+  }
+
+  it("reaches DONE after 5 full sequences", () => {
+    const runner = activeThumbRunner();
+
+    touchAll(runner, 5);
+
+    expect(runner.state).toBe("DONE");
+    const result = runner.getResult();
+    expect(result?.fullReps).toBe(5);
+    expect(result?.reps).toHaveLength(5);
+    // The best rep is the one whose loosest touch was closest.
+    expect(result?.bestPeak).toBeCloseTo(0.1, 2);
+  });
+
+  it("reports the step expected next", () => {
+    const runner = activeThumbRunner();
+    expect(runner.sequenceStep).toBe(0);
+
+    let time = FRAME_MS;
+    for (const { value } of cycles({ rest: OPEN, peak: 0.1, cycles: 1, periodMs: 600 })) {
+      runner.update({ timestamp: time, value: null, values: fingers(0, value) });
+      time += FRAME_MS;
+    }
+
+    expect(runner.sequenceStep).toBe(1);
+  });
+
+  it("passes on which finger is next", () => {
+    const runner = activeThumbRunner();
+    const list = events(runner);
+
+    touchAll(runner, 1);
+
+    expect(feedbackOf(list)).toEqual(["next_middle", "next_ring", "next_little", "good"]);
+  });
+
+  it("pauses when the hand is lost, and never completes a sequence across it", () => {
+    const runner = activeThumbRunner();
+    let time = touchAll(runner, 0);
+    // Index, middle and ring, then the hand disappears for a second.
+    for (let finger = 0; finger < 3; finger++) {
+      for (const { value } of cycles({ rest: OPEN, peak: 0.1, cycles: 1, periodMs: 600 })) {
+        runner.update({ timestamp: time, value: null, values: fingers(finger, value) });
+        time += FRAME_MS;
+      }
+    }
+    for (let frame = 0; frame < 30; frame++) {
+      runner.update({ timestamp: time, value: null, values: null });
+      time += FRAME_MS;
+    }
+    expect(runner.state).toBe("PAUSED");
+
+    // Back for a while, then the little finger alone.
+    for (let frame = 0; frame < 40; frame++) {
+      runner.update({ timestamp: time, value: null, values: fingers(null, OPEN) });
+      time += FRAME_MS;
+    }
+    expect(runner.state).toBe("ACTIVE");
+    for (const { value } of cycles({ rest: OPEN, peak: 0.1, cycles: 1, periodMs: 600 })) {
+      runner.update({ timestamp: time, value: null, values: fingers(3, value) });
+      time += FRAME_MS;
+    }
+
+    expect(runner.fullReps).toBe(0);
+  });
+});
+
+describe("ExerciseRunner with ratio measures", () => {
+  it("counts hand opening and closing", () => {
+    const runner = new ExerciseRunner(EXERCISES.hand_open_close, "standard");
+    runner.startCountdown(-COUNTDOWN_MS);
+    runner.update({ timestamp: 0, value: 1.0 });
+
+    feed(runner, cycles({ rest: 1.0, peak: 1.8, cycles: 10, startTs: FRAME_MS, noiseDeg: 0.02 }));
+
+    expect(runner.state).toBe("DONE");
+    expect(runner.getResult()?.fullReps).toBe(10);
+  });
+
+  it("counts forward reaches, and asks to reach forward when the arm goes sideways", () => {
+    const runner = new ExerciseRunner(EXERCISES.forward_reach, "standard");
+    const list = events(runner);
+    runner.startCountdown(-COUNTDOWN_MS);
+    runner.update({ timestamp: 0, value: 0.1 });
+
+    feed(runner, cycles({ rest: 0.1, peak: 0.95, cycles: 2, startTs: FRAME_MS }), {
+      planeDeg: 0,
+    });
+
+    expect(runner.fullReps).toBe(2);
+    expect(feedbackOf(list)).toContain("forward");
+  });
+});

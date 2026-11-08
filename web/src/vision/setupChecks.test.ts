@@ -14,6 +14,7 @@ function result(hidden: number[] = [], hand: VisionResult["hand"] = null): Visio
   return {
     timestamp: 0,
     hand,
+    hands: hand ? [{ landmarks: hand, worldLandmarks: null, handedness: null }] : [],
     pose,
     poseWorld: null,
     fps: 30,

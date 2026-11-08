@@ -32,9 +32,20 @@ export type VisionErrorCode =
 export type VisionStatus =
   { phase: "idle" | "camera" | "loading" | "running" } | { phase: "error"; error: VisionErrorCode };
 
+/** One detected hand. MediaPipe's handedness can be wrong with a mirrored camera; see hand.ts. */
+export interface DetectedHand {
+  landmarks: NormalizedLandmark[];
+  /** The same hand in 3D: metres, with the origin near the middle of the hand. */
+  worldLandmarks: Landmark[] | null;
+  handedness: string | null;
+}
+
 export interface VisionResult {
   timestamp: number;
+  /** The first detected hand, kept for code that follows any hand. */
   hand: NormalizedLandmark[] | null;
+  /** Every detected hand, up to two, so the affected one can be chosen. */
+  hands: DetectedHand[];
   pose: NormalizedLandmark[] | null;
   /** The same pose in 3D: metres, with the origin between the hips. */
   poseWorld: Landmark[] | null;
@@ -69,7 +80,8 @@ async function createTasks(): Promise<VisionTasks> {
       hand = await HandLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: HAND_MODEL_URL, delegate },
         runningMode: "VIDEO",
-        numHands: 1,
+        // Both hands, so the affected one can be picked by where it is rather than by handedness.
+        numHands: 2,
       });
       const pose = await PoseLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: POSE_MODEL_URL, delegate },
@@ -237,7 +249,13 @@ class VisionEngine {
       lastTimestamp = timestamp;
 
       try {
-        const hand = tasks.hand.detectForVideo(video, timestamp).landmarks[0] ?? null;
+        const detectedHands = tasks.hand.detectForVideo(video, timestamp);
+        const hands = detectedHands.landmarks.map((landmarks, index) => ({
+          landmarks,
+          worldLandmarks: detectedHands.worldLandmarks[index] ?? null,
+          handedness: detectedHands.handedness[index]?.[0]?.categoryName ?? null,
+        }));
+        const hand = hands[0]?.landmarks ?? null;
         if (frameCount % poseEvery === 0) {
           const detected = tasks.pose.detectForVideo(video, timestamp);
           pose = detected.landmarks[0] ?? null;
@@ -261,6 +279,7 @@ class VisionEngine {
         const result = {
           timestamp,
           hand,
+          hands,
           pose,
           poseWorld,
           fps,

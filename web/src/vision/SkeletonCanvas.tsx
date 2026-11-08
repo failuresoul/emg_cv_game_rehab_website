@@ -246,7 +246,7 @@ export function SkeletonCanvas({
     if (result && stars) drawStars(context, stars, result.frameWidth, result.frameHeight);
     if (result?.pose) drawPose(context, result.pose);
     if (result?.pose && highlightSide) drawArmHighlight(context, result.pose, highlightSide);
-    if (result?.hand) drawHand(context, result.hand);
+    result?.hands.forEach((hand) => drawHand(context, hand.landmarks));
     if (result && stars && wristSw) {
       drawWrist(context, wristSw, stars.frame, result.frameWidth, result.frameHeight);
     }

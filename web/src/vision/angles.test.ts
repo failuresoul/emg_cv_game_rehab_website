@@ -4,6 +4,7 @@ import type { Side } from "@/types/api";
 
 import {
   angleBetween,
+  ArmLengthTracker,
   computeJointAngles,
   cross,
   dot,
@@ -400,5 +401,93 @@ describe("bad landmarks", () => {
     const angles = compute(withLandmark(POSE.LEFT_HIP, { visibility: 0.5 }));
 
     expect(angles.armElevationDeg?.trunkReference).toBe("hip");
+  });
+});
+
+describe("forwardReachRatio", () => {
+  const reach = (side: Side, arm: Arm, options?: PoseOptions) =>
+    measure(side, arm, options).forwardReachRatio?.value;
+
+  it.each(SIDES)("is about 0 with the arm hanging down (%s)", (side) => {
+    // The wrist is a full arm's length from the shoulder, but none of it is forward.
+    expect(reach(side, HANGING)).toBeCloseTo(0, 5);
+  });
+
+  it.each(SIDES)("is about 1 with the arm straight forward (%s)", (side) => {
+    const forward: Arm = { elbow: [0, 0, ARM_LENGTH], wrist: [0, 0, 2 * ARM_LENGTH] };
+
+    expect(reach(side, forward)).toBeCloseTo(1, 5);
+  });
+
+  it("is about 0 with the arm straight out to the side", () => {
+    const sideways: Arm = { elbow: [ARM_LENGTH, 0, 0], wrist: [2 * ARM_LENGTH, 0, 0] };
+
+    expect(reach("left", sideways)).toBeCloseTo(0, 5);
+  });
+
+  it("is about 0.5 with the forearm forward and the upper arm down", () => {
+    const bent: Arm = { elbow: [0, -ARM_LENGTH, 0], wrist: [0, -ARM_LENGTH, ARM_LENGTH] };
+
+    expect(reach("left", bent)).toBeCloseTo(0.5, 5);
+  });
+
+  it("uses the vertical when the hips are hidden, and says so", () => {
+    const forward: Arm = { elbow: [0, 0, ARM_LENGTH], wrist: [0, 0, 2 * ARM_LENGTH] };
+    const result = measure("left", forward, { hipVisibility: 0.1 }).forwardReachRatio;
+
+    expect(result?.value).toBeCloseTo(1, 5);
+    expect(result?.trunkReference).toBe("vertical");
+    expect(result?.source).toBe("3d");
+  });
+
+  it("is null without world landmarks, without the wrist or without the other shoulder", () => {
+    const flat = computeJointAngles(
+      { pose: null, poseWorld: null, frameWidth: 640, frameHeight: 480 },
+      "left",
+    );
+
+    expect(flat.forwardReachRatio).toBeNull();
+    expect(measure("left", HANGING, { wristVisibility: 0.2 }).forwardReachRatio).toBeNull();
+    expect(measure("left", HANGING, { otherShoulderVisibility: 0.2 }).forwardReachRatio).toBeNull();
+  });
+
+  it("divides by the median arm length of recent frames, ignoring one bad frame", () => {
+    const tracker = new ArmLengthTracker();
+    const input = (arm: Arm) => ({
+      pose: null,
+      poseWorld: worldPose("left", arm),
+      frameWidth: 640,
+      frameHeight: 480,
+    });
+    for (let frame = 0; frame < 10; frame++) computeJointAngles(input(HANGING), "left", tracker);
+
+    // One frame where the arm looks twice as long, straight forward.
+    const stretched: Arm = { elbow: [0, 0, 2 * ARM_LENGTH], wrist: [0, 0, 4 * ARM_LENGTH] };
+    const result = computeJointAngles(input(stretched), "left", tracker).forwardReachRatio;
+
+    expect(tracker.value()).toBeCloseTo(2 * ARM_LENGTH, 5);
+    // 1.2 m forward over the usual 0.6 m arm, rather than 1.0 from this frame's own length.
+    expect(result?.value).toBeCloseTo(2, 5);
+  });
+});
+
+describe("ArmLengthTracker", () => {
+  it("keeps the median of the last 30 valid lengths", () => {
+    const tracker = new ArmLengthTracker();
+    expect(tracker.value()).toBeNull();
+
+    for (let frame = 0; frame < 30; frame++) tracker.add(0.5);
+    for (let frame = 0; frame < 30; frame++) tracker.add(0.7);
+
+    expect(tracker.value()).toBeCloseTo(0.7);
+  });
+
+  it("ignores lengths that are not positive numbers", () => {
+    const tracker = new ArmLengthTracker();
+    tracker.add(0.6);
+
+    for (const bad of [0, -1, NaN, Infinity]) tracker.add(bad);
+
+    expect(tracker.value()).toBeCloseTo(0.6);
   });
 });

@@ -4,7 +4,9 @@ import { poseAt, gaugeArc, gaugePoint } from "./demo";
 import { EXERCISES } from "./exercises";
 import { awaitingRestKey, feedbackKey, starsFor } from "./feedback";
 
-const FRAMES = EXERCISES.shoulder_flexion.demoKeyframes;
+const flexionDemo = EXERCISES.shoulder_flexion.demo;
+if (flexionDemo.kind !== "arm") throw new Error("shoulder_flexion has an arm demo");
+const FRAMES = flexionDemo.keyframes;
 
 describe("poseAt", () => {
   it("returns the keyframes at their own times", () => {

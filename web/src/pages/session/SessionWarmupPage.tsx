@@ -1,4 +1,15 @@
-import { Dumbbell, Move, MoveUpRight, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import {
+  Dumbbell,
+  Hand,
+  Move,
+  MoveRight,
+  MoveUpRight,
+  Pause,
+  Play,
+  Pointer,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -31,8 +42,10 @@ import {
   EXERCISES,
 } from "@/warmup/exercises";
 import { ExerciseSummary } from "@/warmup/ExerciseSummary";
-import { awaitingRestKey, feedbackKey } from "@/warmup/feedback";
+import { exerciseFeedbackKey, exerciseWaitingKey, trackingLostKey } from "@/warmup/feedback";
+import { displayValue, frameForExercise } from "@/warmup/frames";
 import { RepCounterRing } from "@/warmup/RepCounterRing";
+import { SequenceProgress } from "@/warmup/SequenceProgress";
 
 const COUNTDOWN_FROM = 3;
 const COUNTDOWN_STEP_MS = 1000;
@@ -42,7 +55,10 @@ const EXERCISE_ICONS = {
   shoulder_flexion: MoveUpRight,
   shoulder_abduction: Move,
   elbow_flexion: Dumbbell,
-} as const;
+  forward_reach: MoveRight,
+  hand_open_close: Hand,
+  thumb_opposition: Pointer,
+} as const satisfies Record<ExerciseId, unknown>;
 
 interface ExerciseStepProps {
   exercise: ExerciseDefinition;
@@ -71,6 +87,7 @@ function ExerciseStep({
   const [runner] = useState(() => new ExerciseRunner(exercise, preset));
   const [stage, setStage] = useState(runner.state);
   const [fullReps, setFullReps] = useState(0);
+  const [sequenceStep, setSequenceStep] = useState(0);
   const [count, setCount] = useState(COUNTDOWN_FROM);
   const [best, setBest] = useState<number | null>(null);
   const [result, setResult] = useState<ExerciseResult | null>(null);
@@ -79,26 +96,22 @@ function ExerciseStep({
   const pausedForDialog = useRef(false);
   const feedbackId = useRef(0);
   const lastPlaneFeedbackAt = useRef(-Infinity);
-  const { measure, direction, targetReps } = exercise;
+  const { direction, targetReps } = exercise;
+  const isSequence = exercise.counter === "sequence";
   const thresholds = exercise.presets[preset];
   const bestOf = direction === "up" ? Math.max : Math.min;
 
   const onFrame = useCallback(
     (state: JointAngleState) => {
-      const value = state.filtered[measure];
-      runner.update({
-        timestamp: state.timestamp,
-        value,
-        rawValue: state.raw[measure]?.value,
-        planeDeg: state.filtered.elevationPlaneDeg,
-        source: state.raw[measure]?.source,
-        trunkReference: state.raw[measure]?.trunkReference,
-      });
+      const frame = frameForExercise(exercise, state);
+      runner.update(frame);
+      const { value } = frame;
       if (value !== null && runner.state === "ACTIVE" && !runner.awaitingRest) {
         setBest((current) => (current === null ? value : bestOf(current, value)));
       }
+      setSequenceStep(runner.sequenceStep ?? 0);
     },
-    [runner, measure, bestOf],
+    [runner, exercise, bestOf],
   );
   const angles = useJointAngles(onFrame);
 
@@ -109,7 +122,7 @@ function ExerciseStep({
       // A rep sends its plane advice just before "good"; the advice is the more useful.
       else if (item === "good" && now - lastPlaneFeedbackAt.current < 100) return;
       feedbackId.current += 1;
-      setFeedback({ key: feedbackKey(item, direction), id: feedbackId.current });
+      setFeedback({ key: exerciseFeedbackKey(item, exercise), id: feedbackId.current });
     };
 
     return runner.subscribe((event) => {
@@ -132,7 +145,7 @@ function ExerciseStep({
         showFeedback(event.feedback);
       }
     });
-  }, [runner, direction, voiceOn, onResult, onNext]);
+  }, [runner, exercise, voiceOn, onResult, onNext]);
 
   useEffect(() => {
     if (startAtCountdown && runner.state === "INTRO") runner.startCountdown(performance.now());
@@ -209,7 +222,7 @@ function ExerciseStep({
     return (
       <Card className="m-auto flex w-full max-w-xl flex-col items-center gap-3">
         <h1 className="text-2xl font-bold">{t(exercise.nameKey)}</h1>
-        <DemoFigure frames={exercise.demoKeyframes} affectedSide={affectedSide} />
+        <DemoFigure demo={exercise.demo} affectedSide={affectedSide} />
         <Button size="lg" onClick={() => runner.startCountdown(performance.now())}>
           {t("warmup.gotIt")}
         </Button>
@@ -228,12 +241,12 @@ function ExerciseStep({
     );
   }
 
-  const value = angles?.filtered[measure] ?? null;
+  const value = angles ? displayValue(exercise, angles) : null;
   const trackingLost = stage === "PAUSED" && !runner.pausedByUser;
   const userPaused = stage === "PAUSED" && runner.pausedByUser;
   let feedbackLine: string | null = feedback && t(feedback.key);
   if (!feedbackLine && stage === "ACTIVE" && runner.awaitingRest) {
-    feedbackLine = t(awaitingRestKey(direction));
+    feedbackLine = t(exerciseWaitingKey(exercise));
   }
   if (userPaused) feedbackLine = t("warmup.paused");
 
@@ -246,7 +259,7 @@ function ExerciseStep({
             role="alert"
             className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/70 p-6 text-center text-2xl font-bold text-white"
           >
-            {t("warmup.trackingLost")}
+            {t(trackingLostKey(exercise))}
           </div>
         )}
       </div>
@@ -261,7 +274,17 @@ function ExerciseStep({
           <>
             <div className="grid grid-cols-2 items-center gap-2">
               <RepCounterRing current={fullReps} total={targetReps} />
-              <AngleGauge value={value} best={best} thresholds={thresholds} />
+              {isSequence ? (
+                <SequenceProgress step={sequenceStep} />
+              ) : (
+                <AngleGauge
+                  value={value}
+                  best={best}
+                  thresholds={thresholds}
+                  range={exercise.gauge}
+                  unit={exercise.unit}
+                />
+              )}
             </div>
             <p aria-live="polite" className="text-accent min-h-9 text-center text-xl font-bold">
               {feedbackLine}

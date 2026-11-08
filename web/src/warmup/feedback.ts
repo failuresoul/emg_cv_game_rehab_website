@@ -1,6 +1,8 @@
-import type { TranslationKey } from "@/i18n";
+import { t, type TranslationKey } from "@/i18n";
+import { formatNumber } from "@/lib/format";
 
 import type { ExerciseFeedback } from "./exerciseRunner";
+import type { ExerciseDefinition, MeasureUnit } from "./exercises";
 import type { RepDirection } from "./repCounter";
 
 /** The words for a feedback event. Going too slowly means the arm must first return to rest. */
@@ -20,6 +22,43 @@ export function feedbackKey(feedback: ExerciseFeedback, direction: RepDirection)
       return "warmup.feedback.forward";
     case "sideways":
       return "warmup.feedback.sideways";
+    case "next_index":
+      return "warmup.feedback.nextIndex";
+    case "next_middle":
+      return "warmup.feedback.nextMiddle";
+    case "next_ring":
+      return "warmup.feedback.nextRing";
+    case "next_little":
+      return "warmup.feedback.nextLittle";
+  }
+}
+
+/** The words for a feedback event, using the exercise's own words where it has them. */
+export function exerciseFeedbackKey(
+  feedback: ExerciseFeedback,
+  exercise: ExerciseDefinition,
+): TranslationKey {
+  return exercise.text?.feedback?.[feedback] ?? feedbackKey(feedback, exercise.direction);
+}
+
+/** Shown until the exercise's start position is seen. */
+export function exerciseWaitingKey(exercise: ExerciseDefinition): TranslationKey {
+  return exercise.text?.waiting ?? awaitingRestKey(exercise.direction);
+}
+
+export function trackingLostKey(exercise: ExerciseDefinition): TranslationKey {
+  return exercise.text?.trackingLost ?? "warmup.trackingLost";
+}
+
+/** Degrees as "95°", a share of arm length as "80%", and a palm-length ratio as "1.45". */
+export function formatMeasure(value: number, unit: MeasureUnit): string {
+  switch (unit) {
+    case "deg":
+      return t("warmup.gauge.degrees", { value: formatNumber(value, 0) });
+    case "arm_ratio":
+      return t("warmup.gauge.percent", { value: formatNumber(value * 100, 0) });
+    case "palm_ratio":
+      return t("warmup.gauge.value", { value: formatNumber(value, 2) });
   }
 }
 

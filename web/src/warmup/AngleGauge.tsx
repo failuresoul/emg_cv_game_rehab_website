@@ -1,8 +1,8 @@
 import { t } from "@/i18n";
-import { formatNumber } from "@/lib/format";
 
-import { gaugeArc, gaugePoint } from "./demo";
-import type { Thresholds } from "./exercises";
+import { gaugeArc, gaugeDegrees, gaugePoint } from "./demo";
+import type { MeasureUnit, Thresholds } from "./exercises";
+import { formatMeasure } from "./feedback";
 
 const WIDTH = 240;
 const HEIGHT = 136;
@@ -15,29 +15,43 @@ interface AngleGaugeProps {
   value: number | null;
   best: number | null;
   thresholds: Thresholds;
+  /** The gauge's ends, in the measure's unit. Defaults to 0–180 degrees. */
+  range?: { min: number; max: number };
+  unit?: MeasureUnit;
 }
 
-/** A semicircle from 0 to 180 degrees, with the target band and best angle so far. */
-export function AngleGauge({ value, best, thresholds }: AngleGaugeProps) {
-  const arc = (from: number, to: number) => gaugeArc(from, to, CENTER_X, CENTER_Y, RADIUS);
-  const needle = value === null ? null : gaugePoint(value, CENTER_X, CENTER_Y, RADIUS - 14);
-  const bestInner = best === null ? null : gaugePoint(best, CENTER_X, CENTER_Y, RADIUS - STROKE);
-  const bestOuter = best === null ? null : gaugePoint(best, CENTER_X, CENTER_Y, RADIUS + STROKE);
+/** A semicircle from the range's minimum to its maximum, with the target band and best so far. */
+export function AngleGauge({
+  value,
+  best,
+  thresholds,
+  range = { min: 0, max: 180 },
+  unit = "deg",
+}: AngleGaugeProps) {
+  const toDeg = (measure: number) => gaugeDegrees(measure, range.min, range.max);
+  const arc = (from: number, to: number) =>
+    gaugeArc(toDeg(from), toDeg(to), CENTER_X, CENTER_Y, RADIUS);
+  const at = (measure: number, radius: number) =>
+    gaugePoint(toDeg(measure), CENTER_X, CENTER_Y, radius);
+  const needle = value === null ? null : at(value, RADIUS - 14);
+  const bestInner = best === null ? null : at(best, RADIUS - STROKE);
+  const bestOuter = best === null ? null : at(best, RADIUS + STROKE);
   const none = t("warmup.gauge.none");
-  const shown = value === null ? none : formatNumber(value, 0);
+  const shown = value === null ? none : formatMeasure(value, unit);
+  const bestShown = best === null ? none : formatMeasure(best, unit);
 
   return (
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       role="img"
-      aria-label={t("warmup.gauge.label", {
+      aria-label={t(unit === "deg" ? "warmup.gauge.label" : "warmup.gauge.labelMeasure", {
         value: shown,
-        best: best === null ? none : formatNumber(best, 0),
+        best: bestShown,
       })}
       className="w-full"
     >
       <path
-        d={arc(0, 180)}
+        d={arc(range.min, range.max)}
         fill="none"
         stroke="var(--color-muted)"
         strokeOpacity={0.25}
@@ -84,7 +98,7 @@ export function AngleGauge({ value, best, thresholds }: AngleGaugeProps) {
         strokeWidth={6}
         paintOrder="stroke"
       >
-        {value === null ? none : t("warmup.gauge.degrees", { value: shown })}
+        {shown}
       </text>
     </svg>
   );

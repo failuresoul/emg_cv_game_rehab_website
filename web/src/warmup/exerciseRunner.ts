@@ -7,12 +7,20 @@ import {
   getThresholds,
   type Thresholds,
 } from "./exercises";
-import { RepCounter, type RepEvent, type RepFeedback, type RepRecord } from "./repCounter";
+import {
+  type CounterEvent,
+  type CounterFrame,
+  createCounter,
+  type ExerciseCounter,
+  frameHasMeasure,
+} from "./counter";
+import type { RepFeedback, RepRecord } from "./repCounter";
+import type { SequenceFeedback } from "./sequenceCounter";
 
 export type ExerciseState =
   "INTRO" | "DEMO" | "COUNTDOWN" | "ACTIVE" | "PAUSED" | "DONE" | "SKIPPED";
 
-export type ExerciseFeedback = RepFeedback | "forward" | "sideways";
+export type ExerciseFeedback = RepFeedback | SequenceFeedback | "forward" | "sideways";
 
 export type ExerciseEvent =
   | { type: "stateChanged"; state: ExerciseState }
@@ -41,13 +49,11 @@ export interface ExerciseResult {
   skipped: boolean;
 }
 
-/** One tracking frame. A null value means the measure was unavailable in this frame. */
-export interface ExerciseFrame {
-  timestamp: number;
-  /** The filtered angle of the exercise's measure, which is what gets counted. */
-  value: number | null;
-  /** The unfiltered angle, kept in the results only. */
-  rawValue?: number | null;
+/**
+ * One tracking frame. A null value (or null values, for a sequence) means the measure was
+ * unavailable in this frame.
+ */
+export interface ExerciseFrame extends CounterFrame {
   planeDeg?: number | null;
   source?: AngleSource | null;
   trunkReference?: TrunkReference | null;
@@ -88,7 +94,7 @@ export class ExerciseRunner {
   private readonly thresholds: Thresholds;
   private readonly countdownMs: number;
   private readonly resumeDelayMs: number;
-  private readonly counter: RepCounter;
+  private readonly counter: ExerciseCounter;
   private readonly listeners = new Set<(event: ExerciseEvent) => void>();
 
   private currentState: ExerciseState = "INTRO";
@@ -120,7 +126,7 @@ export class ExerciseRunner {
     this.thresholds = getThresholds(definition, preset, history);
     this.countdownMs = countdownMs;
     this.resumeDelayMs = resumeDelayMs;
-    this.counter = new RepCounter({ direction: definition.direction, ...this.thresholds });
+    this.counter = createCounter(definition, this.thresholds);
     this.counter.subscribe((event) => this.handleCounterEvent(event));
   }
 
@@ -146,6 +152,11 @@ export class ExerciseRunner {
     return this.counter.partialReps;
   }
 
+  /** For a sequence, the step expected next, from 0; otherwise null. */
+  get sequenceStep(): number | null {
+    return this.counter.sequenceStep;
+  }
+
   subscribe(listener: (event: ExerciseEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -164,14 +175,14 @@ export class ExerciseRunner {
   update(frame: ExerciseFrame): void {
     const { timestamp } = frame;
     // A broken value is the same as no measure at all.
-    const value = frame.value !== null && Number.isFinite(frame.value) ? frame.value : null;
+    const tracked = frameHasMeasure(frame);
     if (this.currentState === "COUNTDOWN") {
       if (timestamp - this.countdownStart < this.countdownMs) return;
       this.begin(timestamp);
     } else if (this.currentState === "PAUSED") {
       // Comes back by itself after tracking loss, but a patient's own pause is theirs to end.
       if (this.pausedByUserFlag) return;
-      if (value === null) {
+      if (!tracked) {
         this.trackingBackAt = null;
         return;
       }
@@ -182,7 +193,7 @@ export class ExerciseRunner {
       return;
     }
 
-    if (value === null) {
+    if (!tracked) {
       if (timestamp - this.lastSeenAt > TRACKING_LOST_AFTER_MS) this.beginPause(timestamp, false);
       else this.checkTimeout(timestamp);
       return;
@@ -190,7 +201,7 @@ export class ExerciseRunner {
 
     this.lastSeenAt = timestamp;
     this.recordFrame(frame);
-    this.counter.update(value, timestamp, frame.rawValue ?? value);
+    this.counter.feed(frame);
 
     if (this.counter.fullReps >= this.definition.targetReps) this.finish("DONE", timestamp);
     else this.checkTimeout(timestamp);
@@ -260,7 +271,7 @@ export class ExerciseRunner {
     else this.offPlane++;
   }
 
-  private handleCounterEvent(event: RepEvent): void {
+  private handleCounterEvent(event: CounterEvent): void {
     if (event.type === "stateChanged") {
       // A new movement starts a new count; turning back within a movement does not.
       if (event.state === "MOVING" && this.counterAtRest) {

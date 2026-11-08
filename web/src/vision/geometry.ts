@@ -1,8 +1,6 @@
-import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
-
 import type { Side } from "@/types/api";
 
-import { isLandmarkVisible, POSE } from "./landmarks";
+import { isLandmarkVisible, POSE, type VisibleLandmark } from "./landmarks";
 
 export interface Point {
   x: number;
@@ -38,7 +36,7 @@ export function median(values: readonly number[]): number {
 
 /** Returns null unless both shoulders are visible. */
 export function shoulderWidthPx(
-  pose: readonly NormalizedLandmark[],
+  pose: readonly VisibleLandmark[],
   frameWidth: number,
   frameHeight: number,
 ): number | null {

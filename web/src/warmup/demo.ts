@@ -1,6 +1,6 @@
 import type { Point } from "@/vision/geometry";
 
-import type { DemoKeyframe } from "./exercises";
+import type { DemoKeyframe, HandKeyframe } from "./exercises";
 
 const lerp = (a: number, b: number, share: number) => a + (b - a) * share;
 const lerpPoint = (a: Point, b: Point, share: number): Point => ({
@@ -23,6 +23,29 @@ export function poseAt(frames: readonly DemoKeyframe[], time: number): DemoKeyfr
     elbow: lerpPoint(before.elbow, after.elbow, share),
     wrist: lerpPoint(before.wrist, after.wrist, share),
   };
+}
+
+/** The same for a hand: each fingertip moves on its own line between keyframes. */
+export function handPoseAt(frames: readonly HandKeyframe[], time: number): HandKeyframe {
+  const clamped = Math.min(1, Math.max(0, time));
+  const nextIndex = frames.findIndex((frame) => frame.time >= clamped);
+  if (nextIndex <= 0) return frames[0];
+
+  const before = frames[nextIndex - 1];
+  const after = frames[nextIndex];
+  const share = (clamped - before.time) / (after.time - before.time);
+  return {
+    time: clamped,
+    tips: before.tips.map((tip, index) =>
+      lerpPoint(tip, after.tips[index], share),
+    ) as HandKeyframe["tips"],
+  };
+}
+
+/** Where a value sits on a gauge from min to max, as 0 to 180 degrees of its semicircle. */
+export function gaugeDegrees(value: number, min: number, max: number): number {
+  if (!(max > min)) return 0;
+  return Math.min(180, Math.max(0, ((value - min) / (max - min)) * 180));
 }
 
 export interface GaugePoint {

@@ -1,20 +1,35 @@
 import type { Side } from "@/types/api";
-import { type FilteredAngles, JointAngleFilter } from "@/vision/angleFilter";
-import { computeJointAngles, type JointAngleInput, type JointAngles } from "@/vision/angles";
+import type { FilteredAngles, FilteredHand } from "@/vision/angleFilter";
+import type { JointAngles } from "@/vision/angles";
+import type { HandMeasures } from "@/vision/hand";
+import { type JointAngleState, type MeasureInput, MotionMeasurer } from "@/vision/measures";
+import {
+  type CounterEvent,
+  type CounterState,
+  createCounter,
+  type ExerciseCounter,
+  frameHasMeasure,
+} from "@/warmup/counter";
 import {
   EXERCISES,
   type ExerciseId,
   type ExercisePreset,
   type Thresholds,
 } from "@/warmup/exercises";
-import { RepCounter, type RepEvent, type RepState } from "@/warmup/repCounter";
+import { frameForExercise } from "@/warmup/frames";
 
 const MAX_EVENTS = 20;
 const CHART_WINDOW_MS = 10_000;
 const CHART_UPDATE_MS = 200;
 const TRACKING_LOST_AFTER_MS = 500;
 
-const MEASURES = ["armElevationDeg", "elevationPlaneDeg", "elbowFlexionDeg"] as const;
+const MEASURES = [
+  "armElevationDeg",
+  "elevationPlaneDeg",
+  "elbowFlexionDeg",
+  "forwardReachRatio",
+] as const;
+const FINGERS = ["index", "middle", "ring", "little"] as const;
 
 export interface LabEvent {
   id: number;
@@ -34,9 +49,10 @@ export interface LabConfig {
   side: Side;
 }
 
-export interface LabFrame extends JointAngleInput {
-  timestamp: number;
+export interface LabFrame extends Omit<MeasureInput, "hands"> {
   fps: number;
+  /** Missing when testing the arm only. */
+  hands?: MeasureInput["hands"];
 }
 
 export interface LabSnapshot {
@@ -44,7 +60,10 @@ export interface LabSnapshot {
   fps: number;
   raw: JointAngles;
   filtered: FilteredAngles;
-  counterState: RepState;
+  hand: { raw: HandMeasures | null; filtered: FilteredHand };
+  counterState: CounterState;
+  /** For a sequence, the step expected next, from 0; otherwise null. */
+  sequenceStep: number | null;
   fullReps: number;
   partialReps: number;
   manualCount: number;
@@ -71,6 +90,11 @@ const CSV_COLUMNS = [
     `${measure}_trunk_reference`,
     `${measure}_confidence`,
   ]),
+  "hand_aperture_raw",
+  "hand_aperture_filtered",
+  ...FINGERS.flatMap((finger) => [`thumb_${finger}_raw`, `thumb_${finger}_filtered`]),
+  "hand_source",
+  "sequence_step",
   "fps",
   "counter_state",
   "full_reps",
@@ -94,8 +118,8 @@ function csvCell(value: CsvCell): string {
 export class LabSession {
   private config: LabConfig;
   private thresholds: Thresholds;
-  private counter!: RepCounter;
-  private filter = new JointAngleFilter();
+  private counter!: ExerciseCounter;
+  private measurer: MotionMeasurer;
   private carriedFull = 0;
   private carriedPartial = 0;
   private manualCount = 0;
@@ -114,6 +138,7 @@ export class LabSession {
   constructor(config: LabConfig) {
     this.config = config;
     this.thresholds = EXERCISES[config.exerciseId].presets[config.preset];
+    this.measurer = new MotionMeasurer(config.side);
     this.makeCounter();
   }
 
@@ -133,7 +158,7 @@ export class LabSession {
   configure(config: LabConfig): void {
     this.config = config;
     this.thresholds = EXERCISES[config.exerciseId].presets[config.preset];
-    this.filter = new JointAngleFilter();
+    this.measurer = new MotionMeasurer(config.side);
     this.reset();
     this.log(`configured ${config.exerciseId}, ${config.preset}, ${config.side} affected`);
   }
@@ -187,11 +212,16 @@ export class LabSession {
     this.lastTimestamp = timestamp;
     this.lastSeenAt ??= timestamp;
 
-    const raw = computeJointAngles(frame, this.config.side);
-    const filtered = this.filter.add(raw);
-    const value = filtered[EXERCISES[this.config.exerciseId].measure];
+    const state = this.measurer.process({ ...frame, hands: frame.hands ?? [] });
+    const { raw, filtered } = state;
+    const exerciseFrame = frameForExercise(EXERCISES[this.config.exerciseId], state);
+    // For a sequence, the chart shows the distance to the finger expected next.
+    const value =
+      exerciseFrame.values !== undefined
+        ? (exerciseFrame.values?.[this.counter.sequenceStep ?? 0] ?? null)
+        : exerciseFrame.value;
 
-    if (value === null) {
+    if (!frameHasMeasure(exerciseFrame)) {
       // Matches the warm-up, except that the lab resumes at once so that nothing is hidden.
       if (!this.trackingPaused && timestamp - this.lastSeenAt > TRACKING_LOST_AFTER_MS) {
         this.trackingPaused = true;
@@ -205,18 +235,20 @@ export class LabSession {
         this.log("tracking back, resumed");
       }
       this.lastSeenAt = timestamp;
-      this.counter.update(value, timestamp, raw[EXERCISES[this.config.exerciseId].measure]?.value);
+      this.counter.feed(exerciseFrame);
     }
 
     this.addToChart(timestamp, value);
-    if (this.recording) this.recordRow(frame, raw, filtered);
+    if (this.recording) this.recordRow(frame, state);
 
     return {
       timestamp,
       fps: frame.fps,
       raw,
       filtered,
+      hand: state.hand,
       counterState: this.counter.state,
+      sequenceStep: this.counter.sequenceStep,
       fullReps: this.fullReps,
       partialReps: this.partialReps,
       manualCount: this.manualCount,
@@ -238,10 +270,7 @@ export class LabSession {
   }
 
   private makeCounter(): void {
-    this.counter = new RepCounter({
-      direction: EXERCISES[this.config.exerciseId].direction,
-      ...this.thresholds,
-    });
+    this.counter = createCounter(EXERCISES[this.config.exerciseId], this.thresholds);
     this.counter.subscribe((event) => this.log(describeEvent(event)));
   }
 
@@ -258,7 +287,8 @@ export class LabSession {
     }));
   }
 
-  private recordRow(frame: LabFrame, raw: JointAngles, filtered: FilteredAngles): void {
+  private recordRow(frame: LabFrame, state: JointAngleState): void {
+    const { raw, filtered, hand } = state;
     const { exerciseId, preset, side } = this.config;
     this.rows.push([
       frame.timestamp,
@@ -274,6 +304,14 @@ export class LabSession {
         raw[measure]?.trunkReference,
         raw[measure]?.confidence,
       ]),
+      hand.raw?.handApertureRatio,
+      hand.filtered.handApertureRatio,
+      ...FINGERS.flatMap((_, index) => [
+        hand.raw?.thumbFingerDistances[index],
+        hand.filtered.thumbFingerDistances?.[index],
+      ]),
+      hand.raw?.source,
+      this.counter.sequenceStep,
       frame.fps,
       this.counter.state,
       this.fullReps,
@@ -290,7 +328,7 @@ export class LabSession {
   }
 }
 
-function describeEvent(event: RepEvent): string {
+function describeEvent(event: CounterEvent): string {
   switch (event.type) {
     case "stateChanged":
       return `state ${event.state}`;

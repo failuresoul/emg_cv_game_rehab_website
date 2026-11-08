@@ -198,3 +198,55 @@ describe("LabSession recording", () => {
     expect(session.hasRecording).toBe(false);
   });
 });
+
+describe("LabSession, reach and hand", () => {
+  it("counts forward reaches from real landmark frames", () => {
+    const session = new LabSession({
+      exerciseId: "forward_reach",
+      preset: "standard",
+      side: "left",
+    });
+
+    // Raising the straight arm forward to 85 degrees brings the wrist almost a full arm forward.
+    const snapshot = feed(session, cycles({ rest: 10, peak: 85, cycles: 3 }));
+
+    expect(snapshot.fullReps).toBe(3);
+    expect(snapshot.raw.forwardReachRatio?.source).toBe("3d");
+    expect(snapshot.sequenceStep).toBeNull();
+  });
+
+  it("pauses a hand exercise with no hand, and shows the sequence step", () => {
+    const session = new LabSession({
+      exerciseId: "thumb_opposition",
+      preset: "standard",
+      side: "left",
+    });
+
+    session.process(frameAt(10, 0));
+    const snapshot = session.process(frameAt(10, 600));
+
+    expect(snapshot.hand.raw).toBeNull();
+    expect(snapshot.trackingPaused).toBe(true);
+    expect(snapshot.sequenceStep).toBe(0);
+  });
+
+  it("records reach and hand columns", () => {
+    const session = newSession();
+    session.startRecording();
+    session.process(frameAt(10, 0));
+
+    const [header] = session.toCsv().split("\n");
+
+    for (const column of [
+      "forwardReachRatio_raw",
+      "hand_aperture_raw",
+      "hand_aperture_filtered",
+      "thumb_index_raw",
+      "thumb_little_filtered",
+      "hand_source",
+      "sequence_step",
+    ]) {
+      expect(header.split(",")).toContain(column);
+    }
+  });
+});
