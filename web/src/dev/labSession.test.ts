@@ -250,3 +250,42 @@ describe("LabSession, reach and hand", () => {
     }
   });
 });
+
+describe("LabSession, compensation", () => {
+  it("builds a posture baseline, can start it again, and records posture columns", () => {
+    const session = newSession();
+    session.startRecording();
+    let snapshot = session.process(frameAt(10, 0));
+    expect(snapshot.compensation.baseline).toBeNull();
+
+    for (let time = 33; time <= 2100; time += 33) snapshot = session.process(frameAt(10, time));
+    expect(snapshot.compensation.baseline).not.toBeNull();
+    expect(snapshot.compensation.values?.trunkDisplacement).toBeCloseTo(0);
+    expect(snapshot.compensationChecks).toEqual(["trunk", "lean", "shoulder"]);
+    expect(snapshot.events.some((event) => event.text === "posture baseline ready")).toBe(true);
+
+    session.rebaseline();
+    snapshot = session.process(frameAt(10, 2200));
+    expect(snapshot.compensation.baseline).toBeNull();
+
+    const header = session.toCsv().split("\n")[0].split(",");
+    for (const column of [
+      "trunk_displacement_sw",
+      "trunk_lean_deg",
+      "shoulder_hike_sw",
+      "compensating",
+    ]) {
+      expect(header).toContain(column);
+    }
+  });
+
+  it("checks only the trunk for hand exercises", () => {
+    const session = new LabSession({
+      exerciseId: "thumb_opposition",
+      preset: "standard",
+      side: "left",
+    });
+
+    expect(session.process(frameAt(10, 0)).compensationChecks).toEqual(["trunk"]);
+  });
+});

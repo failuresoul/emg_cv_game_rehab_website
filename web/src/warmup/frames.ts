@@ -8,9 +8,17 @@ export function frameForExercise(
   exercise: ExerciseDefinition,
   state: JointAngleState,
 ): ExerciseFrame {
-  const { timestamp, raw, filtered, hand } = state;
+  const { timestamp, filtered, posture } = state;
   const planeDeg = filtered.elevationPlaneDeg;
+  return { ...measureFrame(exercise, state, timestamp, planeDeg), posture };
+}
 
+function measureFrame(
+  exercise: ExerciseDefinition,
+  { raw, filtered, hand }: JointAngleState,
+  timestamp: number,
+  planeDeg: number | null,
+): ExerciseFrame {
   switch (exercise.measure) {
     case "armElevationDeg":
     case "elbowFlexionDeg":

@@ -30,6 +30,10 @@ export function feedbackKey(feedback: ExerciseFeedback, direction: RepDirection)
       return "warmup.feedback.nextRing";
     case "next_little":
       return "warmup.feedback.nextLittle";
+    case "compensation_back":
+      return "warmup.cue.back";
+    case "compensation_shoulder":
+      return "warmup.cue.shoulder";
   }
 }
 

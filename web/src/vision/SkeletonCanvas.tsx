@@ -27,6 +27,15 @@ const STAR_UNLIT_COLOR = "#9AA7AB";
 const STAR_RADIUS = 18;
 const STAR_LIT_RADIUS = 26;
 const WRIST_RADIUS = 12;
+const TRUNK_WARNING_COLOR = "#F5A524";
+const TRUNK_WARNING_LINE_WIDTH = 10;
+
+const TRUNK_CONNECTIONS: [number, number][] = [
+  [POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER],
+  [POSE.LEFT_SHOULDER, POSE.LEFT_HIP],
+  [POSE.RIGHT_SHOULDER, POSE.RIGHT_HIP],
+  [POSE.LEFT_HIP, POSE.RIGHT_HIP],
+];
 
 const POSE_CONNECTIONS: [number, number][] = [
   [POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER],
@@ -83,6 +92,18 @@ function drawPose(context: CanvasRenderingContext2D, pose: NormalizedLandmark[])
   context.lineWidth = POSE_LINE_WIDTH;
   context.lineCap = "round";
   for (const [start, end] of POSE_CONNECTIONS) {
+    if (isLandmarkVisible(pose[start]) && isLandmarkVisible(pose[end])) {
+      drawLine(context, pose[start], pose[end]);
+    }
+  }
+}
+
+/** The trunk in amber, while the person is compensating. */
+function drawTrunkWarning(context: CanvasRenderingContext2D, pose: NormalizedLandmark[]) {
+  context.strokeStyle = TRUNK_WARNING_COLOR;
+  context.lineWidth = TRUNK_WARNING_LINE_WIDTH;
+  context.lineCap = "round";
+  for (const [start, end] of TRUNK_CONNECTIONS) {
     if (isLandmarkVisible(pose[start]) && isLandmarkVisible(pose[end])) {
       drawLine(context, pose[start], pose[end]);
     }
@@ -227,6 +248,8 @@ interface SkeletonCanvasProps {
   wristSw?: Point | null;
   /** Draws this arm boldly, for the arm being exercised. */
   highlightSide?: Side;
+  /** Draws the trunk in amber, while the person is compensating. */
+  trunkWarning?: boolean;
 }
 
 /** Draws landmarks only. The camera image is never shown. */
@@ -236,6 +259,7 @@ export function SkeletonCanvas({
   stars,
   wristSw,
   highlightSide,
+  trunkWarning = false,
 }: SkeletonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -245,6 +269,7 @@ export function SkeletonCanvas({
     context.clearRect(0, 0, WIDTH, HEIGHT);
     if (result && stars) drawStars(context, stars, result.frameWidth, result.frameHeight);
     if (result?.pose) drawPose(context, result.pose);
+    if (result?.pose && trunkWarning) drawTrunkWarning(context, result.pose);
     if (result?.pose && highlightSide) drawArmHighlight(context, result.pose, highlightSide);
     result?.hands.forEach((hand) => drawHand(context, hand.landmarks));
     if (result && stars && wristSw) {
@@ -253,7 +278,7 @@ export function SkeletonCanvas({
     if (result && bodyFrame) {
       drawBodyFrame(context, bodyFrame, result.frameWidth, result.frameHeight);
     }
-  }, [result, bodyFrame, stars, wristSw, highlightSide]);
+  }, [result, bodyFrame, stars, wristSw, highlightSide, trunkWarning]);
 
   return (
     <canvas

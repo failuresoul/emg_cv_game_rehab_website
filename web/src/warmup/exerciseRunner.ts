@@ -1,4 +1,5 @@
 import type { AngleSource, TrunkReference } from "@/vision/angles";
+import type { PostureSample } from "@/vision/posture";
 
 import {
   type ExerciseDefinition,
@@ -7,6 +8,7 @@ import {
   getThresholds,
   type Thresholds,
 } from "./exercises";
+import { CompensationMonitor, type CompensationReading, type ExerciseRep } from "./compensation";
 import {
   type CounterEvent,
   type CounterFrame,
@@ -14,27 +16,38 @@ import {
   type ExerciseCounter,
   frameHasMeasure,
 } from "./counter";
-import type { RepFeedback, RepRecord } from "./repCounter";
+import type { RepFeedback } from "./repCounter";
 import type { SequenceFeedback } from "./sequenceCounter";
 
 export type ExerciseState =
   "INTRO" | "DEMO" | "COUNTDOWN" | "ACTIVE" | "PAUSED" | "DONE" | "SKIPPED";
 
-export type ExerciseFeedback = RepFeedback | SequenceFeedback | "forward" | "sideways";
+export type ExerciseFeedback =
+  | RepFeedback
+  | SequenceFeedback
+  | "forward"
+  | "sideways"
+  | "compensation_back"
+  | "compensation_shoulder";
 
 export type ExerciseEvent =
   | { type: "stateChanged"; state: ExerciseState }
   | { type: "feedback"; feedback: ExerciseFeedback }
-  | { type: "repCompleted"; rep: RepRecord }
-  | { type: "partialRep"; rep: RepRecord };
+  | { type: "repCompleted"; rep: ExerciseRep }
+  | { type: "partialRep"; rep: ExerciseRep };
 
 export interface ExerciseResult {
   exerciseId: ExerciseId;
   preset: ExercisePreset;
   thresholds: Thresholds;
-  reps: RepRecord[];
+  /** Every recorded movement, full and partial, with what was seen of the posture. */
+  reps: ExerciseRep[];
   fullReps: number;
   partialReps: number;
+  /** Reps, full or partial, with compensation held for at least the sustain time. */
+  compensatedReps: number;
+  /** compensatedReps as a share of all recorded reps, from 0 to 1; 0 with no reps. */
+  compensationRate: number;
   /** The furthest point of any recorded movement, or null if there were none. */
   bestPeak: number | null;
   /** The same, from unfiltered angles. Use this for saved data. */
@@ -55,6 +68,8 @@ export interface ExerciseResult {
  */
 export interface ExerciseFrame extends CounterFrame {
   planeDeg?: number | null;
+  /** Leave undefined to skip compensation checks; null means the trunk was not visible. */
+  posture?: PostureSample | null;
   source?: AngleSource | null;
   trunkReference?: TrunkReference | null;
 }
@@ -95,6 +110,8 @@ export class ExerciseRunner {
   private readonly countdownMs: number;
   private readonly resumeDelayMs: number;
   private readonly counter: ExerciseCounter;
+  private readonly monitor: CompensationMonitor;
+  private readonly exerciseReps: ExerciseRep[] = [];
   private readonly listeners = new Set<(event: ExerciseEvent) => void>();
 
   private currentState: ExerciseState = "INTRO";
@@ -127,6 +144,7 @@ export class ExerciseRunner {
     this.countdownMs = countdownMs;
     this.resumeDelayMs = resumeDelayMs;
     this.counter = createCounter(definition, this.thresholds);
+    this.monitor = new CompensationMonitor(definition.id);
     this.counter.subscribe((event) => this.handleCounterEvent(event));
   }
 
@@ -150,6 +168,16 @@ export class ExerciseRunner {
 
   get partialReps(): number {
     return this.counter.partialReps;
+  }
+
+  /** The latest posture check: baseline, live values and what is being held too long. */
+  get compensation(): CompensationReading {
+    return this.monitor.reading;
+  }
+
+  /** True while any checked threshold has stayed exceeded for the sustain time. */
+  get isCompensating(): boolean {
+    return this.monitor.reading.sustained.length > 0;
   }
 
   /** For a sequence, the step expected next, from 0; otherwise null. */
@@ -201,6 +229,8 @@ export class ExerciseRunner {
 
     this.lastSeenAt = timestamp;
     this.recordFrame(frame);
+    // Before the counter, so this frame's posture belongs to any rep it ends.
+    if (frame.posture !== undefined) this.checkPosture(frame.posture, timestamp);
     this.counter.feed(frame);
 
     if (this.counter.fullReps >= this.definition.targetReps) this.finish("DONE", timestamp);
@@ -224,7 +254,8 @@ export class ExerciseRunner {
   getResult(): ExerciseResult | null {
     if (this.currentState !== "DONE" && this.currentState !== "SKIPPED") return null;
 
-    const reps = [...this.counter.reps];
+    const reps = [...this.exerciseReps];
+    const compensatedReps = reps.filter((rep) => rep.compensated).length;
     const peaks = reps.map((rep) => rep.peakValue);
     const rawPeaks = reps.map((rep) => rep.rawPeakValue);
     const pickBest = this.definition.direction === "up" ? Math.max : Math.min;
@@ -237,6 +268,8 @@ export class ExerciseRunner {
       reps,
       fullReps: this.counter.fullReps,
       partialReps: this.counter.partialReps,
+      compensatedReps,
+      compensationRate: reps.length > 0 ? compensatedReps / reps.length : 0,
       bestPeak: peaks.length > 0 ? pickBest(...peaks) : null,
       bestRawPeak: rawPeaks.length > 0 ? pickBest(...rawPeaks) : null,
       meanDurationMs:
@@ -252,6 +285,8 @@ export class ExerciseRunner {
   }
 
   private begin(timestamp: number): void {
+    // The baseline is the person at rest, at the start of the active phase.
+    this.monitor.rebaseline();
     this.activeStart = timestamp;
     this.lastSeenAt = timestamp;
     this.setState("ACTIVE");
@@ -271,7 +306,14 @@ export class ExerciseRunner {
     else this.offPlane++;
   }
 
+  private checkPosture(posture: PostureSample | null, timestamp: number): void {
+    const { cue } = this.monitor.addSample(posture, timestamp);
+    if (cue === "back") this.emit({ type: "feedback", feedback: "compensation_back" });
+    else if (cue === "shoulder") this.emit({ type: "feedback", feedback: "compensation_shoulder" });
+  }
+
   private handleCounterEvent(event: CounterEvent): void {
+    const rep = this.monitor.handleCounterEvent(event);
     if (event.type === "stateChanged") {
       // A new movement starts a new count; turning back within a movement does not.
       if (event.state === "MOVING" && this.counterAtRest) {
@@ -281,10 +323,15 @@ export class ExerciseRunner {
       this.counterAtRest = event.state === "REST";
       return;
     }
-    this.emit(event);
-    if (event.type === "repCompleted" || event.type === "partialRep") {
-      this.reportPlane();
+    if (event.type === "feedback") {
+      this.emit(event);
+      return;
     }
+    // The monitor returns a rep for every rep event.
+    if (!rep) return;
+    this.exerciseReps.push(rep);
+    this.emit({ type: event.type, rep });
+    this.reportPlane();
   }
 
   private reportPlane(): void {
@@ -296,6 +343,8 @@ export class ExerciseRunner {
   }
 
   private beginPause(timestamp: number, byUser: boolean): void {
+    // A gap breaks any run of exceeded frames.
+    this.monitor.addSample(null, timestamp);
     this.counter.pause();
     this.pausedAt = timestamp;
     this.pausedByUserFlag = byUser;

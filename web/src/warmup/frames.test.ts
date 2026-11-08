@@ -22,6 +22,7 @@ function state(withHand = true): JointAngleState {
       elbowFlexionDeg: 150,
       forwardReachRatio: 0.7,
     },
+    posture: null,
     hand: withHand
       ? {
           raw: { handApertureRatio: 1.51, thumbFingerDistances: [0.21, 0.6, 0.8, 1], source: "2d" },
@@ -40,6 +41,7 @@ describe("frameForExercise", () => {
       planeDeg: 79,
       source: "3d",
       trunkReference: "hip",
+      posture: null,
     });
   });
 

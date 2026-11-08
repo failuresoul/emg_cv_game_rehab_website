@@ -44,6 +44,7 @@ import {
 import { ExerciseSummary } from "@/warmup/ExerciseSummary";
 import { exerciseFeedbackKey, exerciseWaitingKey, trackingLostKey } from "@/warmup/feedback";
 import { displayValue, frameForExercise } from "@/warmup/frames";
+import { PostureIndicator, type PostureStatus } from "@/warmup/PostureIndicator";
 import { RepCounterRing } from "@/warmup/RepCounterRing";
 import { SequenceProgress } from "@/warmup/SequenceProgress";
 
@@ -88,6 +89,7 @@ function ExerciseStep({
   const [stage, setStage] = useState(runner.state);
   const [fullReps, setFullReps] = useState(0);
   const [sequenceStep, setSequenceStep] = useState(0);
+  const [posture, setPosture] = useState<PostureStatus>("waiting");
   const [count, setCount] = useState(COUNTDOWN_FROM);
   const [best, setBest] = useState<number | null>(null);
   const [result, setResult] = useState<ExerciseResult | null>(null);
@@ -110,6 +112,8 @@ function ExerciseStep({
         setBest((current) => (current === null ? value : bestOf(current, value)));
       }
       setSequenceStep(runner.sequenceStep ?? 0);
+      const { baseline } = runner.compensation;
+      setPosture(baseline === null ? "waiting" : runner.isCompensating ? "check" : "good");
     },
     [runner, exercise, bestOf],
   );
@@ -253,7 +257,11 @@ function ExerciseStep({
   return (
     <div className="mx-auto grid w-full max-w-[1700px] flex-1 items-start gap-4 lg:grid-cols-12">
       <div className="relative lg:col-span-7">
-        <SkeletonCanvas result={visionResult} highlightSide={affectedSide} />
+        <SkeletonCanvas
+          result={visionResult}
+          highlightSide={affectedSide}
+          trunkWarning={stage === "ACTIVE" && posture === "check"}
+        />
         {trackingLost && (
           <div
             role="alert"
@@ -286,6 +294,7 @@ function ExerciseStep({
                 />
               )}
             </div>
+            {stage === "ACTIVE" && <PostureIndicator status={posture} />}
             <p aria-live="polite" className="text-accent min-h-9 text-center text-xl font-bold">
               {feedbackLine}
             </p>

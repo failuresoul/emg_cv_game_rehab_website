@@ -13,6 +13,7 @@ import {
   type JointAngles,
 } from "./angles";
 import { computeHandMeasures, type HandMeasures, selectAffectedHand } from "./hand";
+import { computePosture, type PostureSample } from "./posture";
 import type { DetectedHand } from "./visionEngine";
 
 export interface MeasureInput extends JointAngleInput {
@@ -26,6 +27,8 @@ export interface JointAngleState {
   raw: JointAngles;
   /** Steadied values, for counting repetitions only. */
   filtered: FilteredAngles;
+  /** The trunk's posture, for spotting compensation. Null unless both shoulders are visible. */
+  posture: PostureSample | null;
   hand: {
     /** Null when the affected hand is not visible. Use these for saved data. */
     raw: HandMeasures | null;
@@ -52,6 +55,7 @@ export class MotionMeasurer {
       timestamp: input.timestamp,
       raw,
       filtered: this.angleFilter.add(raw),
+      posture: computePosture(input, this.affectedSide),
       hand: { raw: handRaw, filtered: this.handFilter.add(handRaw) },
     };
   }

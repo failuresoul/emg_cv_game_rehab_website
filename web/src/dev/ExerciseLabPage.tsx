@@ -135,6 +135,77 @@ function MeasureRow({
   );
 }
 
+const COMPENSATION_ROWS = [
+  { type: "trunk", name: "Trunk displacement", key: "trunkDisplacement", unit: "SW", digits: 2 },
+  { type: "lean", name: "Trunk lean", key: "trunkLeanDeg", unit: "deg", digits: 1 },
+  { type: "shoulder", name: "Shoulder hike", key: "shoulderHike", unit: "SW", digits: 2 },
+] as const;
+
+function CompensationCard({
+  snapshot,
+  onRebaseline,
+}: {
+  snapshot: LabSnapshot | null;
+  onRebaseline: () => void;
+}) {
+  const reading = snapshot?.compensation;
+  const sustained = reading?.sustained ?? [];
+  return (
+    <Card className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-bold">Compensation</h2>
+        <Button variant="secondary" onClick={onRebaseline}>
+          Re-baseline
+        </Button>
+      </div>
+      <p className="font-medium">
+        Baseline:{" "}
+        {reading?.baseline
+          ? `ready (hips ${reading.baseline.trunkVector ? "used" : "hidden, shoulder line used"})`
+          : "collecting, sit still for 2 seconds"}
+        {" · "}
+        {sustained.length > 0 ? (
+          <span className="text-warning font-bold">compensating: {sustained.join(", ")}</span>
+        ) : (
+          <span className="text-success font-bold">upright</span>
+        )}
+      </p>
+      <table className="w-full">
+        <thead className="text-muted text-left">
+          <tr>
+            <th className="pr-3 font-semibold">Measure</th>
+            <th className="px-2 font-semibold">Live</th>
+            <th className="px-2 font-semibold">Threshold</th>
+            <th className="px-2 font-semibold">Checked</th>
+          </tr>
+        </thead>
+        <tbody>
+          {COMPENSATION_ROWS.map((row) => {
+            const value = reading?.values?.[row.key];
+            const threshold = snapshot?.compensationThresholds[row.key];
+            return (
+              <tr key={row.key}>
+                <th scope="row" className="py-1 pr-3 text-left font-medium">
+                  {row.name}
+                </th>
+                <td className="px-2 py-1 tabular-nums">
+                  {number(value, row.digits)} {row.unit}
+                </td>
+                <td className="px-2 py-1 tabular-nums">
+                  {number(threshold, row.digits)} {row.unit}
+                </td>
+                <td className="px-2 py-1">
+                  {snapshot?.compensationChecks.includes(row.type) ? "yes" : "no"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Card>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
@@ -204,7 +275,11 @@ function LiveLab() {
     <div className="grid gap-4 xl:grid-cols-2">
       <div className="flex flex-col gap-4">
         <div className="bg-session-bg rounded-xl">
-          <SkeletonCanvas result={result} highlightSide={config.side} />
+          <SkeletonCanvas
+            result={result}
+            highlightSide={config.side}
+            trunkWarning={(snapshot?.compensation.sustained.length ?? 0) > 0}
+          />
         </div>
         <Card>
           <table className="w-full">
@@ -389,6 +464,8 @@ function LiveLab() {
             range={range}
           />
         </Card>
+
+        <CompensationCard snapshot={snapshot} onRebaseline={() => session.rebaseline()} />
 
         <Card>
           <h2 className="mb-2 font-bold">Event log</h2>

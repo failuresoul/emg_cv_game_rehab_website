@@ -4,6 +4,12 @@ import type { JointAngles } from "@/vision/angles";
 import type { HandMeasures } from "@/vision/hand";
 import { type JointAngleState, type MeasureInput, MotionMeasurer } from "@/vision/measures";
 import {
+  CompensationMonitor,
+  type CompensationReading,
+  type ExerciseRep,
+} from "@/warmup/compensation";
+import type { CompensationConfig, CompensationType } from "@/warmup/compensationConfig";
+import {
   type CounterEvent,
   type CounterState,
   createCounter,
@@ -69,6 +75,10 @@ export interface LabSnapshot {
   manualCount: number;
   trackingPaused: boolean;
   thresholds: Thresholds;
+  compensation: CompensationReading;
+  compensationThresholds: CompensationConfig["thresholds"];
+  /** The kinds this exercise checks; the others are shown but never flagged. */
+  compensationChecks: readonly CompensationType[];
   events: readonly LabEvent[];
   /** Replaced only a few times a second, so a chart can skip the frames in between. */
   chart: readonly ChartPoint[];
@@ -95,6 +105,10 @@ const CSV_COLUMNS = [
   ...FINGERS.flatMap((finger) => [`thumb_${finger}_raw`, `thumb_${finger}_filtered`]),
   "hand_source",
   "sequence_step",
+  "trunk_displacement_sw",
+  "trunk_lean_deg",
+  "shoulder_hike_sw",
+  "compensating",
   "fps",
   "counter_state",
   "full_reps",
@@ -120,6 +134,7 @@ export class LabSession {
   private thresholds: Thresholds;
   private counter!: ExerciseCounter;
   private measurer: MotionMeasurer;
+  private monitor: CompensationMonitor;
   private carriedFull = 0;
   private carriedPartial = 0;
   private manualCount = 0;
@@ -139,6 +154,7 @@ export class LabSession {
     this.config = config;
     this.thresholds = EXERCISES[config.exerciseId].presets[config.preset];
     this.measurer = new MotionMeasurer(config.side);
+    this.monitor = new CompensationMonitor(config.exerciseId);
     this.makeCounter();
   }
 
@@ -159,6 +175,7 @@ export class LabSession {
     this.config = config;
     this.thresholds = EXERCISES[config.exerciseId].presets[config.preset];
     this.measurer = new MotionMeasurer(config.side);
+    this.monitor = new CompensationMonitor(config.exerciseId);
     this.reset();
     this.log(`configured ${config.exerciseId}, ${config.preset}, ${config.side} affected`);
   }
@@ -170,6 +187,12 @@ export class LabSession {
     this.thresholds = thresholds;
     this.makeCounter();
     this.log(`thresholds low ${thresholds.low}, high ${thresholds.high}`);
+  }
+
+  /** Measures a new posture baseline over the next 2 seconds. Sit still while it does. */
+  rebaseline(): void {
+    this.monitor.rebaseline();
+    this.log("re-baselining posture, sit still for 2 seconds");
   }
 
   pressManualCount(): void {
@@ -189,6 +212,7 @@ export class LabSession {
     this.chart = [];
     this.lastSeenAt = null;
     this.trackingPaused = false;
+    this.monitor.rebaseline();
     this.makeCounter();
   }
 
@@ -235,8 +259,13 @@ export class LabSession {
         this.log("tracking back, resumed");
       }
       this.lastSeenAt = timestamp;
-      this.counter.feed(exerciseFrame);
     }
+    // Before the counter, so this frame's posture belongs to any rep it ends.
+    const hadBaseline = this.monitor.baseline !== null;
+    const reading = this.monitor.addSample(this.trackingPaused ? null : state.posture, timestamp);
+    if (!hadBaseline && reading.baseline) this.log("posture baseline ready");
+    if (reading.cue) this.log(`cue ${reading.cue}`);
+    if (!this.trackingPaused && frameHasMeasure(exerciseFrame)) this.counter.feed(exerciseFrame);
 
     this.addToChart(timestamp, value);
     if (this.recording) this.recordRow(frame, state);
@@ -254,6 +283,9 @@ export class LabSession {
       manualCount: this.manualCount,
       trackingPaused: this.trackingPaused,
       thresholds: this.thresholds,
+      compensation: reading,
+      compensationThresholds: this.monitor.thresholds,
+      compensationChecks: this.monitor.checkedTypes,
       events: this.events,
       chart: this.chart,
       isRecording: this.recording,
@@ -271,7 +303,11 @@ export class LabSession {
 
   private makeCounter(): void {
     this.counter = createCounter(EXERCISES[this.config.exerciseId], this.thresholds);
-    this.counter.subscribe((event) => this.log(describeEvent(event)));
+    this.counter.subscribe((event) => {
+      const rep = this.monitor.handleCounterEvent(event);
+      this.log(describeEvent(event));
+      if (rep?.compensated) this.log(describeCompensation(rep));
+    });
   }
 
   private addToChart(timestamp: number, value: number | null): void {
@@ -312,6 +348,10 @@ export class LabSession {
       ]),
       hand.raw?.source,
       this.counter.sequenceStep,
+      this.monitor.reading.values?.trunkDisplacement,
+      this.monitor.reading.values?.trunkLeanDeg,
+      this.monitor.reading.values?.shoulderHike,
+      this.monitor.reading.sustained.join("+"),
       frame.fps,
       this.counter.state,
       this.fullReps,
@@ -339,4 +379,12 @@ function describeEvent(event: CounterEvent): string {
     case "partialRep":
       return `partial rep, peak ${event.rep.peakValue.toFixed(1)}, ${Math.round(event.rep.durationMs)} ms`;
   }
+}
+
+function describeCompensation(rep: ExerciseRep): string {
+  const max = rep.compensationMax;
+  const detail = max
+    ? `max trunk ${max.trunkDisplacement.toFixed(2)} SW, lean ${max.trunkLeanDeg.toFixed(0)} deg, hike ${max.shoulderHike.toFixed(2)} SW`
+    : "no posture values";
+  return `compensated (${rep.compensationTypes.join(", ")}): ${detail}`;
 }
