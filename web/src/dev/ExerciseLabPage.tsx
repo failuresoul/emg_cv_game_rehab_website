@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
+import { ActivationMeter, ActivationSourceBadge, DEFAULT_GRIP_REFS, useActivation } from "@/input";
 import type { Side } from "@/types/api";
 import type { AngleMeasure } from "@/vision/angles";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
@@ -215,6 +216,29 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function ActivationCard({ side }: { side: Side }) {
+  const { sourceId, level, ready } = useActivation({ affectedSide: side });
+  return (
+    <Card className="flex items-center gap-6">
+      <ActivationMeter level={level} ready={ready} />
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-bold">Activation</h2>
+          <ActivationSourceBadge sourceId={sourceId} />
+        </div>
+        <Stat label="Level" value={number(level, 2)} />
+        <p className="font-medium">
+          Source {sourceId} · {ready ? "ready" : "not ready (hand not visible)"}
+        </p>
+        <p className="text-muted">
+          Open {DEFAULT_GRIP_REFS.openRef} = 0, closed {DEFAULT_GRIP_REFS.closedRef} = 1 (default
+          references). Press K for keyboard input, then hold Space.
+        </p>
+      </div>
+    </Card>
+  );
+}
+
 function downloadCsv(csv: string) {
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   const link = document.createElement("a");
@@ -394,6 +418,8 @@ function LiveLab() {
             </label>
           ))}
         </Card>
+
+        <ActivationCard side={config.side} />
 
         <Card className="flex flex-col gap-4">
           <Stat label="State" value={snapshot?.counterState ?? "–"} />

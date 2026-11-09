@@ -514,4 +514,10 @@ export const en = {
   "page.admin.games.title": "Games",
   "page.admin.research.title": "Research",
   "page.admin.system.title": "System",
+
+  "input.source.cvGrip": "Closing your hand (camera)",
+  "input.source.keyboard": "Keyboard",
+  "input.source.emg": "Muscle sensor",
+  "input.keyboardBadge": "Keyboard input",
+  "input.meter.label": "Squeeze level {value}%",
 } as const;

@@ -515,4 +515,10 @@ export const bn: Record<TranslationKey, string> = {
   "page.admin.games.title": "গেম",
   "page.admin.research.title": "গবেষণা",
   "page.admin.system.title": "সিস্টেম",
+
+  "input.source.cvGrip": "হাত মুঠো করা (ক্যামেরা)",
+  "input.source.keyboard": "কীবোর্ড",
+  "input.source.emg": "পেশি সেন্সর",
+  "input.keyboardBadge": "কীবোর্ড ইনপুট",
+  "input.meter.label": "চাপের মাত্রা {value}%",
 };
