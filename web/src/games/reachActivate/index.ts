@@ -13,6 +13,7 @@ export const reachActivate: GameDefinition = {
   icon: Target,
   params: REACH_ACTIVATE_PARAMS,
   trialsDefault: REACH_ACTIVATE_TRIALS,
+  estimatedMinutes: 5,
   create: createReachActivateGame,
   implemented: true,
 };

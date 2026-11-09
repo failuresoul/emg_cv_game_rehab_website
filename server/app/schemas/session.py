@@ -51,6 +51,8 @@ class SessionSummary(SessionRead):
     duration_seconds: float | None
     hull_area_sw2: float | None
     warmup_summary: WarmupSummary | None = None
+    #: Finished game runs, in the order they were played.
+    games: list[LastSessionGame] = Field(default_factory=list)
 
 
 class LastSession(BaseModel):
@@ -134,7 +136,22 @@ class AdminSessionDetail(SessionRead):
     """Everything recorded in one session, including every trial's trajectory."""
 
     patient_code: str
+    patient_name: str
     duration_seconds: float | None
     calibration: CalibrationRead | None
     warmup_results: list[WarmupResultRead]
     games: list[GameRunDetail]
+
+
+class AdminRecentSession(BaseModel):
+    """A row of the admin overview's recent sessions."""
+
+    id: int
+    patient_id: int
+    patient_code: str
+    patient_name: str
+    started_at: UtcDatetime
+    status: SessionStatus
+    duration_seconds: float | None
+    #: Finished game runs, in the order they were played.
+    games: list[LastSessionGame]

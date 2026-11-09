@@ -8,13 +8,17 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatCard } from "@/components/ui/StatCard";
-import { usePatients, useStats } from "@/features/admin/hooks";
+import { usePatients, useRecentSessions, useStats } from "@/features/admin/hooks";
 import { AddPatientModal } from "@/features/admin/PatientModals";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
 import { QueryError } from "@/components/ui/QueryError";
+import { totalScore } from "@/features/games/results";
+import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { t } from "@/i18n";
+import { formatDateTime, formatNumber } from "@/lib/format";
 
 const RECENT_PATIENT_COUNT = 5;
+const RECENT_SESSION_COUNT = 8;
 
 function Stats() {
   const stats = useStats();
@@ -100,6 +104,53 @@ function RecentPatients() {
   );
 }
 
+function RecentSessions() {
+  const sessions = useRecentSessions(RECENT_SESSION_COUNT);
+
+  if (sessions.isPending) {
+    return (
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton key={index} className="h-11" />
+        ))}
+      </div>
+    );
+  }
+  if (sessions.isError) return <QueryError onRetry={() => void sessions.refetch()} />;
+  if (sessions.data.length === 0) {
+    return <EmptyState icon={CalendarCheck} title={t("admin.recentSessions.empty")} />;
+  }
+
+  return (
+    <ul className="divide-y divide-black/10">
+      {sessions.data.map((session) => {
+        const score = totalScore(session.games);
+        return (
+          <li key={session.id}>
+            <Link
+              to={`/admin/sessions/${session.id}`}
+              className="hover:bg-primary-light flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-2 py-2"
+            >
+              <span className="text-primary font-semibold">{session.patient_code}</span>
+              <span className="min-w-0 flex-1 truncate">{session.patient_name}</span>
+              <span className="text-muted whitespace-nowrap">
+                {formatDateTime(session.started_at)}
+              </span>
+              <span className="tabular-nums whitespace-nowrap">
+                {score === null
+                  ? t("admin.recentSessions.noGames")
+                  : t("admin.recentSessions.score", { score: formatNumber(score, 0) })}
+              </span>
+              <SessionStatusBadge status={session.status} />
+              <ChevronRight size={20} aria-hidden className="text-muted shrink-0" />
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function AdminOverviewPage() {
   const [addOpen, setAddOpen] = useState(false);
 
@@ -125,6 +176,10 @@ export function AdminOverviewPage() {
         <Card>
           <h2 className="mb-3 text-xl font-bold">{t("admin.alerts")}</h2>
           <EmptyState icon={BellRing} title={t("admin.alerts.empty")} />
+        </Card>
+        <Card className="xl:col-span-2">
+          <h2 className="mb-3 text-xl font-bold">{t("admin.recentSessions")}</h2>
+          <RecentSessions />
         </Card>
       </div>
       <AddPatientModal open={addOpen} onClose={() => setAddOpen(false)} />

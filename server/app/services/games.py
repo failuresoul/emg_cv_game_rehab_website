@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
-from app.models import Calibration, GameRun, PatientProfile, Trial
+from app.models import Calibration, GameRun, PatientProfile, Trial, User
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
 from app.schemas.game import (
@@ -13,14 +13,19 @@ from app.schemas.game import (
     GameRunEnd,
     GameRunRead,
     GameRunStart,
-    GameSummary,
     LastSessionGame,
     TrialCreate,
     TrialRead,
 )
-from app.schemas.session import AdminSessionDetail, CalibrationRead, SessionRead
+from app.schemas.session import (
+    AdminRecentSession,
+    AdminSessionDetail,
+    CalibrationRead,
+    SessionRead,
+)
 from app.schemas.warmup import WarmupResultRead
 from app.services import warmup
+from app.services.game_summary import finished_games_for_sessions
 from app.services.sessions import SessionEndedError, abort_active_runs, duration_seconds
 
 
@@ -126,27 +131,42 @@ def end_run(session: Session, run: GameRun, payload: GameRunEnd) -> GameRun:
 
 def last_session_games(session: Session, session_id: int) -> list[LastSessionGame]:
     """Finished runs of one session, in the order they were played."""
-    games: list[LastSessionGame] = []
-    for run in list_session_runs(session, session_id):
-        if run.status == "active":
-            continue
-        summary = GameSummary.model_validate(run.summary) if run.summary else None
-        games.append(
-            LastSessionGame.model_validate(
-                {
-                    "game_id": run.game_id,
-                    "score": run.score,
-                    "success_rate": summary.success_rate if summary else None,
-                }
-            )
+    return finished_games_for_sessions(session, [session_id]).get(session_id, [])
+
+
+def list_recent_sessions(session: Session, limit: int) -> list[AdminRecentSession]:
+    """Every patient's sessions, newest first."""
+    statement = (
+        select(SessionRecord, PatientProfile, User)
+        .join(PatientProfile, col(PatientProfile.id) == col(SessionRecord.patient_id))
+        .join(User, col(User.id) == col(PatientProfile.user_id))
+        .order_by(col(SessionRecord.started_at).desc(), col(SessionRecord.id).desc())
+        .limit(limit)
+    )
+    rows = session.exec(statement).all()
+    games = finished_games_for_sessions(session, [record.id for record, _, _ in rows if record.id])
+    return [
+        AdminRecentSession(
+            id=record.id,
+            patient_id=record.patient_id,
+            patient_code=profile.patient_code,
+            patient_name=user.full_name,
+            started_at=record.started_at,
+            status=SessionRead.model_validate(record).status,
+            duration_seconds=duration_seconds(record),
+            games=games.get(record.id, []),
         )
-    return games
+        for record, profile, user in rows
+        if record.id is not None
+    ]
 
 
 def get_admin_session_detail(session: Session, record: SessionRecord) -> AdminSessionDetail:
     assert record.id is not None
     profile = session.get(PatientProfile, record.patient_id)
     assert profile is not None
+    user = session.get(User, profile.user_id)
+    assert user is not None
     calibration = session.exec(
         select(Calibration).where(Calibration.session_id == record.id)
     ).first()
@@ -163,6 +183,7 @@ def get_admin_session_detail(session: Session, record: SessionRecord) -> AdminSe
     return AdminSessionDetail(
         **SessionRead.model_validate(record).model_dump(),
         patient_code=profile.patient_code,
+        patient_name=user.full_name,
         duration_seconds=duration_seconds(record),
         calibration=CalibrationRead.model_validate(calibration) if calibration else None,
         warmup_results=[

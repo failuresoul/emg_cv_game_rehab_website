@@ -1,10 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import SessionDep, require_admin
 from app.models import PatientProfile, User
 from app.models import Session as SessionRecord
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
-from app.schemas.session import AdminCalibrationRead, AdminSessionDetail, SessionSummary
+from app.schemas.session import (
+    AdminCalibrationRead,
+    AdminRecentSession,
+    AdminSessionDetail,
+    SessionSummary,
+)
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
 from app.services import games, patients, sessions, warmup
 
@@ -84,6 +91,14 @@ def list_patient_warmup(
     """Per exercise, oldest first, without skipped exercises."""
     _get_patient_or_404(session, patient_id)
     return warmup.get_admin_history(session, patient_id, exercise_id)
+
+
+@router.get("/sessions")
+def list_recent_sessions(
+    session: SessionDep, limit: Annotated[int, Query(ge=1, le=50)] = 10
+) -> list[AdminRecentSession]:
+    """Every patient's sessions, newest first, with their finished games."""
+    return games.list_recent_sessions(session, limit)
 
 
 @router.get("/sessions/{session_id}")

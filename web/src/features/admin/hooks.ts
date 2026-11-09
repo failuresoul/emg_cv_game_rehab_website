@@ -3,6 +3,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "@/lib/api";
 import type {
   AdminCalibration,
+  AdminRecentSession,
+  AdminSessionDetail,
   AdminWarmupHistory,
   AdminStats,
   Patient,
@@ -64,6 +66,23 @@ export function usePatientCalibrations(id: number) {
     queryKey: [ADMIN_KEY, "patient", id, "calibrations"],
     queryFn: async () =>
       (await api.get<AdminCalibration[]>(`/admin/patients/${id}/calibrations`)).data,
+  });
+}
+
+/** Every patient's sessions, newest first. */
+export function useRecentSessions(limit = 10) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "sessions", "recent", limit],
+    queryFn: async () =>
+      (await api.get<AdminRecentSession[]>("/admin/sessions", { params: { limit } })).data,
+  });
+}
+
+/** One session with its calibration, warm-up and every game trial. */
+export function useAdminSession(id: string) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "session", id],
+    queryFn: async () => (await api.get<AdminSessionDetail>(`/admin/sessions/${id}`)).data,
   });
 }
 

@@ -533,7 +533,7 @@ const GamePlay = memo(function GamePlay({
               summary: result.summary,
             })
           }
-          onContinue={() => void navigate("/session/plan")}
+          onContinue={() => void navigate("/session/cooldown")}
         />
       )}
     </div>

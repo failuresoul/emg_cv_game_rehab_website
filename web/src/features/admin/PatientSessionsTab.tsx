@@ -1,9 +1,13 @@
+import { ChevronRight } from "lucide-react";
+import { Link } from "react-router";
+
 import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { t, type TranslationKey } from "@/i18n";
 import { formatDateTime, formatDuration, formatNumber } from "@/lib/format";
+import { totalScore } from "@/features/games/results";
 
 import { usePatientSessions } from "./hooks";
 
@@ -13,6 +17,7 @@ const COLUMNS: TranslationKey[] = [
   "sessions.column.duration",
   "sessions.column.area",
   "sessions.column.warmup",
+  "sessions.column.games",
 ];
 
 export function PatientSessionsTab({ patientId }: { patientId: number }) {
@@ -49,7 +54,16 @@ export function PatientSessionsTab({ patientId }: { patientId: number }) {
         <tbody className="divide-y divide-black/10">
           {sessions.data.map((session) => (
             <tr key={session.id}>
-              <td className="px-3 py-3 whitespace-nowrap">{formatDateTime(session.started_at)}</td>
+              <td className="px-3 py-3 whitespace-nowrap">
+                <Link
+                  to={`/admin/sessions/${session.id}`}
+                  aria-label={t("sessions.viewLabel", { date: formatDateTime(session.started_at) })}
+                  className="text-primary inline-flex min-h-11 items-center gap-1 font-semibold underline"
+                >
+                  {formatDateTime(session.started_at)}
+                  <ChevronRight size={18} aria-hidden />
+                </Link>
+              </td>
               <td className="px-3 py-3">
                 <SessionStatusBadge status={session.status} />
               </td>
@@ -67,6 +81,14 @@ export function PatientSessionsTab({ patientId }: { patientId: number }) {
                       reps: session.warmup_summary.total_reps,
                       goals: session.warmup_summary.goals_reached,
                       total: session.warmup_summary.exercises_total,
+                    })
+                  : notRecorded}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap tabular-nums">
+                {session.games && session.games.length > 0
+                  ? t("sessions.gamesValue", {
+                      count: session.games.length,
+                      score: formatNumber(totalScore(session.games) ?? 0, 0),
                     })
                   : notRecorded}
               </td>

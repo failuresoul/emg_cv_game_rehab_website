@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 import { api } from "@/lib/api";
-import type { Calibration, SessionDetail, SessionSummary } from "@/types/api";
+import type { Calibration, GameRun, SessionDetail, SessionSummary } from "@/types/api";
 
 /** Every patient query starts with this, so a change can refresh them all. */
 export const PATIENT_KEY = ["patient"];
@@ -33,5 +33,14 @@ export function useOwnSession(id: string) {
   return useQuery({
     queryKey: [...PATIENT_KEY, "sessions", id],
     queryFn: async () => (await api.get<SessionDetail>(`/patient/sessions/${id}`)).data,
+  });
+}
+
+/** One of the patient's own sessions' game runs, in the order they were played. */
+export function useSessionGames(sessionId: number | null) {
+  return useQuery({
+    queryKey: [...PATIENT_KEY, "sessions", sessionId, "games"],
+    queryFn: async () => (await api.get<GameRun[]>(`/sessions/${sessionId}/games`)).data,
+    enabled: sessionId !== null,
   });
 }

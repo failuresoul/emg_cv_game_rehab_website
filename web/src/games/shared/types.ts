@@ -130,6 +130,8 @@ export interface GameDefinition {
   icon: LucideIcon;
   params: readonly ParamSpec[];
   trialsDefault: number;
+  /** About how long a game takes, for the plan. */
+  estimatedMinutes: number;
   create(context: GameContext): GameInstance;
   implemented: boolean;
 }

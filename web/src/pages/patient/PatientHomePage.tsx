@@ -18,14 +18,17 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
+import { percent } from "@/features/games/results";
 import { ProgressChart } from "@/features/patient/ProgressChart";
 import { usePatientDashboard } from "@/features/patient/usePatientDashboard";
 import { useLatestCalibration } from "@/features/patient/usePatientData";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
+import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { StartSessionButton } from "@/features/session/StartSessionButton";
+import { GAMES } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
 import { formatDateTime, formatNumber } from "@/lib/format";
-import type { LastWarmup, Side, TodayPlanStep } from "@/types/api";
+import type { LastSession, LastWarmup, Side, TodayPlanStep } from "@/types/api";
 
 const STEP_DISPLAY: Partial<Record<string, { labelKey: TranslationKey; icon: LucideIcon }>> = {
   camera_check: { labelKey: "patient.step.cameraCheck", icon: Camera },
@@ -154,6 +157,51 @@ function LastWarmupCard({ warmup }: { warmup: LastWarmup | null }) {
   );
 }
 
+function LastSessionCard({ session }: { session: LastSession | null | undefined }) {
+  const games = session?.games ?? [];
+  return (
+    <Card className="flex flex-col gap-3">
+      <h2 className="text-xl font-bold">{t("patient.lastSession.title")}</h2>
+      {session ? (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-muted">{formatDateTime(session.date)}</p>
+            <SessionStatusBadge status={session.status} />
+          </div>
+          {games.length > 0 ? (
+            <ul className="flex flex-col gap-3">
+              {games.map((game, index) => {
+                const rate = percent(game.success_rate);
+                return (
+                  <li key={`${game.game_id}-${index}`} className="flex flex-col gap-1">
+                    <p className="font-semibold">{t(GAMES[game.game_id].nameKey)}</p>
+                    <dl className="flex flex-col gap-1">
+                      <WarmupStat
+                        label={t("patient.lastSession.score")}
+                        value={game.score === null ? "–" : formatNumber(game.score, 0)}
+                      />
+                      <WarmupStat
+                        label={t("patient.lastSession.successRate")}
+                        value={
+                          rate === null ? "–" : t("patient.lastSession.percent", { value: rate })
+                        }
+                      />
+                    </dl>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-muted">{t("patient.lastSession.noGames")}</p>
+          )}
+        </>
+      ) : (
+        <EmptyState icon={Gamepad2} title={t("patient.lastSession.empty")} />
+      )}
+    </Card>
+  );
+}
+
 function StreakCard({ days }: { days: number }) {
   return (
     <Card className="flex flex-col items-center justify-center gap-2 text-center">
@@ -212,7 +260,8 @@ export function PatientHomePage() {
               emptyTitle={t(lastSession ? "patient.progress.chartLater" : "patient.progress.empty")}
             />
           </Card>
-          <Card>
+          <LastSessionCard session={lastSession} />
+          <Card className="lg:col-span-3">
             <h2 className="mb-2 text-xl font-bold">{t("patient.feedback.title")}</h2>
             <EmptyState icon={Sparkles} title={t("patient.feedback.empty")} />
           </Card>

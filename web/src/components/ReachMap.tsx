@@ -9,7 +9,53 @@ const PLOT_RADIUS = 150;
 const LABEL_RADIUS = 172;
 const MIN_EXTENT_SW = 1;
 
+const MARKER_RADIUS = 6;
+const MARKER_RING_RADIUS = 11;
+
 const toPoints = (points: readonly string[]) => points.join(" ");
+
+export type ReachMapMarkerShape = "circle" | "square" | "diamond";
+
+/** One marker at (x, y) in SVG units: a dot, a square or a diamond of about the same area. */
+export function MarkerShape({
+  shape = "circle",
+  x,
+  y,
+  size,
+  color,
+}: {
+  shape?: ReachMapMarkerShape;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+}) {
+  const common = { fill: color, stroke: "var(--color-surface)", strokeWidth: 2 };
+  if (shape === "square") {
+    const half = size * 0.9;
+    return <rect x={x - half} y={y - half} width={half * 2} height={half * 2} {...common} />;
+  }
+  if (shape === "diamond") {
+    const r = size * 1.25;
+    return (
+      <polygon points={`${x},${y - r} ${x + r},${y} ${x},${y + r} ${x - r},${y}`} {...common} />
+    );
+  }
+  return <circle cx={x} cy={y} r={size} {...common} />;
+}
+
+/** A point drawn on the map, such as a game target, in the body frame. */
+export interface ReachMapMarker {
+  key: string;
+  x: number;
+  y: number;
+  /** A CSS colour, such as a token: var(--color-success). */
+  color: string;
+  /** A second cue besides colour, so markers differ for colour-blind readers too. */
+  shape?: ReachMapMarkerShape;
+  /** Draws a ring around the dot. */
+  ring?: boolean;
+}
 
 interface ReachMapProps {
   /** Reach points in the body frame, one for each of directionsDeg. */
@@ -23,6 +69,8 @@ interface ReachMapProps {
   previousHull?: readonly PointPair[] | null;
   /** Directions drawn as hollow points because their measurement was not reliable. */
   valid?: readonly boolean[];
+  /** Extra dots on top of the map, such as where game targets were. */
+  markers?: readonly ReachMapMarker[];
 }
 
 export function ReachMap({
@@ -33,11 +81,13 @@ export function ReachMap({
   affectedSide,
   previousHull,
   valid,
+  markers = [],
 }: ReachMapProps) {
   const outward = affectedSide === "left" ? -1 : 1;
   const extent = Math.max(
     MIN_EXTENT_SW,
     ...[...points, ...(previousHull ?? [])].map(([x, y]) => Math.hypot(x, y)),
+    ...markers.map(({ x, y }) => Math.hypot(x, y)),
   );
   const scale = PLOT_RADIUS / extent;
   const toSvgX = (x: number) => CENTER_X + outward * x * scale;
@@ -95,6 +145,28 @@ export function ReachMap({
           stroke="var(--color-accent)"
           fill={valid && !valid[index] ? "var(--color-surface)" : "var(--color-accent)"}
         />
+      ))}
+
+      {markers.map((marker) => (
+        <g key={marker.key}>
+          {marker.ring && (
+            <circle
+              cx={toSvgX(marker.x)}
+              cy={toSvgY(marker.y)}
+              r={MARKER_RING_RADIUS}
+              fill="none"
+              stroke="var(--color-ink)"
+              strokeWidth={2}
+            />
+          )}
+          <MarkerShape
+            shape={marker.shape}
+            x={toSvgX(marker.x)}
+            y={toSvgY(marker.y)}
+            size={MARKER_RADIUS}
+            color={marker.color}
+          />
+        </g>
       ))}
 
       <circle cx={CENTER_X} cy={CENTER_Y} r={8} fill="var(--color-ink)" />

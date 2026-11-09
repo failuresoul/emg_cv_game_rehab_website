@@ -496,6 +496,7 @@ def test_admin_session_detail(
     body = response.json()
     assert body["id"] == session_id
     assert body["patient_code"] == "P001"
+    assert body["patient_name"] == "Alice Rahman"
     assert body["status"] == "completed"
     assert body["ended_at"] is not None
     assert body["duration_seconds"] is not None
@@ -565,3 +566,73 @@ def test_dashboard_last_session_without_games(
     start_session(client, patient_headers)
     body = client.get("/api/patient/dashboard", headers=patient_headers).json()
     assert body["last_session"]["games"] == []
+
+
+# Admin recent sessions
+
+
+def test_admin_recent_sessions_newest_first_with_games(
+    client: TestClient,
+    patient_headers: Headers,
+    other_headers: Headers,
+    admin_headers: Headers,
+) -> None:
+    first = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, first)
+    end_run(client, patient_headers, run_id)
+    start_run(client, patient_headers, first, game_id="bloom")  # Still active: left out.
+    second = start_session(client, other_headers)
+
+    response = client.get("/api/admin/sessions", headers=admin_headers)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert [row["id"] for row in body] == [second, first]
+    assert body[1]["patient_code"] == "P001"
+    assert body[1]["patient_name"] == "Alice Rahman"
+    assert body[1]["status"] == "active"
+    assert body[1]["duration_seconds"] is None
+    assert body[1]["games"] == [{"game_id": "reach_activate", "score": 840, "success_rate": 0.75}]
+    assert body[0]["games"] == []
+
+
+def test_admin_recent_sessions_limit(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    for _ in range(3):
+        session_id = start_session(client, patient_headers)
+        client.post(
+            f"/api/sessions/{session_id}/end", json={"status": "completed"}, headers=patient_headers
+        )
+    response = client.get("/api/admin/sessions", params={"limit": 2}, headers=admin_headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+    for bad in (0, 51):
+        response = client.get("/api/admin/sessions", params={"limit": bad}, headers=admin_headers)
+        assert response.status_code == 422
+
+
+def test_admin_recent_sessions_empty(client: TestClient, admin_headers: Headers) -> None:
+    response = client.get("/api/admin/sessions", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_admin_recent_sessions_requires_admin(client: TestClient, patient_headers: Headers) -> None:
+    assert client.get("/api/admin/sessions", headers=patient_headers).status_code == 403
+
+
+def test_session_lists_include_finished_games(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id)
+    end_run(client, patient_headers, run_id)
+    expected = [{"game_id": "reach_activate", "score": 840, "success_rate": 0.75}]
+
+    own = client.get("/api/patient/sessions", headers=patient_headers).json()
+    assert own[0]["games"] == expected
+    detail = client.get(f"/api/patient/sessions/{session_id}", headers=patient_headers).json()
+    assert detail["games"] == expected
+    patient_id = own[0]["patient_id"]
+    admin = client.get(f"/api/admin/patients/{patient_id}/sessions", headers=admin_headers).json()
+    assert admin[0]["games"] == expected

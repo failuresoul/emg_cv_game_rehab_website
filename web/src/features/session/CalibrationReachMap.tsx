@@ -1,4 +1,4 @@
-import { ReachMap } from "@/components/ReachMap";
+import { ReachMap, type ReachMapMarker } from "@/components/ReachMap";
 import { t } from "@/i18n";
 import type { PointPair, Side } from "@/types/api";
 
@@ -10,6 +10,7 @@ interface CalibrationReachMapProps {
   affectedSide: Side;
   previousHull?: readonly PointPair[] | null;
   valid?: readonly boolean[];
+  markers?: readonly ReachMapMarker[];
 }
 
 /** ReachMap for stored calibrations, with the standard directions and labels. */
@@ -19,6 +20,7 @@ export function CalibrationReachMap({
   affectedSide,
   previousHull,
   valid,
+  markers,
 }: CalibrationReachMapProps) {
   return (
     <ReachMap
@@ -29,6 +31,7 @@ export function CalibrationReachMap({
       affectedSide={affectedSide}
       previousHull={previousHull}
       valid={valid}
+      markers={markers}
     />
   );
 }

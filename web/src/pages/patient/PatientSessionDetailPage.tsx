@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Activity, ArrowLeft, SearchX, Target } from "lucide-react";
+import { Activity, ArrowLeft, Gamepad2, SearchX, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
@@ -10,7 +10,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
-import { useOwnSession } from "@/features/patient/usePatientData";
+import { GameRunsTable } from "@/features/games/GameRunsTable";
+import { useOwnSession, useSessionGames } from "@/features/patient/usePatientData";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { t } from "@/i18n";
@@ -48,6 +49,22 @@ function WarmupCard({ sessionId }: { sessionId: number }) {
           )}
         />
       )}
+    </Card>
+  );
+}
+
+function GamesCard({ sessionId }: { sessionId: number }) {
+  const games = useSessionGames(sessionId);
+
+  return (
+    <Card className="lg:col-span-3">
+      <h2 className="mb-2 text-xl font-bold">{t("history.gamesTitle")}</h2>
+      {games.isPending && <Skeleton className="h-32" />}
+      {games.isError && <QueryError onRetry={() => void games.refetch()} />}
+      {games.isSuccess && games.data.length === 0 && (
+        <EmptyState icon={Gamepad2} title={t("history.noGames")} />
+      )}
+      {games.isSuccess && games.data.length > 0 && <GameRunsTable runs={games.data} />}
     </Card>
   );
 }
@@ -130,6 +147,7 @@ export function PatientSessionDetailPage() {
           )}
         </Card>
         <WarmupCard sessionId={session.data.id} />
+        <GamesCard sessionId={session.data.id} />
       </div>
     </>
   );

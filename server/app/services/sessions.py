@@ -22,6 +22,7 @@ from app.schemas.session import (
 )
 from app.schemas.game import LastSessionGame
 from app.schemas.warmup import WarmupSummary
+from app.services.game_summary import finished_games_for_sessions
 from app.services.warmup_summary import summaries_for_sessions
 
 ACTIVE_SESSION_LIFETIME = timedelta(hours=2)
@@ -49,12 +50,14 @@ def _summary(
     record: SessionRecord,
     hull_area: float | None,
     warmup_summary: WarmupSummary | None = None,
+    games: list[LastSessionGame] | None = None,
 ) -> SessionSummary:
     return SessionSummary(
         **SessionRead.model_validate(record).model_dump(),
         duration_seconds=duration_seconds(record),
         hull_area_sw2=hull_area,
         warmup_summary=warmup_summary,
+        games=games or [],
     )
 
 
@@ -198,9 +201,16 @@ def list_sessions(session: Session, patient_id: int) -> list[SessionSummary]:
         .order_by(col(SessionRecord.started_at).desc(), col(SessionRecord.id).desc())
     )
     rows = session.exec(statement).all()
-    warmups = summaries_for_sessions(session, (record.id for record, _ in rows if record.id))
+    ids = [record.id for record, _ in rows if record.id is not None]
+    warmups = summaries_for_sessions(session, ids)
+    games = finished_games_for_sessions(session, ids)
     return [
-        _summary(record, hull_area, warmups.get(record.id) if record.id else None)
+        _summary(
+            record,
+            hull_area,
+            warmups.get(record.id) if record.id else None,
+            games.get(record.id) if record.id else None,
+        )
         for record, hull_area in rows
     ]
 
@@ -211,7 +221,8 @@ def get_session_detail(session: Session, record: SessionRecord) -> SessionDetail
     ).first()
     assert record.id is not None
     warmup = summaries_for_sessions(session, [record.id]).get(record.id)
-    summary = _summary(record, calibration.hull_area_sw2 if calibration else None, warmup)
+    games = finished_games_for_sessions(session, [record.id]).get(record.id)
+    summary = _summary(record, calibration.hull_area_sw2 if calibration else None, warmup, games)
     return SessionDetail(
         **summary.model_dump(),
         calibration=CalibrationRead.model_validate(calibration) if calibration else None,

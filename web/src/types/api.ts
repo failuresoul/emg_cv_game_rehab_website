@@ -123,6 +123,8 @@ export interface SessionSummary extends SessionRecord {
   duration_seconds: number | null;
   hull_area_sw2: number | null;
   warmup_summary: WarmupSummary | null;
+  /** Finished game runs, in the order they were played. */
+  games?: LastSessionGame[];
 }
 
 export interface SessionDetail extends SessionSummary {
@@ -359,4 +361,35 @@ export interface LastSessionGame {
   game_id: GameId;
   score: number | null;
   success_rate: number | null;
+}
+
+export interface TrialRead extends TrialCreate {
+  id: number;
+  game_run_id: number;
+  created_at: string;
+}
+
+export interface GameRunDetail extends GameRun {
+  trials: TrialRead[];
+}
+
+/** Everything recorded in one session, for the admin session page. */
+export interface AdminSessionDetail extends SessionRecord {
+  patient_code: string;
+  patient_name: string;
+  duration_seconds: number | null;
+  calibration: Calibration | null;
+  warmup_results: WarmupResult[];
+  games: GameRunDetail[];
+}
+
+export interface AdminRecentSession {
+  id: number;
+  patient_id: number;
+  patient_code: string;
+  patient_name: string;
+  started_at: string;
+  status: SessionStatus;
+  duration_seconds: number | null;
+  games: LastSessionGame[];
 }
