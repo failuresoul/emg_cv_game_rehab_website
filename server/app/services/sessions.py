@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 from sqlmodel.sql.expression import SelectOfScalar
 
-from app.models import Calibration, PatientProfile
+from app.models import Calibration, GameRun, PatientProfile
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
 from app.schemas.common import as_utc
@@ -20,6 +20,7 @@ from app.schemas.session import (
     SessionStart,
     SessionSummary,
 )
+from app.schemas.game import LastSessionGame
 from app.schemas.warmup import WarmupSummary
 from app.services.warmup_summary import summaries_for_sessions
 
@@ -38,7 +39,7 @@ class AffectedSideMismatchError(Exception):
     pass
 
 
-def _duration_seconds(record: SessionRecord) -> float | None:
+def duration_seconds(record: SessionRecord) -> float | None:
     if record.ended_at is None:
         return None
     return (as_utc(record.ended_at) - as_utc(record.started_at)).total_seconds()
@@ -51,10 +52,21 @@ def _summary(
 ) -> SessionSummary:
     return SessionSummary(
         **SessionRead.model_validate(record).model_dump(),
-        duration_seconds=_duration_seconds(record),
+        duration_seconds=duration_seconds(record),
         hull_area_sw2=hull_area,
         warmup_summary=warmup_summary,
     )
+
+
+def abort_active_runs(session: Session, session_id: int) -> None:
+    """Mark game runs left open (a closed tab, a crash) as aborted. The caller commits.
+
+    ended_at stays empty: nobody knows when an abandoned run really stopped.
+    """
+    statement = select(GameRun).where(GameRun.session_id == session_id, GameRun.status == "active")
+    for run in session.exec(statement).all():
+        run.status = "aborted"
+        session.add(run)
 
 
 def get_active_session(session: Session, patient_id: int) -> SessionRecord | None:
@@ -72,6 +84,8 @@ def get_active_session(session: Session, patient_id: int) -> SessionRecord | Non
             # ended_at stays empty: nobody knows when an abandoned session really stopped.
             record.status = "aborted"
             session.add(record)
+            if record.id is not None:
+                abort_active_runs(session, record.id)
             expired = True
         elif current is None:
             current = record
@@ -122,6 +136,8 @@ def end_session(session: Session, record: SessionRecord, status: str) -> Session
     record.status = status
     record.ended_at = utc_now()
     session.add(record)
+    if record.id is not None:
+        abort_active_runs(session, record.id)
     session.commit()
     return record
 
@@ -212,14 +228,17 @@ def get_last_session_record(session: Session, patient_id: int) -> SessionRecord 
 
 
 def to_last_session(
-    record: SessionRecord, warmup_summary: WarmupSummary | None = None
+    record: SessionRecord,
+    warmup_summary: WarmupSummary | None = None,
+    games: list[LastSessionGame] | None = None,
 ) -> LastSession:
     read = SessionRead.model_validate(record)
     return LastSession(
         date=read.started_at,
         status=read.status,
-        duration_seconds=_duration_seconds(record),
+        duration_seconds=duration_seconds(record),
         warmup_summary=warmup_summary,
+        games=games or [],
     )
 
 

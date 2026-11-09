@@ -6,7 +6,7 @@ from app.api.deps import CurrentPatient, SessionDep
 from app.schemas.patient import PatientDashboard, PatientProfileRead, TodayPlanStep
 from app.schemas.session import CalibrationRead, LastSession, SessionDetail, SessionSummary
 from app.schemas.warmup import ExerciseId, WarmupResultRead
-from app.services import sessions, warmup
+from app.services import games, sessions, warmup
 
 router = APIRouter(prefix="/patient", tags=["patient"])
 
@@ -26,7 +26,11 @@ def dashboard(patient: CurrentPatient, session: SessionDep) -> PatientDashboard:
     last_session: LastSession | None = None
     if record is not None:
         assert record.id is not None
-        last_session = sessions.to_last_session(record, warmup.get_summary(session, record.id))
+        last_session = sessions.to_last_session(
+            record,
+            warmup.get_summary(session, record.id),
+            games.last_session_games(session, record.id),
+        )
     return PatientDashboard(
         profile=PatientProfileRead.model_validate(patient),
         today_plan=TODAY_PLAN,

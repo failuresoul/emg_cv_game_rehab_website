@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps import SessionDep, require_admin
 from app.models import PatientProfile, User
+from app.models import Session as SessionRecord
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
-from app.schemas.session import AdminCalibrationRead, SessionSummary
+from app.schemas.session import AdminCalibrationRead, AdminSessionDetail, SessionSummary
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
-from app.services import patients, sessions, warmup
+from app.services import games, patients, sessions, warmup
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -83,6 +84,15 @@ def list_patient_warmup(
     """Per exercise, oldest first, without skipped exercises."""
     _get_patient_or_404(session, patient_id)
     return warmup.get_admin_history(session, patient_id, exercise_id)
+
+
+@router.get("/sessions/{session_id}")
+def get_session_detail(session_id: int, session: SessionDep) -> AdminSessionDetail:
+    """Everything recorded in one session, including every trial's trajectory."""
+    record = session.get(SessionRecord, session_id)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    return games.get_admin_session_detail(session, record)
 
 
 @router.get("/stats")

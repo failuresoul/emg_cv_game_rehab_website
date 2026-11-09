@@ -3,7 +3,8 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.common import Side, UtcDatetime
-from app.schemas.warmup import WarmupSummary
+from app.schemas.game import GameRunDetail, LastSessionGame
+from app.schemas.warmup import WarmupResultRead, WarmupSummary
 
 SessionStatus = Literal["active", "completed", "aborted"]
 Point = tuple[float, float]
@@ -57,6 +58,8 @@ class LastSession(BaseModel):
     status: SessionStatus
     duration_seconds: float | None
     warmup_summary: WarmupSummary | None = None
+    #: Finished game runs, in the order they were played.
+    games: list[LastSessionGame] = Field(default_factory=list)
 
 
 class CalibrationQuality(BaseModel):
@@ -125,3 +128,13 @@ class LatestCalibration(BaseModel):
 
     hull_sw: list[Point]
     hull_area_sw2: float
+
+
+class AdminSessionDetail(SessionRead):
+    """Everything recorded in one session, including every trial's trajectory."""
+
+    patient_code: str
+    duration_seconds: float | None
+    calibration: CalibrationRead | None
+    warmup_results: list[WarmupResultRead]
+    games: list[GameRunDetail]

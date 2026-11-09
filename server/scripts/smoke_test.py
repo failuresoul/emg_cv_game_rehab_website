@@ -5,7 +5,8 @@ Start the server first, then run from server/ with the virtual environment activ
     python scripts/smoke_test.py [base_url]
 
 The default base_url is http://localhost:8000. The admin login comes from server/.env. Each run
-adds one test patient with one session (a calibration and six warm-up results) to the database,
+adds one test patient with one session (a calibration, six warm-up results and one
+reach_activate run with three trials) to the database,
 and deactivates the patient at the end.
 The exit code is 0 if every step passes and 1 otherwise.
 """
@@ -119,6 +120,30 @@ def warmup_payload() -> list[dict[str, Any]]:
     return results
 
 
+def trial_payload(trial_no: int) -> dict[str, Any]:
+    """One successful reach_activate trial with a short raw fingertip path."""
+    return {
+        "trial_no": trial_no,
+        "params": {"target_radius_sw": 0.25, "dwell_ms": 500},
+        "target": {
+            "x_sw": 0.5,
+            "y_sw": 0.5,
+            "radius_sw": 0.25,
+            "direction_deg": 45,
+            "distance_frac": 0.7,
+            "sector": "D1R2",
+        },
+        "outcome": "success",
+        "timings": {"spawn": 0, "move_onset": 300, "enter": 1300, "dwell_done": 1800, "end": 2400},
+        "metrics": {"reaction_ms": 300, "movement_ms": 1000, "path_efficiency": 0.85},
+        "compensation": {"flagged": False},
+        "trajectory": [[0, 0.1, 0.1], [33.3, 0.2, 0.2], [66.7, 0.4, 0.4]],
+    }
+
+
+GAME_TRIALS = 3
+
+
 def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool:
     """Runs the steps in order and stops at the first failure, as each builds on the last."""
     email = f"smoke-{secrets.token_hex(6)}@example.com"
@@ -201,6 +226,47 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(last["session_id"] == state["session_id"], "last_warmup is another session")
         require(last["goals_reached"] == 6, f"expected 6 goals reached, got {last['goals_reached']}")
 
+    def start_game() -> None:
+        url = f"/api/sessions/{state['session_id']}/games"
+        payload = {
+            "game_id": "reach_activate",
+            "engine": "L0",
+            "input_source": "keyboard",
+            "params_initial": {"target_radius_sw": 0.25, "dwell_ms": 500},
+            "trials_planned": GAME_TRIALS,
+        }
+        body = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
+        require(body["status"] == "active", "game run is not active")
+        state["run_id"] = body["id"]
+
+    def upload_trials() -> None:
+        url = f"/api/games/{state['run_id']}/trials"
+        trials = [trial_payload(n) for n in range(1, GAME_TRIALS + 1)]
+        body = expect(client.post(url, json=trials, headers=bearer("patient")), 200)
+        require(body["trials_done"] == GAME_TRIALS, f"trials_done is {body['trials_done']}")
+
+    def end_game() -> None:
+        url = f"/api/games/{state['run_id']}/end"
+        payload = {
+            "status": "completed",
+            "score": 300,
+            "summary": {
+                "successes": GAME_TRIALS,
+                "success_rate": 1.0,
+                "mean_movement_ms": 1000.0,
+                "mean_path_efficiency": 0.85,
+                "compensated_trials": 0,
+            },
+        }
+        body = expect(client.post(url, json=payload, headers=bearer("patient")), 200)
+        require(body["status"] == "completed", "game run is not completed")
+
+    def dashboard_last_games() -> None:
+        body = expect(client.get("/api/patient/dashboard", headers=bearer("patient")), 200)
+        games = body["last_session"]["games"]
+        expected = [{"game_id": "reach_activate", "score": 300, "success_rate": 1.0}]
+        require(games == expected, f"dashboard games are {games}")
+
     def end_session() -> None:
         url = f"/api/sessions/{state['session_id']}/end"
         body = expect(client.post(url, json={"status": "completed"}, headers=bearer("patient")), 200)
@@ -234,6 +300,16 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             "a personalisation decision is missing",
         )
 
+    def admin_reads_session_detail() -> None:
+        url = f"/api/admin/sessions/{state['session_id']}"
+        body = expect(client.get(url, headers=bearer("admin")), 200)
+        require(body["calibration"] is not None, "calibration is missing")
+        require(len(body["warmup_results"]) == 6, "a warm-up result is missing")
+        require(len(body["games"]) == 1, "the game run is missing")
+        trials = body["games"][0]["trials"]
+        require(len(trials) == GAME_TRIALS, f"expected {GAME_TRIALS} trials, got {len(trials)}")
+        require(all(len(trial["trajectory"]) == 3 for trial in trials), "a trajectory is missing")
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -252,10 +328,15 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Patient reads the session's warm-up", read_session_warmup),
         ("Patient reads warm-up history", read_warmup_history),
         ("Dashboard shows the last warm-up", dashboard_last_warmup),
+        ("Patient starts a reach_activate run", start_game),
+        ("Patient uploads three trials", upload_trials),
+        ("Patient ends the run with a summary", end_game),
+        ("Dashboard shows the last session's game", dashboard_last_games),
         ("Patient ends the session", end_session),
         ("Admin lists the patient's sessions", admin_lists_sessions),
         ("Admin lists the patient's calibrations", admin_lists_calibrations),
         ("Admin reads the patient's warm-up history", admin_reads_warmup_history),
+        ("Admin reads the full session detail", admin_reads_session_detail),
         ("Admin deactivates the test patient", deactivate_patient),
     ]
 
