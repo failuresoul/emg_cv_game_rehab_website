@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 
@@ -50,3 +50,9 @@ def get_current_patient(
 
 
 CurrentPatient = Annotated[PatientProfile, Depends(get_current_patient)]
+
+#: The browser's offset from UTC in minutes (UTC+6 is 360), so that days are the patient's own.
+TzOffset = Annotated[
+    int,
+    Query(ge=-720, le=840, description="Minutes ahead of UTC; Dhaka (UTC+6) is 360"),
+]

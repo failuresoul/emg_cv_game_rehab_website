@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import SessionDep, require_admin
+from app.api.deps import SessionDep, TzOffset, require_admin
 from app.models import PatientProfile, User
 from app.models import Session as SessionRecord
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
@@ -12,9 +12,10 @@ from app.schemas.session import (
     AdminSessionDetail,
     SessionSummary,
 )
+from app.schemas.progress import PatientProgress
 from app.schemas.session_feedback import AdminAlert, AlertReview
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
-from app.services import games, patients, session_feedback, sessions, warmup
+from app.services import games, patients, progress, session_feedback, sessions, warmup
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -74,6 +75,15 @@ def activate_patient(patient_id: int, session: SessionDep) -> PatientRead:
 def list_patient_sessions(patient_id: int, session: SessionDep) -> list[SessionSummary]:
     _get_patient_or_404(session, patient_id)
     return sessions.list_sessions(session, patient_id)
+
+
+@router.get("/patients/{patient_id}/progress")
+def get_patient_progress(
+    patient_id: int, session: SessionDep, tz_offset_minutes: TzOffset = 0
+) -> PatientProgress:
+    """As GET /api/patient/progress, for one patient."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    return progress.get_progress(session, profile, tz_offset_minutes)
 
 
 @router.get("/patients/{patient_id}/calibrations")

@@ -31,6 +31,8 @@ export interface PatientProfile {
   months_since_stroke: number | null;
   language: Language;
   notes: string | null;
+  /** Sessions per week the patient aims for; the therapist sets it. */
+  weekly_goal: number;
   created_at: string;
 }
 
@@ -59,6 +61,7 @@ export interface PatientCreate {
   months_since_stroke?: number | null;
   language?: Language;
   notes?: string | null;
+  weekly_goal?: number;
 }
 
 export type PatientUpdate = Partial<PatientCreate>;
@@ -445,4 +448,83 @@ export interface AdminAlert {
   reviewed: boolean;
   reviewed_at: string | null;
   review_note: string | null;
+}
+
+export interface CalendarDay {
+  /** The patient's local date, YYYY-MM-DD. */
+  date: string;
+  completed: number;
+}
+
+/** One completed session, for the trend charts. */
+export interface ProgressPoint {
+  session_id: number;
+  date: string;
+  hull_area_sw2: number | null;
+  warmup_goals_reached: number;
+  warmup_total: number;
+  /** Successful trials over all trials of every game, leaving out stopped trials. */
+  game_success_rate: number | null;
+  total_reps: number;
+}
+
+export interface ReachSnapshot {
+  session_id: number;
+  date: string;
+  reach_radii_sw: number[];
+  hull_sw: PointPair[];
+  hull_area_sw2: number;
+  valid: boolean[];
+}
+
+export interface PatientProgress {
+  streak_days: number;
+  sessions_this_week: number;
+  weekly_goal: number;
+  /** The last 28 local days, oldest first, ending today. */
+  calendar: CalendarDay[];
+  /** Completed sessions, oldest first. */
+  series: ProgressPoint[];
+  last_session_date: string | null;
+  first_reach: ReachSnapshot | null;
+  latest_reach: ReachSnapshot | null;
+}
+
+/** The patient's last finished run of the same game in an earlier session. */
+export interface GameComparison {
+  session_id: number;
+  score: number | null;
+  success_rate: number | null;
+  summary: GameSummary | null;
+}
+
+export interface SessionReportGame {
+  run_id: number;
+  game_id: GameId;
+  status: GameRunStatus;
+  score: number | null;
+  trials_done: number;
+  trials_planned: number;
+  successes: number | null;
+  success_rate: number | null;
+  summary: GameSummary | null;
+  previous: GameComparison | null;
+}
+
+/** Everything the end-of-session summary shows, with figures from earlier sessions. */
+export interface SessionReport {
+  session_id: number;
+  started_at: string;
+  ended_at: string | null;
+  status: SessionStatus;
+  duration_seconds: number | null;
+  /** Warm-up exercise time plus the time of each finished game. */
+  active_seconds: number;
+  warmup: WarmupSummary | null;
+  previous_warmup: (WarmupSummary & { session_id: number }) | null;
+  games: SessionReportGame[];
+  reach: ReachSnapshot | null;
+  previous_reach: ReachSnapshot | null;
+  feedback: SessionFeedback | null;
+  flags: SafetyFlag[];
 }

@@ -61,3 +61,9 @@ export function formatClock(ms: number, locale: string = getLocale()): string {
   const rest = new Intl.NumberFormat(locale, { minimumIntegerDigits: 2 }).format(seconds % 60);
   return `${minutes}:${rest}`;
 }
+
+/** A short date for chart axes, such as "10 Nov". Accepts a Date or an ISO string. */
+export function formatShortDate(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return new Intl.DateTimeFormat(getLocale(), { day: "numeric", month: "short" }).format(date);
+}

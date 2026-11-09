@@ -37,6 +37,9 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "reviewed_at": "DATETIME",
         "review_note": "VARCHAR",
     },
+    "patientprofile": {
+        "weekly_goal": "INTEGER NOT NULL DEFAULT 5",
+    },
 }
 
 

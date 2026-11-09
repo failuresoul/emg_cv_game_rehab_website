@@ -2,11 +2,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import CurrentPatient, SessionDep
+from app.api.deps import CurrentPatient, SessionDep, TzOffset
 from app.schemas.patient import PatientDashboard, PatientProfileRead, TodayPlanStep
+from app.schemas.progress import PatientProgress
 from app.schemas.session import CalibrationRead, LastSession, SessionDetail, SessionSummary
 from app.schemas.warmup import ExerciseId, WarmupResultRead
-from app.services import games, sessions, warmup
+from app.services import games, progress, sessions, warmup
 
 router = APIRouter(prefix="/patient", tags=["patient"])
 
@@ -20,7 +21,9 @@ TODAY_PLAN = [
 
 
 @router.get("/dashboard")
-def dashboard(patient: CurrentPatient, session: SessionDep) -> PatientDashboard:
+def dashboard(
+    patient: CurrentPatient, session: SessionDep, tz_offset_minutes: TzOffset = 0
+) -> PatientDashboard:
     assert patient.id is not None
     record = sessions.get_last_session_record(session, patient.id)
     last_session: LastSession | None = None
@@ -37,7 +40,16 @@ def dashboard(patient: CurrentPatient, session: SessionDep) -> PatientDashboard:
         last_session=last_session,
         latest_calibration=sessions.get_latest_calibration_summary(session, patient.id),
         last_warmup=warmup.get_last_warmup(session, patient.id),
+        streak_days=progress.get_streak(session, patient.id, tz_offset_minutes),
     )
+
+
+@router.get("/progress")
+def get_progress(
+    patient: CurrentPatient, session: SessionDep, tz_offset_minutes: TzOffset = 0
+) -> PatientProgress:
+    """Streak, this week, the last 28 days and one point per completed session."""
+    return progress.get_progress(session, patient, tz_offset_minutes)
 
 
 @router.get("/calibration/latest")

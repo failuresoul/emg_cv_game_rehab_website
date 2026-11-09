@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { tzOffsetMinutes } from "@/features/progress/progress";
 import { api } from "@/lib/api";
 import type {
   AdminAlert,
@@ -10,6 +11,7 @@ import type {
   AdminStats,
   Patient,
   PatientCreate,
+  PatientProgress,
   PatientUpdate,
   SessionSummary,
 } from "@/types/api";
@@ -59,6 +61,19 @@ export function usePatientWarmup(id: number) {
   return useQuery({
     queryKey: [ADMIN_KEY, "patient", id, "warmup"],
     queryFn: async () => (await api.get<AdminWarmupHistory[]>(`/admin/patients/${id}/warmup`)).data,
+  });
+}
+
+/** Streak, this week and the trend series, in the admin's local days. */
+export function useAdminPatientProgress(id: number) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "patient", id, "progress"],
+    queryFn: async () =>
+      (
+        await api.get<PatientProgress>(`/admin/patients/${id}/progress`, {
+          params: { tz_offset_minutes: tzOffsetMinutes() },
+        })
+      ).data,
   });
 }
 

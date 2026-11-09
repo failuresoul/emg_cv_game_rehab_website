@@ -14,6 +14,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
 import { usePatient, useSetPatientActive } from "@/features/admin/hooks";
 import { EditPatientModal } from "@/features/admin/PatientModals";
+import { PatientPracticeSummary } from "@/features/admin/PatientPracticeSummary";
 import { PatientProgressTab } from "@/features/admin/PatientProgressTab";
 import { PatientSessionsTab } from "@/features/admin/PatientSessionsTab";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
@@ -108,6 +109,8 @@ function OverviewTab({ patient }: { patient: Patient }) {
 
   return (
     <>
+      <PatientPracticeSummary patient={patient} />
+      <hr className="my-6 border-black/10" />
       <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Detail label={t("patientForm.email")}>{patient.user.email}</Detail>
         <Detail label={t("patientForm.affectedSide")}>{sideLabel(patient.affected_side)}</Detail>

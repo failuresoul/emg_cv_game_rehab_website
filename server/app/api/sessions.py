@@ -12,9 +12,10 @@ from app.schemas.session import (
     SessionRead,
     SessionStart,
 )
+from app.schemas.progress import SessionReport
 from app.schemas.session_feedback import SessionFeedbackCreate, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultCreate, WarmupResultRead
-from app.services import session_feedback, sessions, warmup
+from app.services import progress, session_feedback, sessions, warmup
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -161,3 +162,10 @@ def get_questionnaire(
             status_code=status.HTTP_404_NOT_FOUND, detail="Questionnaire not submitted"
         )
     return session_feedback.to_read(feedback, record)
+
+
+@router.get("/{session_id}/summary")
+def get_summary(session_id: int, session: SessionDep, patient: CurrentPatient) -> SessionReport:
+    """The end-of-session summary, with figures from earlier sessions to compare against."""
+    record = _get_own_session_or_404(session, patient, session_id)
+    return progress.get_session_report(session, record)

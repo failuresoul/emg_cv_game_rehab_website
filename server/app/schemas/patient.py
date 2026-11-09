@@ -1,6 +1,6 @@
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.common import (
     AgeBand,
@@ -15,6 +15,9 @@ from app.schemas.common import (
 from app.schemas.session import LastSession, LatestCalibration
 from app.schemas.warmup import LastWarmup
 
+DEFAULT_WEEKLY_GOAL = 5
+WeeklyGoal = Annotated[int, Field(ge=1, le=14, strict=True)]
+
 
 class PatientCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -28,6 +31,7 @@ class PatientCreate(BaseModel):
     months_since_stroke: MonthsSinceStroke | None = None
     language: Language = "en"
     notes: str | None = None
+    weekly_goal: WeeklyGoal = DEFAULT_WEEKLY_GOAL
 
 
 class PatientRegister(BaseModel):
@@ -57,6 +61,7 @@ class PatientUpdate(BaseModel):
     months_since_stroke: MonthsSinceStroke | None = None
     language: Language | None = None
     notes: str | None = None
+    weekly_goal: WeeklyGoal | None = None
 
     @model_validator(mode="after")
     def reject_null_for_required_fields(self) -> Self:
@@ -79,6 +84,7 @@ class PatientProfileRead(BaseModel):
     months_since_stroke: int | None
     language: Language
     notes: str | None
+    weekly_goal: int
     created_at: UtcDatetime
 
 

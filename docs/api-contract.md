@@ -60,6 +60,9 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/sessions/{id}/questionnaire`   | `patient` | Get the cool-down questionnaire |
 | GET    | `/api/admin/alerts`                  | `admin`   | Sessions with safety flags      |
 | POST   | `/api/admin/alerts/{session_id}/review` | `admin` | Mark an alert as reviewed      |
+| GET    | `/api/patient/progress`              | `patient` | Streak, week, calendar and trends |
+| GET    | `/api/admin/patients/{id}/progress`  | `admin`   | A patient's progress, as above  |
+| GET    | `/api/sessions/{id}/summary`         | `patient` | End-of-session summary with comparisons |
 
 ## Errors
 
@@ -212,6 +215,7 @@ Admin patient routes return this object:
   "months_since_stroke": 6,
   "language": "en",
   "notes": "Prefers morning sessions",
+  "weekly_goal": 5,
   "created_at": "2026-11-01T10:11:41.174823Z",
   "user": {
     "email": "amina@example.com",
@@ -906,6 +910,71 @@ Role: `admin`. The body is optional: `{ "note": "Called the patient" }`. The not
 Response `200`: the alert, as in `GET /api/admin/alerts`, with `reviewed` set to `true`.
 
 Errors: `404` (`Alert not found`) for a missing session or one without `needs_review`, `409` (`Alert already reviewed`), `422` for a note that is too long.
+
+## Progress and the session summary
+
+### Local days
+
+`GET /api/patient/dashboard`, `GET /api/patient/progress` and `GET /api/admin/patients/{id}/progress` take an optional `tz_offset_minutes` query: the browser's minutes ahead of UTC, from -720 to 840 (Dhaka, UTC+6, is `360`; the default is `0`). Streaks, weeks and the calendar use the local days it gives. Weeks start on Monday.
+
+### The weekly goal
+
+The patient object has `weekly_goal`: completed sessions a week the patient aims for, a whole number from 1 to 14, default `5`. Admins set it with `POST` or `PATCH /api/admin/patients`.
+
+### GET /api/patient/progress
+
+Role: `patient`. Only **completed** sessions count.
+
+```json
+{
+  "streak_days": 3,
+  "sessions_this_week": 2,
+  "weekly_goal": 5,
+  "calendar": [{ "date": "2026-10-14", "completed": 0 }, "… 28 days, oldest first, ending today"],
+  "series": [
+    {
+      "session_id": 12,
+      "date": "2026-11-10T10:00:00Z",
+      "hull_area_sw2": 1.42,
+      "warmup_goals_reached": 5,
+      "warmup_total": 6,
+      "game_success_rate": 0.8,
+      "total_reps": 64
+    }
+  ],
+  "last_session_date": "2026-11-10T10:00:00Z",
+  "first_reach": null,
+  "latest_reach": null
+}
+```
+
+- `streak_days`: consecutive local days with a completed session, counting back from today. A day without one *yet* today does not break the streak: it then runs up to yesterday.
+- `series`: one point per completed session, oldest first. `hull_area_sw2` is `null` without a calibration. `warmup_goals_reached` counts exercises whose goal was reached, out of `warmup_total` (skipped ones included). `game_success_rate` is successful trials over all trials of every game, leaving out `aborted` trials, or `null` without trials. `total_reps` is warm-up repetitions done in full.
+- `last_session_date`: when the latest session of any status started, or `null`.
+- `first_reach` and `latest_reach`: the oldest and newest calibrations, each `{ session_id, date, reach_radii_sw, hull_sw, hull_area_sw2, valid }`, or `null`.
+
+### GET /api/admin/patients/{id}/progress
+
+Role: `admin`. As above, for one patient. Errors: `404`.
+
+### GET /api/sessions/{id}/summary
+
+Role: `patient`, own session only. Errors: `404` for a missing or another patient's session.
+
+| Field | Meaning |
+| --- | --- |
+| `session_id`, `started_at`, `ended_at`, `status` | As in the session object |
+| `duration_seconds` | Start to end, or `null` while the session is open |
+| `active_seconds` | Warm-up exercise time (skipped exercises left out) plus the time of each finished game |
+| `warmup` | The warm-up summary (`exercises_done`, `exercises_total`, `total_reps`, `goals_reached`, `mean_compensation_rate`), or `null` |
+| `previous_warmup` | The same for the most recent earlier session with a warm-up, plus its `session_id`, or `null` |
+| `games` | Finished runs in the order played: `run_id`, `game_id`, `status`, `score`, `trials_done`, `trials_planned`, `successes`, `success_rate`, `summary`, and `previous` — the patient's last finished run of the same game in an earlier session (`session_id`, `score`, `success_rate`, `summary`), or `null` |
+| `reach` | This session's calibration, as in `latest_reach` above, or `null` |
+| `previous_reach` | The most recent calibration from an earlier session, or `null` |
+| `feedback` | The cool-down questionnaire, or `null` |
+| `flags` | The session's safety flags |
+
+"Earlier" means a session of the same patient that started before this one, whatever its status. The web app decides "better / same / lower" from these figures.
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

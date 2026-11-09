@@ -16,4 +16,6 @@ class PatientProfile(SQLModel, table=True):
     months_since_stroke: int | None = None
     language: str = "en"  # "en" | "bn"
     notes: str | None = None
+    #: Sessions per week the patient aims for; the therapist sets it.
+    weekly_goal: int = 5
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))

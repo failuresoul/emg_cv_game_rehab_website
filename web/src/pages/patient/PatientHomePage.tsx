@@ -2,7 +2,6 @@ import {
   Activity,
   ArrowRight,
   Camera,
-  Flame,
   Gamepad2,
   type LucideIcon,
   MessageSquareText,
@@ -19,9 +18,15 @@ import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { percent } from "@/features/games/results";
-import { ProgressChart } from "@/features/patient/ProgressChart";
 import { usePatientDashboard } from "@/features/patient/usePatientDashboard";
 import { useLatestCalibration } from "@/features/patient/usePatientData";
+import { usePatientProgress } from "@/features/progress/hooks";
+import {
+  PracticeCalendar,
+  StreakCard,
+  TrendCharts,
+  WeeklyGoalCard,
+} from "@/features/progress/ProgressCards";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { StartSessionButton } from "@/features/session/StartSessionButton";
@@ -202,16 +207,43 @@ function LastSessionCard({ session }: { session: LastSession | null | undefined 
   );
 }
 
-function StreakCard({ days }: { days: number }) {
+/** Streak, weekly goal, the last four weeks and the three trends. */
+function ProgressCards() {
+  const progress = usePatientProgress();
+
+  if (progress.isPending) {
+    return (
+      <>
+        <Skeleton className="h-72 rounded-xl" />
+        <Skeleton className="h-72 rounded-xl lg:col-span-2" />
+        <Skeleton className="h-64 rounded-xl lg:col-span-3" />
+      </>
+    );
+  }
+  if (progress.isError) {
+    return (
+      <Card className="lg:col-span-3">
+        <QueryError onRetry={() => void progress.refetch()} />
+      </Card>
+    );
+  }
+
+  const data = progress.data;
   return (
-    <Card className="flex flex-col items-center justify-center gap-2 text-center">
-      <Flame size={40} aria-hidden className="text-accent" />
-      <h2 className="text-xl font-bold">{t("patient.streak.title")}</h2>
-      <p className="text-4xl font-bold">
-        {t(days === 1 ? "patient.streak.day" : "patient.streak.days", { days })}
-      </p>
-      {days === 0 && <p className="text-muted">{t("patient.streak.empty")}</p>}
-    </Card>
+    <>
+      <WeeklyGoalCard done={data.sessions_this_week} goal={data.weekly_goal} />
+      <PracticeCalendar days={data.calendar} className="lg:col-span-2" />
+      <section aria-labelledby="home-trends" className="lg:col-span-3">
+        <h2 id="home-trends" className="mb-3 text-2xl font-bold">
+          {t("patient.progress.title")}
+        </h2>
+        <TrendCharts series={data.series} size="sm" className="grid gap-4 lg:grid-cols-3" />
+        <Link to="/patient/progress" className={buttonClasses("secondary", "md", "mt-4")}>
+          {t("progress.seeAll")}
+          <ArrowRight size={20} aria-hidden />
+        </Link>
+      </section>
+    </>
   );
 }
 
@@ -220,6 +252,7 @@ export function PatientHomePage() {
   const dashboard = usePatientDashboard();
   const firstName = user?.full_name.split(" ")[0] ?? "";
   const lastSession = dashboard.data?.last_session;
+  const progress = usePatientProgress();
 
   return (
     <>
@@ -243,25 +276,12 @@ export function PatientHomePage() {
       {dashboard.isSuccess && (
         <div className="grid gap-4 lg:grid-cols-3">
           <TodayCard plan={dashboard.data.today_plan} />
-          <StreakCard days={dashboard.data.streak_days} />
+          <StreakCard days={progress.data?.streak_days ?? dashboard.data.streak_days} />
+          <ProgressCards />
           <ReachMapCard affectedSide={dashboard.data.profile.affected_side} />
           <LastWarmupCard warmup={dashboard.data.last_warmup} />
-          <Card className="lg:col-span-2">
-            <h2 className="mb-2 text-xl font-bold">{t("patient.progress.title")}</h2>
-            {lastSession && (
-              <p className="text-muted mb-2">
-                {t("patient.progress.lastSession", { date: formatDateTime(lastSession.date) })}
-              </p>
-            )}
-            {/* Charts for patients come later; only the admin area shows them for now. */}
-            <ProgressChart
-              points={[]}
-              seriesName={t("patient.progress.title")}
-              emptyTitle={t(lastSession ? "patient.progress.chartLater" : "patient.progress.empty")}
-            />
-          </Card>
           <LastSessionCard session={lastSession} />
-          <Card className="lg:col-span-3">
+          <Card className="lg:col-span-2">
             <h2 className="mb-2 text-xl font-bold">{t("patient.feedback.title")}</h2>
             <EmptyState icon={Sparkles} title={t("patient.feedback.empty")} />
           </Card>
