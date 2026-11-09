@@ -13,7 +13,7 @@ export const balloonPop: GameDefinition = {
   icon: PartyPopper,
   params: BALLOON_POP_PARAMS,
   trialsDefault: BALLOON_POP_TRIALS,
-  estimatedMinutes: 5,
+  estimatedMinutes: 4,
   create: createBalloonPopGame,
   implemented: true,
 };

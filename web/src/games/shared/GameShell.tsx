@@ -1,6 +1,5 @@
 import { Pause, Play } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
 
 import { FixedProvider } from "@/ai/paramsProvider";
 import { Badge } from "@/components/ui/Badge";
@@ -22,6 +21,8 @@ import { visionEngine, type VisionResult } from "@/vision/visionEngine";
 import { VisionStatusCard } from "@/vision/VisionStatusCard";
 import { CompensationMonitor } from "@/warmup/compensation";
 import { COMPENSATION_CONFIG } from "@/warmup/compensationConfig";
+
+import { mainMeasure } from "@/features/games/results";
 
 import { gameAudio } from "./audio";
 import { COUNTDOWN_FROM, GameRuntime, type PauseReason, type RuntimeStage } from "./gameRuntime";
@@ -94,10 +95,19 @@ interface ResultsProps {
   saveStatus: SaveStatus;
   onRetrySave: () => void;
   onContinue: () => void;
+  /** "Next game" while more games are queued, "Continue" otherwise. */
+  continueKey: TranslationKey;
 }
 
-function Results({ definition, result, saveStatus, onRetrySave, onContinue }: ResultsProps) {
-  const meanMs = result.summary.mean_movement_ms;
+function Results({
+  definition,
+  result,
+  saveStatus,
+  onRetrySave,
+  onContinue,
+  continueKey,
+}: ResultsProps) {
+  const measure = mainMeasure(definition.id, result.summary);
   const saveKey = SAVE_KEYS[saveStatus];
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-black/60 p-4">
@@ -119,11 +129,11 @@ function Results({ definition, result, saveStatus, onRetrySave, onContinue }: Re
             </dd>
           </div>
           <div>
-            <dt className="text-muted">{t("game.results.meanReach")}</dt>
+            <dt className="text-muted">{t(measure.labelKey)}</dt>
             <dd className="text-3xl font-bold tabular-nums">
-              {meanMs === null
-                ? t("game.results.noValue")
-                : t("game.results.seconds", { value: Math.round(meanMs / 100) / 10 })}
+              {measure.value
+                ? t(measure.value.key, measure.value.params)
+                : t("game.results.noValue")}
             </dd>
           </div>
         </dl>
@@ -139,7 +149,7 @@ function Results({ definition, result, saveStatus, onRetrySave, onContinue }: Re
             </Button>
           )}
           <Button size="lg" disabled={saveStatus === "saving"} onClick={onContinue}>
-            {t("game.continue")}
+            {t(continueKey)}
           </Button>
         </div>
       </Card>
@@ -153,6 +163,8 @@ interface GamePlayProps {
   affectedSide: Side;
   calibration: Calibration | null;
   subscribeTracking: (listener: (state: TrackingState) => void) => () => void;
+  onContinue: () => void;
+  continueKey: TranslationKey;
 }
 
 const GamePlay = memo(function GamePlay({
@@ -161,10 +173,11 @@ const GamePlay = memo(function GamePlay({
   affectedSide,
   calibration: calibrationAtStart,
   subscribeTracking,
+  onContinue,
+  continueKey,
 }: GamePlayProps) {
   // A refreshed copy of the same calibration must not restart the game.
   const [calibration] = useState(calibrationAtStart);
-  const navigate = useNavigate();
   const activation = useSessionActivation(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -548,7 +561,8 @@ const GamePlay = memo(function GamePlay({
               summary: result.summary,
             })
           }
-          onContinue={() => void navigate("/session/cooldown")}
+          onContinue={onContinue}
+          continueKey={continueKey}
         />
       )}
     </div>
@@ -556,7 +570,14 @@ const GamePlay = memo(function GamePlay({
 });
 
 /** Starts the camera, then runs one game full screen, from countdown to results. */
-export function GameShell({ definition }: { definition: GameDefinition }) {
+interface GameShellProps {
+  definition: GameDefinition;
+  /** Called by the results screen's button: the next game, or the cool-down. */
+  onContinue: () => void;
+  continueKey: TranslationKey;
+}
+
+export function GameShell({ definition, onContinue, continueKey }: GameShellProps) {
   const { sessionId, affectedSide, calibration, latestCalibration } = useSession();
   const { status, retry, subscribeTracking } = useTracking();
 
@@ -575,6 +596,8 @@ export function GameShell({ definition }: { definition: GameDefinition }) {
       affectedSide={affectedSide}
       calibration={calibration ?? latestCalibration}
       subscribeTracking={subscribeTracking}
+      onContinue={onContinue}
+      continueKey={continueKey}
     />
   );
 }

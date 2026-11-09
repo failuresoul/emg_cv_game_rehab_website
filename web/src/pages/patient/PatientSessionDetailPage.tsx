@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
-import { GameRunsTable } from "@/features/games/GameRunsTable";
+import { GameRunSection } from "@/features/games/GameRunsTable";
 import { useOwnSession, useSessionGames } from "@/features/patient/usePatientData";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
@@ -64,7 +64,13 @@ function GamesCard({ sessionId }: { sessionId: number }) {
       {games.isSuccess && games.data.length === 0 && (
         <EmptyState icon={Gamepad2} title={t("history.noGames")} />
       )}
-      {games.isSuccess && games.data.length > 0 && <GameRunsTable runs={games.data} />}
+      {games.isSuccess && games.data.length > 0 && (
+        <div className="flex flex-col divide-y divide-black/10 [&>*]:py-4 [&>*:first-child]:pt-0">
+          {games.data.map((run) => (
+            <GameRunSection key={run.id} run={run} />
+          ))}
+        </div>
+      )}
     </Card>
   );
 }

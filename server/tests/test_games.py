@@ -384,7 +384,7 @@ def test_end_run_with_summary(client: TestClient, patient_headers: Headers) -> N
     body = response.json()
     assert body["status"] == "completed"
     assert body["score"] == 840
-    assert body["summary"] == summary_payload()
+    assert body["summary"] == {**summary_payload(), "details": {}}
     assert body["ended_at"] is not None
     assert body["trials_done"] == 2
 
@@ -506,7 +506,7 @@ def test_admin_session_detail(
 
     [game] = body["games"]
     assert game["id"] == run_id
-    assert game["summary"] == summary_payload()
+    assert game["summary"] == {**summary_payload(), "details": {}}
     assert [trial["trial_no"] for trial in game["trials"]] == [1, 2]
     trial = game["trials"][0]
     assert trial["target"]["sector"] == "D1R2"
@@ -702,3 +702,42 @@ def test_upload_invalid_lateral_metrics_is_422(
     trial = trial_payload(1)
     trial["metrics"] = {**trial["metrics"], **changes}
     assert upload(client, patient_headers, run_id, [trial]).status_code == 422
+
+
+@pytest.mark.parametrize("outcome", ["success", "reach_fail", "activation_fail", "miss", "aborted"])
+def test_upload_accepts_every_outcome(
+    client: TestClient, patient_headers: Headers, outcome: str
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id)
+    response = upload(client, patient_headers, run_id, [trial_payload(1, outcome=outcome)])
+    assert response.status_code == 200, response.text
+
+
+def test_end_run_with_game_specific_details(client: TestClient, patient_headers: Headers) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="balloon_pop")
+    details = {"highest_popped_frac": 0.85, "squeeze_mode": False, "note": "short", "none": None}
+    response = end_run(client, patient_headers, run_id, summary=summary_payload(details=details))
+    assert response.status_code == 200, response.text
+    assert response.json()["summary"]["details"] == details
+    [run] = list_runs(client, patient_headers, session_id)
+    assert run["summary"]["details"] == details
+
+
+@pytest.mark.parametrize(
+    "details",
+    [
+        {f"key{i}": i for i in range(21)},
+        {"text": "x" * 51},
+        {"nested": {"a": 1}},
+        {"list": [1, 2]},
+    ],
+)
+def test_end_run_invalid_details_is_422(
+    client: TestClient, patient_headers: Headers, details: dict[str, Any]
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id)
+    response = end_run(client, patient_headers, run_id, summary=summary_payload(details=details))
+    assert response.status_code == 422

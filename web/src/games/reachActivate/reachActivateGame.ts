@@ -1,3 +1,4 @@
+import { Encourager } from "@/games/shared/encourage";
 import { summariseTrials } from "@/games/shared/metrics";
 import { TrajectoryRecorder } from "@/games/shared/trajectoryRecorder";
 import type { GameContext, GameInstance, GameParams, GameResult } from "@/games/shared/types";
@@ -26,6 +27,7 @@ interface ActiveTrial {
 
 export function createReachActivateGame(context: GameContext): GameInstance {
   const records: TrialCreate[] = [];
+  const encourager = new Encourager(context.rng.next);
   let score = 0;
   let trial: ActiveTrial | null = null;
   let paused = false;
@@ -99,9 +101,9 @@ export function createReachActivateGame(context: GameContext): GameInstance {
         radiusSw: current.target.radiusSw,
         startMs: nowMs,
       };
-      context.emit({ key: "game.feedback.wellDone", tone: "positive" });
+      context.emit(encourager.success());
     } else {
-      context.emit({ key: "game.feedback.tryAnother", tone: "gentle" });
+      context.emit(encourager.miss());
     }
     trail = [];
   }

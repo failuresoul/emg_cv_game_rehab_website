@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { totalScore } from "@/features/games/results";
+import { GameRunsTable } from "@/features/games/GameRunsTable";
+import { finishedRuns, totalScore } from "@/features/games/results";
 import { useOwnSession, useSessionGames } from "@/features/patient/usePatientData";
 import { useForgetSession, useSession } from "@/features/session/SessionContext";
 import { t } from "@/i18n";
@@ -40,9 +41,10 @@ export function SessionSummaryPage() {
   const isError = session.isError || games.isError;
   const warmup = session.data?.warmup_summary;
   const score = games.data ? totalScore(games.data) : null;
+  const runs = games.data ? finishedRuns(games.data) : [];
 
   return (
-    <Card className="m-auto flex w-full max-w-2xl flex-col gap-6">
+    <Card className="m-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex items-center gap-3">
         <PartyPopper size={40} aria-hidden className="text-accent shrink-0" />
         <h1 className="text-2xl font-bold">{t("summary.title")}</h1>
@@ -75,6 +77,14 @@ export function SessionSummaryPage() {
             {score === null ? notRecorded : formatNumber(score, 0)}
           </Figure>
         </dl>
+      )}
+      {runs.length > 0 && (
+        <section aria-labelledby="summary-games">
+          <h2 id="summary-games" className="mb-2 text-xl font-bold">
+            {t("summary.gamesTitle")}
+          </h2>
+          <GameRunsTable runs={runs} />
+        </section>
       )}
       <p>{t("summary.thanks")}</p>
       <Button size="lg" className="self-end" onClick={() => void goHome()}>

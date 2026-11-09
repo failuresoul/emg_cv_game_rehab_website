@@ -1,4 +1,17 @@
-import type { GameRun, GameRunDetail, LastSessionGame, TrialOutcome, TrialRead } from "@/types/api";
+import type { TranslationKey } from "@/i18n";
+import type {
+  GameId,
+  GameRun,
+  GameRunDetail,
+  GameSummary,
+  LastSessionGame,
+  TrialOutcome,
+  TrialRead,
+} from "@/types/api";
+
+/** Summary `details` keys the games fill in. */
+export const DETAIL_HIGHEST_POPPED = "highest_popped_frac";
+export const DETAIL_WIDEST_CATCH = "widest_catch_frac";
 
 /** Runs the patient finished or stopped; a run left open has no result yet. */
 export function finishedRuns<T extends Pick<GameRun, "status">>(runs: readonly T[]): T[] {
@@ -25,6 +38,55 @@ export function meanReachSeconds(run: Pick<GameRun, "summary">): number | null {
 /** A share from 0 to 1 as a whole percentage. */
 export function percent(share: number | null | undefined): number | null {
   return share === null || share === undefined ? null : Math.round(share * 100);
+}
+
+export interface MainMeasure {
+  labelKey: TranslationKey;
+  /** The value's text and its numbers, or null when the game has nothing to show yet. */
+  value: { key: TranslationKey; params: Record<string, number> } | null;
+}
+
+const detail = (summary: GameSummary | null, key: string): number | null => {
+  const value = summary?.details?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+};
+
+/**
+ * Each game's headline figure, shown on the results screen, in history and to the admin: the
+ * average reach time for Reach and squeeze, the highest balloon popped for Balloon pop, and the
+ * widest catch for Fruit catch. The last two are shares of the patient's own reach.
+ */
+export function mainMeasure(gameId: GameId, summary: GameSummary | null): MainMeasure {
+  if (gameId === "balloon_pop") {
+    const share = percent(detail(summary, DETAIL_HIGHEST_POPPED));
+    return {
+      labelKey: "measure.highestBalloon",
+      value: share === null ? null : { key: "measure.ofReach", params: { value: share } },
+    };
+  }
+  if (gameId === "fruit_catch") {
+    const share = percent(detail(summary, DETAIL_WIDEST_CATCH));
+    return {
+      labelKey: "measure.widestCatch",
+      value: share === null ? null : { key: "measure.ofReach", params: { value: share } },
+    };
+  }
+  const seconds = summary ? meanReachSeconds({ summary }) : null;
+  return {
+    labelKey: "measure.meanReach",
+    value: seconds === null ? null : { key: "game.results.seconds", params: { value: seconds } },
+  };
+}
+
+/** The largest value among successful trials, or null if there were none. */
+export function bestOfSuccesses(
+  trials: readonly { outcome: TrialOutcome; value: number | null | undefined }[],
+): number | null {
+  const values = trials
+    .filter((trial) => trial.outcome === "success")
+    .map((trial) => trial.value)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  return values.length > 0 ? Math.max(...values) : null;
 }
 
 export interface TargetMarker {

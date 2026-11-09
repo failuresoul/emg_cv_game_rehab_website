@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { createContext, type ReactNode, useCallback, useContext, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 
 import { useAuth } from "@/features/auth/AuthContext";
 import {
@@ -8,12 +8,28 @@ import {
   PATIENT_KEY,
   useLatestCalibration,
 } from "@/features/patient/usePatientData";
+import { GAME_IDS } from "@/games/shared/registry";
 import { api } from "@/lib/api";
-import type { Calibration, CalibrationCreate, DeviceInfo, SessionRecord, Side } from "@/types/api";
+import type {
+  Calibration,
+  CalibrationCreate,
+  DeviceInfo,
+  GameId,
+  SessionRecord,
+  Side,
+} from "@/types/api";
 
 import type { ExerciseResult } from "@/warmup/exerciseRunner";
 
 import { browserName } from "./calibration";
+import {
+  createQueue,
+  finishGame as finishInQueue,
+  type GameQueue,
+  loadQueue,
+  nextAfter,
+  saveQueue,
+} from "./gameQueue";
 
 const SESSION_KEY = ["session", "current"];
 
@@ -46,6 +62,12 @@ interface SessionContextValue {
   /** One result for each exercise done or skipped this session, held in memory for now. */
   warmupResults: ExerciseResult[];
   addWarmupResult: (result: ExerciseResult) => void;
+  /** Today's games in order; kept for the tab, so a refresh carries on at the right game. */
+  gameQueue: GameQueue | null;
+  /** Sets today's games, starting with the first. */
+  startGames: (games: readonly GameId[]) => void;
+  /** Marks a game as done and returns the next one, or null to move on to the cool-down. */
+  finishGame: (gameId: GameId) => GameId | null;
   isLoading: boolean;
   isError: boolean;
   retry: () => void;
@@ -76,6 +98,39 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const sessionId = session.data?.id ?? null;
   const latestCalibration = latest.data ?? null;
 
+  const [queueState, setGameQueue] = useState<GameQueue | null>(null);
+  // Before anything is set in this tab, a queue saved before a refresh is used.
+  const gameQueue = useMemo(
+    () =>
+      queueState?.sessionId === sessionId
+        ? queueState
+        : sessionId === null
+          ? null
+          : loadQueue(sessionId, GAME_IDS),
+    [queueState, sessionId],
+  );
+  const startGames = useCallback(
+    (games: readonly GameId[]) => {
+      if (sessionId === null) return;
+      const queue = createQueue(sessionId, games);
+      saveQueue(queue);
+      setGameQueue(queue);
+    },
+    [sessionId],
+  );
+  const finishGame = useCallback(
+    (gameId: GameId) => {
+      const next = nextAfter(gameQueue, gameId);
+      if (gameQueue) {
+        const queue = finishInQueue(gameQueue, gameId);
+        saveQueue(queue);
+        setGameQueue(queue);
+      }
+      return next;
+    },
+    [gameQueue],
+  );
+
   return (
     <SessionContext.Provider
       value={{
@@ -85,6 +140,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         latestCalibration,
         warmupResults,
         addWarmupResult,
+        gameQueue,
+        startGames,
+        finishGame,
         isLoading: session.isPending || latest.isPending,
         // Only a failed first load: a failed background refresh must not wipe a page in progress.
         isError: session.isLoadingError || latest.isLoadingError,

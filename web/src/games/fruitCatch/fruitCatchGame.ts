@@ -1,4 +1,6 @@
 import { CompensationTally } from "@/games/shared/compensationTally";
+import { bestOfSuccesses, DETAIL_WIDEST_CATCH } from "@/features/games/results";
+import { Encourager } from "@/games/shared/encourage";
 import { summariseTrials } from "@/games/shared/metrics";
 import { TrajectoryRecorder } from "@/games/shared/trajectoryRecorder";
 import type {
@@ -44,6 +46,7 @@ interface ActiveFruit {
 export function createFruitCatchGame(context: GameContext): GameInstance {
   const range: LateralRange = lateralRange(context.calibration?.reach_radii_sw ?? null);
   const records: TrialCreate[] = [];
+  const encourager = new Encourager(context.rng.next);
   let fruits: ActiveFruit[] = [];
   /** The next fruit's number and settings, fetched once so spawning can use its timing. */
   let pending: { no: number; params: GameParams; settings: FruitCatchParams } | null = null;
@@ -125,9 +128,9 @@ export function createFruitCatchGame(context: GameContext): GameInstance {
       caught++;
       score += POINTS_PER_CATCH;
       context.audio.success(caught % 8);
-      context.emit({ key: "game.feedback.caught", tone: "positive" });
+      context.emit(encourager.success());
     } else {
-      context.emit({ key: "game.feedback.fruitMissed", tone: "gentle" });
+      context.emit(encourager.miss());
     }
   }
 
@@ -204,7 +207,18 @@ export function createFruitCatchGame(context: GameContext): GameInstance {
         score,
         trialsDone: records.length,
         trialsPlanned: context.trialsPlanned,
-        summary: summariseTrials(records),
+        summary: {
+          ...summariseTrials(records),
+          details: {
+            // The furthest caught, out or across, as a share of that side's reach.
+            [DETAIL_WIDEST_CATCH]: bestOfSuccesses(
+              records.map((trial) => ({
+                outcome: trial.outcome,
+                value: trial.target?.distance_frac,
+              })),
+            ),
+          },
+        },
       };
     },
 

@@ -344,6 +344,8 @@ export interface GameSummary {
   mean_movement_ms: number | null;
   mean_path_efficiency: number | null;
   compensated_trials: number;
+  /** Figures only one game has, such as the highest balloon popped. */
+  details?: Record<string, number | string | boolean | null>;
 }
 
 export interface GameRunEnd {

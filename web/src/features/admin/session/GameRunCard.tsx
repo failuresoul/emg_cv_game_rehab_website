@@ -1,33 +1,23 @@
 import { Gamepad2 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import { MarkerShape } from "@/components/ReachMap";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { meanReachSeconds, movementSeries, percent } from "@/features/games/results";
+import { mainMeasure, movementSeries, percent } from "@/features/games/results";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { GAMES } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
 import { formatNumber } from "@/lib/format";
-import type { GameRunDetail, InputSource } from "@/types/api";
+import type { Calibration, GameRunDetail, InputSource, Side } from "@/types/api";
 
-import { OUTCOME_STYLE } from "./outcomes";
+import { FruitStrip } from "./FruitStrip";
+import { RunTargetMap } from "./RunTargetMap";
+import { columnsFor } from "./trialColumns";
 
 const PRIMARY = "var(--color-primary)";
 const MUTED = "var(--color-muted)";
 const AXIS_FONT_SIZE = 16;
-
-const COLUMNS: TranslationKey[] = [
-  "adminSession.column.no",
-  "adminSession.column.sector",
-  "adminSession.column.outcome",
-  "adminSession.column.reaction",
-  "adminSession.column.movement",
-  "adminSession.column.efficiency",
-  "adminSession.column.latency",
-  "adminSession.column.compensated",
-];
 
 const SOURCE_KEYS: Record<InputSource, TranslationKey> = {
   cv_grip: "game.source.webcam",
@@ -35,23 +25,7 @@ const SOURCE_KEYS: Record<InputSource, TranslationKey> = {
   emg: "game.source.emg",
 };
 
-const COMPENSATION_KEYS: Record<string, TranslationKey> = {
-  trunk: "adminSession.compensation.trunk",
-  lean: "adminSession.compensation.lean",
-  shoulder: "adminSession.compensation.shoulder",
-};
-
-/** "trunk+lean" as words; unknown kinds are shown as saved. */
-function compensationText(type: string | null): string {
-  if (!type) return t("adminSession.compensatedYes");
-  return type
-    .split("+")
-    .map((kind) => (COMPENSATION_KEYS[kind] ? t(COMPENSATION_KEYS[kind]) : kind))
-    .join(", ");
-}
-
 const dash = "–";
-const ms = (value: number | null) => (value === null ? dash : formatNumber(value, 0));
 
 function Figure({ label, value }: { label: string; value: string }) {
   return (
@@ -106,11 +80,24 @@ function MovementChart({ run }: { run: GameRunDetail }) {
   );
 }
 
-/** One game run: its figures, every trial in a table, and movement time per trial. */
-export function GameRunCard({ run }: { run: GameRunDetail }) {
-  const reach = meanReachSeconds(run);
+/**
+ * One game run: its figures, where its targets were (a reach map for reaching and raising, a
+ * strip across the sideways reach for catching), every trial with the game's own columns, and
+ * movement time per trial.
+ */
+export function GameRunCard({
+  run,
+  calibration,
+  affectedSide,
+}: {
+  run: GameRunDetail;
+  calibration: Calibration | null;
+  affectedSide: Side | null;
+}) {
   const rate = percent(run.summary?.success_rate);
+  const measure = mainMeasure(run.game_id, run.summary);
   const trials = [...run.trials].sort((a, b) => a.trial_no - b.trial_no);
+  const columns = columnsFor(run.game_id);
 
   return (
     <Card className="flex flex-col gap-4 lg:col-span-3">
@@ -141,8 +128,8 @@ export function GameRunCard({ run }: { run: GameRunDetail }) {
           value={rate === null ? dash : t("patient.lastSession.percent", { value: rate })}
         />
         <Figure
-          label={t("game.results.meanReach")}
-          value={reach === null ? dash : t("game.results.seconds", { value: reach })}
+          label={t(measure.labelKey)}
+          value={measure.value ? t(measure.value.key, measure.value.params) : dash}
         />
       </dl>
 
@@ -150,61 +137,49 @@ export function GameRunCard({ run }: { run: GameRunDetail }) {
         <EmptyState icon={Gamepad2} title={t("adminSession.noTrials")} />
       ) : (
         <>
+          {run.game_id === "fruit_catch" ? (
+            <FruitStrip run={run} calibration={calibration} affectedSide={affectedSide} />
+          ) : (
+            <RunTargetMap run={run} calibration={calibration} affectedSide={affectedSide} />
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-black/10">
-                  {COLUMNS.map((column) => (
+                  <th scope="col" className="text-muted px-3 py-2 font-semibold whitespace-nowrap">
+                    {t("adminSession.column.no")}
+                  </th>
+                  {columns.map((column) => (
                     <th
-                      key={column}
+                      key={column.key}
                       scope="col"
                       className="text-muted px-3 py-2 font-semibold whitespace-nowrap"
                     >
-                      {t(column)}
+                      {t(column.key)}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/10">
-                {trials.map((trial) => {
-                  const style = OUTCOME_STYLE[trial.outcome];
-                  const efficiency = trial.metrics.path_efficiency;
-                  return (
-                    <tr key={trial.id}>
-                      <th scope="row" className="px-3 py-2 font-semibold tabular-nums">
-                        {formatNumber(trial.trial_no, 0)}
-                      </th>
-                      <td className="px-3 py-2">{trial.target?.sector ?? dash}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-2">
-                          <svg width={16} height={16} viewBox="0 0 16 16" aria-hidden>
-                            <MarkerShape
-                              shape={style.shape}
-                              x={8}
-                              y={8}
-                              size={5}
-                              color={style.color}
-                            />
-                          </svg>
-                          {t(style.labelKey)}
-                        </span>
+                {trials.map((trial) => (
+                  <tr key={trial.id}>
+                    <th scope="row" className="px-3 py-2 font-semibold tabular-nums">
+                      {formatNumber(trial.trial_no, 0)}
+                    </th>
+                    {columns.map((column) => (
+                      <td
+                        key={column.key}
+                        className={
+                          column.numeric
+                            ? "px-3 py-2 whitespace-nowrap tabular-nums"
+                            : "px-3 py-2 whitespace-nowrap"
+                        }
+                      >
+                        {column.cell(trial, run.game_id)}
                       </td>
-                      <td className="px-3 py-2 tabular-nums">{ms(trial.metrics.reaction_ms)}</td>
-                      <td className="px-3 py-2 tabular-nums">{ms(trial.metrics.movement_ms)}</td>
-                      <td className="px-3 py-2 tabular-nums">
-                        {efficiency === null ? dash : formatNumber(efficiency, 2)}
-                      </td>
-                      <td className="px-3 py-2 tabular-nums">
-                        {ms(trial.metrics.activation_latency_ms)}
-                      </td>
-                      <td className="px-3 py-2">
-                        {trial.compensation.flagged
-                          ? compensationText(trial.compensation.type)
-                          : t("adminSession.compensatedNo")}
-                      </td>
-                    </tr>
-                  );
-                })}
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Activity, ArrowLeft, SearchX } from "lucide-react";
+import { Activity, ArrowLeft, SearchX, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
@@ -11,7 +11,7 @@ import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAdminSession } from "@/features/admin/hooks";
 import { GameRunCard } from "@/features/admin/session/GameRunCard";
-import { TargetMapCard } from "@/features/admin/session/TargetMapCard";
+import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { t } from "@/i18n";
 import { formatDateTime, formatDuration, formatNumber } from "@/lib/format";
@@ -108,11 +108,21 @@ export function AdminSessionDetailPage() {
       />
       <div className="grid items-start gap-4 lg:grid-cols-3">
         <HeaderCard session={data} />
-        <TargetMapCard
-          calibration={data.calibration}
-          runs={data.games}
-          affectedSide={data.calibration?.affected_side ?? null}
-        />
+        <Card className="lg:col-span-2">
+          <h2 className="mb-2 text-xl font-bold">{t("calibrate.result.title")}</h2>
+          {data.calibration ? (
+            <div className="mx-auto max-w-2xl">
+              <CalibrationReachMap
+                radii={data.calibration.reach_radii_sw}
+                hull={data.calibration.hull_sw}
+                valid={data.calibration.quality.valid}
+                affectedSide={data.calibration.affected_side}
+              />
+            </div>
+          ) : (
+            <EmptyState icon={Target} title={t("history.noMap")} />
+          )}
+        </Card>
         <Card className="lg:col-span-3">
           <h2 className="mb-2 text-xl font-bold">{t("history.warmupTitle")}</h2>
           {warmup.length > 0 ? (
@@ -122,7 +132,14 @@ export function AdminSessionDetailPage() {
           )}
         </Card>
         {data.games.length > 0 ? (
-          data.games.map((run) => <GameRunCard key={run.id} run={run} />)
+          data.games.map((run) => (
+            <GameRunCard
+              key={run.id}
+              run={run}
+              calibration={data.calibration}
+              affectedSide={data.calibration?.affected_side ?? null}
+            />
+          ))
         ) : (
           <Card className="lg:col-span-3">
             <EmptyState title={t("history.noGames")} />

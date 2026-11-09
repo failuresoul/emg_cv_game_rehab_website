@@ -27,6 +27,7 @@ MAX_TRAJECTORY_POINTS = 2000
 MAX_TRIALS_PER_RUN = 500
 
 NonNegative = Annotated[float, Field(ge=0)]
+SummaryDetail = float | Annotated[str, Field(max_length=50)] | bool | None
 Share = Annotated[float, Field(ge=0, le=1)]
 #: [t_ms, x_sw, y_sw]. t_ms is relative to the trial's spawn.
 TrajectoryPoint = tuple[float, float, float]
@@ -140,6 +141,9 @@ class GameSummary(BaseModel):
     mean_movement_ms: NonNegative | None = None
     mean_path_efficiency: Share | None = None
     compensated_trials: int = Field(ge=0)
+    #: Figures only one game has, such as the highest balloon popped. Up to 20, each a number,
+    #: text (up to 50 characters), true/false or null.
+    details: dict[str, SummaryDetail] = Field(default_factory=dict, max_length=20)
 
 
 class GameRunEnd(BaseModel):

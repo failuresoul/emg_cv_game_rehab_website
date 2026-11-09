@@ -1,6 +1,6 @@
 import type { ReachMapMarkerShape } from "@/components/ReachMap";
 import type { TranslationKey } from "@/i18n";
-import type { TrialOutcome } from "@/types/api";
+import type { GameId, TrialOutcome } from "@/types/api";
 
 /**
  * How each outcome is drawn. Colour and shape both differ, because amber and green are close for
@@ -30,3 +30,13 @@ export const OUTCOME_ORDER: readonly TrialOutcome[] = [
   "miss",
   "aborted",
 ];
+
+/** Each game's own words for an outcome, such as "Popped" for a balloon. */
+const GAME_OUTCOME_KEYS: Partial<Record<GameId, Partial<Record<TrialOutcome, TranslationKey>>>> = {
+  balloon_pop: { success: "outcome.popped", miss: "outcome.miss" },
+  fruit_catch: { success: "outcome.caught", miss: "outcome.notCaught" },
+};
+
+export function outcomeLabelKey(gameId: GameId, outcome: TrialOutcome): TranslationKey {
+  return GAME_OUTCOME_KEYS[gameId]?.[outcome] ?? OUTCOME_STYLE[outcome].labelKey;
+}

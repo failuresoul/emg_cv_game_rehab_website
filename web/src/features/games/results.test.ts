@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import type { GameRun, GameRunDetail, TrialRead } from "@/types/api";
 
 import {
+  bestOfSuccesses,
+  DETAIL_HIGHEST_POPPED,
+  DETAIL_WIDEST_CATCH,
   finishedRuns,
+  mainMeasure,
   meanReachSeconds,
   movementSeries,
   percent,
@@ -137,5 +141,51 @@ describe("game results", () => {
       { trialNo: 1, seconds: 1.23, outcome: "success" },
       { trialNo: 2, seconds: null, outcome: "reach_fail" },
     ]);
+  });
+});
+
+describe("mainMeasure", () => {
+  const summary = run().summary;
+
+  it("is the average reach time for Reach and squeeze", () => {
+    expect(mainMeasure("reach_activate", summary)).toEqual({
+      labelKey: "measure.meanReach",
+      value: { key: "game.results.seconds", params: { value: 1.2 } },
+    });
+  });
+
+  it("is the highest balloon popped, as a share of the reach, for Balloon pop", () => {
+    const withDetails = { ...summary!, details: { [DETAIL_HIGHEST_POPPED]: 0.85 } };
+    expect(mainMeasure("balloon_pop", withDetails)).toEqual({
+      labelKey: "measure.highestBalloon",
+      value: { key: "measure.ofReach", params: { value: 85 } },
+    });
+  });
+
+  it("is the widest catch, as a share of the reach, for Fruit catch", () => {
+    const withDetails = { ...summary!, details: { [DETAIL_WIDEST_CATCH]: 0.7 } };
+    expect(mainMeasure("fruit_catch", withDetails).value?.params).toEqual({ value: 70 });
+  });
+
+  it("has no value when there is nothing to show yet", () => {
+    expect(mainMeasure("balloon_pop", summary).value).toBeNull();
+    expect(
+      mainMeasure("fruit_catch", { ...summary!, details: { [DETAIL_WIDEST_CATCH]: null } }).value,
+    ).toBeNull();
+    expect(mainMeasure("reach_activate", null).value).toBeNull();
+  });
+});
+
+describe("bestOfSuccesses", () => {
+  it("takes the largest value among successful trials only", () => {
+    expect(
+      bestOfSuccesses([
+        { outcome: "success", value: 0.55 },
+        { outcome: "miss", value: 0.85 },
+        { outcome: "success", value: 0.7 },
+        { outcome: "success", value: null },
+      ]),
+    ).toBe(0.7);
+    expect(bestOfSuccesses([{ outcome: "miss", value: 1 }])).toBeNull();
   });
 });

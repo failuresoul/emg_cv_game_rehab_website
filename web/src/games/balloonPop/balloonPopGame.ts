@@ -1,5 +1,7 @@
 import { CompensationTally } from "@/games/shared/compensationTally";
 import { drawActivationRing, drawHandGrab } from "@/games/shared/drawing";
+import { bestOfSuccesses, DETAIL_HIGHEST_POPPED } from "@/features/games/results";
+import { Encourager } from "@/games/shared/encourage";
 import { summariseTrials } from "@/games/shared/metrics";
 import type { ScreenBounds } from "@/games/shared/targetPlacement";
 import { TrajectoryRecorder } from "@/games/shared/trajectoryRecorder";
@@ -39,6 +41,7 @@ interface ActiveBalloon {
 
 export function createBalloonPopGame(context: GameContext): GameInstance {
   const records: TrialCreate[] = [];
+  const encourager = new Encourager(context.rng.next);
   let score = 0;
   let popped = 0;
   let balloon: ActiveBalloon | null = null;
@@ -126,9 +129,9 @@ export function createBalloonPopGame(context: GameContext): GameInstance {
         colour: current.colour,
         startMs: at,
       };
-      context.emit({ key: "game.feedback.popped", tone: "positive" });
+      context.emit(encourager.success());
     } else {
-      context.emit({ key: "game.feedback.floatedAway", tone: "gentle" });
+      context.emit(encourager.miss());
     }
   }
 
@@ -231,7 +234,17 @@ export function createBalloonPopGame(context: GameContext): GameInstance {
         score,
         trialsDone: records.length,
         trialsPlanned: context.trialsPlanned,
-        summary: summariseTrials(records),
+        summary: {
+          ...summariseTrials(records),
+          details: {
+            [DETAIL_HIGHEST_POPPED]: bestOfSuccesses(
+              records.map((trial) => ({
+                outcome: trial.outcome,
+                value: trial.target?.distance_frac,
+              })),
+            ),
+          },
+        },
       };
     },
 

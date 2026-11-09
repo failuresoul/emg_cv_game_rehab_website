@@ -13,7 +13,7 @@ export const fruitCatch: GameDefinition = {
   icon: Apple,
   params: FRUIT_CATCH_PARAMS,
   trialsDefault: FRUIT_CATCH_TRIALS,
-  estimatedMinutes: 5,
+  estimatedMinutes: 4,
   create: createFruitCatchGame,
   implemented: true,
 };
