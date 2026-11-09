@@ -1,6 +1,6 @@
 # MotionLab API contract
 
-This document lists every API route the server provides today, plus the routes reserved for the LLM feedback module. The examples are real responses captured from the server, with the token shortened.
+This document lists every API route the server provides today, plus the routes reserved for the LLM feedback module. The examples are real responses captured from the server, with the token shortened. The game examples show the exact shape with made-up numbers.
 
 ## Conventions
 
@@ -13,6 +13,11 @@ This document lists every API route the server provides today, plus the routes r
   - `affected_side`, `dominant_side`: `left`, `right`
   - `age_band`: `18-29`, `30-39`, `40-49`, `50-59`, `60-69`, `70+`
   - `language`: `en`, `bn`
+  - `game_id`: `reach_activate`, `balloon_pop`, `fruit_catch`, `bloom`, `finger_piano`, `path_trace`, `paint_wall`, `pick_place`, `grip_hold`
+  - `engine`: `L0` (fixed settings), `L1`, `L2` (adaptive, from Day 12)
+  - `input_source`: `cv_grip` (closing the hand on the webcam), `keyboard` (testing only), `emg` (from Day 15)
+  - Trial `outcome`: `success`, `reach_fail`, `activation_fail`, `aborted`
+- **Units:** positions are in the body frame, in shoulder widths (SW), with the affected shoulder at the origin, +x away from the body's midline and +y up. Trial times are milliseconds relative to the trial's spawn.
 - **Privacy:** password hashes are never returned. Webcam video and images are never sent to the server.
 
 ## Routes
@@ -45,6 +50,12 @@ This document lists every API route the server provides today, plus the routes r
 | POST   | `/api/sessions/{id}/calibration`     | `patient` | Save a calibration              |
 | POST   | `/api/sessions/{id}/warmup`          | `patient` | Save or replace warm-up results |
 | GET    | `/api/sessions/{id}/warmup`          | `patient` | Get a session's warm-up results |
+| POST   | `/api/sessions/{id}/games`           | `patient` | Start a game run                |
+| GET    | `/api/sessions/{id}/games`           | `patient` | List a session's game runs      |
+| POST   | `/api/games/{run_id}/trials`         | `patient` | Save up to 50 trials            |
+| POST   | `/api/games/{run_id}/end`            | `patient` | End a game run with its score   |
+| GET    | `/api/admin/sessions`                | `admin`   | Recent sessions of every patient |
+| GET    | `/api/admin/sessions/{id}`           | `admin`   | One session with every trial    |
 
 ## Errors
 
@@ -376,6 +387,8 @@ Response `200`:
 }
 ```
 
+`last_session.games` lists the session's finished game runs (completed or aborted) in the order they were played, as `{ "game_id": "reach_activate", "score": 1525.0, "success_rate": 0.75 }`. `success_rate` is `null` for a run ended without a summary, and runs still in progress are left out.
+
 `last_session` and `latest_calibration` are `null` until they exist. `last_session.warmup_summary` is `null` if that session has no warm-up results. `last_warmup` is the most recent session that has any warm-up results, so it can be an earlier session than `last_session`; it is `null` until the first warm-up is saved. See [Warm-up summaries](#warm-up-summaries). `duration_seconds` is `null` for a session with no `ended_at`. `today_plan` is a fixed list and `streak_days` is always `0` for now.
 
 ### GET /api/patient/calibration/latest
@@ -400,12 +413,13 @@ Response `200`: an array of session summaries, newest first. The admin session l
     "notes": null,
     "duration_seconds": 1560.0,
     "hull_area_sw2": 0.5,
-    "warmup_summary": null
+    "warmup_summary": null,
+    "games": [{ "game_id": "reach_activate", "score": 1525.0, "success_rate": 0.75 }]
   }
 ]
 ```
 
-`warmup_summary` is a [warm-up summary](#warm-up-summaries), or `null` for a session without warm-up results.
+`warmup_summary` is a [warm-up summary](#warm-up-summaries), or `null` for a session without warm-up results. `games` lists finished game runs as in the dashboard's `last_session.games`, and is empty when none were played.
 
 ### GET /api/patient/sessions/{id}
 
@@ -474,7 +488,7 @@ Request:
 { "status": "completed" }
 ```
 
-`status` must be `completed` or `aborted`. Response `200`: the session, with `ended_at` set.
+`status` must be `completed` or `aborted`. Response `200`: the session, with `ended_at` set. Any game run still active in the session is marked `aborted`, without an `ended_at`. An active session older than two hours is aborted the same way the next time the patient starts or resumes one.
 
 Errors: `404`, `409` if the session has already ended, `422`.
 
@@ -623,6 +637,159 @@ Response `200`: one entry per exercise, each with its points oldest first, for c
 `target_high` is always `thresholds.high`. For elbow flexion and thumb opposition the target is `thresholds.low`; see the target line above.
 
 Errors: `404` (no such patient), `422` (unknown `exercise_id`).
+
+## Games
+
+A **game run** is one play of one game inside a session; a **trial** is one target or task within it. The web app starts a run when the countdown ends, uploads trials every 10 and at the end, and then ends the run. Only one run is played at a time: starting a run marks any run still active in the same session as `aborted`.
+
+### POST /api/sessions/{id}/games
+
+Request:
+
+```json
+{
+  "game_id": "reach_activate",
+  "engine": "L0",
+  "input_source": "cv_grip",
+  "params_initial": { "distance_frac": 0.7, "target_radius_sw": 0.45, "seed": 1234567 },
+  "trials_planned": 20
+}
+```
+
+`engine` defaults to `L0`. `params_initial` is the first trial's settings (names and numbers only); the web app adds the random `seed`, so the order of directions can be repeated. `trials_planned` is 1–500.
+
+Response `201`: the game run.
+
+```json
+{
+  "id": 3,
+  "session_id": 1,
+  "game_id": "reach_activate",
+  "engine": "L0",
+  "input_source": "cv_grip",
+  "params_initial": { "distance_frac": 0.7, "target_radius_sw": 0.45, "seed": 1234567 },
+  "started_at": "2026-11-09T10:05:00Z",
+  "ended_at": null,
+  "status": "active",
+  "trials_planned": 20,
+  "trials_done": 0,
+  "score": null,
+  "summary": null
+}
+```
+
+Errors: `404` (no such session, or another patient's), `409` if the session has already ended, `422` (for example an unknown `game_id`).
+
+### GET /api/sessions/{id}/games
+
+Response `200`: the session's game runs in the order they were started, each as above, without trials.
+
+Errors: `404`.
+
+### POST /api/games/{run_id}/trials
+
+Request: an array of 1 to 50 trials. A trial whose `trial_no` was already saved in this run is replaced, so sending a trial again after a failed upload is safe.
+
+```json
+[
+  {
+    "trial_no": 1,
+    "params": { "distance_frac": 0.7, "direction_deg": 45, "direction_index": 1, "target_radius_sw": 0.45, "dwell_ms": 500, "activation_demand": 0.5 },
+    "target": { "x_sw": 0.69, "y_sw": 0.65, "radius_sw": 0.45, "direction_deg": 45, "distance_frac": 0.7, "sector": "D1R2" },
+    "outcome": "success",
+    "timings": { "spawn": 0, "move_onset": 320, "enter": 1480, "dwell_done": 1980, "activation_start": 2210, "activation_done": 2410, "end": 2410 },
+    "metrics": {
+      "reaction_ms": 320,
+      "movement_ms": 1160,
+      "path_length_sw": 1.02,
+      "straight_dist_sw": 0.91,
+      "path_efficiency": 0.892,
+      "peak_speed_sw_s": 1.31,
+      "activation_latency_ms": 230,
+      "activation_peak": 0.86
+    },
+    "compensation": {
+      "flagged": true,
+      "type": "lean",
+      "max_values": { "trunk_displacement_sw": 0.08, "trunk_lean_deg": 11.4, "shoulder_hike_sw": 0.02 }
+    },
+    "trajectory": [[0, 0.12, -0.35], [33.3, 0.13, -0.34], [66.7, 0.16, -0.3]]
+  }
+]
+```
+
+| Field | Rules |
+| --- | --- |
+| `trial_no` | 1–500, unique within the request |
+| `params` | That trial's settings, names and numbers only |
+| `target` | Optional. `radius_sw` above 0, `direction_deg` 0 up to 360, `distance_frac` 0–2, `sector` like `D3R2`: the direction index (0 is outward, then 45° steps anticlockwise to 7) and the ring (R1 below 0.55 of the reach, R2 to 0.85, R3 beyond) |
+| `timings` | Milliseconds from spawn, each 0 or more, or `null` if never reached. `activation_start` is when the successful squeeze began |
+| `metrics` | Each 0 or more, or `null`; `path_efficiency` and `activation_peak` are 0–1. Reach measures use the raw fingertip from move onset to entering the target; move onset is the first point faster than 0.15 SW/s |
+| `compensation.max_values` | Up to 20 named numbers |
+| `trajectory` | Up to 2000 points of `[t_ms, x_sw, y_sw]`: the raw (unsmoothed) fingertip at about 30 Hz |
+
+Response `200`: the game run, with `trials_done` counting every trial saved.
+
+Errors: `404` (no such run, or another patient's), `409` if the run is no longer active, `422` (more than 50 trials, a repeated `trial_no`, more than 2000 trajectory points, `NaN`, or another invalid field).
+
+### POST /api/games/{run_id}/end
+
+Request:
+
+```json
+{
+  "status": "completed",
+  "score": 1525,
+  "summary": {
+    "successes": 15,
+    "success_rate": 0.75,
+    "mean_movement_ms": 1240.5,
+    "mean_path_efficiency": 0.86,
+    "compensated_trials": 3
+  }
+}
+```
+
+`status` is `completed` or `aborted`, `score` is 0 or more, and `summary` is optional. In the summary, the means are over successful trials only and may be `null`; `compensated_trials` counts every trial with compensation flagged. Response `200`: the game run with `ended_at`, `score` and `summary` set.
+
+Errors: `404`, `409` if the run has already ended, `422`.
+
+### GET /api/admin/sessions
+
+Query: `limit` (1–50, default 10).
+
+Response `200`: every patient's sessions, newest first.
+
+```json
+[
+  {
+    "id": 1,
+    "patient_id": 1,
+    "patient_code": "P001",
+    "patient_name": "Alice Rahman",
+    "started_at": "2026-11-09T10:00:00Z",
+    "status": "completed",
+    "duration_seconds": 1320.0,
+    "games": [{ "game_id": "reach_activate", "score": 1525.0, "success_rate": 0.75 }]
+  }
+]
+```
+
+Errors: `422` (limit out of range).
+
+### GET /api/admin/sessions/{id}
+
+Response `200`: everything recorded in one session: the session fields as in `GET /api/sessions/current`, plus these.
+
+| Field | Meaning |
+| --- | --- |
+| `patient_code`, `patient_name` | Whose session it is |
+| `duration_seconds` | `null` without an `ended_at` |
+| `calibration` | The calibration object, or `null` |
+| `warmup_results` | Every warm-up result, as in `GET /api/sessions/{id}/warmup` |
+| `games` | Every game run in the order started, each with `trials`: every trial in `trial_no` order, with its trajectory, `id`, `game_run_id` and `created_at` |
+
+Errors: `404`.
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

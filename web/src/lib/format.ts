@@ -53,3 +53,11 @@ export function formatDuration(seconds: number): string {
   if (remainder === 0) return t("format.minutes", { minutes });
   return t("format.minutesSeconds", { minutes, seconds: remainder });
 }
+
+/** A running time as minutes and seconds, such as 4:05, in the language's own digits. */
+export function formatClock(ms: number, locale: string = getLocale()): string {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = new Intl.NumberFormat(locale).format(Math.floor(seconds / 60));
+  const rest = new Intl.NumberFormat(locale, { minimumIntegerDigits: 2 }).format(seconds % 60);
+  return `${minutes}:${rest}`;
+}

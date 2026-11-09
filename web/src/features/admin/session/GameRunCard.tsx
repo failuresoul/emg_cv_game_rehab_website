@@ -172,7 +172,7 @@ export function GameRunCard({ run }: { run: GameRunDetail }) {
                   return (
                     <tr key={trial.id}>
                       <th scope="row" className="px-3 py-2 font-semibold tabular-nums">
-                        {trial.trial_no}
+                        {formatNumber(trial.trial_no, 0)}
                       </th>
                       <td className="px-3 py-2">{trial.target?.sector ?? dash}</td>
                       <td className="px-3 py-2 whitespace-nowrap">

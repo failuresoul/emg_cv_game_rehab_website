@@ -38,9 +38,14 @@ export class TrajectoryRecorder {
     this.wasTruncated = false;
   }
 
-  /** One frame. A missing fingertip is skipped rather than saved as a gap. Returns true if kept. */
+  /**
+   * One frame. A missing fingertip is skipped rather than saved as a gap, and so is a frame from
+   * before the spawn (a camera frame can be up to one frame older than the trial). Returns true if
+   * kept.
+   */
   add(timestampMs: number, pointSw: Point | null): boolean {
     if (!pointSw || !Number.isFinite(pointSw.x) || !Number.isFinite(pointSw.y)) return false;
+    if (timestampMs < this.spawnMs) return false;
     if (this.lastMs !== null && timestampMs - this.lastMs < MIN_GAP_MS) return false;
     if (this.points.length >= this.maxPoints) {
       this.wasTruncated = true;

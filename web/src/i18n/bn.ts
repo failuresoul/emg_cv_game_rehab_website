@@ -589,7 +589,8 @@ export const bn: Record<TranslationKey, string> = {
   "game.continue": "চালিয়ে যান",
   "game.save.saving": "সংরক্ষণ হচ্ছে…",
   "game.save.saved": "সংরক্ষিত",
-  "game.save.unsaved": "এখনও সংরক্ষিত হয়নি। সংরক্ষণ না হওয়া পর্যন্ত ফলাফল রাখা থাকবে।",
+  "game.save.unsaved":
+    "এখনও সংরক্ষিত হয়নি। চালিয়ে যাওয়ার আগে আবার সংরক্ষণের চেষ্টা করুন, নইলে এই গেমের ফলাফল হারিয়ে যেতে পারে।",
   "game.save.retry": "আবার সংরক্ষণের চেষ্টা করুন",
   "param.demand": "প্রয়োজনীয় চাপের মাত্রা",
   "param.holdMs": "ধরে রাখার সময়",

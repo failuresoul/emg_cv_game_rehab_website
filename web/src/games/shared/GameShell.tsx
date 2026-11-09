@@ -11,6 +11,7 @@ import { t, type TranslationKey } from "@/i18n";
 import { ActivationMeter, type InputManager, useSessionActivation } from "@/input";
 import type { ActivationSourceId } from "@/input";
 import { api } from "@/lib/api";
+import { formatClock, formatNumber } from "@/lib/format";
 import type { Calibration, Side } from "@/types/api";
 import type { Point } from "@/vision/geometry";
 import { computePosture } from "@/vision/posture";
@@ -22,7 +23,7 @@ import { CompensationMonitor } from "@/warmup/compensation";
 import { COMPENSATION_CONFIG } from "@/warmup/compensationConfig";
 
 import { gameAudio } from "./audio";
-import { GameRuntime, type PauseReason, type RuntimeStage } from "./gameRuntime";
+import { COUNTDOWN_FROM, GameRuntime, type PauseReason, type RuntimeStage } from "./gameRuntime";
 import { createPlayArea, type PlayArea } from "./playArea";
 import { GAMES } from "./registry";
 import { createRng, newSeed } from "./rng";
@@ -75,11 +76,6 @@ interface Hud {
   trialsPlanned: number;
   score: number;
   elapsedMs: number;
-}
-
-function formatTime(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 /** The level meter re-renders on its own, so the rest of the screen does not at 60 Hz. */
@@ -452,7 +448,7 @@ const GamePlay = memo(function GamePlay({
           {t("game.hud.trial", { n: hud.trial, total: hud.trialsPlanned })}
         </p>
         <p className="tabular-nums">{t("game.hud.score", { value: hud.score })}</p>
-        <p className="tabular-nums">{t("game.hud.time", { value: formatTime(hud.elapsedMs) })}</p>
+        <p className="tabular-nums">{t("game.hud.time", { value: formatClock(hud.elapsedMs) })}</p>
         <div className="ml-auto flex items-center gap-3">
           {saveKey && (
             <span role="status" className="text-base text-white/80">
@@ -493,7 +489,7 @@ const GamePlay = memo(function GamePlay({
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40">
           <p className="text-2xl">{t("game.countdown.ready")}</p>
           <p className="text-[8rem] leading-none font-bold tabular-nums" aria-live="assertive">
-            {count ?? 3}
+            {formatNumber(count ?? COUNTDOWN_FROM, 0)}
           </p>
         </div>
       )}

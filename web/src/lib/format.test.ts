@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDifference, formatDuration, formatNumber } from "./format";
+import { formatClock, formatDifference, formatDuration, formatNumber } from "./format";
 
 describe("formatDuration", () => {
   it("shows seconds under a minute", () => {
@@ -30,5 +30,21 @@ describe("number formats", () => {
     expect(formatDifference(0.25)).toBe("+0.25");
     expect(formatDifference(-0.25)).toBe("-0.25");
     expect(formatDifference(0)).toBe("0.00");
+  });
+});
+
+describe("formatClock", () => {
+  it("shows minutes and two-digit seconds", () => {
+    expect(formatClock(0, "en")).toBe("0:00");
+    expect(formatClock(65_900, "en")).toBe("1:05");
+    expect(formatClock(600_000, "en")).toBe("10:00");
+  });
+
+  it("never shows a negative time", () => {
+    expect(formatClock(-500, "en")).toBe("0:00");
+  });
+
+  it("uses the language's own digits", () => {
+    expect(formatClock(65_000, "bn-BD")).toBe("১:০৫");
   });
 });

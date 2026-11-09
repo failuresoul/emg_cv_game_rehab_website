@@ -6,11 +6,12 @@ Start the server first, then run from server/ with the virtual environment activ
 
 The default base_url is http://localhost:8000. The admin login comes from server/.env. Each run
 adds one test patient with one session (a calibration, six warm-up results and one
-reach_activate run with three trials) to the database,
+reach_activate run with 20 trials) to the database,
 and deactivates the patient at the end.
 The exit code is 0 if every step passes and 1 otherwise.
 """
 
+import math
 import secrets
 import sys
 from collections.abc import Callable
@@ -120,28 +121,81 @@ def warmup_payload() -> list[dict[str, Any]]:
     return results
 
 
+DIRECTION_SECTORS = 8
+GAME_TRIALS = 20
+BATCH_SIZE = 10
+REACH_ACTIVATE_PARAMS: dict[str, float] = {
+    "distance_frac": 0.7,
+    "target_radius_sw": 0.45,
+    "dwell_ms": 500,
+    "activation_demand": 0.5,
+    "activation_hold_ms": 200,
+    "activation_window_ms": 3000,
+    "reach_time_limit_ms": 8000,
+    "rest_ms": 1500,
+}
+
+
 def trial_payload(trial_no: int) -> dict[str, Any]:
-    """One successful reach_activate trial with a short raw fingertip path."""
+    """A synthetic reach_activate trial: every fourth one misses, the rest reach and squeeze.
+
+    The direction cycles through all eight, and the trajectory is a straight raw path at 30 Hz.
+    """
+    index = (trial_no - 1) % DIRECTION_SECTORS
+    direction_deg = index * 45
+    radians = math.radians(direction_deg)
+    distance = 0.7
+    target = (distance * math.cos(radians), distance * math.sin(radians))
+    success = trial_no % 4 != 0
+    trajectory = [
+        [round(i * 1000 / 30, 1), round(target[0] * i / 30, 4), round(target[1] * i / 30, 4)]
+        for i in range(31)
+    ]
     return {
         "trial_no": trial_no,
-        "params": {"target_radius_sw": 0.25, "dwell_ms": 500},
+        "params": {**REACH_ACTIVATE_PARAMS, "direction_deg": direction_deg, "direction_index": index},
         "target": {
-            "x_sw": 0.5,
-            "y_sw": 0.5,
-            "radius_sw": 0.25,
-            "direction_deg": 45,
+            "x_sw": round(target[0], 4),
+            "y_sw": round(target[1], 4),
+            "radius_sw": 0.45,
+            "direction_deg": direction_deg,
             "distance_frac": 0.7,
-            "sector": "D1R2",
+            "sector": f"D{index}R2",
         },
-        "outcome": "success",
-        "timings": {"spawn": 0, "move_onset": 300, "enter": 1300, "dwell_done": 1800, "end": 2400},
-        "metrics": {"reaction_ms": 300, "movement_ms": 1000, "path_efficiency": 0.85},
-        "compensation": {"flagged": False},
-        "trajectory": [[0, 0.1, 0.1], [33.3, 0.2, 0.2], [66.7, 0.4, 0.4]],
+        "outcome": "success" if success else "activation_fail",
+        "timings": {
+            "spawn": 0,
+            "move_onset": 33,
+            "enter": 1000,
+            "dwell_done": 1500,
+            "activation_start": 1700 if success else None,
+            "activation_done": 1900 if success else None,
+            "end": 1900 if success else 4500,
+        },
+        "metrics": {
+            "reaction_ms": 33,
+            "movement_ms": 967,
+            "path_length_sw": 0.7,
+            "straight_dist_sw": 0.7,
+            "path_efficiency": 1.0,
+            "peak_speed_sw_s": 0.7,
+            "activation_latency_ms": 200 if success else None,
+            "activation_peak": 0.8 if success else 0.3,
+        },
+        "compensation": {"flagged": False, "type": None, "max_values": {}},
+        "trajectory": trajectory,
     }
 
 
-GAME_TRIALS = 3
+def game_summary(trials: list[dict[str, Any]]) -> dict[str, Any]:
+    successes = sum(1 for trial in trials if trial["outcome"] == "success")
+    return {
+        "successes": successes,
+        "success_rate": successes / len(trials),
+        "mean_movement_ms": 967.0,
+        "mean_path_efficiency": 1.0,
+        "compensated_trials": 0,
+    }
 
 
 def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool:
@@ -232,40 +286,36 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             "game_id": "reach_activate",
             "engine": "L0",
             "input_source": "keyboard",
-            "params_initial": {"target_radius_sw": 0.25, "dwell_ms": 500},
+            "params_initial": REACH_ACTIVATE_PARAMS,
             "trials_planned": GAME_TRIALS,
         }
         body = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
         require(body["status"] == "active", "game run is not active")
         state["run_id"] = body["id"]
+        state["trials"] = [trial_payload(n) for n in range(1, GAME_TRIALS + 1)]
 
-    def upload_trials() -> None:
+    def upload_batch(batch: int) -> None:
         url = f"/api/games/{state['run_id']}/trials"
-        trials = [trial_payload(n) for n in range(1, GAME_TRIALS + 1)]
+        trials = state["trials"][batch * BATCH_SIZE : (batch + 1) * BATCH_SIZE]
         body = expect(client.post(url, json=trials, headers=bearer("patient")), 200)
-        require(body["trials_done"] == GAME_TRIALS, f"trials_done is {body['trials_done']}")
+        done = (batch + 1) * BATCH_SIZE
+        require(body["trials_done"] == done, f"trials_done is {body['trials_done']}, not {done}")
 
     def end_game() -> None:
         url = f"/api/games/{state['run_id']}/end"
-        payload = {
-            "status": "completed",
-            "score": 300,
-            "summary": {
-                "successes": GAME_TRIALS,
-                "success_rate": 1.0,
-                "mean_movement_ms": 1000.0,
-                "mean_path_efficiency": 0.85,
-                "compensated_trials": 0,
-            },
-        }
+        summary = game_summary(state["trials"])
+        state["score"] = 100 * summary["successes"]
+        payload = {"status": "completed", "score": state["score"], "summary": summary}
         body = expect(client.post(url, json=payload, headers=bearer("patient")), 200)
         require(body["status"] == "completed", "game run is not completed")
+        require(body["trials_done"] == GAME_TRIALS, f"trials_done is {body['trials_done']}")
 
     def dashboard_last_games() -> None:
         body = expect(client.get("/api/patient/dashboard", headers=bearer("patient")), 200)
         games = body["last_session"]["games"]
-        expected = [{"game_id": "reach_activate", "score": 300, "success_rate": 1.0}]
-        require(games == expected, f"dashboard games are {games}")
+        require(len(games) == 1, f"expected 1 game on the dashboard, got {len(games)}")
+        require(games[0]["game_id"] == "reach_activate", "the dashboard game is not reach_activate")
+        require(games[0]["score"] == state["score"], f"dashboard score is {games[0]['score']}")
 
     def end_session() -> None:
         url = f"/api/sessions/{state['session_id']}/end"
@@ -308,7 +358,9 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(len(body["games"]) == 1, "the game run is missing")
         trials = body["games"][0]["trials"]
         require(len(trials) == GAME_TRIALS, f"expected {GAME_TRIALS} trials, got {len(trials)}")
-        require(all(len(trial["trajectory"]) == 3 for trial in trials), "a trajectory is missing")
+        numbers = [trial["trial_no"] for trial in trials]
+        require(numbers == list(range(1, GAME_TRIALS + 1)), "trials are missing or out of order")
+        require(all(len(trial["trajectory"]) == 31 for trial in trials), "a trajectory is missing")
 
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
@@ -329,7 +381,8 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Patient reads warm-up history", read_warmup_history),
         ("Dashboard shows the last warm-up", dashboard_last_warmup),
         ("Patient starts a reach_activate run", start_game),
-        ("Patient uploads three trials", upload_trials),
+        ("Patient uploads trials 1 to 10", lambda: upload_batch(0)),
+        ("Patient uploads trials 11 to 20", lambda: upload_batch(1)),
         ("Patient ends the run with a summary", end_game),
         ("Dashboard shows the last session's game", dashboard_last_games),
         ("Patient ends the session", end_session),

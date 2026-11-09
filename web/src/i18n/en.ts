@@ -589,7 +589,8 @@ export const en = {
   "game.continue": "Continue",
   "game.save.saving": "Saving…",
   "game.save.saved": "Saved",
-  "game.save.unsaved": "Not saved yet. Your results are kept until saving works.",
+  "game.save.unsaved":
+    "Not saved yet. Please try saving again before you continue, or this game's results may be lost.",
   "game.save.retry": "Try saving again",
   "param.demand": "Squeeze strength needed",
   "param.holdMs": "Hold time",

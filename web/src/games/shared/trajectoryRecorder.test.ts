@@ -31,6 +31,14 @@ describe("TrajectoryRecorder", () => {
     expect(recorder.length).toBe(30);
   });
 
+  it("skips frames from before the spawn, so every time is 0 or more", () => {
+    const recorder = new TrajectoryRecorder();
+    recorder.start(1000);
+    expect(recorder.add(980, at(1))).toBe(false);
+    expect(recorder.add(1010, at(2))).toBe(true);
+    expect(recorder.toArray()).toEqual([[10, 2, 0]]);
+  });
+
   it("skips frames without a fingertip", () => {
     const recorder = new TrajectoryRecorder();
     recorder.start(0);
