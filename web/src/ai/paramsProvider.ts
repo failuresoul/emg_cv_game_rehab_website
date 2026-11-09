@@ -11,8 +11,11 @@ export const DIRECTIONS_DEG = [0, 45, 90, 135, 180, 225, 270, 315] as const;
  */
 export interface ParamsProvider {
   readonly engine: GameEngine;
-  /** The settings for the next trial, given every earlier trial of this run, oldest first. */
-  nextParams(gameId: GameId, history: readonly TrialHistoryEntry[]): GameParams;
+  /**
+   * The settings for a trial, given every finished trial of this run, oldest first. `trialNo`
+   * (from 1) defaults to the trial after the history; games where trials overlap pass it.
+   */
+  nextParams(gameId: GameId, history: readonly TrialHistoryEntry[], trialNo?: number): GameParams;
 }
 
 export interface FixedProviderOptions {
@@ -29,6 +32,8 @@ export const BALLOON_HEIGHT_FRACS = [0.55, 0.7, 0.85] as const;
 const BALLOON_COMBOS = BALLOON_DIRECTIONS_DEG.flatMap((directionDeg) =>
   BALLOON_HEIGHT_FRACS.map((heightFrac) => ({ directionDeg, heightFrac })),
 );
+/** Fruit Catch's distances, as shares of the spread on each side. */
+export const FRUIT_TARGET_FRACS = [0.4, 0.7, 1.0] as const;
 
 /**
  * L0: every setting at its default, plus where each target goes:
@@ -37,42 +42,58 @@ const BALLOON_COMBOS = BALLOON_DIRECTIONS_DEG.flatMap((directionDeg) =>
  *   order every eight trials.
  * - balloon_pop: `direction_deg`, `direction_index` and `height_frac`, every pairing of three
  *   upward directions and three heights in a shuffled order every nine trials.
+ * - fruit_catch: `target_side` (1 out, -1 across), alternating from out, and `target_frac`, each
+ *   side's three distances in a shuffled order every three fruits on that side.
  *
- * In both, the same choice never comes twice in a row across two blocks.
+ * The same choice never comes twice in a row across two blocks.
  */
 export class FixedProvider implements ParamsProvider {
   readonly engine = "L0";
   private readonly specsFor: (gameId: GameId) => readonly ParamSpec[];
   private readonly rng: Rng;
-  /** Each game's blocks of shuffled choices (indices), generated as they are needed. */
-  private readonly blocks = new Map<GameId, number[][]>();
+  /** Blocks of shuffled choices (indices), by game or game and side, made as they are needed. */
+  private readonly blocks = new Map<string, number[][]>();
 
   constructor({ specsFor, seed }: FixedProviderOptions) {
     this.specsFor = specsFor;
     this.rng = createRng(seed);
   }
 
-  nextParams(gameId: GameId, history: readonly TrialHistoryEntry[]): GameParams {
+  nextParams(
+    gameId: GameId,
+    history: readonly TrialHistoryEntry[],
+    trialNo = history.length + 1,
+  ): GameParams {
     const params: GameParams = Object.fromEntries(
       this.specsFor(gameId).map((spec) => [spec.name, spec.default]),
     );
+    const position = Math.max(0, trialNo - 1);
     if (gameId === "reach_activate") {
-      const index = this.choiceFor(gameId, history.length, DIRECTIONS_DEG.length);
+      const index = this.choiceFor(gameId, position, DIRECTIONS_DEG.length);
       params.direction_index = index;
       params.direction_deg = DIRECTIONS_DEG[index];
     } else if (gameId === "balloon_pop") {
-      const combo = BALLOON_COMBOS[this.choiceFor(gameId, history.length, BALLOON_COMBOS.length)];
+      const combo = BALLOON_COMBOS[this.choiceFor(gameId, position, BALLOON_COMBOS.length)];
       params.direction_deg = combo.directionDeg;
       params.direction_index = combo.directionDeg / 45;
       params.height_frac = combo.heightFrac;
+    } else if (gameId === "fruit_catch") {
+      const out = position % 2 === 0;
+      const index = this.choiceFor(
+        `${gameId}:${out ? "out" : "across"}`,
+        Math.floor(position / 2),
+        FRUIT_TARGET_FRACS.length,
+      );
+      params.target_side = out ? 1 : -1;
+      params.target_frac = FRUIT_TARGET_FRACS[index];
     }
     return params;
   }
 
   /** Which of `count` choices the trial at this position gets, counting from 0. */
-  private choiceFor(gameId: GameId, position: number, count: number): number {
-    const blocks = this.blocks.get(gameId) ?? [];
-    this.blocks.set(gameId, blocks);
+  private choiceFor(key: string, position: number, count: number): number {
+    const blocks = this.blocks.get(key) ?? [];
+    this.blocks.set(key, blocks);
     const block = Math.floor(position / count);
     while (blocks.length <= block) {
       const order = this.rng.shuffle(Array.from({ length: count }, (_, index) => index));

@@ -663,3 +663,42 @@ def test_upload_arm_elevation_out_of_range_is_422(
     trial = trial_payload(1)
     trial["metrics"] = {**trial["metrics"], "peak_arm_elevation_deg": elevation}
     assert upload(client, patient_headers, run_id, [trial]).status_code == 422
+
+
+def test_upload_fruit_trial_with_lateral_metrics(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="fruit_catch")
+    trial = trial_payload(1, outcome="miss")
+    lateral = {
+        "lateral_distance_sw": 0.62,
+        "lateral_path_efficiency": 0.91,
+        "overshoot_sw": 0.08,
+        "side": "across",
+    }
+    trial["metrics"] = {**trial["metrics"], **lateral}
+    assert upload(client, patient_headers, run_id, [trial]).status_code == 200
+
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    saved = detail["games"][0]["trials"][0]["metrics"]
+    assert {key: saved[key] for key in lateral} == lateral
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"side": "left"},
+        {"lateral_distance_sw": -0.1},
+        {"lateral_path_efficiency": 1.2},
+        {"overshoot_sw": -1},
+    ],
+)
+def test_upload_invalid_lateral_metrics_is_422(
+    client: TestClient, patient_headers: Headers, changes: dict[str, Any]
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="fruit_catch")
+    trial = trial_payload(1)
+    trial["metrics"] = {**trial["metrics"], **changes}
+    assert upload(client, patient_headers, run_id, [trial]).status_code == 422

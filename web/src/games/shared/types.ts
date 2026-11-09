@@ -68,8 +68,11 @@ export interface GameFeedback {
 
 export interface GameParamsSource {
   readonly engine: "L0" | "L1" | "L2";
-  /** The settings for the next trial, given every trial logged so far. */
-  next(): GameParams;
+  /**
+   * The settings for a trial, given every trial logged so far. Pass the trial's number when trials
+   * can overlap (two fruits falling at once), so each one gets its own place in the order.
+   */
+  next(trialNo?: number): GameParams;
 }
 
 export interface GameTrialLogger {

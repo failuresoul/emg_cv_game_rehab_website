@@ -1,6 +1,7 @@
-import { Apple, Flower2, Grab, Hand, Paintbrush, Piano, Spline } from "lucide-react";
+import { Flower2, Grab, Hand, Paintbrush, Piano, Spline } from "lucide-react";
 
 import { balloonPop } from "@/games/balloonPop";
+import { fruitCatch } from "@/games/fruitCatch";
 import { reachActivate } from "@/games/reachActivate";
 import type { GameId } from "@/types/api";
 
@@ -69,26 +70,6 @@ const reachTimeoutMs: ParamSpec = {
   unit: "ms",
   harder: "lower",
 };
-const speedSwS: ParamSpec = {
-  name: "speed_sw_s",
-  labelKey: "param.speedSwS",
-  min: 0.1,
-  max: 0.8,
-  step: 0.05,
-  default: 0.25,
-  unit: "sw_per_s",
-  harder: "higher",
-};
-const spawnIntervalMs: ParamSpec = {
-  name: "spawn_interval_ms",
-  labelKey: "param.spawnIntervalMs",
-  min: 1500,
-  max: 6000,
-  step: 250,
-  default: 3500,
-  unit: "ms",
-  harder: "lower",
-};
 const restMs: ParamSpec = {
   name: "rest_ms",
   labelKey: "param.restMs",
@@ -109,31 +90,7 @@ function notImplemented(id: GameId): (context: GameContext) => GameInstance {
 export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
   reach_activate: reachActivate,
   balloon_pop: balloonPop,
-  fruit_catch: {
-    id: "fruit_catch",
-    nameKey: "game.fruit_catch.name",
-    descriptionKey: "game.fruit_catch.description",
-    movementKey: "game.fruit_catch.movement",
-    icon: Apple,
-    params: [
-      speedSwS,
-      spawnIntervalMs,
-      {
-        name: "basket_width_sw",
-        labelKey: "param.basketWidthSw",
-        min: 0.3,
-        max: 1.0,
-        step: 0.05,
-        default: 0.6,
-        unit: "sw",
-        harder: "lower",
-      },
-    ],
-    trialsDefault: 20,
-    estimatedMinutes: 5,
-    create: notImplemented("fruit_catch"),
-    implemented: false,
-  },
+  fruit_catch: fruitCatch,
   bloom: {
     id: "bloom",
     nameKey: "game.bloom.name",

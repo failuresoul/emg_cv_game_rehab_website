@@ -75,6 +75,7 @@ function setUp(params: GameParams = PARAMS) {
       countdown: () => {},
       tick: () => {},
       success: () => {},
+      plop: () => {},
       finish: () => {},
     },
     params: { engine: "L0", next },

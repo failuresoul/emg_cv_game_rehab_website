@@ -57,7 +57,7 @@ export function createBalloonPopGame(context: GameContext): GameInstance {
   });
 
   function spawn(no: number, at: number): void {
-    const params = context.params.next();
+    const params = context.params.next(no);
     const settings = readParams(params);
     const recorder = new TrajectoryRecorder();
     recorder.start(at);

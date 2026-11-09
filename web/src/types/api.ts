@@ -311,6 +311,14 @@ export interface TrialMetrics {
   activation_peak: number | null;
   /** The highest the affected arm was raised during the trial, in degrees; for raising games. */
   peak_arm_elevation_deg?: number | null;
+  /** Side-to-side games: how far the hand had to move at the start, along x. */
+  lateral_distance_sw?: number | null;
+  /** Side-to-side games: straight sideways distance over sideways path length, 0–1. */
+  lateral_path_efficiency?: number | null;
+  /** Side-to-side games: how far the hand went past the target before coming back. */
+  overshoot_sw?: number | null;
+  /** Side-to-side games: towards the outside or across the body. */
+  side?: "out" | "across" | null;
 }
 
 export interface TrialCompensation {

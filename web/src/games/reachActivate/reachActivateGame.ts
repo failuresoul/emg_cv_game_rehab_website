@@ -44,7 +44,7 @@ export function createReachActivateGame(context: GameContext): GameInstance {
   });
 
   function spawn(no: number, at: number): void {
-    const params = context.params.next();
+    const params = context.params.next(no);
     const settings = readParams(params);
     const target = placeTarget({
       directionDeg: settings.directionDeg,

@@ -309,7 +309,7 @@ const GamePlay = memo(function GamePlay({
       audio: gameAudio,
       params: {
         engine: provider.engine,
-        next: () => provider.nextParams(definition.id, logger.history),
+        next: (trialNo?: number) => provider.nextParams(definition.id, logger.history, trialNo),
       },
       logger,
       compensation: monitor,

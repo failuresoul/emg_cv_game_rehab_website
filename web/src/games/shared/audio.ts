@@ -1,4 +1,4 @@
-import { playBeep, playChime, playStar, playTick, prepareAudio } from "@/lib/beep";
+import { playBeep, playChime, playPlop, playStar, playTick, prepareAudio } from "@/lib/beep";
 
 /** The warm-up's soft sounds, for games. Each does nothing when sound is unavailable or muted. */
 export interface GameAudio {
@@ -10,6 +10,8 @@ export interface GameAudio {
   tick(): void;
   /** A trial done well; the note climbs with `step`. */
   success(step?: number): void;
+  /** Something missed landing softly, never a harsh "wrong" sound. */
+  plop(): void;
   /** The end of a game. */
   finish(): void;
 }
@@ -19,5 +21,6 @@ export const gameAudio: GameAudio = {
   countdown: playBeep,
   tick: playTick,
   success: (step = 0) => playStar(step),
+  plop: playPlop,
   finish: playChime,
 };

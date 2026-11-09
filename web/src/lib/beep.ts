@@ -61,6 +61,14 @@ export function playTick(): void {
   playTone(TICK_HZ, TICK_SECONDS);
 }
 
+const PLOP_HZ = 196;
+const PLOP_SECONDS = 0.12;
+
+/** A soft, low "plop", for something landing gently on the ground. */
+export function playPlop(): void {
+  playTone(PLOP_HZ, PLOP_SECONDS);
+}
+
 /** A gentle rising chime at the end of an exercise. */
 export function playChime(): void {
   CHIME_NOTES_HZ.forEach((hz, index) => {

@@ -8,6 +8,7 @@ import {
   BALLOON_HEIGHT_FRACS,
   DIRECTIONS_DEG,
   FixedProvider,
+  FRUIT_TARGET_FRACS,
 } from "./paramsProvider";
 
 const specsFor = (id: keyof typeof GAMES) => GAMES[id].params;
@@ -141,5 +142,37 @@ describe("FixedProvider for balloon_pop", () => {
     const first = provider.nextParams("reach_activate", []);
     provider.nextParams("balloon_pop", []);
     expect(provider.nextParams("reach_activate", []).direction_index).toBe(first.direction_index);
+  });
+});
+
+describe("FixedProvider for fruit_catch", () => {
+  const fruit = (provider: FixedProvider, trialNo: number) =>
+    provider.nextParams("fruit_catch", [], trialNo);
+
+  it("alternates out and across, starting outward", () => {
+    const provider = new FixedProvider({ specsFor, seed: 3 });
+    const sides = Array.from({ length: 8 }, (_, i) => fruit(provider, i + 1).target_side);
+    expect(sides).toEqual([1, -1, 1, -1, 1, -1, 1, -1]);
+  });
+
+  it("uses each side's three distances in every three fruits on that side", () => {
+    const provider = new FixedProvider({ specsFor, seed: 8 });
+    const trials = Array.from({ length: 12 }, (_, i) => fruit(provider, i + 1));
+    for (const side of [1, -1]) {
+      const fracs = trials
+        .filter((params) => params.target_side === side)
+        .map((p) => p.target_frac);
+      expect(fracs.slice(0, 3).sort()).toEqual([...FRUIT_TARGET_FRACS]);
+      expect(fracs.slice(3, 6).sort()).toEqual([...FRUIT_TARGET_FRACS]);
+    }
+  });
+
+  it("gives a trial the same settings whenever it is asked, so overlapping fruit differ", () => {
+    const provider = new FixedProvider({ specsFor, seed: 2 });
+    // Fruit 2 is asked for before fruit 1 is logged: the history is still empty.
+    const first = fruit(provider, 1);
+    const second = fruit(provider, 2);
+    expect(second.target_side).toBe(-first.target_side);
+    expect(fruit(provider, 2)).toEqual(second);
   });
 });

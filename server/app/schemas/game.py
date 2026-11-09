@@ -82,6 +82,14 @@ class TrialMetrics(BaseModel):
     activation_peak: Share | None = None
     #: The highest the affected arm was raised during the trial, from the body (0 is down).
     peak_arm_elevation_deg: Annotated[float, Field(ge=0, le=180)] | None = None
+    #: Side-to-side games: how far the hand had to move at the start, along x.
+    lateral_distance_sw: NonNegative | None = None
+    #: Side-to-side games: straight sideways distance over sideways path length, 0–1.
+    lateral_path_efficiency: Share | None = None
+    #: Side-to-side games: how far the hand went past the target before coming back.
+    overshoot_sw: NonNegative | None = None
+    #: Side-to-side games: "out" away from the body, "across" towards the other side.
+    side: Literal["out", "across"] | None = None
 
 
 class TrialCompensation(BaseModel):
