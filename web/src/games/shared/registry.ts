@@ -1,0 +1,355 @@
+import {
+  Apple,
+  Flower2,
+  Grab,
+  Hand,
+  Paintbrush,
+  PartyPopper,
+  Piano,
+  Spline,
+  Target,
+} from "lucide-react";
+
+import type { GameId } from "@/types/api";
+
+import { createShellCheckGame } from "./shellCheckGame";
+import type { GameContext, GameDefinition, GameInstance, ParamSpec } from "./types";
+
+export const GAME_IDS: readonly GameId[] = [
+  "reach_activate",
+  "balloon_pop",
+  "fruit_catch",
+  "bloom",
+  "finger_piano",
+  "path_trace",
+  "paint_wall",
+  "pick_place",
+  "grip_hold",
+];
+
+// Settings shared by several games, so each has one name and one label everywhere.
+const demand: ParamSpec = {
+  name: "demand",
+  labelKey: "param.demand",
+  min: 0.2,
+  max: 0.9,
+  step: 0.05,
+  default: 0.5,
+  unit: "level",
+  harder: "higher",
+};
+const holdMs: ParamSpec = {
+  name: "hold_ms",
+  labelKey: "param.holdMs",
+  min: 100,
+  max: 3000,
+  step: 50,
+  default: 400,
+  unit: "ms",
+  harder: "higher",
+};
+const activationWindowMs: ParamSpec = {
+  name: "activation_window_ms",
+  labelKey: "param.activationWindowMs",
+  min: 1500,
+  max: 8000,
+  step: 250,
+  default: 4000,
+  unit: "ms",
+  harder: "lower",
+};
+const distanceFrac: ParamSpec = {
+  name: "distance_frac",
+  labelKey: "param.distanceFrac",
+  min: 0.3,
+  max: 1.0,
+  step: 0.05,
+  default: 0.7,
+  unit: "share",
+  harder: "higher",
+};
+const targetRadiusSw: ParamSpec = {
+  name: "target_radius_sw",
+  labelKey: "param.targetRadiusSw",
+  min: 0.12,
+  max: 0.4,
+  step: 0.01,
+  default: 0.25,
+  unit: "sw",
+  harder: "lower",
+};
+const dwellMs: ParamSpec = {
+  name: "dwell_ms",
+  labelKey: "param.dwellMs",
+  min: 200,
+  max: 1500,
+  step: 50,
+  default: 500,
+  unit: "ms",
+  harder: "higher",
+};
+const reachTimeoutMs: ParamSpec = {
+  name: "reach_timeout_ms",
+  labelKey: "param.reachTimeoutMs",
+  min: 3000,
+  max: 15000,
+  step: 500,
+  default: 8000,
+  unit: "ms",
+  harder: "lower",
+};
+const speedSwS: ParamSpec = {
+  name: "speed_sw_s",
+  labelKey: "param.speedSwS",
+  min: 0.1,
+  max: 0.8,
+  step: 0.05,
+  default: 0.25,
+  unit: "sw_per_s",
+  harder: "higher",
+};
+const spawnIntervalMs: ParamSpec = {
+  name: "spawn_interval_ms",
+  labelKey: "param.spawnIntervalMs",
+  min: 1500,
+  max: 6000,
+  step: 250,
+  default: 3500,
+  unit: "ms",
+  harder: "lower",
+};
+const restMs: ParamSpec = {
+  name: "rest_ms",
+  labelKey: "param.restMs",
+  min: 1000,
+  max: 8000,
+  step: 500,
+  default: 3000,
+  unit: "ms",
+  harder: "lower",
+};
+
+function notImplemented(id: GameId): (context: GameContext) => GameInstance {
+  return () => {
+    throw new Error(`The game "${id}" is not built yet`);
+  };
+}
+
+export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
+  reach_activate: {
+    id: "reach_activate",
+    nameKey: "game.reach_activate.name",
+    descriptionKey: "game.reach_activate.description",
+    movementKey: "game.reach_activate.movement",
+    icon: Target,
+    params: [
+      distanceFrac,
+      targetRadiusSw,
+      dwellMs,
+      reachTimeoutMs,
+      demand,
+      holdMs,
+      activationWindowMs,
+    ],
+    trialsDefault: 16,
+    // A stand-in that exercises the shell until the full game replaces it.
+    create: createShellCheckGame,
+    implemented: true,
+  },
+  balloon_pop: {
+    id: "balloon_pop",
+    nameKey: "game.balloon_pop.name",
+    descriptionKey: "game.balloon_pop.description",
+    movementKey: "game.balloon_pop.movement",
+    icon: PartyPopper,
+    params: [
+      { ...targetRadiusSw, name: "balloon_radius_sw", labelKey: "param.balloonRadiusSw" },
+      speedSwS,
+      spawnIntervalMs,
+      demand,
+      { ...holdMs, default: 300 },
+    ],
+    trialsDefault: 20,
+    create: notImplemented("balloon_pop"),
+    implemented: false,
+  },
+  fruit_catch: {
+    id: "fruit_catch",
+    nameKey: "game.fruit_catch.name",
+    descriptionKey: "game.fruit_catch.description",
+    movementKey: "game.fruit_catch.movement",
+    icon: Apple,
+    params: [
+      speedSwS,
+      spawnIntervalMs,
+      {
+        name: "basket_width_sw",
+        labelKey: "param.basketWidthSw",
+        min: 0.3,
+        max: 1.0,
+        step: 0.05,
+        default: 0.6,
+        unit: "sw",
+        harder: "lower",
+      },
+    ],
+    trialsDefault: 20,
+    create: notImplemented("fruit_catch"),
+    implemented: false,
+  },
+  bloom: {
+    id: "bloom",
+    nameKey: "game.bloom.name",
+    descriptionKey: "game.bloom.description",
+    movementKey: "game.bloom.movement",
+    icon: Flower2,
+    params: [demand, { ...holdMs, default: 1500 }, restMs],
+    trialsDefault: 10,
+    create: notImplemented("bloom"),
+    implemented: false,
+  },
+  finger_piano: {
+    id: "finger_piano",
+    nameKey: "game.finger_piano.name",
+    descriptionKey: "game.finger_piano.description",
+    movementKey: "game.finger_piano.movement",
+    icon: Piano,
+    params: [
+      {
+        name: "finger_count",
+        labelKey: "param.fingerCount",
+        min: 2,
+        max: 4,
+        step: 1,
+        default: 2,
+        unit: "count",
+        harder: "higher",
+      },
+      {
+        name: "tempo_bpm",
+        labelKey: "param.tempoBpm",
+        min: 20,
+        max: 60,
+        step: 5,
+        default: 30,
+        unit: "bpm",
+        harder: "higher",
+      },
+      {
+        name: "touch_threshold",
+        labelKey: "param.touchThreshold",
+        min: 0.2,
+        max: 0.5,
+        step: 0.02,
+        default: 0.35,
+        unit: "share",
+        harder: "lower",
+      },
+    ],
+    trialsDefault: 16,
+    create: notImplemented("finger_piano"),
+    implemented: false,
+  },
+  path_trace: {
+    id: "path_trace",
+    nameKey: "game.path_trace.name",
+    descriptionKey: "game.path_trace.description",
+    movementKey: "game.path_trace.movement",
+    icon: Spline,
+    params: [
+      {
+        name: "path_width_sw",
+        labelKey: "param.pathWidthSw",
+        min: 0.1,
+        max: 0.5,
+        step: 0.02,
+        default: 0.3,
+        unit: "sw",
+        harder: "lower",
+      },
+      distanceFrac,
+      { ...reachTimeoutMs, name: "time_limit_ms", labelKey: "param.timeLimitMs", default: 12000 },
+    ],
+    trialsDefault: 8,
+    create: notImplemented("path_trace"),
+    implemented: false,
+  },
+  paint_wall: {
+    id: "paint_wall",
+    nameKey: "game.paint_wall.name",
+    descriptionKey: "game.paint_wall.description",
+    movementKey: "game.paint_wall.movement",
+    icon: Paintbrush,
+    params: [
+      {
+        name: "brush_radius_sw",
+        labelKey: "param.brushRadiusSw",
+        min: 0.08,
+        max: 0.3,
+        step: 0.01,
+        default: 0.18,
+        unit: "sw",
+        harder: "lower",
+      },
+      {
+        name: "coverage_goal",
+        labelKey: "param.coverageGoal",
+        min: 0.4,
+        max: 0.95,
+        step: 0.05,
+        default: 0.7,
+        unit: "share",
+        harder: "higher",
+      },
+      {
+        ...reachTimeoutMs,
+        name: "time_limit_ms",
+        labelKey: "param.timeLimitMs",
+        min: 20000,
+        max: 90000,
+        step: 5000,
+        default: 45000,
+      },
+    ],
+    trialsDefault: 3,
+    create: notImplemented("paint_wall"),
+    implemented: false,
+  },
+  pick_place: {
+    id: "pick_place",
+    nameKey: "game.pick_place.name",
+    descriptionKey: "game.pick_place.description",
+    movementKey: "game.pick_place.movement",
+    icon: Grab,
+    params: [
+      distanceFrac,
+      { ...targetRadiusSw, name: "object_radius_sw", labelKey: "param.objectRadiusSw" },
+      { ...targetRadiusSw, name: "place_radius_sw", labelKey: "param.placeRadiusSw", default: 0.3 },
+      demand,
+      reachTimeoutMs,
+    ],
+    trialsDefault: 12,
+    create: notImplemented("pick_place"),
+    implemented: false,
+  },
+  grip_hold: {
+    id: "grip_hold",
+    nameKey: "game.grip_hold.name",
+    descriptionKey: "game.grip_hold.description",
+    movementKey: "game.grip_hold.movement",
+    icon: Hand,
+    params: [demand, { ...holdMs, default: 2000, max: 10000, step: 250 }, restMs],
+    trialsDefault: 8,
+    create: notImplemented("grip_hold"),
+    implemented: false,
+  },
+};
+
+export function isGameId(value: string | undefined): value is GameId {
+  return value !== undefined && (GAME_IDS as readonly string[]).includes(value);
+}
+
+/** Every setting at its default. */
+export function defaultParams(specs: readonly ParamSpec[]): Record<string, number> {
+  return Object.fromEntries(specs.map((spec) => [spec.name, spec.default]));
+}

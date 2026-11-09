@@ -143,6 +143,8 @@ export interface LastSession {
   status: SessionStatus;
   duration_seconds: number | null;
   warmup_summary?: WarmupSummary | null;
+  /** Finished game runs, in the order they were played. */
+  games?: LastSessionGame[];
 }
 
 export type WarmupExerciseId =
@@ -247,4 +249,114 @@ export interface PatientDashboard {
   latest_calibration: LatestCalibration | null;
   last_warmup: LastWarmup | null;
   streak_days: number;
+}
+
+export type GameId =
+  | "reach_activate"
+  | "balloon_pop"
+  | "fruit_catch"
+  | "bloom"
+  | "finger_piano"
+  | "path_trace"
+  | "paint_wall"
+  | "pick_place"
+  | "grip_hold";
+export type GameEngine = "L0" | "L1" | "L2";
+export type InputSource = "cv_grip" | "keyboard" | "emg";
+export type GameRunStatus = "active" | "completed" | "aborted";
+export type TrialOutcome = "success" | "reach_fail" | "activation_fail" | "aborted";
+/** [t_ms relative to spawn, x_sw, y_sw]: the raw fingertip in the body frame. */
+export type TrajectoryPoint = [number, number, number];
+
+export interface GameRunStart {
+  game_id: GameId;
+  engine: GameEngine;
+  input_source: InputSource;
+  params_initial: Record<string, number>;
+  trials_planned: number;
+}
+
+export interface TrialTarget {
+  x_sw: number;
+  y_sw: number;
+  radius_sw: number;
+  direction_deg: number;
+  distance_frac: number;
+  /** Direction and ring, for example "D3R2". */
+  sector: string;
+}
+
+/** Milliseconds relative to spawn; null when the trial never reached that moment. */
+export interface TrialTimings {
+  spawn: number;
+  move_onset: number | null;
+  enter: number | null;
+  dwell_done: number | null;
+  activation_start: number | null;
+  activation_done: number | null;
+  end: number | null;
+}
+
+export interface TrialMetrics {
+  reaction_ms: number | null;
+  movement_ms: number | null;
+  path_length_sw: number | null;
+  straight_dist_sw: number | null;
+  path_efficiency: number | null;
+  peak_speed_sw_s: number | null;
+  activation_latency_ms: number | null;
+  activation_peak: number | null;
+}
+
+export interface TrialCompensation {
+  flagged: boolean;
+  type: string | null;
+  max_values: Record<string, number>;
+}
+
+export interface TrialCreate {
+  trial_no: number;
+  params: Record<string, number>;
+  target: TrialTarget | null;
+  outcome: TrialOutcome;
+  timings: TrialTimings;
+  metrics: TrialMetrics;
+  compensation: TrialCompensation;
+  trajectory: TrajectoryPoint[];
+}
+
+export interface GameSummary {
+  successes: number;
+  success_rate: number;
+  mean_movement_ms: number | null;
+  mean_path_efficiency: number | null;
+  compensated_trials: number;
+}
+
+export interface GameRunEnd {
+  status: "completed" | "aborted";
+  score: number;
+  summary: GameSummary | null;
+}
+
+export interface GameRun {
+  id: number;
+  session_id: number;
+  game_id: GameId;
+  engine: GameEngine;
+  input_source: InputSource;
+  params_initial: Record<string, number>;
+  started_at: string;
+  ended_at: string | null;
+  status: GameRunStatus;
+  trials_planned: number;
+  trials_done: number;
+  score: number | null;
+  summary: GameSummary | null;
+}
+
+export interface LastSessionGame {
+  game_id: GameId;
+  score: number | null;
+  success_rate: number | null;
 }

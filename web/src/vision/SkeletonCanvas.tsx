@@ -37,7 +37,7 @@ const TRUNK_CONNECTIONS: [number, number][] = [
   [POSE.LEFT_HIP, POSE.RIGHT_HIP],
 ];
 
-const POSE_CONNECTIONS: [number, number][] = [
+export const POSE_CONNECTIONS: [number, number][] = [
   [POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER],
   [POSE.LEFT_SHOULDER, POSE.LEFT_HIP],
   [POSE.RIGHT_SHOULDER, POSE.RIGHT_HIP],
