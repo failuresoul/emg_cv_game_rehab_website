@@ -56,6 +56,10 @@ This document lists every API route the server provides today, plus the routes r
 | POST   | `/api/games/{run_id}/end`            | `patient` | End a game run with its score   |
 | GET    | `/api/admin/sessions`                | `admin`   | Recent sessions of every patient |
 | GET    | `/api/admin/sessions/{id}`           | `admin`   | One session with every trial    |
+| POST   | `/api/sessions/{id}/questionnaire`   | `patient` | Save the cool-down questionnaire |
+| GET    | `/api/sessions/{id}/questionnaire`   | `patient` | Get the cool-down questionnaire |
+| GET    | `/api/admin/alerts`                  | `admin`   | Sessions with safety flags      |
+| POST   | `/api/admin/alerts/{session_id}/review` | `admin` | Mark an alert as reviewed      |
 
 ## Errors
 
@@ -302,7 +306,7 @@ Response `200`:
 }
 ```
 
-`sessions_today` counts sessions started since midnight UTC. `open_alerts` is always `0` for now.
+`sessions_today` counts sessions started since midnight UTC. `open_alerts` counts sessions with `needs_review` set that nobody has reviewed yet (see [Cool-down questionnaire and safety alerts](#cool-down-questionnaire-and-safety-alerts)).
 
 ### GET /api/admin/patients/{id}/sessions
 
@@ -804,8 +808,104 @@ Response `200`: everything recorded in one session: the session fields as in `GE
 | `calibration` | The calibration object, or `null` |
 | `warmup_results` | Every warm-up result, as in `GET /api/sessions/{id}/warmup` |
 | `games` | Every game run in the order started, each with `trials`: every trial in `trial_no` order, with its trajectory, `id`, `game_run_id` and `created_at` |
+| `feedback` | The cool-down questionnaire, as in `GET /api/sessions/{id}/questionnaire`, or `null` |
+| `flags`, `needs_review` | The safety flags the questionnaire raised, and whether any did |
+| `reviewed_at`, `review_note` | When an admin reviewed the alert and their note, or `null` |
 
 Errors: `404`.
+
+## Cool-down questionnaire and safety alerts
+
+After the games, the patient answers a short questionnaire. It is stored as `SessionFeedback`, one per session. The LLM feedback module reads these field names, so they must not change.
+
+The answers can raise safety flags on the session. The rules live in `server/app/services/safety.py`, and their thresholds are still to be confirmed with the supervisor:
+
+| Flag | Raised when |
+| --- | --- |
+| `pain` | `pain_0_10` is 4 or more |
+| `new_symptoms` | `new_symptoms` is `true` |
+| `high_fatigue` | `fatigue_0_10` is 8 or more |
+
+Flags are listed in that order. Any flag sets the session's `needs_review` to `true`. A flag asks a therapist to look at the session; it is not a diagnosis.
+
+### POST /api/sessions/{id}/questionnaire
+
+Role: `patient`, own session only. Allowed whatever the session's status.
+
+Request:
+
+```json
+{
+  "pain_0_10": 2,
+  "fatigue_0_10": 5,
+  "enjoyment_1_5": 4,
+  "difficulty": "just_right",
+  "new_symptoms": false,
+  "comment": "Felt good today"
+}
+```
+
+- `pain_0_10` and `fatigue_0_10` are whole numbers from 0 to 10, and `enjoyment_1_5` from 1 to 5. Strings and decimals are rejected.
+- `difficulty` is `too_easy`, `just_right` or `too_hard`.
+- `new_symptoms` is `true` or `false`.
+- `comment` is optional, at most 300 characters. It is trimmed, and a blank comment is saved as `null`.
+
+Response `201`:
+
+```json
+{
+  "id": 1,
+  "session_id": 12,
+  "pain_0_10": 2,
+  "fatigue_0_10": 5,
+  "enjoyment_1_5": 4,
+  "difficulty": "just_right",
+  "new_symptoms": false,
+  "comment": "Felt good today",
+  "created_at": "2026-11-10T10:30:00Z",
+  "flags": [],
+  "needs_review": false
+}
+```
+
+Errors: `404` for a missing or another patient's session, `409` (`Questionnaire already submitted`) when the session already has one, `422` for invalid answers.
+
+### GET /api/sessions/{id}/questionnaire
+
+Role: `patient`, own session only.
+
+Response `200`: as for the POST. Errors: `404` for a missing or another patient's session, or when the questionnaire was not submitted (`Questionnaire not submitted`).
+
+### GET /api/admin/alerts
+
+Role: `admin`. Query: `reviewed` (optional) — `false` for open alerts only, `true` for reviewed ones only; leave it out for both.
+
+Response `200`: sessions with `needs_review`, newest first.
+
+```json
+[
+  {
+    "session_id": 12,
+    "patient_id": 3,
+    "patient_code": "P003",
+    "date": "2026-11-10T10:00:00Z",
+    "flags": ["pain", "high_fatigue"],
+    "reviewed": false,
+    "reviewed_at": null,
+    "review_note": null
+  }
+]
+```
+
+`date` is when the session started.
+
+### POST /api/admin/alerts/{session_id}/review
+
+Role: `admin`. The body is optional: `{ "note": "Called the patient" }`. The note is trimmed, at most 500 characters, and a blank note is saved as `null`.
+
+Response `200`: the alert, as in `GET /api/admin/alerts`, with `reviewed` set to `true`.
+
+Errors: `404` (`Alert not found`) for a missing session or one without `needs_review`, `409` (`Alert already reviewed`), `422` for a note that is too long.
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

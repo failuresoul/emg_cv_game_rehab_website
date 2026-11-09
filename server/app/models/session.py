@@ -15,6 +15,11 @@ class Session(SQLModel, table=True):
     status: str = "active"  # "active" | "completed" | "aborted"
     device_info: dict[str, Any] | None = Field(default=None, sa_type=JSON)
     notes: str | None = None
+    # Safety flags from the cool-down questionnaire; see app/services/safety.py.
+    flags: list[str] = Field(default_factory=list, sa_type=JSON)
+    needs_review: bool = False
+    reviewed_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
+    review_note: str | None = None
 
 
 class Calibration(SQLModel, table=True):

@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.common import Side, UtcDatetime
 from app.schemas.game import GameRunDetail, LastSessionGame
+from app.schemas.session_feedback import SafetyFlag, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultRead, WarmupSummary
 
 SessionStatus = Literal["active", "completed", "aborted"]
@@ -141,6 +142,12 @@ class AdminSessionDetail(SessionRead):
     calibration: CalibrationRead | None
     warmup_results: list[WarmupResultRead]
     games: list[GameRunDetail]
+    #: The cool-down questionnaire, or null if it was not submitted.
+    feedback: SessionFeedbackRead | None = None
+    flags: list[SafetyFlag] = Field(default_factory=list)
+    needs_review: bool = False
+    reviewed_at: UtcDatetime | None = None
+    review_note: str | None = None
 
 
 class AdminRecentSession(BaseModel):

@@ -12,8 +12,9 @@ from app.schemas.session import (
     SessionRead,
     SessionStart,
 )
+from app.schemas.session_feedback import SessionFeedbackCreate, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultCreate, WarmupResultRead
-from app.services import sessions, warmup
+from app.services import session_feedback, sessions, warmup
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -131,3 +132,32 @@ def get_warmup(
         WarmupResultRead.model_validate(result)
         for result in warmup.list_session_results(session, record.id)
     ]
+
+
+@router.post("/{session_id}/questionnaire", status_code=status.HTTP_201_CREATED)
+def save_questionnaire(
+    session_id: int, payload: SessionFeedbackCreate, session: SessionDep, patient: CurrentPatient
+) -> SessionFeedbackRead:
+    """Saves the cool-down questionnaire once, and returns the safety flags it raised."""
+    record = _get_own_session_or_404(session, patient, session_id)
+    try:
+        feedback = session_feedback.save_feedback(session, record, payload)
+    except session_feedback.DuplicateFeedbackError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Questionnaire already submitted"
+        ) from None
+    return session_feedback.to_read(feedback, record)
+
+
+@router.get("/{session_id}/questionnaire")
+def get_questionnaire(
+    session_id: int, session: SessionDep, patient: CurrentPatient
+) -> SessionFeedbackRead:
+    record = _get_own_session_or_404(session, patient, session_id)
+    assert record.id is not None
+    feedback = session_feedback.get_feedback(session, record.id)
+    if feedback is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Questionnaire not submitted"
+        )
+    return session_feedback.to_read(feedback, record)

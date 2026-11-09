@@ -12,8 +12,9 @@ from app.schemas.session import (
     AdminSessionDetail,
     SessionSummary,
 )
+from app.schemas.session_feedback import AdminAlert, AlertReview
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
-from app.services import games, patients, sessions, warmup
+from app.services import games, patients, session_feedback, sessions, warmup
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -108,6 +109,30 @@ def get_session_detail(session_id: int, session: SessionDep) -> AdminSessionDeta
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     return games.get_admin_session_detail(session, record)
+
+
+@router.get("/alerts")
+def list_alerts(session: SessionDep, reviewed: bool | None = None) -> list[AdminAlert]:
+    """Sessions whose questionnaire raised a safety flag, newest first."""
+    return session_feedback.list_alerts(session, reviewed)
+
+
+@router.post("/alerts/{session_id}/review")
+def review_alert(
+    session_id: int, session: SessionDep, payload: AlertReview | None = None
+) -> AdminAlert:
+    try:
+        return session_feedback.review_alert(
+            session, session_id, payload.note if payload else None
+        )
+    except session_feedback.AlertNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found"
+        ) from None
+    except session_feedback.AlreadyReviewedError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Alert already reviewed"
+        ) from None
 
 
 @router.get("/stats")

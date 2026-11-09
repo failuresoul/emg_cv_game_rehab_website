@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { api } from "@/lib/api";
 import type {
+  AdminAlert,
   AdminCalibration,
   AdminRecentSession,
   AdminSessionDetail,
@@ -83,6 +84,30 @@ export function useAdminSession(id: string) {
   return useQuery({
     queryKey: [ADMIN_KEY, "session", id],
     queryFn: async () => (await api.get<AdminSessionDetail>(`/admin/sessions/${id}`)).data,
+  });
+}
+
+/** Sessions whose questionnaire raised a safety flag, newest first. */
+export function useAlerts(reviewed?: boolean) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "alerts", reviewed ?? "all"],
+    queryFn: async () => {
+      const params = reviewed === undefined ? undefined : { reviewed };
+      return (await api.get<AdminAlert[]>("/admin/alerts", { params })).data;
+    },
+  });
+}
+
+/** Refreshes the alerts, the open-alerts count and the session page, even after a failure:
+ * another admin may have reviewed the alert first. */
+export function useReviewAlert() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: async ({ sessionId, note }: { sessionId: number; note: string }) => {
+      const body = { note: note.trim() === "" ? null : note.trim() };
+      return (await api.post<AdminAlert>(`/admin/alerts/${sessionId}/review`, body)).data;
+    },
+    onSettled: invalidate,
   });
 }
 

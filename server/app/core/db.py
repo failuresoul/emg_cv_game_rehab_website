@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from pathlib import Path
 
-from sqlalchemy import URL, Engine, make_url
+from sqlalchemy import URL, Engine, inspect, make_url, text
 from sqlmodel import Session, SQLModel, create_engine
 
 from app import models  # noqa: F401  (registers the tables on SQLModel.metadata)
@@ -28,8 +28,36 @@ def _create_engine(database_url: str) -> Engine:
 engine = _create_engine(settings.DATABASE_URL)
 
 
-def create_db_and_tables() -> None:
-    SQLModel.metadata.create_all(engine)
+# Columns added after their table was first created. create_all() makes new tables but never
+# changes existing ones, so a database from an earlier day gets these with ALTER TABLE.
+ADDED_COLUMNS: dict[str, dict[str, str]] = {
+    "session": {
+        "flags": "JSON NOT NULL DEFAULT '[]'",
+        "needs_review": "BOOLEAN NOT NULL DEFAULT 0",
+        "reviewed_at": "DATETIME",
+        "review_note": "VARCHAR",
+    },
+}
+
+
+def add_missing_columns(target: Engine) -> None:
+    inspector = inspect(target)
+    tables = set(inspector.get_table_names())
+    with target.begin() as connection:
+        for table, columns in ADDED_COLUMNS.items():
+            if table not in tables:
+                continue
+            existing = {column["name"] for column in inspector.get_columns(table)}
+            for name, definition in columns.items():
+                if name not in existing:
+                    statement = f'ALTER TABLE "{table}" ADD COLUMN {name} {definition}'
+                    connection.execute(text(statement))
+
+
+def create_db_and_tables(target: Engine | None = None) -> None:
+    target = target or engine
+    SQLModel.metadata.create_all(target)
+    add_missing_columns(target)
 
 
 def get_session() -> Generator[Session, None, None]:

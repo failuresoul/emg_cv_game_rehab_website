@@ -24,7 +24,7 @@ from app.schemas.session import (
     SessionRead,
 )
 from app.schemas.warmup import WarmupResultRead
-from app.services import warmup
+from app.services import session_feedback, warmup
 from app.services.game_summary import finished_games_for_sessions
 from app.services.sessions import SessionEndedError, abort_active_runs, duration_seconds
 
@@ -171,6 +171,7 @@ def get_admin_session_detail(session: Session, record: SessionRecord) -> AdminSe
         select(Calibration).where(Calibration.session_id == record.id)
     ).first()
     runs = list_session_runs(session, record.id)
+    feedback = session_feedback.get_feedback(session, record.id)
     trials_by_run: dict[int, list[TrialRead]] = defaultdict(list)
     if runs:
         statement = (
@@ -197,4 +198,9 @@ def get_admin_session_detail(session: Session, record: SessionRecord) -> AdminSe
             )
             for run in runs
         ],
+        feedback=session_feedback.to_read(feedback, record) if feedback else None,
+        flags=record.flags or [],
+        needs_review=record.needs_review,
+        reviewed_at=record.reviewed_at,
+        review_note=record.review_note,
     )

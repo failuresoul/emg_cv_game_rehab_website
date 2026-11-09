@@ -394,6 +394,12 @@ export interface AdminSessionDetail extends SessionRecord {
   calibration: Calibration | null;
   warmup_results: WarmupResult[];
   games: GameRunDetail[];
+  /** The cool-down questionnaire, or null if it was not submitted. */
+  feedback: SessionFeedback | null;
+  flags: SafetyFlag[];
+  needs_review: boolean;
+  reviewed_at: string | null;
+  review_note: string | null;
 }
 
 export interface AdminRecentSession {
@@ -405,4 +411,38 @@ export interface AdminRecentSession {
   status: SessionStatus;
   duration_seconds: number | null;
   games: LastSessionGame[];
+}
+
+export type Difficulty = "too_easy" | "just_right" | "too_hard";
+export type SafetyFlag = "pain" | "new_symptoms" | "high_fatigue";
+
+/** The cool-down questionnaire as sent. The LLM feedback module reads these field names. */
+export interface SessionFeedbackCreate {
+  pain_0_10: number;
+  fatigue_0_10: number;
+  enjoyment_1_5: number;
+  difficulty: Difficulty;
+  new_symptoms: boolean;
+  comment: string | null;
+}
+
+/** The saved questionnaire, with the safety flags it raised. */
+export interface SessionFeedback extends SessionFeedbackCreate {
+  id: number;
+  session_id: number;
+  created_at: string;
+  flags: SafetyFlag[];
+  needs_review: boolean;
+}
+
+/** A session whose questionnaire raised a safety flag. */
+export interface AdminAlert {
+  session_id: number;
+  patient_id: number;
+  patient_code: string;
+  date: string;
+  flags: SafetyFlag[];
+  reviewed: boolean;
+  reviewed_at: string | null;
+  review_note: string | null;
 }

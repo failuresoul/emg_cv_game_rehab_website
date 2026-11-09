@@ -11,6 +11,7 @@ import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAdminSession } from "@/features/admin/hooks";
 import { GameRunCard } from "@/features/admin/session/GameRunCard";
+import { QuestionnaireCard } from "@/features/admin/session/QuestionnaireCard";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { t } from "@/i18n";
@@ -123,6 +124,7 @@ export function AdminSessionDetailPage() {
             <EmptyState icon={Target} title={t("history.noMap")} />
           )}
         </Card>
+        <QuestionnaireCard session={data} />
         <Card className="lg:col-span-3">
           <h2 className="mb-2 text-xl font-bold">{t("history.warmupTitle")}</h2>
           {warmup.length > 0 ? (
