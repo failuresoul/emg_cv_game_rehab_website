@@ -1,8 +1,17 @@
 import clsx from "clsx";
 import { CircleAlert, CircleCheck, X } from "lucide-react";
-import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { t } from "@/i18n";
+import { onApiError } from "@/lib/apiErrors";
 
 const AUTO_HIDE_MS = 4000;
 
@@ -34,6 +43,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     },
     [dismiss],
   );
+
+  // Failed requests anywhere in the app, reported by the query client.
+  useEffect(() => onApiError((key) => show("error", t(key))), [show]);
 
   return (
     <ToastContext.Provider value={show}>

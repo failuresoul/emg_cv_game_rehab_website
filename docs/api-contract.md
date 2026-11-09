@@ -46,6 +46,7 @@ This document lists every API route the server provides today, plus the routes r
 | POST   | `/api/sessions`                      | `patient` | Start or resume a session       |
 | GET    | `/api/sessions/current`              | `patient` | Get own active session          |
 | PATCH  | `/api/sessions/{id}/device-info`     | `patient` | Save browser, FPS and GPU/CPU   |
+| PATCH  | `/api/sessions/{id}/progress`        | `patient` | Save the current step and game queue |
 | POST   | `/api/sessions/{id}/end`             | `patient` | End own session                 |
 | POST   | `/api/sessions/{id}/calibration`     | `patient` | Save a calibration              |
 | POST   | `/api/sessions/{id}/warmup`          | `patient` | Save or replace warm-up results |
@@ -487,6 +488,23 @@ Request:
 Response `200`: the session.
 
 Errors: `404`, `422`.
+
+### PATCH /api/sessions/{id}/progress
+
+Saves where the patient is, so a refresh or a later return resumes at the same step. Every session object also has these two fields.
+
+```json
+{
+  "current_step": "game",
+  "game_queue": { "games": ["reach_activate", "balloon_pop"], "index": 1 }
+}
+```
+
+- `current_step`: `setup`, `calibrate`, `warmup`, `plan`, `game`, `cooldown` or `summary`. New sessions start at `setup`.
+- `game_queue`: today's games in order (1 to 20 known game ids) and `index`, the game being played. `index` equals the number of games once all are done. `null` until the plan is set.
+- Send either field or both; at least one is required. A field left out keeps its value.
+
+Response `200`: the session. Errors: `404` for a missing or another patient's session, `409` for an ended session, `422` for an unknown step or game, an index past the end, or an empty body.
 
 ### POST /api/sessions/{id}/end
 

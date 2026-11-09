@@ -75,6 +75,21 @@ const HAND_CONNECTIONS: [number, number][] = [
 // Mirrored, so moving your right hand moves the skeleton on the right, like a mirror.
 const toX = (landmark: Point) => (1 - landmark.x) * WIDTH;
 const toY = (landmark: Point) => landmark.y * HEIGHT;
+// The same from camera pixels, without making a point object every frame.
+const pixelToX = (x: number, frameWidth: number) => (1 - x / frameWidth) * WIDTH;
+const pixelToY = (y: number, frameHeight: number) => (y / frameHeight) * HEIGHT;
+
+// Made once, not every frame.
+const ARM_SEGMENTS: Record<Side, readonly (readonly [number, number])[]> = {
+  left: [
+    [POSE.LEFT_SHOULDER, POSE.LEFT_ELBOW],
+    [POSE.LEFT_ELBOW, POSE.LEFT_WRIST],
+  ],
+  right: [
+    [POSE.RIGHT_SHOULDER, POSE.RIGHT_ELBOW],
+    [POSE.RIGHT_ELBOW, POSE.RIGHT_WRIST],
+  ],
+};
 
 function drawLine(
   context: CanvasRenderingContext2D,
@@ -115,17 +130,10 @@ function drawArmHighlight(
   pose: NormalizedLandmark[],
   side: Side,
 ) {
-  const [shoulder, elbow, wrist] =
-    side === "left"
-      ? [POSE.LEFT_SHOULDER, POSE.LEFT_ELBOW, POSE.LEFT_WRIST]
-      : [POSE.RIGHT_SHOULDER, POSE.RIGHT_ELBOW, POSE.RIGHT_WRIST];
   context.strokeStyle = HIGHLIGHT_COLOR;
   context.lineWidth = HIGHLIGHT_LINE_WIDTH;
   context.lineCap = "round";
-  for (const [start, end] of [
-    [shoulder, elbow],
-    [elbow, wrist],
-  ]) {
+  for (const [start, end] of ARM_SEGMENTS[side]) {
     if (isLandmarkVisible(pose[start]) && isLandmarkVisible(pose[end])) {
       drawLine(context, pose[start], pose[end]);
     }
@@ -197,8 +205,8 @@ function drawStars(
 ) {
   points.forEach((point, index) => {
     const position = fromBodyFrame(point, frame);
-    const x = toX({ x: position.x / frameWidth, y: 0 });
-    const y = toY({ x: 0, y: position.y / frameHeight });
+    const x = pixelToX(position.x, frameWidth);
+    const y = pixelToY(position.y, frameHeight);
     const isLit = lit[index];
     drawStar(context, x, y, isLit ? STAR_LIT_RADIUS : STAR_RADIUS);
     if (isLit) {
@@ -223,8 +231,8 @@ function drawWrist(
   context.fillStyle = HAND_COLOR;
   context.beginPath();
   context.arc(
-    toX({ x: position.x / frameWidth, y: 0 }),
-    toY({ x: 0, y: position.y / frameHeight }),
+    pixelToX(position.x, frameWidth),
+    pixelToY(position.y, frameHeight),
     WRIST_RADIUS,
     0,
     Math.PI * 2,

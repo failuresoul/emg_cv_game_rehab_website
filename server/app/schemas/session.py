@@ -1,13 +1,15 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.common import Side, UtcDatetime
-from app.schemas.game import GameRunDetail, LastSessionGame
+from app.schemas.game import GameId, GameRunDetail, LastSessionGame
 from app.schemas.session_feedback import SafetyFlag, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultRead, WarmupSummary
 
 SessionStatus = Literal["active", "completed", "aborted"]
+SessionStep = Literal["setup", "calibrate", "warmup", "plan", "game", "cooldown", "summary"]
+MAX_QUEUED_GAMES = 20
 Point = tuple[float, float]
 ReachRadius = Annotated[float, Field(ge=0.2, le=3.0)]
 
@@ -36,6 +38,34 @@ class SessionEnd(BaseModel):
     status: Literal["completed", "aborted"]
 
 
+class GameQueueState(BaseModel):
+    """Today's games in order, and the one being played: index equals len(games) once done."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    games: list[GameId] = Field(min_length=1, max_length=MAX_QUEUED_GAMES)
+    index: int = Field(ge=0, strict=True)
+
+    @model_validator(mode="after")
+    def index_within_queue(self) -> Self:
+        if self.index > len(self.games):
+            raise ValueError("index must be at most the number of games")
+        return self
+
+
+class SessionProgressUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_step: SessionStep | None = None
+    game_queue: GameQueueState | None = None
+
+    @model_validator(mode="after")
+    def something_to_update(self) -> Self:
+        if self.current_step is None and self.game_queue is None:
+            raise ValueError("Send current_step, game_queue or both")
+        return self
+
+
 class SessionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -46,6 +76,8 @@ class SessionRead(BaseModel):
     status: SessionStatus
     device_info: DeviceInfo | None
     notes: str | None
+    current_step: SessionStep = "setup"
+    game_queue: GameQueueState | None = None
 
 
 class SessionSummary(SessionRead):

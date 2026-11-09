@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { move } from "@/features/session/gameQueue";
-import { useSession } from "@/features/session/SessionContext";
+import { useSession, useSessionStep } from "@/features/session/SessionContext";
 import { GAME_IDS, GAMES } from "@/games/shared/registry";
 import { t } from "@/i18n";
 import { prepareAudio } from "@/lib/beep";
@@ -24,6 +24,7 @@ interface PlanRow {
  * order; Start plays them one after another. The planner (Day 13) will choose them later.
  */
 export function SessionPlanPage() {
+  useSessionStep("plan");
   const navigate = useNavigate();
   const { startGames } = useSession();
   const [rows, setRows] = useState<PlanRow[]>(() => READY.map((id) => ({ id, selected: true })));

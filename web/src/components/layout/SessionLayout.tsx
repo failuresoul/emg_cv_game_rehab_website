@@ -1,18 +1,24 @@
-import { X } from "lucide-react";
-import { useState } from "react";
-import { Outlet, useMatches, useNavigate } from "react-router";
+import clsx from "clsx";
+import { Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Outlet, useLocation, useMatches, useNavigate } from "react-router";
 
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { QueryError } from "@/components/ui/QueryError";
 import { Spinner } from "@/components/ui/Spinner";
+import { ResumeOffer } from "@/features/session/ResumeOffer";
+import { SessionProvider, useSession } from "@/features/session/SessionContext";
+import { SessionExitButton } from "@/features/session/SessionExitButton";
 import {
-  SessionProvider,
-  useEndSession,
-  useForgetSession,
-  useSession,
-} from "@/features/session/SessionContext";
+  BAR_STEPS,
+  barIndex,
+  decideResume,
+  type ResumeDecision,
+  stepForPath,
+} from "@/features/session/sessionSteps";
+import { stopSession } from "@/features/session/stopSession";
+import { GAME_IDS } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
 
 /** Set as `handle` on each session route to name the step in the top bar. */
@@ -20,58 +26,80 @@ export interface SessionRouteHandle {
   stepKey: TranslationKey;
 }
 
-function ExitButton() {
-  const navigate = useNavigate();
-  const { sessionId } = useSession();
-  const endSession = useEndSession();
-  const forgetSession = useForgetSession();
-  const [confirming, setConfirming] = useState(false);
-
-  async function leave() {
-    await navigate("/patient");
-    forgetSession();
-  }
+/** Setup • Calibrate • Warm-up • Games • Cool-down, with the current step highlighted. */
+function StepBar({ pathname }: { pathname: string }) {
+  const step = stepForPath(pathname);
+  if (step === null) return null;
+  const current = barIndex(step);
 
   return (
-    <>
-      <Button variant="secondary" onClick={() => setConfirming(true)}>
-        <X size={20} aria-hidden />
-        {t("session.exit")}
-      </Button>
-      <Modal
-        open={confirming}
-        title={t("session.exitConfirm.title")}
-        onClose={() => setConfirming(false)}
-      >
-        <p>{t("session.exitConfirm.body")}</p>
-        {endSession.isError && (
-          <p role="alert" className="text-danger mt-3 font-medium">
-            {t("session.exitConfirm.error")}
-          </p>
-        )}
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
-          <Button variant="secondary" onClick={() => setConfirming(false)}>
-            {t("session.exitConfirm.stay")}
-          </Button>
-          <Button
-            variant="danger"
-            loading={endSession.isPending}
-            onClick={() => {
-              if (sessionId === null) {
-                void leave();
-                return;
-              }
-              endSession.mutate(
-                { sessionId, status: "aborted" },
-                { onSuccess: () => void leave() },
-              );
-            }}
-          >
-            {t("session.exitConfirm.leave")}
-          </Button>
-        </div>
-      </Modal>
-    </>
+    <nav aria-label={t("sessionBar.label")} className="px-4 pb-3">
+      <ol className="flex flex-wrap items-center gap-x-2 gap-y-2">
+        {BAR_STEPS.map((item, index) => {
+          const done = index < current;
+          const isCurrent = index === current;
+          return (
+            <li key={item.id} className="flex items-center gap-2">
+              {index > 0 && (
+                <span aria-hidden className="text-white/50">
+                  •
+                </span>
+              )}
+              <span
+                aria-current={isCurrent ? "step" : undefined}
+                className={clsx(
+                  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 font-semibold",
+                  isCurrent && "bg-accent text-white",
+                  done && "text-white",
+                  !isCurrent && !done && "text-white/70",
+                )}
+              >
+                {done && <Check size={18} aria-hidden />}
+                {t(item.labelKey)}
+                {done && <span className="sr-only">{t("sessionBar.done")}</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+/** Asks once, on arriving, whether to continue a session left part way through. */
+function ResumePrompt() {
+  const { session, isLoading } = useSession();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const decided = useRef(false);
+  const [decision, setDecision] = useState<ResumeDecision>({ kind: "none" });
+
+  useEffect(() => {
+    if (decided.current || isLoading || session === null) return;
+    decided.current = true;
+    // Decided only on arrival: moving on through the steps afterwards never asks.
+    setDecision(decideResume(session, pathname, GAME_IDS));
+  }, [isLoading, session, pathname]);
+
+  if (decision.kind !== "offer" || session === null) return null;
+
+  return (
+    <Modal open title={t("resume.title")} onClose={() => setDecision({ kind: "none" })}>
+      <ResumeOffer
+        session={session}
+        path={decision.path}
+        step={decision.step}
+        onContinue={(path) => {
+          setDecision({ kind: "none" });
+          stopSession();
+          void navigate(path, { replace: true });
+        }}
+        onStartedOver={() => {
+          setDecision({ kind: "none" });
+          void navigate("/session/setup", { replace: true });
+        }}
+      />
+    </Modal>
   );
 }
 
@@ -97,18 +125,26 @@ function SessionContent() {
 
 export function SessionLayout() {
   const matches = useMatches();
+  const { pathname } = useLocation();
   const handle = matches.at(-1)?.handle as SessionRouteHandle | undefined;
+
+  // Leaving the session pages any other way, such as the browser's Back button, stops it all too.
+  useEffect(() => () => void stopSession(), []);
 
   return (
     <SessionProvider>
       <div className="bg-session-bg flex min-h-dvh flex-col text-white">
-        <header className="flex items-center justify-between gap-4 px-4 py-3">
-          <p className="text-xl font-semibold">{handle && t(handle.stepKey)}</p>
-          <ExitButton />
+        <header className="flex flex-col">
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <p className="text-xl font-semibold">{handle && t(handle.stepKey)}</p>
+            <SessionExitButton />
+          </div>
+          <StepBar pathname={pathname} />
         </header>
         <main className="flex flex-1 flex-col p-4">
           <SessionContent />
         </main>
+        <ResumePrompt />
       </div>
     </SessionProvider>
   );

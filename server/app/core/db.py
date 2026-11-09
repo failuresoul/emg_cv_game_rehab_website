@@ -36,6 +36,8 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "needs_review": "BOOLEAN NOT NULL DEFAULT 0",
         "reviewed_at": "DATETIME",
         "review_note": "VARCHAR",
+        "current_step": "VARCHAR NOT NULL DEFAULT 'setup'",
+        "game_queue": "JSON",
     },
     "patientprofile": {
         "weekly_goal": "INTEGER NOT NULL DEFAULT 5",

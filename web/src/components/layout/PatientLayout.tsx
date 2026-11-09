@@ -46,7 +46,7 @@ export function PatientLayout() {
               </NavLink>
             ))}
           </nav>
-          {!isHome && <StartSessionButton />}
+          {!isHome && <StartSessionButton compact />}
           <UserMenu />
         </div>
       </header>

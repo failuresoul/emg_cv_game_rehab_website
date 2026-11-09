@@ -89,6 +89,20 @@ export interface DeviceInfo {
   delegate?: "GPU" | "CPU" | null;
 }
 
+export type SessionStep =
+  "setup" | "calibrate" | "warmup" | "plan" | "game" | "cooldown" | "summary";
+
+/** Today's games in order and the one being played; index equals games.length once done. */
+export interface GameQueueState {
+  games: GameId[];
+  index: number;
+}
+
+export interface SessionProgressUpdate {
+  current_step?: SessionStep;
+  game_queue?: GameQueueState;
+}
+
 export interface SessionRecord {
   id: number;
   patient_id: number;
@@ -97,6 +111,9 @@ export interface SessionRecord {
   status: SessionStatus;
   device_info: DeviceInfo | null;
   notes: string | null;
+  /** Where the patient is, so a refresh or a return resumes there. */
+  current_step: SessionStep;
+  game_queue: GameQueueState | null;
 }
 
 export interface CalibrationQuality {

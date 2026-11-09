@@ -4,6 +4,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { PatientLayout } from "@/components/layout/PatientLayout";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { SessionLayout, type SessionRouteHandle } from "@/components/layout/SessionLayout";
+import { ErrorPage } from "@/components/ErrorPage";
 import { RequireAuth, RequireRole } from "@/features/auth/guards";
 import { AdminGamesPage } from "@/pages/admin/AdminGamesPage";
 import { AdminOverviewPage } from "@/pages/admin/AdminOverviewPage";
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
     : []),
   {
     element: <PublicLayout />,
+    errorElement: <ErrorPage />,
     children: [
       { path: "/", element: <HomePage /> },
       { path: "/login", element: <LoginPage /> },
@@ -55,6 +57,7 @@ export const router = createBrowserRouter([
   },
   {
     element: <RequireAuth />,
+    errorElement: <ErrorPage />,
     children: [
       {
         element: <RequireRole role="patient" />,

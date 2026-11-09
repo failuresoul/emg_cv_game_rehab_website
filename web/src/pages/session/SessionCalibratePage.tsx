@@ -14,7 +14,7 @@ import {
   DIRECTIONS_DEG,
 } from "@/features/session/calibration";
 import { ReachSweep, STAR_DISTANCE_SW, SWEEP_MS } from "@/features/session/reachSweep";
-import { useSaveCalibration, useSession } from "@/features/session/SessionContext";
+import { useSaveCalibration, useSession, useSessionStep } from "@/features/session/SessionContext";
 import { getLanguage, t } from "@/i18n";
 import { playBeep, playChime, playStar, prepareAudio } from "@/lib/beep";
 import { formatNumber } from "@/lib/format";
@@ -264,6 +264,7 @@ type Phase =
   | { name: "result"; results: DirectionResult[]; litCount: number; attempt: number };
 
 export function SessionCalibratePage() {
+  useSessionStep("calibrate");
   const navigate = useNavigate();
   const { sessionId, affectedSide, calibration, latestCalibration } = useSession();
   const [phase, setPhase] = useState<Phase>({ name: "intro" });

@@ -16,6 +16,7 @@ from app.schemas.session import (
     LastSession,
     LatestCalibration,
     SessionDetail,
+    SessionProgressUpdate,
     SessionRead,
     SessionStart,
     SessionSummary,
@@ -128,6 +129,21 @@ def update_device_info(
 ) -> SessionRecord:
     """FPS and GPU/CPU are only known once the camera has been running."""
     record.device_info = device_info.model_dump()
+    session.add(record)
+    session.commit()
+    return record
+
+
+def update_progress(
+    session: Session, record: SessionRecord, payload: SessionProgressUpdate
+) -> SessionRecord:
+    """Saves the step and the game queue. Only for an active session."""
+    if record.status != "active":
+        raise SessionEndedError
+    if payload.current_step is not None:
+        record.current_step = payload.current_step
+    if payload.game_queue is not None:
+        record.game_queue = payload.game_queue.model_dump()
     session.add(record)
     session.commit()
     return record

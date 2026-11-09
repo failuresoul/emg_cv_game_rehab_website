@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useSession } from "@/features/session/SessionContext";
+import { SessionExitButton } from "@/features/session/SessionExitButton";
+import { sessionStops } from "@/features/session/sessionStop";
 import { t, type TranslationKey } from "@/i18n";
 import { ActivationMeter, type InputManager, useSessionActivation } from "@/input";
 import type { ActivationSourceId } from "@/input";
@@ -29,7 +31,7 @@ import { COUNTDOWN_FROM, GameRuntime, type PauseReason, type RuntimeStage } from
 import { createPlayArea, type PlayArea } from "./playArea";
 import { GAMES } from "./registry";
 import { createRng, newSeed } from "./rng";
-import { drawSkeletonLayer } from "./skeletonLayer";
+import { drawSkeletonLayer, type SkeletonLayerInput } from "./skeletonLayer";
 import { type SaveStatus, TrialLogger } from "./trialLogger";
 import type {
   GameContext,
@@ -373,13 +375,25 @@ const GamePlay = memo(function GamePlay({
     document.addEventListener("visibilitychange", onVisibility);
 
     let frameId = 0;
+    let stopped = false;
     let lastHud = -Infinity;
+    // Filled in again every frame rather than created, to keep garbage collection out of the loop.
+    const frameInput = { handPresent: false, hidden: false };
+    const skeletonInput: SkeletonLayerInput = {
+      pose: null,
+      frame: null,
+      frameWidth: 0,
+      frameHeight: 0,
+      affectedSide,
+      toScreen: (point) => area().toScreen(point),
+      pixelsPerSw: 0,
+    };
     const loop = (wallMs: number) => {
+      if (stopped) return;
       const tracking = trackingRef.current;
-      runtime.frame(wallMs, {
-        handPresent: tracking?.handPresent ?? false,
-        hidden: document.hidden,
-      });
+      frameInput.handPresent = tracking?.handPresent ?? false;
+      frameInput.hidden = document.hidden;
+      runtime.frame(wallMs, frameInput);
 
       const playArea = area();
       if (game.renderBackground) {
@@ -390,15 +404,12 @@ const GamePlay = memo(function GamePlay({
       }
       const vision = visionRef.current;
       if (vision) {
-        drawSkeletonLayer(context2d, {
-          pose: vision.pose,
-          frame: tracking?.frame ?? null,
-          frameWidth: vision.frameWidth,
-          frameHeight: vision.frameHeight,
-          affectedSide,
-          toScreen: playArea.toScreen,
-          pixelsPerSw: playArea.pixelsPerSw,
-        });
+        skeletonInput.pose = vision.pose;
+        skeletonInput.frame = tracking?.frame ?? null;
+        skeletonInput.frameWidth = vision.frameWidth;
+        skeletonInput.frameHeight = vision.frameHeight;
+        skeletonInput.pixelsPerSw = playArea.pixelsPerSw;
+        drawSkeletonLayer(context2d, skeletonInput);
       }
       if (runtime.stage !== "countdown") game.render(context2d);
       const cursor = tracking?.fingertipSmoothSw;
@@ -441,9 +452,16 @@ const GamePlay = memo(function GamePlay({
       frameId = requestAnimationFrame(loop);
     };
     frameId = requestAnimationFrame(loop);
+    // Any way out of the session stops the loop at once, even before this component unmounts.
+    const stopLoop = () => {
+      stopped = true;
+      cancelAnimationFrame(frameId);
+    };
+    const unregisterStop = sessionStops.register(stopLoop);
 
     return () => {
-      cancelAnimationFrame(frameId);
+      unregisterStop();
+      stopLoop();
       document.removeEventListener("visibilitychange", onVisibility);
       observer.disconnect();
       window.removeEventListener("resize", resize);
@@ -535,6 +553,8 @@ const GamePlay = memo(function GamePlay({
               <p className="text-muted">{t("game.paused.autoResume")}</p>
             )}
             <div className="flex flex-wrap justify-end gap-2">
+              {/* The session's own header is under the game, so leaving is offered here too. */}
+              <SessionExitButton variant="ghost" />
               <Button variant="secondary" onClick={() => runtimeRef.current?.end()}>
                 {t("game.end")}
               </Button>
@@ -579,7 +599,8 @@ interface GameShellProps {
 
 export function GameShell({ definition, onContinue, continueKey }: GameShellProps) {
   const { sessionId, affectedSide, calibration, latestCalibration } = useSession();
-  const { status, retry, subscribeTracking } = useTracking();
+  // The game reads frames through subscribeTracking, so nothing here re-renders per frame.
+  const { status, retry, subscribeTracking } = useTracking({ keepResult: false });
 
   if (status.phase !== "running") return <VisionStatusCard status={status} retry={retry} />;
   if (sessionId === null || affectedSide === null) {

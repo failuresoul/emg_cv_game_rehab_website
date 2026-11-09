@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/features/auth/AuthContext";
+import { useSessionStep } from "@/features/session/SessionContext";
 import { t, type TranslationKey } from "@/i18n";
 import type { Side } from "@/types/api";
 import { evaluateSetupChecks, type SetupChecks } from "@/vision/setupChecks";
@@ -155,6 +156,7 @@ function LiveCheck() {
 }
 
 export function SessionSetupPage() {
+  useSessionStep("setup");
   const [allowed, setAllowed] = useState(false);
 
   // LiveCheck starts the camera when it mounts, so nothing runs before the patient agrees.

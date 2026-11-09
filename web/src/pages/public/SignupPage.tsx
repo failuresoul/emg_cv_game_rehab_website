@@ -8,11 +8,14 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { AuthLoading, HOME_PATH } from "@/features/auth/guards";
 import { t } from "@/i18n";
 import type { PatientRegister } from "@/types/api";
+import { SILENT } from "@/lib/apiErrors";
 
 export function SignupPage() {
   const { user, isLoading, register } = useAuth();
   const signup = useMutation({
     mutationFn: (payload: PatientRegister) => register(payload),
+    // The form explains the error next to the field, so no toast.
+    meta: SILENT,
   });
 
   if (isLoading) return <AuthLoading />;

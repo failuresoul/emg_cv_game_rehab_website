@@ -269,7 +269,12 @@ export function SessionSummaryPage() {
           <p className="text-lg">{t("summary.thanks")}</p>
         </div>
       </Card>
-      {report.isPending && <Skeleton className="h-64 rounded-xl" />}
+      {sessionId === null && (
+        <Card>
+          <EmptyState title={t("history.notFound")} />
+        </Card>
+      )}
+      {sessionId !== null && report.isPending && <Skeleton className="h-64 rounded-xl" />}
       {report.isError && (
         <Card>
           <QueryError onRetry={() => void report.refetch()} />

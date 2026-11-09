@@ -2,6 +2,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 
 import { PATIENT_KEY } from "@/features/patient/usePatientData";
 import { api } from "@/lib/api";
+import { SILENT } from "@/lib/apiErrors";
 import type { WarmupRep, WarmupResult, WarmupResultCreate } from "@/types/api";
 
 import type { ExerciseResult } from "./exerciseRunner";
@@ -129,6 +130,8 @@ export function useSaveWarmupResults({ retries = 0 }: SaveOptions = {}) {
   return useMutation({
     retry: retries,
     retryDelay: saveRetryDelay,
+    // The warm-up page shows its own saving status, so no toast.
+    meta: SILENT,
     mutationFn: async ({ sessionId, results }: { sessionId: number; results: ExerciseResult[] }) =>
       (
         await api.post<WarmupResult[]>(

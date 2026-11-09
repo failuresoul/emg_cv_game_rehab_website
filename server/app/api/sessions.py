@@ -9,6 +9,7 @@ from app.schemas.session import (
     CalibrationRead,
     DeviceInfo,
     SessionEnd,
+    SessionProgressUpdate,
     SessionRead,
     SessionStart,
 )
@@ -64,6 +65,18 @@ def update_device_info(
 ) -> SessionRead:
     record = _get_own_session_or_404(session, patient, session_id)
     return SessionRead.model_validate(sessions.update_device_info(session, record, payload))
+
+
+@router.patch("/{session_id}/progress")
+def update_progress(
+    session_id: int, payload: SessionProgressUpdate, session: SessionDep, patient: CurrentPatient
+) -> SessionRead:
+    """Saves where the patient is, so a refresh or a later return resumes at the same step."""
+    record = _get_own_session_or_404(session, patient, session_id)
+    try:
+        return SessionRead.model_validate(sessions.update_progress(session, record, payload))
+    except sessions.SessionEndedError:
+        raise _session_ended() from None
 
 
 @router.post("/{session_id}/end")

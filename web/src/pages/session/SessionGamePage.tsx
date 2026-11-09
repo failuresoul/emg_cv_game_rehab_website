@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GameShell } from "@/games/shared/GameShell";
-import { useSession } from "@/features/session/SessionContext";
+import { useSession, useSessionStep } from "@/features/session/SessionContext";
 import { GAMES, isGameId } from "@/games/shared/registry";
 import { t } from "@/i18n";
 
 export function SessionGamePage() {
+  useSessionStep("game");
   const { gameId } = useParams();
   const navigate = useNavigate();
   const back = (

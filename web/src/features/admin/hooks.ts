@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { tzOffsetMinutes } from "@/features/progress/progress";
 import { api } from "@/lib/api";
+import { SILENT } from "@/lib/apiErrors";
 import type {
   AdminAlert,
   AdminCalibration,
@@ -131,6 +132,8 @@ export function useCreatePatient() {
   return useMutation({
     mutationFn: async (payload: PatientCreate) =>
       (await api.post<Patient>("/admin/patients", payload)).data,
+    // The form explains the error next to the field, so no toast.
+    meta: SILENT,
     onSuccess: invalidate,
   });
 }
@@ -140,6 +143,8 @@ export function useUpdatePatient(id: number) {
   return useMutation({
     mutationFn: async (payload: PatientUpdate) =>
       (await api.patch<Patient>(`/admin/patients/${id}`, payload)).data,
+    // The form explains the error next to the field, so no toast.
+    meta: SILENT,
     onSuccess: invalidate,
   });
 }

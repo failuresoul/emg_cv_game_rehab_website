@@ -20,7 +20,12 @@ import {
   toPayload,
   unanswered,
 } from "@/features/session/questionnaire";
-import { useEndSession, useSession } from "@/features/session/SessionContext";
+import {
+  useEndSession,
+  useSaveFinalStep,
+  useSession,
+  useSessionStep,
+} from "@/features/session/SessionContext";
 import { useSubmitQuestionnaire } from "@/features/session/useQuestionnaire";
 import { t } from "@/i18n";
 import type { Difficulty } from "@/types/api";
@@ -129,6 +134,7 @@ function Questionnaire() {
   const { sessionId } = useSession();
   const submitQuestionnaire = useSubmitQuestionnaire();
   const endSession = useEndSession();
+  const saveFinalStep = useSaveFinalStep();
   const [draft, setDraft] = useState<QuestionnaireDraft>(EMPTY_DRAFT);
   const [showRequired, setShowRequired] = useState(false);
 
@@ -141,10 +147,13 @@ function Questionnaire() {
       void navigate("/session/summary");
       return;
     }
-    endSession.mutate(
-      { sessionId, status: "completed" },
-      { onSuccess: () => void navigate("/session/summary") },
-    );
+    const end = () =>
+      endSession.mutate(
+        { sessionId, status: "completed" },
+        { onSuccess: () => void navigate("/session/summary") },
+      );
+    // The summary is the last step. Saving it is a nicety, so the session ends either way.
+    saveFinalStep.mutate({ sessionId, step: "summary" }, { onSettled: end });
   }
 
   function submit(event: FormEvent) {
@@ -162,7 +171,8 @@ function Questionnaire() {
   }
 
   const missing = showRequired && unanswered(draft).length > 0;
-  const isPending = submitQuestionnaire.isPending || endSession.isPending;
+  const isPending =
+    submitQuestionnaire.isPending || saveFinalStep.isPending || endSession.isPending;
 
   return (
     <Card className="m-auto w-full max-w-4xl">
@@ -256,6 +266,7 @@ function Questionnaire() {
 
 /** A minute of guided rest, then a short questionnaire about how the session felt. */
 export function SessionCooldownPage() {
+  useSessionStep("cooldown");
   const [relaxing, setRelaxing] = useState(true);
   return relaxing ? <RelaxStep onDone={() => setRelaxing(false)} /> : <Questionnaire />;
 }

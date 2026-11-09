@@ -127,6 +127,8 @@ class VisionEngine {
   private video: HTMLVideoElement | null = null;
   private frameRequest: number | null = null;
   private sampleContext: CanvasRenderingContext2D | null = null;
+  /** Components using the camera; it stops when the last one lets go. */
+  private users = 0;
 
   getStatus = (): VisionStatus => this.status;
 
@@ -202,6 +204,34 @@ class VisionEngine {
 
     this.setStatus({ phase: "running" });
     this.runLoop(run, video, tasks, Math.max(1, Math.floor(poseEveryNthFrame)));
+  };
+
+  /**
+   * Starts the camera for one more user and returns the function that lets go of it. The one
+   * engine is shared, so a page and a component inside it never open the camera twice, and one
+   * of them unmounting does not stop the camera for the other.
+   */
+  acquire = (options: VisionOptions = {}): (() => void) => {
+    this.users++;
+    void this.start(options);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.users = Math.max(0, this.users - 1);
+      if (this.users === 0) this.stop();
+    };
+  };
+
+  /** How many components are using the camera, for checks in development. */
+  get userCount(): number {
+    return this.users;
+  }
+
+  /** Stops the camera whoever is using it, such as when leaving a session. */
+  stopAll = (): void => {
+    this.users = 0;
+    this.stop();
   };
 
   /** Stops the camera. Safe to call at any time. */

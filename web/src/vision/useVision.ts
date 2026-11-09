@@ -13,20 +13,32 @@ interface UseVision {
   retry: () => void;
 }
 
-/** Starts the camera and detection on mount and stops them on unmount. */
-export function useVision({ poseEveryNthFrame }: VisionOptions = {}): UseVision {
+export interface UseVisionOptions extends VisionOptions {
+  /**
+   * Keep each frame's result in React state, re-rendering the caller at camera speed. Pages that
+   * draw from engine subscriptions, such as the games, turn this off.
+   */
+  keepResult?: boolean;
+}
+
+/** Starts the camera and detection on mount and lets go of them on unmount. */
+export function useVision({
+  poseEveryNthFrame,
+  keepResult = true,
+}: UseVisionOptions = {}): UseVision {
   const status = useSyncExternalStore(visionEngine.subscribeStatus, visionEngine.getStatus);
   const [result, setResult] = useState<VisionResult | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    const unsubscribe = visionEngine.subscribe(setResult);
-    void visionEngine.start({ poseEveryNthFrame });
+    // Without keepResult, nothing re-renders per frame: callers subscribe to the engine instead.
+    const unsubscribe = keepResult ? visionEngine.subscribe(setResult) : () => undefined;
+    const release = visionEngine.acquire({ poseEveryNthFrame });
     return () => {
       unsubscribe();
-      visionEngine.stop();
+      release();
     };
-  }, [poseEveryNthFrame, attempt]);
+  }, [poseEveryNthFrame, keepResult, attempt]);
 
   const retry = useCallback(() => setAttempt((current) => current + 1), []);
 

@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useAuth } from "@/features/auth/AuthContext";
 import { AuthLoading, HOME_PATH } from "@/features/auth/guards";
 import { t } from "@/i18n";
+import { SILENT } from "@/lib/apiErrors";
 
 function errorMessage(error: unknown): string {
   const invalid = axios.isAxiosError(error) && error.response?.status === 401;
@@ -26,6 +27,8 @@ export function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: () => login(email, password),
+    // The form explains the error next to the field, so no toast.
+    meta: SILENT,
   });
 
   if (isLoading) return <AuthLoading />;

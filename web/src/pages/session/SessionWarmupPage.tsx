@@ -17,12 +17,14 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
+import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/AuthContext";
-import { useSession } from "@/features/session/SessionContext";
+import { useSession, useSessionStep } from "@/features/session/SessionContext";
+import { firstUnfinished } from "@/features/session/sessionSteps";
 import { getLanguage, t, type TranslationKey } from "@/i18n";
 import { playBeep, playChime, playTick, prepareAudio, setMuted } from "@/lib/beep";
 import { canSpeak, onVoicesChanged, speak, stopSpeaking } from "@/lib/speech";
-import type { Side } from "@/types/api";
+import type { Side, WarmupResult } from "@/types/api";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
 import { type JointAngleState, useJointAngles } from "@/vision/useJointAngles";
 import { useVision } from "@/vision/useVision";
@@ -49,9 +51,14 @@ import { reasonTexts, targetOf, type WarmupHistoryEntry } from "@/warmup/persona
 import { PostureIndicator, type PostureStatus } from "@/warmup/PostureIndicator";
 import { RepCounterRing } from "@/warmup/RepCounterRing";
 import { SequenceProgress } from "@/warmup/SequenceProgress";
-import { encouragement, goalText, rowsFromResults } from "@/warmup/goals";
+import { encouragement, goalText, rowsFromResults, rowsFromSaved } from "@/warmup/goals";
 import { RestScreen } from "@/warmup/RestScreen";
-import { historiesBefore, useSaveWarmupResults, useWarmupHistories } from "@/warmup/warmupApi";
+import {
+  historiesBefore,
+  useSaveWarmupResults,
+  useSessionWarmup,
+  useWarmupHistories,
+} from "@/warmup/warmupApi";
 import { WarmupResultsTable } from "@/warmup/WarmupResultsTable";
 
 const COUNTDOWN_FROM = 3;
@@ -365,14 +372,22 @@ function ExerciseStep({
 
 interface WarmupRunProps {
   affectedSide: Side;
+  /** Where to begin: the first exercise not yet done, after a refresh or a return. */
+  startPosition: number;
   histories: Record<ExerciseId, WarmupHistoryEntry[]>;
   onResult: (result: ExerciseResult) => void;
   onFinished: () => void;
 }
 
-function WarmupRun({ affectedSide, histories, onResult, onFinished }: WarmupRunProps) {
+function WarmupRun({
+  affectedSide,
+  startPosition,
+  histories,
+  onResult,
+  onFinished,
+}: WarmupRunProps) {
   const { status, result, retry } = useVision();
-  const [position, setPosition] = useState(0);
+  const [position, setPosition] = useState(startPosition);
   const [presets, setPresets] = useState<Partial<Record<ExerciseId, ThresholdPreset>>>({});
   const [startAtCountdown, setStartAtCountdown] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
@@ -461,7 +476,31 @@ function WarmupRun({ affectedSide, histories, onResult, onFinished }: WarmupRunP
   );
 }
 
+/** Exercises done in this tab or saved before a refresh, in the warm-up's order. */
+function doneExercises(inMemory: readonly ExerciseResult[], saved: readonly WarmupResult[]) {
+  return new Set<ExerciseId>([
+    ...inMemory.map((result) => result.exerciseId),
+    ...saved.map((result) => result.exercise_id),
+  ]);
+}
+
 export function SessionWarmupPage() {
+  useSessionStep("warmup");
+  const { sessionId } = useSession();
+  const saved = useSessionWarmup(sessionId);
+
+  if (saved.isPending && sessionId !== null) {
+    return (
+      <div className="m-auto">
+        <Spinner size={48} />
+      </div>
+    );
+  }
+  // Without the saved results the warm-up simply starts from the first exercise.
+  return <Warmup saved={saved.data ?? []} />;
+}
+
+function Warmup({ saved }: { saved: readonly WarmupResult[] }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { sessionId, warmupResults, addWarmupResult } = useSession();
@@ -488,11 +527,13 @@ export function SessionWarmupPage() {
     [addWarmupResult, sessionId, warmupResults, saveResults],
   );
   const affectedSide = user?.patient_profile?.affected_side;
-  const finished = EXERCISE_ORDER.every((id) =>
-    warmupResults.some((result) => result.exerciseId === id),
+  // Fixed on arrival, like the histories, so finishing an exercise does not move the start.
+  const [startId] = useState(() =>
+    firstUnfinished(EXERCISE_ORDER, doneExercises(warmupResults, saved)),
   );
+  const startPosition = startId === null ? 0 : EXERCISE_ORDER.indexOf(startId);
   const [phase, setPhase] = useState<"overview" | "running" | "complete">(
-    finished ? "complete" : "overview",
+    startId === null ? "complete" : "overview",
   );
   const handleFinished = useCallback(() => setPhase("complete"), []);
 
@@ -527,6 +568,11 @@ export function SessionWarmupPage() {
             );
           })}
         </ul>
+        {startPosition > 0 && startId && (
+          <p className="text-primary font-semibold">
+            {t("warmup.resumeFrom", { name: t(EXERCISES[startId].nameKey) })}
+          </p>
+        )}
         <Button
           size="lg"
           loading={historyQueries.isPending}
@@ -536,7 +582,7 @@ export function SessionWarmupPage() {
             setPhase("running");
           }}
         >
-          {t("calibrate.intro.start")}
+          {t(startPosition > 0 ? "warmup.resumeButton" : "calibrate.intro.start")}
         </Button>
       </Card>
     );
@@ -546,6 +592,7 @@ export function SessionWarmupPage() {
     return (
       <WarmupRun
         affectedSide={affectedSide}
+        startPosition={startPosition}
         histories={histories ?? historyQueries.histories}
         onResult={handleResult}
         onFinished={handleFinished}
@@ -554,13 +601,14 @@ export function SessionWarmupPage() {
   }
 
   const earlier = histories ?? historiesBefore(historyQueries.histories, sessionId);
-  const ordered = EXERCISE_ORDER.flatMap((id) =>
-    warmupResults.filter((result) => result.exerciseId === id),
-  );
-  const rows = rowsFromResults(
-    ordered,
-    Object.fromEntries(EXERCISE_ORDER.map((id) => [id, earlier[id][0]])),
-  );
+  const previous = Object.fromEntries(EXERCISE_ORDER.map((id) => [id, earlier[id][0]]));
+  // Done in this tab where possible, for the change since last time; saved before a refresh
+  // otherwise.
+  const rows = EXERCISE_ORDER.flatMap((id) => {
+    const inMemory = warmupResults.filter((result) => result.exerciseId === id);
+    if (inMemory.length > 0) return rowsFromResults(inMemory, previous);
+    return rowsFromSaved(saved.filter((result) => result.exercise_id === id));
+  });
   const cheer = encouragement(rows);
 
   return (

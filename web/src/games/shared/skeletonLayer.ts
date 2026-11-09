@@ -8,6 +8,9 @@ import { POSE_CONNECTIONS } from "@/vision/SkeletonCanvas";
 const SKELETON_COLOR = "rgba(232, 242, 241, 0.18)";
 const AFFECTED_ARM_COLOR = "rgba(242, 201, 76, 0.28)";
 const LINE_SW = 0.06;
+// Made once, not every frame.
+const LEFT_ARM: readonly number[] = [POSE.LEFT_SHOULDER, POSE.LEFT_ELBOW, POSE.LEFT_WRIST];
+const RIGHT_ARM: readonly number[] = [POSE.RIGHT_SHOULDER, POSE.RIGHT_ELBOW, POSE.RIGHT_WRIST];
 
 export interface SkeletonLayerInput {
   pose: readonly NormalizedLandmark[] | null;
@@ -28,10 +31,7 @@ export function drawSkeletonLayer(context: CanvasRenderingContext2D, input: Skel
   if (!pose || !frame) return;
   const screen = (landmark: NormalizedLandmark) =>
     toScreen(toBodyFrame(toPixel(landmark, frameWidth, frameHeight), frame));
-  const affectedArm: readonly number[] =
-    affectedSide === "left"
-      ? [POSE.LEFT_SHOULDER, POSE.LEFT_ELBOW, POSE.LEFT_WRIST]
-      : [POSE.RIGHT_SHOULDER, POSE.RIGHT_ELBOW, POSE.RIGHT_WRIST];
+  const affectedArm = affectedSide === "left" ? LEFT_ARM : RIGHT_ARM;
 
   context.save();
   context.lineCap = "round";
