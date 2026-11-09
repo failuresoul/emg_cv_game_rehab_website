@@ -29,6 +29,8 @@ export interface PlayAreaOptions {
   affectedSide: Side;
   /** The calibrated reach hull in shoulder widths, or null for the default reach. */
   hull: readonly Point[] | null;
+  /** Screen space covered by other things, such as a top bar, in pixels. The hull fits the rest. */
+  insets?: { top?: number; bottom?: number };
 }
 
 function defaultHull(): Point[] {
@@ -41,10 +43,19 @@ function defaultHull(): Point[] {
 /**
  * Maps the body frame to the screen, mirrored like SkeletonCanvas: the patient sees themselves as
  * in a mirror, so a left-affected patient's outward (+x) is to the screen's left. The reach hull,
- * with the shoulder itself, is centred and scaled to fill about 80% of the screen height. That
- * puts the shoulder towards the side of the screen opposite the reach, leaving room to reach out.
+ * with the shoulder itself, is centred and scaled to fill about 80% of the height left between
+ * the insets (such as the top bar). That puts the shoulder towards the side of the screen opposite
+ * the reach, leaving room to reach out.
  */
-export function createPlayArea({ width, height, affectedSide, hull }: PlayAreaOptions): PlayArea {
+export function createPlayArea({
+  width,
+  height,
+  affectedSide,
+  hull,
+  insets = {},
+}: PlayAreaOptions): PlayArea {
+  const top = insets.top ?? 0;
+  const usableHeight = Math.max(1, height - top - (insets.bottom ?? 0));
   const points = [{ x: 0, y: 0 }, ...(hull && hull.length >= 3 ? hull : defaultHull())];
   const xs = points.map((point) => point.x);
   const ys = points.map((point) => point.y);
@@ -57,7 +68,7 @@ export function createPlayArea({ width, height, affectedSide, hull }: PlayAreaOp
 
   const pixelsPerSw = Math.max(
     Math.min(
-      (PLAY_AREA_HEIGHT_SHARE * height) / extentY,
+      (PLAY_AREA_HEIGHT_SHARE * usableHeight) / extentY,
       (PLAY_AREA_MAX_WIDTH_SHARE * width) / extentX,
     ),
     Number.EPSILON,
@@ -67,7 +78,7 @@ export function createPlayArea({ width, height, affectedSide, hull }: PlayAreaOp
   const originPx = {
     x: width / 2 - xSign * centreSw.x * pixelsPerSw,
     // Screen y grows downward.
-    y: height / 2 + centreSw.y * pixelsPerSw,
+    y: top + usableHeight / 2 + centreSw.y * pixelsPerSw,
   };
 
   return {

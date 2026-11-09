@@ -1,18 +1,8 @@
-import {
-  Apple,
-  Flower2,
-  Grab,
-  Hand,
-  Paintbrush,
-  PartyPopper,
-  Piano,
-  Spline,
-  Target,
-} from "lucide-react";
+import { Apple, Flower2, Grab, Hand, Paintbrush, PartyPopper, Piano, Spline } from "lucide-react";
 
+import { reachActivate } from "@/games/reachActivate";
 import type { GameId } from "@/types/api";
 
-import { createShellCheckGame } from "./shellCheckGame";
 import type { GameContext, GameDefinition, GameInstance, ParamSpec } from "./types";
 
 export const GAME_IDS: readonly GameId[] = [
@@ -48,16 +38,6 @@ const holdMs: ParamSpec = {
   unit: "ms",
   harder: "higher",
 };
-const activationWindowMs: ParamSpec = {
-  name: "activation_window_ms",
-  labelKey: "param.activationWindowMs",
-  min: 1500,
-  max: 8000,
-  step: 250,
-  default: 4000,
-  unit: "ms",
-  harder: "lower",
-};
 const distanceFrac: ParamSpec = {
   name: "distance_frac",
   labelKey: "param.distanceFrac",
@@ -77,16 +57,6 @@ const targetRadiusSw: ParamSpec = {
   default: 0.25,
   unit: "sw",
   harder: "lower",
-};
-const dwellMs: ParamSpec = {
-  name: "dwell_ms",
-  labelKey: "param.dwellMs",
-  min: 200,
-  max: 1500,
-  step: 50,
-  default: 500,
-  unit: "ms",
-  harder: "higher",
 };
 const reachTimeoutMs: ParamSpec = {
   name: "reach_timeout_ms",
@@ -136,26 +106,7 @@ function notImplemented(id: GameId): (context: GameContext) => GameInstance {
 }
 
 export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
-  reach_activate: {
-    id: "reach_activate",
-    nameKey: "game.reach_activate.name",
-    descriptionKey: "game.reach_activate.description",
-    movementKey: "game.reach_activate.movement",
-    icon: Target,
-    params: [
-      distanceFrac,
-      targetRadiusSw,
-      dwellMs,
-      reachTimeoutMs,
-      demand,
-      holdMs,
-      activationWindowMs,
-    ],
-    trialsDefault: 16,
-    // A stand-in that exercises the shell until the full game replaces it.
-    create: createShellCheckGame,
-    implemented: true,
-  },
+  reach_activate: reachActivate,
   balloon_pop: {
     id: "balloon_pop",
     nameKey: "game.balloon_pop.name",

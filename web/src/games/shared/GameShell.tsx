@@ -19,6 +19,7 @@ import { useTracking } from "@/vision/useTracking";
 import { visionEngine, type VisionResult } from "@/vision/visionEngine";
 import { VisionStatusCard } from "@/vision/VisionStatusCard";
 import { CompensationMonitor } from "@/warmup/compensation";
+import { COMPENSATION_CONFIG } from "@/warmup/compensationConfig";
 
 import { gameAudio } from "./audio";
 import { GameRuntime, type PauseReason, type RuntimeStage } from "./gameRuntime";
@@ -42,9 +43,13 @@ const CURSOR_RING = "#FFFFFF";
 const CURSOR_SW = 0.07;
 const CURSOR_MIN_PX = 14;
 const HUD_INTERVAL_MS = 250;
+/** The top bar's usual height. The play area is fitted below it. */
+const HUD_HEIGHT_PX = 72;
 const FEEDBACK_SHOW_MS = 2500;
 /** Reaching games check every kind of compensation, as the reaching warm-up exercises do. */
 const COMPENSATION_EXERCISE = "forward_reach";
+/** The posture baseline comes from the game's first second, while the countdown keeps it still. */
+const GAME_COMPENSATION_CONFIG = { ...COMPENSATION_CONFIG, baselineMs: 1000 };
 
 const SOURCE_KEYS: Record<ActivationSourceId, TranslationKey> = {
   cv_grip: "game.source.webcam",
@@ -170,7 +175,9 @@ const GamePlay = memo(function GamePlay({
   const runtimeRef = useRef<GameRuntime | null>(null);
   const loggerRef = useRef<TrialLogger | null>(null);
   const activationRef = useRef(activation);
-  const [monitor] = useState(() => new CompensationMonitor(COMPENSATION_EXERCISE));
+  const [monitor] = useState(
+    () => new CompensationMonitor(COMPENSATION_EXERCISE, GAME_COMPENSATION_CONFIG),
+  );
   const [seed] = useState(newSeed);
 
   const [stage, setStage] = useState<RuntimeStage>("countdown");
@@ -228,7 +235,13 @@ const GamePlay = memo(function GamePlay({
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       context2d.setTransform(dpr, 0, 0, dpr, 0, 0);
-      playAreaRef.current = createPlayArea({ width, height, affectedSide, hull });
+      playAreaRef.current = createPlayArea({
+        width,
+        height,
+        affectedSide,
+        hull,
+        insets: { top: HUD_HEIGHT_PX },
+      });
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -311,7 +324,6 @@ const GamePlay = memo(function GamePlay({
         // Not before: StrictMode mounts twice in development, and that must not create a run.
         started = true;
         setStage("playing");
-        // The posture baseline was measured during the countdown, while the patient sat still.
         void logger.start();
       },
       onPause: (reason) => {

@@ -101,6 +101,24 @@ describe("createPlayArea mirroring", () => {
 });
 
 describe("createPlayArea limits", () => {
+  it("fits the hull below a top bar", () => {
+    const top = 100;
+    const area = createPlayArea({
+      width: WIDTH,
+      height: HEIGHT,
+      affectedSide: "left",
+      hull: HULL,
+      insets: { top },
+    });
+    const ys = HULL.map((point) => area.toScreen(point).y);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeCloseTo(
+      PLAY_AREA_HEIGHT_SHARE * (HEIGHT - top),
+      6,
+    );
+    expect((Math.max(...ys) + Math.min(...ys)) / 2).toBeCloseTo(top + (HEIGHT - top) / 2, 6);
+    expect(Math.min(...ys)).toBeGreaterThan(top);
+  });
+
   it("uses a reach of 1.2 shoulder widths all round without a calibration", () => {
     const area = createPlayArea({
       width: WIDTH,

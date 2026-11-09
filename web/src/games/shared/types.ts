@@ -11,7 +11,7 @@ import type { Rng } from "./rng";
 
 export type { GameId } from "@/types/api";
 
-export type ParamUnit = "sw" | "ms" | "level" | "share" | "count" | "sw_per_s" | "bpm";
+export type ParamUnit = "sw" | "ms" | "deg" | "level" | "share" | "count" | "sw_per_s" | "bpm";
 
 /** One adjustable setting of a game. The adaptive engine (Day 12) moves it within min and max. */
 export interface ParamSpec {
@@ -22,8 +22,8 @@ export interface ParamSpec {
   step: number;
   default: number;
   unit: ParamUnit;
-  /** Which way makes the game harder. */
-  harder: "higher" | "lower";
+  /** Which way makes the game harder; null for a setting that is not a difficulty, like direction. */
+  harder: "higher" | "lower" | null;
 }
 
 /** One trial's settings, by ParamSpec name. */
