@@ -16,7 +16,7 @@ This document lists every API route the server provides today, plus the routes r
   - `game_id`: `reach_activate`, `balloon_pop`, `fruit_catch`, `bloom`, `finger_piano`, `path_trace`, `paint_wall`, `pick_place`, `grip_hold`
   - `engine`: `L0` (fixed settings), `L1`, `L2` (adaptive, from Day 12)
   - `input_source`: `cv_grip` (closing the hand on the webcam), `keyboard` (testing only), `emg` (from Day 15)
-  - Trial `outcome`: `success`, `reach_fail`, `activation_fail`, `aborted`
+  - Trial `outcome`: `success`, `reach_fail`, `activation_fail`, `miss` (a target that left by itself, such as a balloon floating away or a fruit landing), `aborted`
 - **Units:** positions are in the body frame, in shoulder widths (SW), with the affected shoulder at the origin, +x away from the body's midline and +y up. Trial times are milliseconds relative to the trial's spawn.
 - **Privacy:** password hashes are never returned. Webcam video and images are never sent to the server.
 
@@ -724,9 +724,24 @@ Request: an array of 1 to 50 trials. A trial whose `trial_no` was already saved 
 | `params` | That trial's settings, names and numbers only |
 | `target` | Optional. `radius_sw` above 0, `direction_deg` 0 up to 360, `distance_frac` 0–2, `sector` like `D3R2`: the direction index (0 is outward, then 45° steps anticlockwise to 7) and the ring (R1 below 0.55 of the reach, R2 to 0.85, R3 beyond) |
 | `timings` | Milliseconds from spawn, each 0 or more, or `null` if never reached. `activation_start` is when the successful squeeze began |
-| `metrics` | Each 0 or more, or `null`; `path_efficiency` and `activation_peak` are 0–1. Reach measures use the raw fingertip from move onset to entering the target; move onset is the first point faster than 0.15 SW/s |
+| `metrics` | Each 0 or more, or `null`; `path_efficiency` and `activation_peak` are 0–1. Reach measures use the raw fingertip from move onset to entering the target; move onset is the first point faster than 0.15 SW/s. Some games add optional metrics, listed below |
 | `compensation.max_values` | Up to 20 named numbers |
 | `trajectory` | Up to 2000 points of `[t_ms, x_sw, y_sw]`: the raw (unsmoothed) fingertip at about 30 Hz |
+
+Optional metrics for particular games (leave them out, or send `null`):
+
+| Metric | Game | Rules |
+| --- | --- | --- |
+| `peak_arm_elevation_deg` | `balloon_pop` | 0–180: the highest the affected arm was raised during the trial (0 is down), unfiltered |
+| `lateral_distance_sw` | `fruit_catch` | 0 or more: from the basket's x at spawn to the fruit's x |
+| `lateral_path_efficiency` | `fruit_catch` | 0–1: straight sideways distance over sideways path length |
+| `overshoot_sw` | `fruit_catch` | 0 or more: how far the basket went past the fruit before it arrived |
+| `side` | `fruit_catch` | `out` (away from the body) or `across` |
+
+How each game fills the shared fields:
+
+- **`balloon_pop`:** `target` is where the balloon waited (`distance_frac` is its height as a share of the reach in that direction); `enter` is the first touch; `movement_ms` runs from move onset to the touch; `activation_*` are set only when a squeeze is needed (`params.squeeze_to_pop` is 1); `dwell_done` is `null`. Outcomes are `success` (popped) or `miss`.
+- **`fruit_catch`:** `target.x_sw` is where the fruit fell, `y_sw` is the basket line (-0.3), `direction_deg` is 0 (out) or 180 (across) and `sector` is `D0Rn` or `D4Rn`; `enter` is when the basket was first under the fruit; reach measures are sideways only, using the basket's x (the raw fingertip's x kept within the reach). Outcomes are `success` (caught) or `miss`.
 
 Response `200`: the game run, with `trials_done` counting every trial saved.
 
@@ -745,12 +760,13 @@ Request:
     "success_rate": 0.75,
     "mean_movement_ms": 1240.5,
     "mean_path_efficiency": 0.86,
-    "compensated_trials": 3
+    "compensated_trials": 3,
+    "details": { "highest_popped_frac": 0.85 }
   }
 }
 ```
 
-`status` is `completed` or `aborted`, `score` is 0 or more, and `summary` is optional. In the summary, the means are over successful trials only and may be `null`; `compensated_trials` counts every trial with compensation flagged. Response `200`: the game run with `ended_at`, `score` and `summary` set.
+`status` is `completed` or `aborted`, `score` is 0 or more, and `summary` is optional. In the summary, the means are over successful trials only and may be `null`; `compensated_trials` counts every trial with compensation flagged. `details` (optional, empty by default) holds up to 20 figures only one game has, each a number, text of up to 50 characters, `true`/`false` or `null`. Today `balloon_pop` sends `highest_popped_frac` and `fruit_catch` sends `widest_catch_frac`, both shares of the reach of the best success; the web app shows them as each game's main measure. Response `200`: the game run with `ended_at`, `score` and `summary` set.
 
 Errors: `404`, `409` if the run has already ended, `422`.
 

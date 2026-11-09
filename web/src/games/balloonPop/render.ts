@@ -42,16 +42,29 @@ function drawCloud(context: CanvasRenderingContext2D, x: number, y: number, size
   context.fill();
 }
 
+/** The sky's gradient only changes with the screen height, so it is kept between frames. */
+let skyCache: {
+  context: CanvasRenderingContext2D;
+  height: number;
+  gradient: CanvasGradient;
+} | null = null;
+
+function skyGradient(context: CanvasRenderingContext2D, height: number): CanvasGradient {
+  if (skyCache?.context === context && skyCache.height === height) return skyCache.gradient;
+  const gradient = context.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, SKY_TOP);
+  gradient.addColorStop(1, SKY_BOTTOM);
+  skyCache = { context, height, gradient };
+  return gradient;
+}
+
 export function drawSky(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
   nowMs: number,
 ) {
-  const gradient = context.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, SKY_TOP);
-  gradient.addColorStop(1, SKY_BOTTOM);
-  context.fillStyle = gradient;
+  context.fillStyle = skyGradient(context, height);
   context.fillRect(0, 0, width, height);
 
   context.fillStyle = CLOUD_COLOR;

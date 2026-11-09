@@ -21,12 +21,27 @@ export interface TargetView {
   activation: { level: number; demand: number; holdProgress: number } | null;
 }
 
-/** A soft glowing target. No pulsing or flashing: it only changes as the patient acts. */
-export function drawTarget(context: CanvasRenderingContext2D, view: TargetView) {
-  const { centre, radius, dwell, activation } = view;
-  const ringWidth = Math.max(8, radius * 0.12);
+/** The glow is the same while a target stays where it is, so it is made once per target. */
+let glowCache: {
+  context: CanvasRenderingContext2D;
+  x: number;
+  y: number;
+  radius: number;
+  gradient: CanvasGradient;
+} | null = null;
 
-  const glow = context.createRadialGradient(
+function glowFor(context: CanvasRenderingContext2D, centre: Point, radius: number) {
+  const cached = glowCache;
+  if (
+    cached &&
+    cached.context === context &&
+    cached.x === centre.x &&
+    cached.y === centre.y &&
+    cached.radius === radius
+  ) {
+    return cached.gradient;
+  }
+  const gradient = context.createRadialGradient(
     centre.x,
     centre.y,
     radius * 0.8,
@@ -34,9 +49,18 @@ export function drawTarget(context: CanvasRenderingContext2D, view: TargetView) 
     centre.y,
     radius * 1.7,
   );
-  glow.addColorStop(0, GLOW_INNER);
-  glow.addColorStop(1, GLOW_OUTER);
-  context.fillStyle = glow;
+  gradient.addColorStop(0, GLOW_INNER);
+  gradient.addColorStop(1, GLOW_OUTER);
+  glowCache = { context, x: centre.x, y: centre.y, radius, gradient };
+  return gradient;
+}
+
+/** A soft glowing target. No pulsing or flashing: it only changes as the patient acts. */
+export function drawTarget(context: CanvasRenderingContext2D, view: TargetView) {
+  const { centre, radius, dwell, activation } = view;
+  const ringWidth = Math.max(8, radius * 0.12);
+
+  context.fillStyle = glowFor(context, centre, radius);
   context.beginPath();
   context.arc(centre.x, centre.y, radius * 1.7, 0, Math.PI * 2);
   context.fill();
@@ -68,27 +92,35 @@ export function drawTarget(context: CanvasRenderingContext2D, view: TargetView) 
 }
 
 export interface TrailPoint {
+  /** In the body frame. */
   at: Point;
-  ageMs: number;
+  /** Game time it was recorded. */
+  ms: number;
 }
 
-/** A faint line behind the cursor that fades with age. */
+/** A faint line behind the cursor that fades with age, drawn straight from body-frame points. */
 export function drawTrail(
   context: CanvasRenderingContext2D,
   points: readonly TrailPoint[],
+  nowMs: number,
   lifeMs: number,
   width: number,
+  toScreen: (point: Point) => Point,
 ) {
   context.lineCap = "round";
   context.lineWidth = width;
+  let previous = points.length > 0 ? toScreen(points[0].at) : null;
   for (let i = 1; i < points.length; i++) {
-    const alpha = 0.3 * Math.max(0, 1 - points[i].ageMs / lifeMs);
-    if (alpha <= 0) continue;
-    context.strokeStyle = `rgba(${TRAIL_RGB}, ${alpha})`;
-    context.beginPath();
-    context.moveTo(points[i - 1].at.x, points[i - 1].at.y);
-    context.lineTo(points[i].at.x, points[i].at.y);
-    context.stroke();
+    const current = toScreen(points[i].at);
+    const alpha = 0.3 * Math.max(0, 1 - (nowMs - points[i].ms) / lifeMs);
+    if (alpha > 0 && previous) {
+      context.strokeStyle = `rgba(${TRAIL_RGB}, ${alpha})`;
+      context.beginPath();
+      context.moveTo(previous.x, previous.y);
+      context.lineTo(current.x, current.y);
+      context.stroke();
+    }
+    previous = current;
   }
 }
 

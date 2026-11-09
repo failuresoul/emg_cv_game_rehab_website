@@ -11,6 +11,8 @@ export const FLOAT_AWAY_MS = 1500;
 export type BalloonPhase =
   "SPAWN" | "RISE" | "HOVER" | "SQUEEZE" | "POPPED" | "FLOAT_AWAY" | "REST" | "DONE";
 
+const LIVE_PHASES: ReadonlySet<BalloonPhase> = new Set(["SPAWN", "RISE", "HOVER", "SQUEEZE"]);
+
 export interface BalloonSettings {
   riseMs: number;
   hoverMs: number;
@@ -93,7 +95,7 @@ export class BalloonMachine {
 
   /** True from SPAWN until it pops or starts floating away. */
   get isLive(): boolean {
-    return ["SPAWN", "RISE", "HOVER", "SQUEEZE"].includes(this.current);
+    return LIVE_PHASES.has(this.current);
   }
 
   /** How far it has risen, from 0 to 1. */

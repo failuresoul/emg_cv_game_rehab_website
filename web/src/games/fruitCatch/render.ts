@@ -27,6 +27,22 @@ const FRUIT_COLOURS: Record<FruitKind, string> = {
   lemon: "#F2D04B",
 };
 
+/** The sky's gradient only changes with the screen size, so it is kept between frames. */
+let skyCache: {
+  context: CanvasRenderingContext2D;
+  groundY: number;
+  gradient: CanvasGradient;
+} | null = null;
+
+function skyGradient(context: CanvasRenderingContext2D, groundY: number): CanvasGradient {
+  if (skyCache?.context === context && skyCache.groundY === groundY) return skyCache.gradient;
+  const gradient = context.createLinearGradient(0, 0, 0, groundY);
+  gradient.addColorStop(0, SKY_TOP);
+  gradient.addColorStop(1, SKY_BOTTOM);
+  skyCache = { context, groundY, gradient };
+  return gradient;
+}
+
 /** The garden, with the ground at groundY in screen pixels. */
 export function drawGarden(
   context: CanvasRenderingContext2D,
@@ -34,10 +50,7 @@ export function drawGarden(
   height: number,
   groundY: number,
 ) {
-  const sky = context.createLinearGradient(0, 0, 0, groundY);
-  sky.addColorStop(0, SKY_TOP);
-  sky.addColorStop(1, SKY_BOTTOM);
-  context.fillStyle = sky;
+  context.fillStyle = skyGradient(context, groundY);
   context.fillRect(0, 0, width, height);
 
   context.fillStyle = HILL_COLOR;

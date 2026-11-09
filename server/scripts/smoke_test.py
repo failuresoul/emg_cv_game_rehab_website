@@ -6,13 +6,14 @@ Start the server first, then run from server/ with the virtual environment activ
 
 The default base_url is http://localhost:8000. The admin login comes from server/.env. Each run
 adds one test patient with one session (a calibration, six warm-up results and one
-reach_activate run with 20 trials) to the database,
+run each of reach_activate, balloon_pop and fruit_catch with 20 trials) to the database,
 and deactivates the patient at the end.
 The exit code is 0 if every step passes and 1 otherwise.
 """
 
 import math
 import secrets
+from functools import partial
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -121,9 +122,9 @@ def warmup_payload() -> list[dict[str, Any]]:
     return results
 
 
-DIRECTION_SECTORS = 8
 GAME_TRIALS = 20
 BATCH_SIZE = 10
+GAME_IDS = ("reach_activate", "balloon_pop", "fruit_catch")
 REACH_ACTIVATE_PARAMS: dict[str, float] = {
     "distance_frac": 0.7,
     "target_radius_sw": 0.45,
@@ -134,67 +135,157 @@ REACH_ACTIVATE_PARAMS: dict[str, float] = {
     "reach_time_limit_ms": 8000,
     "rest_ms": 1500,
 }
+BALLOON_POP_PARAMS: dict[str, float] = {
+    "height_frac": 0.7,
+    "direction_deg": 90,
+    "balloon_radius_sw": 0.45,
+    "rise_ms": 2500,
+    "hover_ms": 7000,
+    "squeeze_to_pop": 0,
+    "rest_ms": 1200,
+}
+FRUIT_CATCH_PARAMS: dict[str, float] = {
+    "fall_speed_sw_s": 0.35,
+    "spread_frac": 0.7,
+    "basket_width_sw": 0.7,
+    "spawn_interval_ms": 4000,
+    "max_on_screen": 1,
+}
+PARAMS: dict[str, dict[str, float]] = {
+    "reach_activate": REACH_ACTIVATE_PARAMS,
+    "balloon_pop": BALLOON_POP_PARAMS,
+    "fruit_catch": FRUIT_CATCH_PARAMS,
+}
 
 
-def trial_payload(trial_no: int) -> dict[str, Any]:
-    """A synthetic reach_activate trial: every fourth one misses, the rest reach and squeeze.
-
-    The direction cycles through all eight, and the trajectory is a straight raw path at 30 Hz.
-    """
-    index = (trial_no - 1) % DIRECTION_SECTORS
-    direction_deg = index * 45
-    radians = math.radians(direction_deg)
-    distance = 0.7
-    target = (distance * math.cos(radians), distance * math.sin(radians))
-    success = trial_no % 4 != 0
-    trajectory = [
-        [round(i * 1000 / 30, 1), round(target[0] * i / 30, 4), round(target[1] * i / 30, 4)]
+def straight_path(to: tuple[float, float]) -> list[list[float]]:
+    """One second at 30 Hz from the shoulder straight to a point: a raw fingertip path."""
+    return [
+        [round(i * 1000 / 30, 1), round(to[0] * i / 30, 4), round(to[1] * i / 30, 4)]
         for i in range(31)
     ]
+
+
+def no_metrics() -> dict[str, Any]:
     return {
-        "trial_no": trial_no,
-        "params": {**REACH_ACTIVATE_PARAMS, "direction_deg": direction_deg, "direction_index": index},
-        "target": {
-            "x_sw": round(target[0], 4),
-            "y_sw": round(target[1], 4),
-            "radius_sw": 0.45,
-            "direction_deg": direction_deg,
-            "distance_frac": 0.7,
-            "sector": f"D{index}R2",
-        },
-        "outcome": "success" if success else "activation_fail",
-        "timings": {
-            "spawn": 0,
-            "move_onset": 33,
-            "enter": 1000,
-            "dwell_done": 1500,
-            "activation_start": 1700 if success else None,
-            "activation_done": 1900 if success else None,
-            "end": 1900 if success else 4500,
-        },
-        "metrics": {
-            "reaction_ms": 33,
-            "movement_ms": 967,
-            "path_length_sw": 0.7,
-            "straight_dist_sw": 0.7,
-            "path_efficiency": 1.0,
-            "peak_speed_sw_s": 0.7,
-            "activation_latency_ms": 200 if success else None,
-            "activation_peak": 0.8 if success else 0.3,
-        },
-        "compensation": {"flagged": False, "type": None, "max_values": {}},
-        "trajectory": trajectory,
+        "reaction_ms": 33,
+        "movement_ms": 967,
+        "path_length_sw": 0.7,
+        "straight_dist_sw": 0.7,
+        "path_efficiency": 1.0,
+        "peak_speed_sw_s": 0.7,
+        "activation_latency_ms": None,
+        "activation_peak": None,
     }
 
 
-def game_summary(trials: list[dict[str, Any]]) -> dict[str, Any]:
-    successes = sum(1 for trial in trials if trial["outcome"] == "success")
+def trial_payload(game_id: str, trial_no: int) -> dict[str, Any]:
+    """A synthetic trial. Every fourth one is not a success: a missed squeeze for Reach and
+    squeeze, and a "miss" for the balloons and fruit."""
+    success = trial_no % 4 != 0
+    base: dict[str, Any] = {
+        "trial_no": trial_no,
+        "compensation": {"flagged": False, "type": None, "max_values": {}},
+        "timings": {
+            "spawn": 0,
+            "move_onset": 33,
+            "enter": 1000 if success else None,
+            "dwell_done": None,
+            "activation_start": None,
+            "activation_done": None,
+            "end": 1900 if success else 4500,
+        },
+        "metrics": no_metrics(),
+    }
+    if game_id == "reach_activate":
+        index = (trial_no - 1) % 8
+        direction = index * 45
+        target = (0.7 * math.cos(math.radians(direction)), 0.7 * math.sin(math.radians(direction)))
+        return {
+            **base,
+            "params": {**REACH_ACTIVATE_PARAMS, "direction_deg": direction, "direction_index": index},
+            "target": {
+                "x_sw": round(target[0], 4),
+                "y_sw": round(target[1], 4),
+                "radius_sw": 0.45,
+                "direction_deg": direction,
+                "distance_frac": 0.7,
+                "sector": f"D{index}R2",
+            },
+            "outcome": "success" if success else "activation_fail",
+            "timings": {
+                **base["timings"],
+                "enter": 1000,
+                "dwell_done": 1500,
+                "activation_start": 1700 if success else None,
+                "activation_done": 1900 if success else None,
+            },
+            "metrics": {
+                **base["metrics"],
+                "activation_latency_ms": 200 if success else None,
+                "activation_peak": 0.8 if success else 0.3,
+            },
+            "trajectory": straight_path(target),
+        }
+    if game_id == "balloon_pop":
+        index = 1 + (trial_no - 1) % 3
+        direction = index * 45
+        height = (0.55, 0.7, 0.85)[(trial_no - 1) // 3 % 3]
+        target = (height * math.cos(math.radians(direction)), height * math.sin(math.radians(direction)))
+        return {
+            **base,
+            "params": {**BALLOON_POP_PARAMS, "direction_deg": direction, "height_frac": height},
+            "target": {
+                "x_sw": round(target[0], 4),
+                "y_sw": round(target[1], 4),
+                "radius_sw": 0.45,
+                "direction_deg": direction,
+                "distance_frac": height,
+                "sector": f"D{index}R{1 if height < 0.55 else 2 if height <= 0.85 else 3}",
+            },
+            "outcome": "success" if success else "miss",
+            "metrics": {**base["metrics"], "peak_arm_elevation_deg": 95.0 if success else 40.0},
+            "trajectory": straight_path(target),
+        }
+    side = "out" if trial_no % 2 == 1 else "across"
+    x = 0.6 if side == "out" else -0.4
     return {
-        "successes": successes,
-        "success_rate": successes / len(trials),
+        **base,
+        "params": {**FRUIT_CATCH_PARAMS, "target_side": 1 if side == "out" else -1, "target_frac": 0.7},
+        "target": {
+            "x_sw": x,
+            "y_sw": -0.3,
+            "radius_sw": 0.13,
+            "direction_deg": 0 if side == "out" else 180,
+            "distance_frac": 0.5,
+            "sector": "D0R1" if side == "out" else "D4R1",
+        },
+        "outcome": "success" if success else "miss",
+        "metrics": {
+            **base["metrics"],
+            "lateral_distance_sw": abs(x),
+            "lateral_path_efficiency": 0.95,
+            "overshoot_sw": 0.05,
+            "side": side,
+        },
+        "trajectory": straight_path((x, -0.3)),
+    }
+
+
+def game_summary(game_id: str, trials: list[dict[str, Any]]) -> dict[str, Any]:
+    successes = [trial for trial in trials if trial["outcome"] == "success"]
+    details: dict[str, Any] = {}
+    if game_id == "balloon_pop":
+        details["highest_popped_frac"] = max(trial["target"]["distance_frac"] for trial in successes)
+    if game_id == "fruit_catch":
+        details["widest_catch_frac"] = 0.5
+    return {
+        "successes": len(successes),
+        "success_rate": len(successes) / len(trials),
         "mean_movement_ms": 967.0,
         "mean_path_efficiency": 1.0,
         "compensated_trials": 0,
+        "details": details,
     }
 
 
@@ -280,42 +371,52 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(last["session_id"] == state["session_id"], "last_warmup is another session")
         require(last["goals_reached"] == 6, f"expected 6 goals reached, got {last['goals_reached']}")
 
-    def start_game() -> None:
+    def start_game(game_id: str) -> None:
         url = f"/api/sessions/{state['session_id']}/games"
         payload = {
-            "game_id": "reach_activate",
+            "game_id": game_id,
             "engine": "L0",
             "input_source": "keyboard",
-            "params_initial": REACH_ACTIVATE_PARAMS,
+            "params_initial": PARAMS[game_id],
             "trials_planned": GAME_TRIALS,
         }
         body = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
         require(body["status"] == "active", "game run is not active")
-        state["run_id"] = body["id"]
-        state["trials"] = [trial_payload(n) for n in range(1, GAME_TRIALS + 1)]
+        require(body["game_id"] == game_id, f"the run is {body['game_id']}, not {game_id}")
+        state[game_id] = {
+            "run_id": body["id"],
+            "trials": [trial_payload(game_id, n) for n in range(1, GAME_TRIALS + 1)],
+        }
 
-    def upload_batch(batch: int) -> None:
-        url = f"/api/games/{state['run_id']}/trials"
-        trials = state["trials"][batch * BATCH_SIZE : (batch + 1) * BATCH_SIZE]
+    def upload_batch(game_id: str, batch: int) -> None:
+        game = state[game_id]
+        url = f"/api/games/{game['run_id']}/trials"
+        trials = game["trials"][batch * BATCH_SIZE : (batch + 1) * BATCH_SIZE]
         body = expect(client.post(url, json=trials, headers=bearer("patient")), 200)
         done = (batch + 1) * BATCH_SIZE
         require(body["trials_done"] == done, f"trials_done is {body['trials_done']}, not {done}")
 
-    def end_game() -> None:
-        url = f"/api/games/{state['run_id']}/end"
-        summary = game_summary(state["trials"])
-        state["score"] = 100 * summary["successes"]
-        payload = {"status": "completed", "score": state["score"], "summary": summary}
+    def end_game(game_id: str) -> None:
+        game = state[game_id]
+        url = f"/api/games/{game['run_id']}/end"
+        summary = game_summary(game_id, game["trials"])
+        game["score"] = 100 * summary["successes"]
+        payload = {"status": "completed", "score": game["score"], "summary": summary}
         body = expect(client.post(url, json=payload, headers=bearer("patient")), 200)
         require(body["status"] == "completed", "game run is not completed")
         require(body["trials_done"] == GAME_TRIALS, f"trials_done is {body['trials_done']}")
+        require(body["summary"]["details"] == summary["details"], "summary details differ")
 
     def dashboard_last_games() -> None:
         body = expect(client.get("/api/patient/dashboard", headers=bearer("patient")), 200)
         games = body["last_session"]["games"]
-        require(len(games) == 1, f"expected 1 game on the dashboard, got {len(games)}")
-        require(games[0]["game_id"] == "reach_activate", "the dashboard game is not reach_activate")
-        require(games[0]["score"] == state["score"], f"dashboard score is {games[0]['score']}")
+        require(
+            [game["game_id"] for game in games] == list(GAME_IDS),
+            f"dashboard games are {[game['game_id'] for game in games]}",
+        )
+        for game in games:
+            expected = state[game["game_id"]]["score"]
+            require(game["score"] == expected, f"{game['game_id']} score is {game['score']}")
 
     def end_session() -> None:
         url = f"/api/sessions/{state['session_id']}/end"
@@ -355,11 +456,16 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         body = expect(client.get(url, headers=bearer("admin")), 200)
         require(body["calibration"] is not None, "calibration is missing")
         require(len(body["warmup_results"]) == 6, "a warm-up result is missing")
-        require(len(body["games"]) == 1, "the game run is missing")
-        trials = body["games"][0]["trials"]
-        require(len(trials) == GAME_TRIALS, f"expected {GAME_TRIALS} trials, got {len(trials)}")
-        numbers = [trial["trial_no"] for trial in trials]
-        require(numbers == list(range(1, GAME_TRIALS + 1)), "trials are missing or out of order")
+        runs = body["games"]
+        require(len(runs) == 3, f"expected 3 game runs, got {len(runs)}")
+        require([run["game_id"] for run in runs] == list(GAME_IDS), "the runs are out of order")
+        trials = [trial for run in runs for trial in run["trials"]]
+        require(len(trials) == 3 * GAME_TRIALS, f"expected 60 trials, got {len(trials)}")
+        for run in runs:
+            numbers = [trial["trial_no"] for trial in run["trials"]]
+            require(numbers == list(range(1, GAME_TRIALS + 1)), f"{run['game_id']} trials are missing")
+        misses = sum(1 for trial in trials if trial["outcome"] == "miss")
+        require(misses == 10, f"expected 10 misses, got {misses}")
         require(all(len(trial["trajectory"]) == 31 for trial in trials), "a trajectory is missing")
 
     def deactivate_patient() -> None:
@@ -380,11 +486,17 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Patient reads the session's warm-up", read_session_warmup),
         ("Patient reads warm-up history", read_warmup_history),
         ("Dashboard shows the last warm-up", dashboard_last_warmup),
-        ("Patient starts a reach_activate run", start_game),
-        ("Patient uploads trials 1 to 10", lambda: upload_batch(0)),
-        ("Patient uploads trials 11 to 20", lambda: upload_batch(1)),
-        ("Patient ends the run with a summary", end_game),
-        ("Dashboard shows the last session's game", dashboard_last_games),
+        *[
+            step
+            for game_id in GAME_IDS
+            for step in (
+                (f"Patient starts a {game_id} run", partial(start_game, game_id)),
+                (f"Patient uploads {game_id} trials 1 to 10", partial(upload_batch, game_id, 0)),
+                (f"Patient uploads {game_id} trials 11 to 20", partial(upload_batch, game_id, 1)),
+                (f"Patient ends the {game_id} run with a summary", partial(end_game, game_id)),
+            )
+        ],
+        ("Dashboard shows the last session's three games", dashboard_last_games),
         ("Patient ends the session", end_session),
         ("Admin lists the patient's sessions", admin_lists_sessions),
         ("Admin lists the patient's calibrations", admin_lists_calibrations),

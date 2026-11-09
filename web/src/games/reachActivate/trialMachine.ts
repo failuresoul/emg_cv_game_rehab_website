@@ -11,6 +11,8 @@ export const LEAVE_MARGIN = 0.1;
 
 export type TrialPhase = "SPAWN" | "REACH" | "DWELL" | "ACTIVATE" | "OUTCOME" | "REST" | "DONE";
 
+const LIVE_PHASES: ReadonlySet<TrialPhase> = new Set(["SPAWN", "REACH", "DWELL", "ACTIVATE"]);
+
 export interface TrialSettings {
   dwellMs: number;
   reachTimeLimitMs: number;
@@ -94,7 +96,7 @@ export class ReachTrialMachine {
 
   /** True from SPAWN to ACTIVATE: the trial is still being played. */
   get isLive(): boolean {
-    return ["SPAWN", "REACH", "DWELL", "ACTIVATE"].includes(this.current);
+    return LIVE_PHASES.has(this.current);
   }
 
   update({ nowMs, distanceRatio, level }: TrialInput): TrialEvent[] {

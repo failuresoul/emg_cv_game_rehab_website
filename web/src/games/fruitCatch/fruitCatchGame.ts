@@ -77,7 +77,8 @@ export function createFruitCatchGame(context: GameContext): GameInstance {
   function trySpawn(at: number): void {
     const next = nextPending();
     if (!next) return;
-    const onScreen = fruits.filter((fruit) => fruit.trial.phase !== "DONE").length;
+    let onScreen = 0;
+    for (const fruit of fruits) if (fruit.trial.phase !== "DONE") onScreen++;
     if (onScreen >= next.settings.maxOnScreen) return;
     if (at < lastSpawnAt + next.settings.spawnIntervalMs || at < lastDoneAt + MIN_GAP_MS) return;
 
@@ -147,6 +148,7 @@ export function createFruitCatchGame(context: GameContext): GameInstance {
 
       trySpawn(now);
       const reading = context.compensation.reading;
+      let anyDone = false;
       for (const fruit of fruits) {
         if (fruit.trial.isLive) {
           fruit.recorder.add(tracking.timestamp, tracking.rawSw);
@@ -156,10 +158,13 @@ export function createFruitCatchGame(context: GameContext): GameInstance {
         for (const event of fruit.trial.update(now, rawBasket)) {
           if (event.type === "outcome") record(fruit);
           if (event.type === "landed") context.audio.plop();
-          if (event.type === "done") lastDoneAt = now;
+          if (event.type === "done") {
+            lastDoneAt = now;
+            anyDone = true;
+          }
         }
       }
-      fruits = fruits.filter((fruit) => fruit.trial.phase !== "DONE");
+      if (anyDone) fruits = fruits.filter((fruit) => fruit.trial.phase !== "DONE");
     },
 
     renderBackground(context2d) {

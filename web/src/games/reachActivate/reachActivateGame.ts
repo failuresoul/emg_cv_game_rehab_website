@@ -33,7 +33,7 @@ export function createReachActivateGame(context: GameContext): GameInstance {
   let paused = false;
   let started = false;
   let nowMs = 0;
-  let trail: { at: Point; ms: number }[] = [];
+  let trail: TrailPoint[] = [];
   let burst: { centreSw: Point; radiusSw: number; startMs: number } | null = null;
 
   const bounds = (): ScreenBounds => ({
@@ -142,7 +142,8 @@ export function createReachActivateGame(context: GameContext): GameInstance {
         current.compensation.add(reading.sustained, reading.values);
         if (cursor) trail.push({ at: cursor, ms: now });
       }
-      trail = trail.filter((point) => now - point.ms < TRAIL_LIFE_MS);
+      // Oldest first, so expired points are all at the front.
+      while (trail.length > 0 && now - trail[0].ms >= TRAIL_LIFE_MS) trail.shift();
 
       for (const event of events) {
         if (event.type === "entered") context.audio.tick();
@@ -157,11 +158,14 @@ export function createReachActivateGame(context: GameContext): GameInstance {
     render(context2d) {
       const radiusPx = (sw: number) => sw * context.pixelsPerSw;
       if (trail.length > 1) {
-        const points: TrailPoint[] = trail.map((point) => ({
-          at: context.toScreen(point.at),
-          ageMs: nowMs - point.ms,
-        }));
-        drawTrail(context2d, points, TRAIL_LIFE_MS, Math.max(4, radiusPx(0.05)));
+        drawTrail(
+          context2d,
+          trail,
+          nowMs,
+          TRAIL_LIFE_MS,
+          Math.max(4, radiusPx(0.05)),
+          context.toScreen,
+        );
       }
       if (trial?.machine.isLive) {
         const { machine, target } = trial;
