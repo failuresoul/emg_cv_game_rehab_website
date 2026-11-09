@@ -14,6 +14,7 @@ import { api } from "@/lib/api";
 import { formatClock, formatNumber } from "@/lib/format";
 import type { Calibration, Side } from "@/types/api";
 import type { Point } from "@/vision/geometry";
+import { ArmLengthTracker, computeJointAngles } from "@/vision/angles";
 import { computePosture } from "@/vision/posture";
 import type { TrackingState } from "@/vision/tracking";
 import { useTracking } from "@/vision/useTracking";
@@ -33,6 +34,7 @@ import type {
   GameContext,
   GameDefinition,
   GameFeedback,
+  GameHudItem,
   GameInstance,
   GameResult,
   GameTracking,
@@ -76,6 +78,7 @@ interface Hud {
   trialsPlanned: number;
   score: number;
   elapsedMs: number;
+  items: GameHudItem[];
 }
 
 /** The level meter re-renders on its own, so the rest of the screen does not at 60 Hz. */
@@ -184,6 +187,7 @@ const GamePlay = memo(function GamePlay({
     trialsPlanned: definition.trialsDefault,
     score: 0,
     elapsedMs: 0,
+    items: [],
   });
   const [feedback, setFeedback] = useState<(GameFeedback & { id: number }) | null>(null);
   const [result, setResult] = useState<GameResult | null>(null);
@@ -195,14 +199,17 @@ const GamePlay = memo(function GamePlay({
 
   useEffect(() => subscribeTracking((state) => (trackingRef.current = state)), [subscribeTracking]);
 
-  useEffect(
-    () =>
-      visionEngine.subscribe((frame) => {
-        visionRef.current = frame;
-        monitor.addSample(computePosture(frame, affectedSide), frame.timestamp);
-      }),
-    [monitor, affectedSide],
-  );
+  const elevationRef = useRef<number | null>(null);
+  useEffect(() => {
+    const armLengths = new ArmLengthTracker();
+    return visionEngine.subscribe((frame) => {
+      visionRef.current = frame;
+      monitor.addSample(computePosture(frame, affectedSide), frame.timestamp);
+      // Unfiltered, for saved data.
+      elevationRef.current =
+        computeJointAngles(frame, affectedSide, armLengths).armElevationDeg?.value ?? null;
+    });
+  }, [monitor, affectedSide]);
 
   // Each new message restarts the timer, so the latest one always gets its full time.
   useEffect(() => {
@@ -285,6 +292,7 @@ const GamePlay = memo(function GamePlay({
           smoothSw: tracking?.fingertipSmoothSw ?? null,
           handLost: !(tracking?.handPresent ?? false),
           handLostMs: tracking?.handLostMs ?? 0,
+          armElevationDeg: elevationRef.current,
           timestamp: runtimeRef.current?.toGameTime(timestamp) ?? timestamp,
         };
       },
@@ -361,8 +369,12 @@ const GamePlay = memo(function GamePlay({
       });
 
       const playArea = area();
-      context2d.fillStyle = BACKGROUND;
-      context2d.fillRect(0, 0, playArea.width, playArea.height);
+      if (game.renderBackground) {
+        game.renderBackground(context2d);
+      } else {
+        context2d.fillStyle = BACKGROUND;
+        context2d.fillRect(0, 0, playArea.width, playArea.height);
+      }
       const vision = visionRef.current;
       if (vision) {
         drawSkeletonLayer(context2d, {
@@ -402,10 +414,12 @@ const GamePlay = memo(function GamePlay({
           trialsPlanned: summary.trialsPlanned,
           score: summary.score,
           elapsedMs: runtime.elapsedMs(wallMs),
+          items: game.getHudItems?.() ?? [],
         };
         setHud((current) =>
           current.trial === next.trial &&
           current.score === next.score &&
+          JSON.stringify(current.items) === JSON.stringify(next.items) &&
           Math.floor(current.elapsedMs / 1000) === Math.floor(next.elapsedMs / 1000)
             ? current
             : next,
@@ -448,6 +462,11 @@ const GamePlay = memo(function GamePlay({
           {t("game.hud.trial", { n: hud.trial, total: hud.trialsPlanned })}
         </p>
         <p className="tabular-nums">{t("game.hud.score", { value: hud.score })}</p>
+        {hud.items.map((item) => (
+          <p key={item.key} className="tabular-nums">
+            {t(item.key, item.params)}
+          </p>
+        ))}
         <p className="tabular-nums">{t("game.hud.time", { value: formatClock(hud.elapsedMs) })}</p>
         <div className="ml-auto flex items-center gap-3">
           {saveKey && (

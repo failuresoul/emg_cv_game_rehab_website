@@ -58,6 +58,7 @@ function setUp(trialsPlanned = 1) {
         rawSw: smooth && { x: smooth.x + RAW_OFFSET.x, y: smooth.y + RAW_OFFSET.y },
         handLost: smooth === null,
         handLostMs: 0,
+        armElevationDeg: null,
         timestamp: now,
       };
     },

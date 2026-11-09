@@ -19,7 +19,8 @@ GAME_IDS: tuple[str, ...] = get_args(GameId)
 GameEngine = Literal["L0", "L1", "L2"]
 InputSource = Literal["cv_grip", "keyboard", "emg"]
 GameRunStatus = Literal["active", "completed", "aborted"]
-TrialOutcome = Literal["success", "reach_fail", "activation_fail", "aborted"]
+#: "miss" is for games where a target leaves by itself, such as a balloon floating away.
+TrialOutcome = Literal["success", "reach_fail", "activation_fail", "miss", "aborted"]
 
 MAX_TRIALS_PER_BATCH = 50
 MAX_TRAJECTORY_POINTS = 2000
@@ -79,6 +80,8 @@ class TrialMetrics(BaseModel):
     peak_speed_sw_s: NonNegative | None = None
     activation_latency_ms: NonNegative | None = None
     activation_peak: Share | None = None
+    #: The highest the affected arm was raised during the trial, from the body (0 is down).
+    peak_arm_elevation_deg: Annotated[float, Field(ge=0, le=180)] | None = None
 
 
 class TrialCompensation(BaseModel):

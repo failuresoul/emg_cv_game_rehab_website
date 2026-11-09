@@ -1,5 +1,6 @@
-import { Apple, Flower2, Grab, Hand, Paintbrush, PartyPopper, Piano, Spline } from "lucide-react";
+import { Apple, Flower2, Grab, Hand, Paintbrush, Piano, Spline } from "lucide-react";
 
+import { balloonPop } from "@/games/balloonPop";
 import { reachActivate } from "@/games/reachActivate";
 import type { GameId } from "@/types/api";
 
@@ -107,24 +108,7 @@ function notImplemented(id: GameId): (context: GameContext) => GameInstance {
 
 export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
   reach_activate: reachActivate,
-  balloon_pop: {
-    id: "balloon_pop",
-    nameKey: "game.balloon_pop.name",
-    descriptionKey: "game.balloon_pop.description",
-    movementKey: "game.balloon_pop.movement",
-    icon: PartyPopper,
-    params: [
-      { ...targetRadiusSw, name: "balloon_radius_sw", labelKey: "param.balloonRadiusSw" },
-      speedSwS,
-      spawnIntervalMs,
-      demand,
-      { ...holdMs, default: 300 },
-    ],
-    trialsDefault: 20,
-    estimatedMinutes: 5,
-    create: notImplemented("balloon_pop"),
-    implemented: false,
-  },
+  balloon_pop: balloonPop,
   fruit_catch: {
     id: "fruit_catch",
     nameKey: "game.fruit_catch.name",

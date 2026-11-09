@@ -17,6 +17,8 @@ export const OUTCOME_STYLE: Record<
     shape: "diamond",
     labelKey: "outcome.activationFail",
   },
+  // Like a reach that did not arrive, so it shares that look.
+  miss: { color: "var(--color-warning)", shape: "square", labelKey: "outcome.miss" },
   aborted: { color: "var(--color-muted)", shape: "circle", labelKey: "outcome.aborted" },
 };
 
@@ -25,5 +27,6 @@ export const OUTCOME_ORDER: readonly TrialOutcome[] = [
   "success",
   "reach_fail",
   "activation_fail",
+  "miss",
   "aborted",
 ];

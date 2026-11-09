@@ -1,7 +1,6 @@
+export { CompensationTally } from "@/games/shared/compensationTally";
 import { reachPathMetrics } from "@/games/shared/metrics";
 import type { GameParams } from "@/games/shared/types";
-import type { CompensationValues } from "@/warmup/compensation";
-import type { CompensationType } from "@/warmup/compensationConfig";
 import type { TrajectoryPoint, TrialCompensation, TrialCreate, TrialOutcome } from "@/types/api";
 
 import type { TargetPlacement } from "./placement";
@@ -23,40 +22,6 @@ export function trialScore(
   const reachMs = moments.enter === null ? reachTimeLimitMs : moments.enter - moments.spawn;
   const share = reachTimeLimitMs > 0 ? Math.max(0, 1 - reachMs / reachTimeLimitMs) : 0;
   return POINTS_PER_SUCCESS + Math.round(MAX_TIME_BONUS * Math.min(1, share));
-}
-
-/** Compensation seen while reaching: the kinds held long enough to count, and the largest values. */
-export class CompensationTally {
-  private readonly types = new Set<CompensationType>();
-  private max: CompensationValues | null = null;
-
-  add(sustained: readonly CompensationType[], values: CompensationValues | null): void {
-    sustained.forEach((type) => this.types.add(type));
-    if (!values) return;
-    this.max = this.max
-      ? {
-          trunkDisplacement: Math.max(this.max.trunkDisplacement, values.trunkDisplacement),
-          trunkLeanDeg: Math.max(this.max.trunkLeanDeg, values.trunkLeanDeg),
-          shoulderHike: Math.max(this.max.shoulderHike, values.shoulderHike),
-        }
-      : { ...values };
-  }
-
-  toRecord(): TrialCompensation {
-    const types = (["trunk", "lean", "shoulder"] as const).filter((type) => this.types.has(type));
-    const round = (value: number) => Math.round(value * 1000) / 1000;
-    return {
-      flagged: types.length > 0,
-      type: types.length > 0 ? types.join("+") : null,
-      max_values: this.max
-        ? {
-            trunk_displacement_sw: round(this.max.trunkDisplacement),
-            trunk_lean_deg: round(this.max.trunkLeanDeg),
-            shoulder_hike_sw: round(this.max.shoulderHike),
-          }
-        : {},
-    };
-  }
 }
 
 export interface TrialRecordInput {

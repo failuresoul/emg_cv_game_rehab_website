@@ -636,3 +636,30 @@ def test_session_lists_include_finished_games(
     patient_id = own[0]["patient_id"]
     admin = client.get(f"/api/admin/patients/{patient_id}/sessions", headers=admin_headers).json()
     assert admin[0]["games"] == expected
+
+
+def test_upload_balloon_trial_with_miss_and_arm_elevation(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="balloon_pop")
+    trial = trial_payload(1, outcome="miss")
+    trial["metrics"] = {**trial["metrics"], "peak_arm_elevation_deg": 112.5}
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 200, response.text
+
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    [saved] = detail["games"][0]["trials"]
+    assert saved["outcome"] == "miss"
+    assert saved["metrics"]["peak_arm_elevation_deg"] == 112.5
+
+
+@pytest.mark.parametrize("elevation", [-1, 181])
+def test_upload_arm_elevation_out_of_range_is_422(
+    client: TestClient, patient_headers: Headers, elevation: float
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="balloon_pop")
+    trial = trial_payload(1)
+    trial["metrics"] = {**trial["metrics"], "peak_arm_elevation_deg": elevation}
+    assert upload(client, patient_headers, run_id, [trial]).status_code == 422

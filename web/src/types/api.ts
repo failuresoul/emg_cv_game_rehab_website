@@ -266,7 +266,8 @@ export type GameId =
 export type GameEngine = "L0" | "L1" | "L2";
 export type InputSource = "cv_grip" | "keyboard" | "emg";
 export type GameRunStatus = "active" | "completed" | "aborted";
-export type TrialOutcome = "success" | "reach_fail" | "activation_fail" | "aborted";
+/** "miss" is for games where a target leaves by itself, such as a balloon floating away. */
+export type TrialOutcome = "success" | "reach_fail" | "activation_fail" | "miss" | "aborted";
 /** [t_ms relative to spawn, x_sw, y_sw]: the raw fingertip in the body frame. */
 export type TrajectoryPoint = [number, number, number];
 
@@ -308,6 +309,8 @@ export interface TrialMetrics {
   peak_speed_sw_s: number | null;
   activation_latency_ms: number | null;
   activation_peak: number | null;
+  /** The highest the affected arm was raised during the trial, in degrees; for raising games. */
+  peak_arm_elevation_deg?: number | null;
 }
 
 export interface TrialCompensation {

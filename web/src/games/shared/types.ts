@@ -45,6 +45,8 @@ export interface GameTracking {
   /** True once the hand has been missing for 500 ms. */
   handLost: boolean;
   handLostMs: number;
+  /** The affected arm's elevation from the body, in degrees (0 is down), unfiltered; null if unseen. */
+  armElevationDeg: number | null;
   /** Game time of the frame: performance.now() minus the time spent paused. */
   timestamp: number;
 }
@@ -100,6 +102,12 @@ export interface GameContext {
   emit(feedback: GameFeedback): void;
 }
 
+/** An extra figure for the top bar, such as the number of balloons popped. */
+export interface GameHudItem {
+  key: TranslationKey;
+  params?: Record<string, string | number>;
+}
+
 export interface GameResult {
   score: number;
   trialsDone: number;
@@ -111,6 +119,11 @@ export interface GameInstance {
   start(): void;
   /** Called at a fixed 60 Hz. nowMs is game time, which stands still while paused. */
   update(dtMs: number, nowMs: number): void;
+  /**
+   * Optional: draws the game's own background, such as a sky, in place of the plain dark one. It
+   * comes before the faint skeleton, and is drawn during the countdown too.
+   */
+  renderBackground?(context: CanvasRenderingContext2D): void;
   /** Called every animation frame, in CSS pixels, after the background and before the cursor. */
   render(context: CanvasRenderingContext2D): void;
   pause(): void;
@@ -118,6 +131,8 @@ export interface GameInstance {
   isFinished(): boolean;
   /** Also read during play, for the score and trial number on screen. */
   getSummary(): GameResult;
+  /** Optional: extra figures for the top bar, read a few times a second. */
+  getHudItems?(): GameHudItem[];
   destroy(): void;
 }
 
