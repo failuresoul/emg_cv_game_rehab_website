@@ -2,6 +2,39 @@
 
 MotionLab is a web platform for home-based arm and hand rehabilitation after stroke. A patient logs in, checks their camera, calibrates their reach, and completes warm-up exercises tracked by the webcam with MediaPipe. They then play rehabilitation games controlled by hand and arm movement, with an AI engine planning the session and adapting each game's difficulty to the patient. Each session ends with a short cool-down questionnaire and an AI feedback report. Therapists and researchers use an admin area to manage patients, programmes and games, and to review analytics. Webcam video and images never leave the browser: only landmarks, metrics and events go to the server.
 
+**Version 0.1.0.** See the [changelog](CHANGELOG.md) for what changed.
+
+## Features in v0.1
+
+**For patients**
+
+- **Camera check:** a live checklist for light, distance and framing.
+- **Reach calibration:** reach in 8 directions, with a reach map compared with last time.
+- **Warm-up:** six guided arm and hand exercises with rep counting, compensation cues and targets that adapt to each patient.
+- **Three games:** Reach and squeeze, Balloon pop and Fruit catch, chosen and ordered on a plan screen, with webcam squeeze detection (keyboard for testing).
+- **Cool-down:** a minute of guided rest, then a short questionnaire. Pain or anything new or unusual shows a fixed safety notice.
+- **Summary:** time spent moving, warm-up goals and repetitions, a card per game, the reach map, and "compared with last time".
+- **Progress:** streak, weekly goal ring, a 4-week calendar and trend charts on the home and Progress pages.
+- **A resumable session:** the step is saved, so a refresh or a return carries on at the same step, with "Continue your session" or "Start over". There is a step bar, Exit from any step, an offline banner and a friendly error page.
+- **English and Bangla.**
+
+**For therapists and researchers**
+
+- **Patients:** add, edit, deactivate and search patients, and set each one's weekly goal.
+- **Session pages:** calibration, warm-up, every game trial with its reach map and charts, and the questionnaire.
+- **Progress tab:** reach maps over time and warm-up charts with every personalisation decision.
+- **Safety alerts:** flagged sessions on the overview, to mark reviewed with a note.
+- **Demo data:** two demo patients with two weeks of synthetic sessions.
+
+Webcam video never leaves the browser. Personal feedback reports, adaptive difficulty, EMG input and six more games are planned for later versions.
+
+## Guides
+
+- [Guide for patients](docs/user-guide-patient.md)
+- [Guide for therapists and researchers](docs/admin-guide.md)
+- [10-minute demo script](docs/demo-script.md)
+- [API contract](docs/api-contract.md) and [day logs](docs/day-logs/README.md)
+
 ## Planned folders
 
 | Folder      | Purpose                                                       | Status  |
@@ -99,14 +132,36 @@ It prints the logins for `demo.rahim@example.com` (left side, steady progress) a
 
 ### Run the checks
 
+On Windows, run every check at once from the repository root:
+
+```powershell
+.\scripts\check.ps1             # add -SkipBuild to leave out the build
+```
+
+It runs, and prints PASS or FAIL for each:
+
+1. backend tests with coverage;
+2. frontend tests, lint and build;
+3. `server/scripts/smoke_test.py` against a backend it starts itself on port 8765.
+
+That backend uses a temporary database and admin login, so your own database and `server/.env` are not changed. A summary table comes at the end. The exit code is 0 only if every step passed. If PowerShell refuses to run scripts, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
+
+The same checks by hand:
+
 ```sh
 # From server/, with the virtual environment active
-pytest
+pytest --cov=app --cov=scripts
 
 # From web/
+npm test
 npm run lint
 npm run build
+
+# With the server running, from server/
+python scripts/smoke_test.py
 ```
+
+The smoke test adds a test patient to the database it runs against, and deactivates it at the end.
 
 ## Run with Docker
 
@@ -125,6 +180,7 @@ Code changes reload automatically. Stop any local `uvicorn` or `npm run dev` fir
 | -------------------- | ------------------------------------------------------- |
 | Start                | `docker compose up --build`, then <http://localhost:5173> |
 | Seed demo patients   | `docker compose exec server python scripts/seed_demo.py` |
+| Seed demo data       | `docker compose exec server python scripts/seed_demo_data.py` |
 | Follow server logs   | `docker compose logs -f server`                         |
 | Stop                 | `docker compose down`                                   |
 

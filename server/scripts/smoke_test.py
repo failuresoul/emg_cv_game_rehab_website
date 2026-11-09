@@ -6,8 +6,9 @@ Start the server first, then run from server/ with the virtual environment activ
 
 The default base_url is http://localhost:8000. The admin login comes from server/.env. Each run
 adds one test patient with one session (a calibration, six warm-up results and one
-run each of reach_activate, balloon_pop and fruit_catch with 20 trials) to the database,
-and deactivates the patient at the end.
+run each of reach_activate, balloon_pop and fruit_catch with 20 trials, and a cool-down
+questionnaire with pain 5) to the database. Its pain alert is marked reviewed, and the patient is
+deactivated at the end.
 The exit code is 0 if every step passes and 1 otherwise.
 """
 
@@ -418,6 +419,73 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             expected = state[game["game_id"]]["score"]
             require(game["score"] == expected, f"{game['game_id']} score is {game['score']}")
 
+    def cooldown_with_pain() -> None:
+        url = f"/api/sessions/{state['session_id']}/questionnaire"
+        answers = {
+            "pain_0_10": 5,
+            "fatigue_0_10": 4,
+            "enjoyment_1_5": 4,
+            "difficulty": "just_right",
+            "new_symptoms": False,
+            "comment": "Smoke test: pain 5",
+        }
+        body = expect(client.post(url, json=answers, headers=bearer("patient")), 201)
+        require(body["flags"] == ["pain"], f"flags are {body['flags']}, not ['pain']")
+        require(body["needs_review"] is True, "the session is not marked for review")
+
+    def session_summary() -> None:
+        url = f"/api/sessions/{state['session_id']}/summary"
+        body = expect(client.get(url, headers=bearer("patient")), 200)
+        require(
+            [game["game_id"] for game in body["games"]] == list(GAME_IDS),
+            "the summary's games are wrong",
+        )
+        require(body["warmup"]["goals_reached"] == 6, "the summary's warm-up goals are wrong")
+        require(body["reach"]["hull_area_sw2"] == 2.0, "the summary's reach is wrong")
+        require(body["feedback"]["pain_0_10"] == 5, "the summary has no questionnaire")
+        require(body["flags"] == ["pain"], "the summary has no pain flag")
+        require(body["active_seconds"] > 0, "the summary has no active time")
+
+    def patient_progress() -> None:
+        body = expect(client.get("/api/patient/progress", headers=bearer("patient")), 200)
+        series = body["series"]
+        require(len(series) == 1, f"expected 1 completed session, got {len(series)}")
+        point = series[0]
+        require(point["session_id"] == state["session_id"], "progress shows another session")
+        require(point["warmup_goals_reached"] == 6, "progress warm-up goals are wrong")
+        # Every fourth trial is not a success: 45 of 60.
+        rate = point["game_success_rate"]
+        require(rate is not None and abs(rate - 0.75) < 1e-9, f"success rate is {rate}")
+        require(body["streak_days"] >= 1, "the streak is empty")
+        require(len(body["calendar"]) == 28, "the calendar does not have 28 days")
+
+    def admin_sees_alert() -> None:
+        params = {"reviewed": "false"}
+        body = expect(client.get("/api/admin/alerts", params=params, headers=bearer("admin")), 200)
+        alert = next((item for item in body if item["session_id"] == state["session_id"]), None)
+        require(alert is not None, "the pain alert is not listed")
+        require(alert["flags"] == ["pain"], f"the alert's flags are {alert['flags']}")
+        stats = expect(client.get("/api/admin/stats", headers=bearer("admin")), 200)
+        require(stats["open_alerts"] >= 1, "open_alerts does not count the alert")
+        state["open_alerts"] = stats["open_alerts"]
+
+    def admin_reviews_alert() -> None:
+        url = f"/api/admin/alerts/{state['session_id']}/review"
+        note = {"note": "Smoke test: reviewed"}
+        body = expect(client.post(url, json=note, headers=bearer("admin")), 200)
+        require(body["reviewed"] is True, "the alert is not reviewed")
+        params = {"reviewed": "false"}
+        open_alerts = expect(
+            client.get("/api/admin/alerts", params=params, headers=bearer("admin")), 200
+        )
+        require(
+            all(item["session_id"] != state["session_id"] for item in open_alerts),
+            "the reviewed alert is still open",
+        )
+        stats = expect(client.get("/api/admin/stats", headers=bearer("admin")), 200)
+        expected = state["open_alerts"] - 1
+        require(stats["open_alerts"] == expected, f"open_alerts is {stats['open_alerts']}")
+
     def end_session() -> None:
         url = f"/api/sessions/{state['session_id']}/end"
         body = expect(client.post(url, json={"status": "completed"}, headers=bearer("patient")), 200)
@@ -497,11 +565,16 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             )
         ],
         ("Dashboard shows the last session's three games", dashboard_last_games),
+        ("Patient sends the cool-down with pain 5 and gets the pain flag", cooldown_with_pain),
         ("Patient ends the session", end_session),
+        ("Patient reads the session summary", session_summary),
+        ("Patient reads their progress", patient_progress),
         ("Admin lists the patient's sessions", admin_lists_sessions),
         ("Admin lists the patient's calibrations", admin_lists_calibrations),
         ("Admin reads the patient's warm-up history", admin_reads_warmup_history),
         ("Admin reads the full session detail", admin_reads_session_detail),
+        ("Admin sees the pain alert", admin_sees_alert),
+        ("Admin marks the alert reviewed", admin_reviews_alert),
         ("Admin deactivates the test patient", deactivate_patient),
     ]
 
