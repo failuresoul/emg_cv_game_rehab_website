@@ -33,6 +33,8 @@ export interface PatientProfile {
   notes: string | null;
   /** Sessions per week the patient aims for; the therapist sets it. */
   weekly_goal: number;
+  /** A demo patient with synthetic data, from server/scripts/seed_demo_data.py. */
+  is_demo: boolean;
   created_at: string;
 }
 

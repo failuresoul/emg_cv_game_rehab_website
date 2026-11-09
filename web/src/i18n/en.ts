@@ -39,6 +39,8 @@ export const en = {
   "patients.view": "View",
   "patients.viewLabel": "View {name}",
   "patients.neverLoggedIn": "Never",
+  "patients.demo": "Demo",
+  "patients.demoTitle": "Demo patient: the sessions are synthetic, not real practice.",
   "patients.empty": "No patients yet",
   "patients.emptyDescription": "Add your first patient to get started.",
   "patients.noResults": "No patients match your search",

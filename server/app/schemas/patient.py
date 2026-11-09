@@ -85,6 +85,8 @@ class PatientProfileRead(BaseModel):
     language: Language
     notes: str | None
     weekly_goal: int
+    #: A demo patient with synthetic data, from scripts/seed_demo_data.py.
+    is_demo: bool = False
     created_at: UtcDatetime
 
 

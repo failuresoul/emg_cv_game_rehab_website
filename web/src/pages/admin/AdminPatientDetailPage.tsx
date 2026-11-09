@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Tabs } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
 import { usePatient, useSetPatientActive } from "@/features/admin/hooks";
+import { DemoBadge } from "@/features/admin/DemoBadge";
 import { EditPatientModal } from "@/features/admin/PatientModals";
 import { PatientPracticeSummary } from "@/features/admin/PatientPracticeSummary";
 import { PatientProgressTab } from "@/features/admin/PatientProgressTab";
@@ -193,7 +194,12 @@ export function AdminPatientDetailPage() {
           code: patient.data.patient_code,
           name: patient.data.user.full_name,
         })}
-        actions={<PatientStatusBadge isActive={patient.data.user.is_active} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {patient.data.is_demo && <DemoBadge />}
+            <PatientStatusBadge isActive={patient.data.user.is_active} />
+          </div>
+        }
       />
       <Card>
         <Tabs

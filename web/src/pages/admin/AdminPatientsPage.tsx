@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { usePatients } from "@/features/admin/hooks";
 import { AddPatientModal } from "@/features/admin/PatientModals";
+import { DemoBadge } from "@/features/admin/DemoBadge";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
 import { QueryError } from "@/components/ui/QueryError";
 import { t, type TranslationKey } from "@/i18n";
@@ -48,7 +49,12 @@ function PatientTable({ patients }: { patients: Patient[] }) {
           {patients.map((patient) => (
             <tr key={patient.id}>
               <td className="text-primary px-3 py-2 font-semibold">{patient.patient_code}</td>
-              <td className="px-3 py-2">{patient.user.full_name}</td>
+              <td className="px-3 py-2">
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  {patient.user.full_name}
+                  {patient.is_demo && <DemoBadge />}
+                </span>
+              </td>
               <td className="px-3 py-2">
                 {t(patient.affected_side === "left" ? "side.left" : "side.right")}
               </td>

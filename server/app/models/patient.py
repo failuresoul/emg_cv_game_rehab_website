@@ -18,4 +18,6 @@ class PatientProfile(SQLModel, table=True):
     notes: str | None = None
     #: Sessions per week the patient aims for; the therapist sets it.
     weekly_goal: int = 5
+    #: Made by scripts/seed_demo_data.py, with synthetic sessions; --clear removes it.
+    is_demo: bool = False
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))

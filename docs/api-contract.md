@@ -217,6 +217,7 @@ Admin patient routes return this object:
   "language": "en",
   "notes": "Prefers morning sessions",
   "weekly_goal": 5,
+  "is_demo": false,
   "created_at": "2026-11-01T10:11:41.174823Z",
   "user": {
     "email": "amina@example.com",
@@ -936,6 +937,8 @@ Errors: `404` (`Alert not found`) for a missing session or one without `needs_re
 `GET /api/patient/dashboard`, `GET /api/patient/progress` and `GET /api/admin/patients/{id}/progress` take an optional `tz_offset_minutes` query: the browser's minutes ahead of UTC, from -720 to 840 (Dhaka, UTC+6, is `360`; the default is `0`). Streaks, weeks and the calendar use the local days it gives. Weeks start on Monday.
 
 ### The weekly goal
+
+`is_demo` on the patient object is `true` only for demo patients made by `server/scripts/seed_demo_data.py`, whose sessions are synthetic. It cannot be set through the API.
 
 The patient object has `weekly_goal`: completed sessions a week the patient aims for, a whole number from 1 to 14, default `5`. Admins set it with `POST` or `PATCH /api/admin/patients`.
 

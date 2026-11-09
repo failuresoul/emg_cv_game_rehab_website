@@ -41,6 +41,8 @@ export const bn: Record<TranslationKey, string> = {
   "patients.view": "দেখুন",
   "patients.viewLabel": "{name} দেখুন",
   "patients.neverLoggedIn": "কখনো না",
+  "patients.demo": "ডেমো",
+  "patients.demoTitle": "ডেমো রোগী: সেশনগুলো কৃত্রিম, আসল অনুশীলন নয়।",
   "patients.empty": "এখনো কোনো রোগী নেই",
   "patients.emptyDescription": "শুরু করতে প্রথম রোগী যোগ করুন।",
   "patients.noResults": "আপনার খোঁজার সাথে কোনো রোগী মেলেনি",

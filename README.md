@@ -86,6 +86,17 @@ The camera check downloads its tracking files from the internet when it starts, 
 
 Lost a demo password? Log in as admin, open the patient, click **Edit** and set a new one.
 
+### 5. Optional: demo data for the dashboards
+
+To show the dashboards without weeks of practice, create two demo patients with two weeks of synthetic sessions. Run this from `server/` with the virtual environment active:
+
+```sh
+python scripts/seed_demo_data.py          # remove old demo patients, then create them again
+python scripts/seed_demo_data.py --clear  # only remove demo patients and all their data
+```
+
+It prints the logins for `demo.rahim@example.com` (left side, steady progress) and `demo.salma@example.com` (right side, slower progress, one unreviewed pain alert). They are marked **Demo** in the admin patient list. Only patients marked as demo are ever removed.
+
 ### Run the checks
 
 ```sh
