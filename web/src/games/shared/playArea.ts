@@ -33,7 +33,8 @@ export interface PlayAreaOptions {
   insets?: { top?: number; bottom?: number };
 }
 
-function defaultHull(): Point[] {
+/** The reach hull used without a calibration: 1.2 SW in each of the eight directions. */
+export function defaultHull(): Point[] {
   return Array.from({ length: 8 }, (_, index) => {
     const radians = (index * Math.PI) / 4;
     return { x: DEFAULT_REACH_SW * Math.cos(radians), y: DEFAULT_REACH_SW * Math.sin(radians) };

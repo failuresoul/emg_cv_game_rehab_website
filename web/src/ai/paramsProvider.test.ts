@@ -227,3 +227,17 @@ describe("FixedProvider for finger_piano", () => {
     expect(provider.nextParams("bloom", []).open_demand).toBe(0.7);
   });
 });
+
+describe("FixedProvider for path_trace", () => {
+  it("cycles the four shapes and traces each one both ways", () => {
+    const provider = new FixedProvider({ specsFor, seed: 2 });
+    const trials = Array.from({ length: 8 }, (_, index) =>
+      provider.nextParams("path_trace", [], index + 1),
+    );
+    expect(trials.map((params) => params.shape_index)).toEqual([0, 1, 2, 3, 0, 1, 2, 3]);
+    expect(trials.map((params) => params.direction)).toEqual([1, -1, 1, -1, -1, 1, -1, 1]);
+    const pairs = new Set(trials.map((params) => `${params.shape_index}:${params.direction}`));
+    expect(pairs.size).toBe(8);
+    expect(trials[0]).toMatchObject({ path_length_frac: 0.6, guide_speed_sw_s: 0.25 });
+  });
+});

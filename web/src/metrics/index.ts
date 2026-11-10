@@ -1,10 +1,13 @@
 export { binFrequencies, fft, magnitudeSpectrum, nextPowerOfTwo } from "./fft";
 export {
   buildPath,
+  centroid,
   type ClosestPoint,
   closestPointOnPath,
+  distanceToHullEdge,
   distanceToPath,
   evenlySpaced,
+  hullDiameter,
   PATH_SHAPES,
   type PathOptions,
   type PathShape,

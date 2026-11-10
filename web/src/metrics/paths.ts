@@ -122,23 +122,65 @@ export interface PathOptions {
   rotationDeg?: number;
   /** Space kept between the path and the hull's edge, as a share of the largest size. */
   margin?: number;
+  /** Where the shape's centre goes, in SW. The middle of the hull by default; it must be inside. */
+  centre?: Point;
+  /**
+   * The path's length in SW, in place of `sizeFrac`. It is shortened only as far as needed to fit
+   * the hull.
+   */
+  lengthSw?: number;
 }
 
-const centroid = (points: readonly Point[]): Point => ({
+/** The middle of a polygon's corners: inside it whenever it is convex. */
+export const centroid = (points: readonly Point[]): Point => ({
   x: points.reduce((total, point) => total + point.x, 0) / points.length,
   y: points.reduce((total, point) => total + point.y, 0) / points.length,
 });
 
 /**
+ * How far from `from` the hull's edge is, going in `directionDeg`, for a point `from` inside a
+ * convex hull. Found by halving the search.
+ */
+export function distanceToHullEdge(
+  hull: readonly Point[],
+  from: Point,
+  directionDeg: number,
+): number {
+  const radians = (directionDeg * Math.PI) / 180;
+  const at = (distanceSw: number) => ({
+    x: from.x + Math.cos(radians) * distanceSw,
+    y: from.y + Math.sin(radians) * distanceSw,
+  });
+  let low = 0;
+  let high = 2 * Math.max(...hull.map((corner) => distance(corner, from)), 0);
+  for (let step = 0; step < FIT_ITERATIONS; step++) {
+    const middle = (low + high) / 2;
+    if (pointInPolygon(at(middle), hull)) low = middle;
+    else high = middle;
+  }
+  return low;
+}
+
+/** The longest distance between two corners of a hull: its reach diameter. */
+export function hullDiameter(hull: readonly Point[]): number {
+  let longest = 0;
+  for (let i = 0; i < hull.length; i++) {
+    for (let j = i + 1; j < hull.length; j++)
+      longest = Math.max(longest, distance(hull[i], hull[j]));
+  }
+  return longest;
+}
+
+/**
  * A path of the given shape inside the patient's reach, as points evenly spaced in SW. The shape is
- * centred on the middle of the hull, turned by `rotationDeg`, and scaled to `sizeFrac` of the
- * largest size that still fits (found by halving the search: a convex hull holds every smaller
- * copy about a centre inside it).
+ * centred on `centre` (the middle of the hull by default) and turned by `rotationDeg`. Its size is
+ * `lengthSw` long, or `sizeFrac` of the largest size that fits, never more than fits (found by
+ * halving the search: a convex hull holds every smaller copy about a centre inside it).
  */
 export function buildPath(shape: PathShape, options: PathOptions): Point[] {
   const { hull, spacingSw = 0.02, sizeFrac = 0.8, rotationDeg = 0, margin = 0.05 } = options;
   if (hull.length < 3) throw new RangeError("the hull needs at least three corners");
-  const centre = centroid(hull);
+  const centre = options.centre ?? centroid(hull);
   const radians = (rotationDeg * Math.PI) / 180;
   const cos = Math.cos(radians);
   const sin = Math.sin(radians);
@@ -157,6 +199,10 @@ export function buildPath(shape: PathShape, options: PathOptions): Point[] {
     if (fits(middle)) low = middle;
     else high = middle;
   }
-  const scale = low * (1 - margin) * Math.min(1, Math.max(0, sizeFrac));
+  const largest = low * (1 - margin);
+  const scale =
+    options.lengthSw !== undefined
+      ? Math.min(largest, Math.max(0, options.lengthSw) / pathLength(placed(1)))
+      : largest * Math.min(1, Math.max(0, sizeFrac));
   return evenlySpaced(placed(scale), spacingSw);
 }

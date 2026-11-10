@@ -313,6 +313,8 @@ export interface SpatialTrialTarget {
   /** Direction and ring, for example "D3R2". */
   sector: string;
   notes?: string[];
+  shape?: string;
+  points?: PointPair[];
 }
 
 /**
@@ -323,6 +325,10 @@ export interface KindTrialTarget {
   kind: string;
   /** Up to 64, for example finger names in the order to play them. */
   notes?: string[];
+  /** A drawn target's shape, such as "s_curve" for a path. */
+  shape?: string;
+  /** A drawn target's points in SW, such as a path to follow: 2 to 200. */
+  points?: PointPair[];
   x_sw?: never;
   y_sw?: never;
   radius_sw?: never;
@@ -397,6 +403,18 @@ export interface TrialMetrics {
   mean_timing_error_ms?: number | null;
   /** Sequence games: hits and notes asked, for each finger used. */
   per_finger?: Partial<Record<FingerName, { hits: number; attempts: number }>> | null;
+  /** Tracing games: mean distance from the moving guide, in SW. */
+  mean_tracking_error_sw?: number | null;
+  /** Tracing games: mean distance from the path, in SW. */
+  mean_path_error_sw?: number | null;
+  /** Tracing games: share of the trace inside the corridor, 0–100. */
+  time_in_corridor_pct?: number | null;
+  /** Tracing games: mean delay behind the guide, in ms (negative when ahead). */
+  lag_ms?: number | null;
+  /** Tracing games: share of the path followed inside the corridor, 0–100. */
+  coverage_pct?: number | null;
+  /** Smoothness (SPARC) of the fingertip's speed: ≤ 0, closer to 0 is smoother. */
+  sparc?: number | null;
 }
 
 export type FingerName = "index" | "middle" | "ring" | "little";

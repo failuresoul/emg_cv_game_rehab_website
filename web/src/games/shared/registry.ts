@@ -1,8 +1,9 @@
-import { Grab, Hand, Paintbrush, Spline } from "lucide-react";
+import { Grab, Hand, Paintbrush } from "lucide-react";
 
 import { balloonPop } from "@/games/balloonPop";
 import { bloom } from "@/games/bloom";
 import { fingerPiano } from "@/games/fingerPiano";
+import { pathTrace } from "@/games/pathTrace";
 import { fruitCatch } from "@/games/fruitCatch";
 import { reachActivate } from "@/games/reachActivate";
 import type { GameId } from "@/types/api";
@@ -95,31 +96,7 @@ export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
   fruit_catch: fruitCatch,
   bloom,
   finger_piano: fingerPiano,
-  path_trace: {
-    id: "path_trace",
-    nameKey: "game.path_trace.name",
-    descriptionKey: "game.path_trace.description",
-    movementKey: "game.path_trace.movement",
-    icon: Spline,
-    params: [
-      {
-        name: "path_width_sw",
-        labelKey: "param.pathWidthSw",
-        min: 0.1,
-        max: 0.5,
-        step: 0.02,
-        default: 0.3,
-        unit: "sw",
-        harder: "lower",
-      },
-      distanceFrac,
-      { ...reachTimeoutMs, name: "time_limit_ms", labelKey: "param.timeLimitMs", default: 12000 },
-    ],
-    trialsDefault: 8,
-    estimatedMinutes: 5,
-    create: notImplemented("path_trace"),
-    implemented: false,
-  },
+  path_trace: pathTrace,
   paint_wall: {
     id: "paint_wall",
     nameKey: "game.paint_wall.name",

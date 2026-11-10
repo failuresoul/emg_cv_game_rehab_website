@@ -1,6 +1,7 @@
 import { generateMelody } from "@/games/fingerPiano/melody";
 import { activeFingers, MAX_SEQUENCE_LENGTH, melodyToParams } from "@/games/fingerPiano/params";
 import { createRng, type Rng } from "@/games/shared/rng";
+import { PATH_SHAPES } from "@/metrics/paths";
 import type { GameParams, ParamSpec, TrialHistoryEntry } from "@/games/shared/types";
 import type { GameEngine, GameId } from "@/types/api";
 
@@ -51,6 +52,8 @@ export const FRUIT_TARGET_FRACS = [0.4, 0.7, 1.0] as const;
  *   upward directions and three heights in a shuffled order every nine trials.
  * - fruit_catch: `target_side` (1 out, -1 across), alternating from out, and `target_frac`, each
  *   side's three distances in a shuffled order every three fruits on that side.
+ * - path_trace: `shape_index` cycling through the four shapes and `direction` (1 outward, -1
+ *   inward) alternating, so each shape is traced both ways every eight trials.
  * - finger_piano: a melody as `note_1` … `note_n` (0 index to 3 little finger), from
  *   generateMelody: every active finger, mostly neighbouring steps, never three in a row.
  *
@@ -101,6 +104,10 @@ export class FixedProvider implements ParamsProvider {
       );
       params.target_side = out ? 1 : -1;
       params.target_frac = FRUIT_TARGET_FRACS[index];
+    } else if (gameId === "path_trace") {
+      // Every shape in turn; each shape gets both directions over two rounds.
+      params.shape_index = position % PATH_SHAPES.length;
+      params.direction = (position + Math.floor(position / PATH_SHAPES.length)) % 2 === 0 ? 1 : -1;
     } else if (gameId === "finger_piano") {
       const length = Math.min(MAX_SEQUENCE_LENGTH, Math.max(1, Math.round(params.sequence_length)));
       const melody = generateMelody(this.rng, activeFingers(params.finger_count), length);

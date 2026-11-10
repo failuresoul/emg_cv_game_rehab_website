@@ -540,6 +540,81 @@ def test_upload_invalid_piano_metrics_is_422(
     assert response.status_code == 422, response.text
 
 
+def trace_metrics(**changes: Any) -> dict[str, Any]:
+    metrics = {
+        "peak_speed_sw_s": 0.42,
+        "mean_tracking_error_sw": 0.06,
+        "mean_path_error_sw": 0.03,
+        "time_in_corridor_pct": 88.5,
+        "lag_ms": 310,
+        "coverage_pct": 94.0,
+        "sparc": -1.72,
+    }
+    return {**metrics, **changes}
+
+
+def path_target(**changes: Any) -> dict[str, Any]:
+    points = [[round(0.1 * i, 2), round(0.05 * i, 2)] for i in range(10)]
+    return {"kind": "path", "shape": "s_curve", "points": points, **changes}
+
+
+def test_upload_path_trace_trial(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="path_trace")
+    behind = trace_metrics(lag_ms=-120)  # Ahead of the guide: a negative lag is fine.
+    trials = [
+        trial_payload(1, target=path_target(), metrics=trace_metrics()),
+        trial_payload(2, target=path_target(), metrics=behind, outcome="miss"),
+    ]
+    response = upload(client, patient_headers, run_id, trials)
+    assert response.status_code == 200, response.text
+
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    first, second = detail["games"][0]["trials"]
+    assert first["target"] == path_target()
+    assert first["metrics"]["time_in_corridor_pct"] == 88.5
+    assert first["metrics"]["sparc"] == -1.72
+    assert second["metrics"]["lag_ms"] == -120
+
+
+def test_path_target_accepts_up_to_200_points(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="path_trace")
+    points = [[i / 200, 0.0] for i in range(200)]
+    trial = trial_payload(target=path_target(points=points), metrics=trace_metrics())
+    assert upload(client, patient_headers, run_id, [trial]).status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("target", "metrics"),
+    [
+        pytest.param(path_target(points=[[0, 0]]), {}, id="one-point"),
+        pytest.param(path_target(points=[[0, i / 300] for i in range(201)]), {}, id="201-points"),
+        pytest.param(path_target(points=[[0, 0, 0], [1, 1, 1]]), {}, id="not-pairs"),
+        pytest.param(path_target(shape="Zig Zag"), {}, id="bad-shape"),
+        pytest.param(path_target(), {"time_in_corridor_pct": 101}, id="pct-over-100"),
+        pytest.param(path_target(), {"coverage_pct": -1}, id="negative-coverage"),
+        pytest.param(path_target(), {"sparc": 0.5}, id="positive-sparc"),
+        pytest.param(path_target(), {"mean_path_error_sw": -0.1}, id="negative-error"),
+    ],
+)
+def test_upload_invalid_path_trial_is_422(
+    client: TestClient,
+    patient_headers: Headers,
+    target: dict[str, Any],
+    metrics: dict[str, Any],
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="path_trace")
+    trial = trial_payload(target=target, metrics=trace_metrics(**metrics))
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 422, response.text
+
+
 def test_upload_rejects_not_a_number(client: TestClient, patient_headers: Headers) -> None:
     session_id = start_session(client, patient_headers)
     run_id = start_run(client, patient_headers, session_id)

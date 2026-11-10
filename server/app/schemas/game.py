@@ -32,11 +32,13 @@ TrialOutcome = Literal["success", "reach_fail", "activation_fail", "miss", "abor
 MAX_TRIALS_PER_BATCH = 50
 MAX_TRAJECTORY_POINTS = 2000
 MAX_TARGET_NOTES = 64
+MAX_TARGET_POINTS = 200
 MAX_TRIALS_PER_RUN = 500
 
 NonNegative = Annotated[float, Field(ge=0)]
 SummaryDetail = float | Annotated[str, Field(max_length=50)] | bool | None
 Share = Annotated[float, Field(ge=0, le=1)]
+Percent = Annotated[float, Field(ge=0, le=100)]
 #: [t_ms, x_sw, y_sw]. t_ms is relative to the trial's spawn.
 TrajectoryPoint = tuple[float, float, float]
 
@@ -81,6 +83,13 @@ class TrialTarget(BaseModel):
     notes: Annotated[list[TargetNote], Field(min_length=1, max_length=MAX_TARGET_NOTES)] | None = (
         None
     )
+    #: A drawn target's shape, such as "s_curve" for a path to follow.
+    shape: TargetKind | None = None
+    #: A drawn target's points in SW, such as a path to follow, in order.
+    points: (
+        Annotated[list[tuple[float, float]], Field(min_length=2, max_length=MAX_TARGET_POINTS)]
+        | None
+    ) = None
 
     @model_validator(mode="after")
     def _spatial_or_kind(self) -> "TrialTarget":
@@ -170,6 +179,18 @@ class TrialMetrics(BaseModel):
     openness_rise_rate: NonNegative | None = None
     #: Games with phases: which phase ran out of time; empty for a success.
     failed_phase: Literal["open", "close"] | None = None
+    #: Tracing games: mean distance from the moving guide, in SW.
+    mean_tracking_error_sw: NonNegative | None = None
+    #: Tracing games: mean distance from the path, in SW.
+    mean_path_error_sw: NonNegative | None = None
+    #: Tracing games: share of the trace inside the corridor, 0-100.
+    time_in_corridor_pct: Percent | None = None
+    #: Tracing games: mean delay behind the guide, in ms; negative when ahead of it.
+    lag_ms: float | None = None
+    #: Tracing games: share of the path followed inside the corridor, 0-100.
+    coverage_pct: Percent | None = None
+    #: Smoothness of the fingertip's speed (SPARC): 0 or less, closer to 0 is smoother.
+    sparc: Annotated[float, Field(le=0)] | None = None
     #: Sequence games: notes in the melody, and how each ended. hits + wrong_finger + missed is
     #: notes_total.
     notes_total: Count | None = None
