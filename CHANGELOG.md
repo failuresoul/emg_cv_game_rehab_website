@@ -2,6 +2,24 @@
 
 All notable changes to MotionLab. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added (Day 8)
+
+- **Hand input layer:** how open the affected hand is (0 a fist, 1 fully open) from the patient's own hand open-close warm-up, and which finger the thumb touches (one at a time, with hysteresis) from the thumb opposition warm-up. Keyboard stand-ins for testing: hold O to open, keys 1–4 for the index to little finger. `useHandInput()` gives games openness, grip, the current touch and the input badge; K switches all of them to the keyboard together. The Exercise Lab shows openness and touches.
+- **Bloom:** open the hand fully and hold it to make a flower bloom, then make a fist to collect its seed; the garden grows with each flower. Records time to open, peak openness, hold steadiness, time to close, peak grip and opening speed; a time-out is a calm miss with the phase that ran out.
+- **Finger piano:** notes slide down finger lanes; touch the thumb to the right finger as each reaches the line to play a pentatonic note. A wrong finger is recorded but costs nothing. Records hits, wrong fingers, missed notes, hit rate, timing error and per-finger tallies. Melodies use every finger and never one finger three times in a row; the touch distance and a gentle start (index and middle only) come from the warm-up.
+- **Hand games everywhere:** the plan now starts with Reach and squeeze, Balloon pop, Bloom and Finger piano ticked (about 16 minutes) and Fruit catch unticked; results, the session summary and history show flowers grown and best openness, and hit rate, best finger and per-finger bars; the admin session page has an openness chart and per-finger bars; the admin Progress tab has a Hand games section.
+- **API:** trial targets may be unplaced (`{"kind": "bloom"}`, `{"kind": "sequence", "notes": […]}`); new optional trial metrics for both games; `main_measure` and `extra_measure` for each game in the session summary; `bloom_peak_openness` and `piano_hit_rate` in the progress series. See [the API contract](docs/api-contract.md).
+- **Demo data and smoke test** include Bloom and Finger piano runs.
+
+### Changed
+
+- Games can choose their compensation checks (hand games check the trunk only), hide the fingertip cursor and the squeeze meter, and start from the patient's own settings from this session's warm-up.
+- The hand is measured once per camera frame however many inputs read it.
+- Sound now stops (its audio context is closed) on every way out of a session, and a session resumed straight into a game starts sound on the first button or key press.
+- Warm-up references are kept within safe limits: an open-hand reference of at most 2.2 palm lengths and a touch distance of 0.1–0.6.
+
 ## [0.1.0] - 2026-11-10
 
 The first release: a complete home session, from login to summary, with three games, progress dashboards for patients and an admin area for therapists and researchers. Webcam video and images never leave the browser; only landmarks, measures and events reach the server.
@@ -56,4 +74,5 @@ The first release: a complete home session, from login to summary, with three ga
 - Bangla text still needs a native speaker's review.
 - No automated tests yet for React screens; they are checked by type checking and by hand.
 
+[Unreleased]: https://github.com/failuresoul/emg_cv_game_rehab_website/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/failuresoul/emg_cv_game_rehab_website/releases/tag/v0.1.0

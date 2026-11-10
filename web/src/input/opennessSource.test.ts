@@ -6,6 +6,7 @@ import type { ExerciseResult } from "@/warmup/exerciseRunner";
 import {
   APERTURE_SMOOTHING_ALPHA,
   apertureRefsFromWarmup,
+  MAX_OPEN_REF,
   type VisionFrameSource,
 } from "./cvApertureSource";
 import { apertureToLevel } from "./cvGripSource";
@@ -78,6 +79,13 @@ describe("apertureToOpenness", () => {
       handResult({ bestPeak: 1.7, thresholds: { low: 1.3, high: 1.5 } }),
     ]);
     expect(apertureToOpenness(1.5, refs)).toBeCloseTo(0.5);
+  });
+
+  it("does not let a glitched warm-up peak make full openness impossible", () => {
+    const refs = apertureRefsFromWarmup([handResult({ bestPeak: 3.4 })]);
+    expect(refs.openRef).toBe(MAX_OPEN_REF);
+    expect(refs.closedRef).toBe(1.2);
+    expect(apertureToOpenness(2.2, refs)).toBe(1);
   });
 
   it("falls back to the defaults without a usable warm-up", () => {

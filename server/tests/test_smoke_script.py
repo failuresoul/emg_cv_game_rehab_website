@@ -13,12 +13,15 @@ def test_smoke_passes_every_step(
     assert run_smoke(client, "admin@motionlab.local", "test-password") is True
 
     output = capsys.readouterr().out
-    assert output.count("PASS") == 36
+    assert output.count("PASS") == 38
     assert "FAIL" not in output
+    assert "PASS  Patient plays a bloom run with non-spatial targets" in output
+    assert "PASS  Patient plays a finger_piano run with non-spatial targets" in output
     assert len(session.exec(select(Calibration)).all()) == 1
     assert len(session.exec(select(WarmupResult)).all()) == 6
-    assert len(session.exec(select(GameRun)).all()) == 3
-    assert len(session.exec(select(Trial)).all()) == 60
+    assert len(session.exec(select(GameRun)).all()) == 5
+    # 20 trials for each reaching game and 4 for each hand game.
+    assert len(session.exec(select(Trial)).all()) == 68
     patient = session.exec(select(User).where(User.role == "patient")).one()
     assert patient.is_active is False
     feedback = session.exec(select(SessionFeedback)).one()

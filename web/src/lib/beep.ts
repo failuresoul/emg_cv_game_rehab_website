@@ -46,6 +46,21 @@ export function prepareAudio(): void {
   }
 }
 
+/**
+ * Closes the audio context, for example when the patient leaves a session. The next
+ * prepareAudio() (from a click) opens a new one.
+ */
+export function closeAudio(): void {
+  const context = audioContext;
+  audioContext = null;
+  if (!context) return;
+  try {
+    void context.close().catch(() => {});
+  } catch {
+    // Already closed: nothing to do.
+  }
+}
+
 /** A soft beep. If sound is unavailable it does nothing, because the countdown is also on screen. */
 export function playBeep(): void {
   playTone(BEEP_HZ, BEEP_SECONDS);

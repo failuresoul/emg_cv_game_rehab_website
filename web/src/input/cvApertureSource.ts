@@ -16,6 +16,11 @@ export const DEFAULT_APERTURE_REFS: Readonly<ApertureRefs> = { openRef: 1.6, clo
 
 /** Below this gap the level would jump between 0 and 1 on tracking noise alone. */
 export const MIN_APERTURE_REF_GAP = 0.15;
+/**
+ * An open hand measures about 1.8 palm lengths. A warm-up peak far above that is a tracking
+ * glitch, and taking it as the open reference would make full openness impossible to reach.
+ */
+export const MAX_OPEN_REF = 2.2;
 
 /** Weight of the newest frame: light smoothing that still follows a quick movement. */
 export const APERTURE_SMOOTHING_ALPHA = 0.5;
@@ -40,10 +45,13 @@ export function apertureRefsFromWarmup(results: readonly HandWarmupResult[]): Ap
   if (!result || result.skipped || open === null || open === undefined || !Number.isFinite(open)) {
     return { ...DEFAULT_APERTURE_REFS, origin: "default" };
   }
+  const openRef = Math.min(open, MAX_OPEN_REF);
   const low = result.thresholds.low;
   // A hand that barely opened still needs a usable range, so the closed reference gives way.
-  const closedRef = Number.isFinite(low) ? Math.min(low, open - MIN_APERTURE_REF_GAP) : open - 0.5;
-  return { openRef: open, closedRef, origin: "warmup" };
+  const closedRef = Number.isFinite(low)
+    ? Math.min(low, openRef - MIN_APERTURE_REF_GAP)
+    : openRef - 0.5;
+  return { openRef, closedRef, origin: "warmup" };
 }
 
 /** Anything that delivers vision frames, such as visionEngine. */
@@ -51,10 +59,25 @@ export interface VisionFrameSource {
   subscribe(listener: (result: VisionResult) => void): () => void;
 }
 
+/**
+ * Each frame's measures, by affected side. The engine sends the same result object to every
+ * listener, so grip, openness and touch share one calculation per frame; old frames are freed
+ * with their result.
+ */
+const measuresByFrame = new WeakMap<VisionResult, Map<Side, HandMeasures | null>>();
+
 /** The affected hand's measures in one frame, or null when that hand is not visible. */
 export function affectedHandMeasures(result: VisionResult, side: Side): HandMeasures | null {
-  const hand = selectAffectedHand(result, side);
-  return computeHandMeasures(hand, result.frameWidth, result.frameHeight);
+  let bySide = measuresByFrame.get(result);
+  if (!bySide) {
+    bySide = new Map();
+    measuresByFrame.set(result, bySide);
+  }
+  if (!bySide.has(side)) {
+    const hand = selectAffectedHand(result, side);
+    bySide.set(side, computeHandMeasures(hand, result.frameWidth, result.frameHeight));
+  }
+  return bySide.get(side) ?? null;
 }
 
 export interface CvApertureSourceOptions {

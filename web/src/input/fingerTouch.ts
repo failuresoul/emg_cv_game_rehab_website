@@ -9,6 +9,12 @@ export type Finger = (typeof FINGERS)[number];
 export const DEFAULT_TOUCH_THRESHOLD = 0.3;
 /** A touch ends only once the thumb is this much farther than the threshold, in palm lengths. */
 export const TOUCH_HYSTERESIS = 0.1;
+/**
+ * A warm-up touch distance is kept within these, in palm lengths: closer would need fingertips to
+ * overlap, and farther would count a relaxed hand as touching.
+ */
+export const MIN_TOUCH_THRESHOLD = 0.1;
+export const MAX_TOUCH_THRESHOLD = 0.6;
 
 export interface FingerTouchEvent {
   type: "touchStart" | "touchEnd";
@@ -59,7 +65,10 @@ export function touchThresholdFromWarmup(
   if (!result || result.skipped || low === undefined || !Number.isFinite(low) || !(low > 0)) {
     return { threshold: DEFAULT_TOUCH_THRESHOLD, origin: "default" };
   }
-  return { threshold: low, origin: "warmup" };
+  return {
+    threshold: Math.min(MAX_TOUCH_THRESHOLD, Math.max(MIN_TOUCH_THRESHOLD, low)),
+    origin: "warmup",
+  };
 }
 
 export interface FingerTouchDetectorOptions {

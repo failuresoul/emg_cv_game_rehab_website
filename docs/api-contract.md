@@ -15,7 +15,7 @@ This document lists every API route the server provides today, plus the routes r
   - `language`: `en`, `bn`
   - `game_id`: `reach_activate`, `balloon_pop`, `fruit_catch`, `bloom`, `finger_piano`, `path_trace`, `paint_wall`, `pick_place`, `grip_hold`
   - `engine`: `L0` (fixed settings), `L1`, `L2` (adaptive, from Day 12)
-  - `input_source`: `cv_grip` (closing the hand on the webcam), `keyboard` (testing only), `emg` (from Day 15)
+  - `input_source`: `cv_grip` (the webcam: closing and opening the hand, and finger touches), `keyboard` (testing only), `emg` (from Day 15)
   - Trial `outcome`: `success`, `reach_fail`, `activation_fail`, `miss` (a target that left by itself, such as a balloon floating away or a fruit landing), `aborted`
 - **Units:** positions are in the body frame, in shoulder widths (SW), with the affected shoulder at the origin, +x away from the body's midline and +y up. Trial times are milliseconds relative to the trial's spawn.
 - **Privacy:** password hashes are never returned. Webcam video and images are never sent to the server.
@@ -749,7 +749,7 @@ Request: an array of 1 to 50 trials. A trial whose `trial_no` was already saved 
 | --- | --- |
 | `trial_no` | 1–500, unique within the request |
 | `params` | That trial's settings, names and numbers only |
-| `target` | Optional. `radius_sw` above 0, `direction_deg` 0 up to 360, `distance_frac` 0–2, `sector` like `D3R2`: the direction index (0 is outward, then 45° steps anticlockwise to 7) and the ring (R1 below 0.55 of the reach, R2 to 0.85, R3 beyond) |
+| `target` | Optional. Either **placed** (reaching games): every one of `x_sw`, `y_sw`, `radius_sw` (above 0), `direction_deg` (0 up to 360), `distance_frac` (0–2) and `sector` (like `D3R2`: the direction index, 0 outward then 45° steps anticlockwise to 7, and the ring, R1 below 0.55 of the reach, R2 to 0.85, R3 beyond). Or **unplaced** (hand games): a `kind` (lower-case letters, digits and `_`, up to 30) and none of the placed fields, such as `{"kind": "bloom"}`. Either may add `kind`, and `notes` (1–64 strings of 1–20 characters). Some but not all placed fields, or neither a place nor a `kind`, is `422`. Fields left out are not saved and not returned |
 | `timings` | Milliseconds from spawn, each 0 or more, or `null` if never reached. `activation_start` is when the successful squeeze began |
 | `metrics` | Each 0 or more, or `null`; `path_efficiency` and `activation_peak` are 0–1. Reach measures use the raw fingertip from move onset to entering the target; move onset is the first point faster than 0.15 SW/s. Some games add optional metrics, listed below |
 | `compensation.max_values` | Up to 20 named numbers |
@@ -764,11 +764,24 @@ Optional metrics for particular games (leave them out, or send `null`):
 | `lateral_path_efficiency` | `fruit_catch` | 0–1: straight sideways distance over sideways path length |
 | `overshoot_sw` | `fruit_catch` | 0 or more: how far the basket went past the fruit before it arrived |
 | `side` | `fruit_catch` | `out` (away from the body) or `across` |
+| `time_to_open_ms` | `bloom` | 0 or more: spawn to the start of the hold that made the flower bloom |
+| `peak_openness` | `bloom` | 0–1: the highest openness while opening (0 a fist, 1 the patient's own open hand) |
+| `hold_stability` | `bloom` | 0–1: standard deviation of openness during the successful hold; lower is steadier |
+| `time_to_close_ms` | `bloom` | 0 or more: closing phase start to the start of the grip hold that collected the seed |
+| `peak_grip` | `bloom` | 0–1: the highest grip in the closing phase |
+| `openness_rise_rate` | `bloom` | 0 or more: openness per second from the last low point to the start of the successful hold (or to the highest openness, for a bud that never bloomed) |
+| `failed_phase` | `bloom` | `open` or `close`: which phase ran out of time; `null` for a success |
+| `notes_total`, `hits`, `wrong_finger`, `missed` | `finger_piano` | Whole numbers 0–64. Each note ends as one of a hit, a wrong finger (only wrong fingers touched in its window) or missed (no touch), so `hits + wrong_finger + missed` must equal `notes_total` |
+| `hit_rate` | `finger_piano` | 0–1: `hits / notes_total` |
+| `mean_timing_error_ms` | `finger_piano` | 0 or more: the mean of \|touch − arrival\| over the hits |
+| `per_finger` | `finger_piano` | For each finger used (`index`, `middle`, `ring`, `little`): `{ "hits": n, "attempts": n }`, attempts being the notes that asked for it; `hits` may not exceed `attempts` |
 
 How each game fills the shared fields:
 
 - **`balloon_pop`:** `target` is where the balloon waited (`distance_frac` is its height as a share of the reach in that direction); `enter` is the first touch; `movement_ms` runs from move onset to the touch; `activation_*` are set only when a squeeze is needed (`params.squeeze_to_pop` is 1); `dwell_done` is `null`. Outcomes are `success` (popped) or `miss`.
 - **`fruit_catch`:** `target.x_sw` is where the fruit fell, `y_sw` is the basket line (-0.3), `direction_deg` is 0 (out) or 180 (across) and `sector` is `D0Rn` or `D4Rn`; `enter` is when the basket was first under the fruit; reach measures are sideways only, using the basket's x (the raw fingertip's x kept within the reach). Outcomes are `success` (caught) or `miss`.
+- **`bloom`** (one trial is one flower): `target` is `{"kind": "bloom"}` and `trajectory` is empty, since the hand only has to be visible. `activation_start` and `activation_done` are the grip hold that collected the seed, and `activation_latency_ms` and `activation_peak` repeat `time_to_close_ms` and `peak_grip`. The reach measures are `null`. Outcomes are `success` (both phases done) or `miss` (a phase ran out of time; see `failed_phase`).
+- **`finger_piano`** (one trial is one melody): `target` is `{"kind": "sequence", "notes": ["index", "ring", …]}` and `trajectory` is empty. `params` carries the melody as `note_1` … `note_n` (0 index to 3 little) beside the settings. Only `spawn` and `end` timings are set. Outcomes are `success` (at least 75% of the notes hit) or `miss`.
 
 Response `200`: the game run, with `trials_done` counting every trial saved.
 
@@ -793,7 +806,7 @@ Request:
 }
 ```
 
-`status` is `completed` or `aborted`, `score` is 0 or more, and `summary` is optional. In the summary, the means are over successful trials only and may be `null`; `compensated_trials` counts every trial with compensation flagged. `details` (optional, empty by default) holds up to 20 figures only one game has, each a number, text of up to 50 characters, `true`/`false` or `null`. Today `balloon_pop` sends `highest_popped_frac` and `fruit_catch` sends `widest_catch_frac`, both shares of the reach of the best success; the web app shows them as each game's main measure. Response `200`: the game run with `ended_at`, `score` and `summary` set.
+`status` is `completed` or `aborted`, `score` is 0 or more, and `summary` is optional. In the summary, the means are over successful trials only and may be `null`; `compensated_trials` counts every trial with compensation flagged. `details` (optional, empty by default) holds up to 20 figures only one game has, each a number, text of up to 50 characters, `true`/`false` or `null`. Today `balloon_pop` sends `highest_popped_frac` and `fruit_catch` sends `widest_catch_frac`, both shares of the reach of the best success. `bloom` sends `mean_time_to_open_ms` (over successes) and `best_openness` (the highest `peak_openness` of any trial). `finger_piano` sends `note_hit_rate` (hits over notes, all melodies), `best_finger` (the finger with the best hit rate; with equal rates, more notes played, then index first; `null` with no note played) and `hit_rate_<finger>` for each finger used. The web app reads them for each game's main measure. Response `200`: the game run with `ended_at`, `score` and `summary` set.
 
 Errors: `404`, `409` if the run has already ended, `422`.
 
@@ -960,7 +973,9 @@ Role: `patient`. Only **completed** sessions count.
       "warmup_goals_reached": 5,
       "warmup_total": 6,
       "game_success_rate": 0.8,
-      "total_reps": 64
+      "total_reps": 64,
+      "bloom_peak_openness": 0.81,
+      "piano_hit_rate": 0.75
     }
   ],
   "last_session_date": "2026-11-10T10:00:00Z",
@@ -970,7 +985,7 @@ Role: `patient`. Only **completed** sessions count.
 ```
 
 - `streak_days`: consecutive local days with a completed session, counting back from today. A day without one *yet* today does not break the streak: it then runs up to yesterday.
-- `series`: one point per completed session, oldest first. `hull_area_sw2` is `null` without a calibration. `warmup_goals_reached` counts exercises whose goal was reached, out of `warmup_total` (skipped ones included). `game_success_rate` is successful trials over all trials of every game, leaving out `aborted` trials, or `null` without trials. `total_reps` is warm-up repetitions done in full.
+- `series`: one point per completed session, oldest first. `hull_area_sw2` is `null` without a calibration. `warmup_goals_reached` counts exercises whose goal was reached, out of `warmup_total` (skipped ones included). `game_success_rate` is successful trials over all trials of every game, leaving out `aborted` trials, or `null` without trials. `total_reps` is warm-up repetitions done in full. `bloom_peak_openness` is the mean of each Bloom trial's `peak_openness` and `piano_hit_rate` is hits over notes of every Finger piano melody, both leaving out `aborted` trials, each `null` without that game.
 - `last_session_date`: when the latest session of any status started, or `null`.
 - `first_reach` and `latest_reach`: the oldest and newest calibrations, each `{ session_id, date, reach_radii_sw, hull_sw, hull_area_sw2, valid }`, or `null`.
 
@@ -989,13 +1004,23 @@ Role: `patient`, own session only. Errors: `404` for a missing or another patien
 | `active_seconds` | Warm-up exercise time (skipped exercises left out) plus the time of each finished game |
 | `warmup` | The warm-up summary (`exercises_done`, `exercises_total`, `total_reps`, `goals_reached`, `mean_compensation_rate`), or `null` |
 | `previous_warmup` | The same for the most recent earlier session with a warm-up, plus its `session_id`, or `null` |
-| `games` | Finished runs in the order played: `run_id`, `game_id`, `status`, `score`, `trials_done`, `trials_planned`, `successes`, `success_rate`, `summary`, and `previous` — the patient's last finished run of the same game in an earlier session (`session_id`, `score`, `success_rate`, `summary`), or `null` |
+| `games` | Finished runs in the order played: `run_id`, `game_id`, `status`, `score`, `trials_done`, `trials_planned`, `successes`, `success_rate`, `summary`, `main_measure`, `extra_measure`, and `previous` — the patient's last finished run of the same game in an earlier session (`session_id`, `score`, `success_rate`, `summary`), or `null` |
 | `reach` | This session's calibration, as in `latest_reach` above, or `null` |
 | `previous_reach` | The most recent calibration from an earlier session, or `null` |
 | `feedback` | The cool-down questionnaire, or `null` |
 | `flags` | The session's safety flags |
 
 "Earlier" means a session of the same patient that started before this one, whatever its status. The web app decides "better / same / lower" from these figures.
+
+`main_measure` and `extra_measure` are the figures the web app shows for each game, each `{ "name": …, "value": …, "unit": "ms" | "share" | "count" | "finger" }` (`value` is `null` when not recorded), or `null` for a run without a summary. `extra_measure` is `null` except for the hand games.
+
+| Game | `main_measure` | `extra_measure` |
+| --- | --- | --- |
+| `reach_activate` | `mean_reach_ms` (ms) | — |
+| `balloon_pop` | `highest_balloon_frac` (share) | — |
+| `fruit_catch` | `widest_catch_frac` (share) | — |
+| `bloom` | `flowers_grown` (count of successes) | `best_openness` (share) |
+| `finger_piano` | `note_hit_rate` (share) | `best_finger` (finger) |
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

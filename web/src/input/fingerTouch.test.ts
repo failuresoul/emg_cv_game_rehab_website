@@ -8,6 +8,8 @@ import {
   DEFAULT_TOUCH_THRESHOLD,
   type FingerTouchEvent,
   FingerTouchDetector,
+  MAX_TOUCH_THRESHOLD,
+  MIN_TOUCH_THRESHOLD,
   TOUCH_HYSTERESIS,
   touchThresholdFromWarmup,
 } from "./fingerTouch";
@@ -151,6 +153,17 @@ describe("touchThresholdFromWarmup", () => {
         thumb(),
       ]),
     ).toEqual({ threshold: 0.35, origin: "warmup" });
+  });
+
+  it("keeps a warm-up touch distance within safe limits", () => {
+    expect(touchThresholdFromWarmup([thumb({ thresholds: { low: 0.02, high: 0.2 } })])).toEqual({
+      threshold: MIN_TOUCH_THRESHOLD,
+      origin: "warmup",
+    });
+    expect(touchThresholdFromWarmup([thumb({ thresholds: { low: 0.9, high: 1 } })])).toEqual({
+      threshold: MAX_TOUCH_THRESHOLD,
+      origin: "warmup",
+    });
   });
 
   it.each([

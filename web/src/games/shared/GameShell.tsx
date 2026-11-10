@@ -227,6 +227,18 @@ const GamePlay = memo(function GamePlay({
 
   useEffect(() => subscribeTracking((state) => (trackingRef.current = state)), [subscribeTracking]);
 
+  // A session resumed straight into a game has had no click to start sound yet: the first press
+  // of a button or key on this screen starts or resumes it. Repeats cost nothing.
+  useEffect(() => {
+    const prepare = () => gameAudio.prepare();
+    window.addEventListener("pointerdown", prepare);
+    window.addEventListener("keydown", prepare);
+    return () => {
+      window.removeEventListener("pointerdown", prepare);
+      window.removeEventListener("keydown", prepare);
+    };
+  }, []);
+
   const elevationRef = useRef<number | null>(null);
   useEffect(() => {
     const armLengths = new ArmLengthTracker();

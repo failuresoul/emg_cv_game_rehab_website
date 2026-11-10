@@ -6,7 +6,8 @@ Start the server first, then run from server/ with the virtual environment activ
 
 The default base_url is http://localhost:8000. The admin login comes from server/.env. Each run
 adds one test patient with one session (a calibration, six warm-up results and one
-run each of reach_activate, balloon_pop and fruit_catch with 20 trials, and a cool-down
+run each of reach_activate, balloon_pop and fruit_catch with 20 trials, one run each of the hand
+games bloom and finger_piano with 4 trials whose targets have no place, and a cool-down
 questionnaire with pain 5) to the database. Its pain alert is marked reviewed, and the patient is
 deactivated at the end.
 The exit code is 0 if every step passes and 1 otherwise.
@@ -157,6 +158,103 @@ PARAMS: dict[str, dict[str, float]] = {
     "balloon_pop": BALLOON_POP_PARAMS,
     "fruit_catch": FRUIT_CATCH_PARAMS,
 }
+
+# Hand games: the hand only has to be visible, so their targets have no place in the body frame.
+HAND_GAME_IDS = ("bloom", "finger_piano")
+HAND_TRIALS = 4
+ALL_GAME_IDS = GAME_IDS + HAND_GAME_IDS
+BLOOM_PARAMS: dict[str, float] = {
+    "open_demand": 0.7,
+    "open_hold_ms": 800,
+    "close_demand": 0.6,
+    "phase_time_limit_ms": 8000,
+    "close_hold_ms": 300,
+    "rest_ms": 1500,
+}
+PIANO_PARAMS: dict[str, float] = {
+    "finger_count": 4,
+    "sequence_length": 4,
+    "note_interval_ms": 2000,
+    "hit_window_ms": 1200,
+    "touch_threshold": 0.3,
+    "preview_ms": 2000,
+    "rest_ms": 1500,
+}
+MELODY = ["index", "middle", "ring", "little"]
+
+
+def bloom_trial(trial_no: int) -> dict[str, Any]:
+    """A flower; the fourth one is a miss that ran out of time while opening."""
+    success = trial_no % 4 != 0
+    return {
+        "trial_no": trial_no,
+        "params": BLOOM_PARAMS,
+        "target": {"kind": "bloom"},
+        "outcome": "success" if success else "miss",
+        "timings": {
+            "spawn": 0,
+            "activation_start": 3000 if success else None,
+            "activation_done": 3300 if success else None,
+            "end": 3300 if success else 8000,
+        },
+        "metrics": {
+            "time_to_open_ms": 1200 if success else None,
+            "peak_openness": 0.85 if success else 0.5,
+            "hold_stability": 0.03 if success else None,
+            "time_to_close_ms": 700 if success else None,
+            "peak_grip": 0.8 if success else None,
+            "openness_rise_rate": 1.1,
+            "failed_phase": None if success else "open",
+        },
+        "compensation": {"flagged": False, "type": None, "max_values": {}},
+        "trajectory": [],
+    }
+
+
+def piano_trial(trial_no: int) -> dict[str, Any]:
+    """A melody: three of four notes played, one with a wrong finger (a success at 75%)."""
+    return {
+        "trial_no": trial_no,
+        "params": {**PIANO_PARAMS, **{f"note_{i + 1}": i for i in range(len(MELODY))}},
+        "target": {"kind": "sequence", "notes": MELODY},
+        "outcome": "success",
+        "timings": {"spawn": 0, "end": 11600},
+        "metrics": {
+            "notes_total": 4,
+            "hits": 3,
+            "wrong_finger": 1,
+            "missed": 0,
+            "hit_rate": 0.75,
+            "mean_timing_error_ms": 180,
+            "per_finger": {
+                "index": {"hits": 1, "attempts": 1},
+                "middle": {"hits": 1, "attempts": 1},
+                "ring": {"hits": 1, "attempts": 1},
+                "little": {"hits": 0, "attempts": 1},
+            },
+        },
+        "compensation": {"flagged": False, "type": None, "max_values": {}},
+        "trajectory": [],
+    }
+
+
+def hand_summary(game_id: str, trials: list[dict[str, Any]]) -> dict[str, Any]:
+    """The summary each hand game sends, with the details its main measures read."""
+    successes = sum(1 for trial in trials if trial["outcome"] == "success")
+    if game_id == "bloom":
+        details: dict[str, Any] = {"mean_time_to_open_ms": 1200, "best_openness": 0.85}
+    else:
+        details = {
+            "note_hit_rate": 0.75,
+            "best_finger": "index",
+            **{f"hit_rate_{finger}": 0.0 if finger == "little" else 1.0 for finger in MELODY},
+        }
+    return {
+        "successes": successes,
+        "success_rate": successes / len(trials),
+        "compensated_trials": 0,
+        "details": details,
+    }
 
 
 def straight_path(to: tuple[float, float]) -> list[list[float]]:
@@ -408,11 +506,37 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(body["trials_done"] == GAME_TRIALS, f"trials_done is {body['trials_done']}")
         require(body["summary"]["details"] == summary["details"], "summary details differ")
 
+    def play_hand_game(game_id: str) -> None:
+        """Starts a hand-game run, uploads its trials in one batch and ends it."""
+        url = f"/api/sessions/{state['session_id']}/games"
+        payload = {
+            "game_id": game_id,
+            "engine": "L0",
+            "input_source": "keyboard",
+            "params_initial": BLOOM_PARAMS if game_id == "bloom" else PIANO_PARAMS,
+            "trials_planned": HAND_TRIALS,
+        }
+        run = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
+        make = bloom_trial if game_id == "bloom" else piano_trial
+        trials = [make(n) for n in range(1, HAND_TRIALS + 1)]
+        url = f"/api/games/{run['id']}/trials"
+        body = expect(client.post(url, json=trials, headers=bearer("patient")), 200)
+        require(body["trials_done"] == HAND_TRIALS, f"trials_done is {body['trials_done']}")
+        summary = hand_summary(game_id, trials)
+        score = 100 * summary["successes"]
+        state[game_id] = {"run_id": run["id"], "trials": trials, "score": score}
+        end = {"status": "completed", "score": score, "summary": summary}
+        body = expect(
+            client.post(f"/api/games/{run['id']}/end", json=end, headers=bearer("patient")), 200
+        )
+        require(body["status"] == "completed", f"the {game_id} run is not completed")
+        require(body["summary"]["details"] == summary["details"], "summary details differ")
+
     def dashboard_last_games() -> None:
         body = expect(client.get("/api/patient/dashboard", headers=bearer("patient")), 200)
         games = body["last_session"]["games"]
         require(
-            [game["game_id"] for game in games] == list(GAME_IDS),
+            [game["game_id"] for game in games] == list(ALL_GAME_IDS),
             f"dashboard games are {[game['game_id'] for game in games]}",
         )
         for game in games:
@@ -437,9 +561,22 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         url = f"/api/sessions/{state['session_id']}/summary"
         body = expect(client.get(url, headers=bearer("patient")), 200)
         require(
-            [game["game_id"] for game in body["games"]] == list(GAME_IDS),
+            [game["game_id"] for game in body["games"]] == list(ALL_GAME_IDS),
             "the summary's games are wrong",
         )
+        bloom, piano = body["games"][3], body["games"][4]
+        require(bloom["success_rate"] == 0.75, "Bloom's success rate is wrong")
+        require(
+            bloom["main_measure"] == {"name": "flowers_grown", "value": 3, "unit": "count"},
+            f"Bloom's main measure is {bloom['main_measure']}",
+        )
+        require(bloom["extra_measure"]["value"] == 0.85, "Bloom's best openness is wrong")
+        require(piano["success_rate"] == 1.0, "Finger piano's success rate is wrong")
+        require(
+            piano["main_measure"] == {"name": "note_hit_rate", "value": 0.75, "unit": "share"},
+            f"Finger piano's main measure is {piano['main_measure']}",
+        )
+        require(piano["extra_measure"]["value"] == "index", "Finger piano's best finger is wrong")
         require(body["warmup"]["goals_reached"] == 6, "the summary's warm-up goals are wrong")
         require(body["reach"]["hull_area_sw2"] == 2.0, "the summary's reach is wrong")
         require(body["feedback"]["pain_0_10"] == 5, "the summary has no questionnaire")
@@ -453,9 +590,16 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         point = series[0]
         require(point["session_id"] == state["session_id"], "progress shows another session")
         require(point["warmup_goals_reached"] == 6, "progress warm-up goals are wrong")
-        # Every fourth trial is not a success: 45 of 60.
+        # Every fourth reaching trial and flower is not a success; every melody is: 52 of 68.
         rate = point["game_success_rate"]
-        require(rate is not None and abs(rate - 0.75) < 1e-9, f"success rate is {rate}")
+        require(rate is not None and abs(rate - 52 / 68) < 1e-9, f"success rate is {rate}")
+        # Bloom: three flowers opened to 0.85 and one to 0.5. Finger piano: 12 of 16 notes.
+        openness = point["bloom_peak_openness"]
+        require(
+            openness is not None and abs(openness - 0.7625) < 1e-9,
+            f"Bloom's peak openness is {openness}",
+        )
+        require(point["piano_hit_rate"] == 0.75, f"the hit rate is {point['piano_hit_rate']}")
         require(body["streak_days"] >= 1, "the streak is empty")
         require(len(body["calendar"]) == 28, "the calendar does not have 28 days")
 
@@ -524,9 +668,12 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         body = expect(client.get(url, headers=bearer("admin")), 200)
         require(body["calibration"] is not None, "calibration is missing")
         require(len(body["warmup_results"]) == 6, "a warm-up result is missing")
-        runs = body["games"]
-        require(len(runs) == 3, f"expected 3 game runs, got {len(runs)}")
-        require([run["game_id"] for run in runs] == list(GAME_IDS), "the runs are out of order")
+        all_runs = body["games"]
+        require(len(all_runs) == 5, f"expected 5 game runs, got {len(all_runs)}")
+        require(
+            [run["game_id"] for run in all_runs] == list(ALL_GAME_IDS), "the runs are out of order"
+        )
+        runs = all_runs[:3]
         trials = [trial for run in runs for trial in run["trials"]]
         require(len(trials) == 3 * GAME_TRIALS, f"expected 60 trials, got {len(trials)}")
         for run in runs:
@@ -535,6 +682,29 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         misses = sum(1 for trial in trials if trial["outcome"] == "miss")
         require(misses == 10, f"expected 10 misses, got {misses}")
         require(all(len(trial["trajectory"]) == 31 for trial in trials), "a trajectory is missing")
+
+        bloom, piano = all_runs[3], all_runs[4]
+        require(len(bloom["trials"]) == HAND_TRIALS, "a Bloom trial is missing")
+        require(
+            all(trial["target"] == {"kind": "bloom"} for trial in bloom["trials"]),
+            "a Bloom target is not just its kind",
+        )
+        missed = bloom["trials"][3]
+        require(missed["outcome"] == "miss", "the fourth flower is not a miss")
+        require(missed["metrics"]["failed_phase"] == "open", "the miss has no failed phase")
+        require(len(piano["trials"]) == HAND_TRIALS, "a Finger piano trial is missing")
+        first = piano["trials"][0]
+        require(
+            first["target"] == {"kind": "sequence", "notes": MELODY},
+            f"the melody target is {first['target']}",
+        )
+        require(first["metrics"]["hits"] == 3, "the melody's hits are wrong")
+        require(
+            first["metrics"]["per_finger"]["little"] == {"hits": 0, "attempts": 1},
+            "the per-finger tally is wrong",
+        )
+        hand_trials = bloom["trials"] + piano["trials"]
+        require(all(trial["trajectory"] == [] for trial in hand_trials), "a hand trial has a path")
 
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
@@ -564,7 +734,11 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
                 (f"Patient ends the {game_id} run with a summary", partial(end_game, game_id)),
             )
         ],
-        ("Dashboard shows the last session's three games", dashboard_last_games),
+        *[
+            (f"Patient plays a {game_id} run with non-spatial targets", partial(play_hand_game, game_id))
+            for game_id in HAND_GAME_IDS
+        ],
+        ("Dashboard shows the last session's five games", dashboard_last_games),
         ("Patient sends the cool-down with pain 5 and gets the pain flag", cooldown_with_pain),
         ("Patient ends the session", end_session),
         ("Patient reads the session summary", session_summary),
