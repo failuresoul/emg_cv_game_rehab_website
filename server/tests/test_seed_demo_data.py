@@ -128,7 +128,7 @@ def test_rahims_warmup_improves() -> None:
     assert last[0].thresholds.high > 90
 
 
-@pytest.mark.parametrize("game_id", demo.GAMES)
+@pytest.mark.parametrize("game_id", demo.REACH_GAMES)
 def test_game_trials_are_valid_and_inside_the_reach(game_id: demo.GameName) -> None:
     calibration = demo.make_calibration(random.Random(4), "right", 0.5, 1.0)
     radii = calibration.reach_radii_sw
@@ -161,6 +161,69 @@ def test_game_trials_are_valid_and_inside_the_reach(game_id: demo.GameName) -> N
     assert summary.successes == sum(trial.outcome == "success" for trial in trials)
     if game_id != "reach_activate":
         assert next(iter(summary.details.values())) is not None
+
+
+@pytest.mark.parametrize("game_id", demo.HAND_GAMES)
+def test_hand_game_trials_are_valid(game_id: demo.GameName) -> None:
+    trials = demo.make_game_trials(random.Random(5), game_id, demo.BASE_RADII, 0.5, 1.0)
+
+    assert [trial.trial_no for trial in trials] == list(
+        range(1, demo.TRIAL_COUNTS[game_id] + 1)
+    )
+    for trial in trials:
+        revalidate(trial)
+        assert trial.trajectory == []
+        assert trial.target is not None
+        assert trial.target.x_sw is None
+        if not trial.compensation.flagged:
+            continue
+        assert trial.compensation.type == "trunk"
+    outcomes = {trial.outcome for trial in trials}
+    assert outcomes == {"success", "miss"}
+
+    summary = demo.summarise_trials(game_id, trials)
+    revalidate(summary)
+    if game_id == "bloom":
+        assert {trial.target.kind for trial in trials if trial.target} == {"bloom"}
+        for trial in trials:
+            if trial.outcome == "success":
+                assert trial.metrics.failed_phase is None
+                assert trial.metrics.time_to_close_ms is not None
+            else:
+                assert trial.metrics.failed_phase in {"open", "close"}
+        peaks = [trial.metrics.peak_openness for trial in trials]
+        assert summary.details["best_openness"] == max(p for p in peaks if p is not None)
+    else:
+        for trial in trials:
+            metrics = trial.metrics
+            assert trial.target is not None and trial.target.kind == "sequence"
+            notes = trial.target.notes or []
+            assert set(notes) == set(demo.FINGERS)
+            assert all(notes[i : i + 3] != [notes[i]] * 3 for i in range(len(notes)))
+            assert metrics.hits is not None and metrics.notes_total == len(notes)
+            assert metrics.hits + (metrics.wrong_finger or 0) + (metrics.missed or 0) == len(notes)
+            success = metrics.hits / len(notes) >= demo.PIANO_SUCCESS_RATE
+            assert trial.outcome == ("success" if success else "miss")
+        assert summary.details["best_finger"] in demo.FINGERS
+        assert 0 < summary.details["note_hit_rate"] <= 1  # type: ignore[operator]
+
+
+def test_hand_games_improve_over_the_sessions() -> None:
+    def summary(game_id: demo.GameName, progress: float) -> GameSummary:
+        trials = [
+            trial
+            for seed in range(10)
+            for trial in demo.make_game_trials(
+                random.Random(seed), game_id, demo.BASE_RADII, progress, 1.0
+            )
+        ]
+        return demo.summarise_trials(game_id, trials)
+
+    first, last = summary("bloom", 0), summary("bloom", 1)
+    assert last.success_rate > first.success_rate + 0.2
+    assert last.details["mean_time_to_open_ms"] < first.details["mean_time_to_open_ms"]  # type: ignore[operator]
+    first, last = summary("finger_piano", 0), summary("finger_piano", 1)
+    assert last.details["note_hit_rate"] > first.details["note_hit_rate"] + 0.15  # type: ignore[operator]
 
 
 def test_games_improve_over_the_sessions() -> None:
@@ -234,8 +297,9 @@ def test_seed_creates_two_demo_patients_with_full_sessions(session: Session) -> 
             assert record.current_step == "summary"
     assert count(session, Calibration) == 14
     assert count(session, WarmupResult) == 14 * 6
-    assert count(session, GameRun) == 14 * 3
-    assert count(session, Trial) == 14 * 3 * 20
+    assert count(session, GameRun) == 14 * 5
+    # 20 trials for each reaching game, 15 flowers and 12 melodies.
+    assert count(session, Trial) == 14 * (3 * 20 + 15 + 12)
     assert count(session, SessionFeedback) == 14
 
 
@@ -365,8 +429,17 @@ def test_dashboards_read_the_demo_data(
     summary = client.get(f"/api/sessions/{series[-1]['session_id']}/summary", headers=headers)
     assert summary.status_code == 200
     body = summary.json()
-    assert len(body["games"]) == 3
+    assert [game["game_id"] for game in body["games"]] == list(demo.GAMES)
     assert all(game["previous"] is not None for game in body["games"])
+    bloom = body["games"][3]
+    assert bloom["main_measure"]["name"] == "flowers_grown"
+    assert bloom["extra_measure"]["value"] is not None
+    piano = body["games"][4]
+    assert piano["main_measure"]["name"] == "note_hit_rate"
+    assert piano["extra_measure"]["value"] in demo.FINGERS
+    # The admin progress tab's hand-game series.
+    assert all(point["bloom_peak_openness"] is not None for point in series)
+    assert series[-1]["piano_hit_rate"] > series[0]["piano_hit_rate"]
     assert body["previous_reach"] is not None
 
     patients = client.get("/api/admin/patients", headers=admin_headers).json()

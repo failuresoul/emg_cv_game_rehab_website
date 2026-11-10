@@ -13,7 +13,7 @@ export const bloom: GameDefinition = {
   icon: Flower2,
   params: BLOOM_PARAMS,
   trialsDefault: BLOOM_TRIALS,
-  estimatedMinutes: 5,
+  estimatedMinutes: 4,
   create: createBloomGame,
   implemented: true,
   // No reaching: the hand only has to be visible, and only the trunk is checked.

@@ -543,6 +543,10 @@ export interface ProgressPoint {
   /** Successful trials over all trials of every game, leaving out stopped trials. */
   game_success_rate: number | null;
   total_reps: number;
+  /** Bloom: the average of each turn's peak openness, 0–1; null without Bloom. */
+  bloom_peak_openness?: number | null;
+  /** Finger piano: notes played over notes asked, 0–1; null without Finger piano. */
+  piano_hit_rate?: number | null;
 }
 
 export interface ReachSnapshot {
@@ -585,7 +589,18 @@ export interface SessionReportGame {
   successes: number | null;
   success_rate: number | null;
   summary: GameSummary | null;
+  /** The game's headline figure, the same one mainMeasure() words. */
+  main_measure?: GameMeasure | null;
+  /** A second figure for the hand games, the same one extraMeasure() words. */
+  extra_measure?: GameMeasure | null;
   previous: GameComparison | null;
+}
+
+/** One figure of a game run, named so the app can word it. */
+export interface GameMeasure {
+  name: string;
+  value: number | string | null;
+  unit: "ms" | "share" | "count" | "finger";
 }
 
 /** Everything the end-of-session summary shows, with figures from earlier sessions. */

@@ -100,6 +100,8 @@ def add_run(
     status: str = "completed",
     seconds: int = 120,
     score: float | None = None,
+    metrics: list[dict[str, Any]] | None = None,
+    details: dict[str, Any] | None = None,
 ) -> GameRun:
     assert record.id is not None
     successes = outcomes.count("success")
@@ -118,6 +120,7 @@ def add_run(
             "successes": successes,
             "success_rate": successes / len(outcomes) if outcomes else 0,
             "compensated_trials": 0,
+            "details": details or {},
         }
         if status != "active"
         else None,
@@ -127,7 +130,10 @@ def add_run(
     session.refresh(run)
     assert run.id is not None
     for number, outcome in enumerate(outcomes, start=1):
-        session.add(Trial(game_run_id=run.id, trial_no=number, outcome=outcome))
+        trial_metrics = metrics[number - 1] if metrics else {}
+        session.add(
+            Trial(game_run_id=run.id, trial_no=number, outcome=outcome, metrics=trial_metrics)
+        )
     session.commit()
     return run
 
@@ -260,6 +266,8 @@ def test_progress_series_figures(
         # 3 successes of 5 trials: the stopped trial is left out.
         "game_success_rate": 0.6,
         "total_reps": 15,
+        "bloom_peak_openness": None,
+        "piano_hit_rate": None,
     }
     assert body["series"][1] == {
         "session_id": second.id,
@@ -269,7 +277,48 @@ def test_progress_series_figures(
         "warmup_total": 0,
         "game_success_rate": None,
         "total_reps": 0,
+        "bloom_peak_openness": None,
+        "piano_hit_rate": None,
     }
+
+
+def test_progress_hand_game_figures(
+    client: TestClient, patient_headers: Headers, session: Session
+) -> None:
+    patient = profile(session)
+    first = add_session(session, patient, noon(2))
+    add_run(
+        session,
+        first,
+        ["success", "miss", "aborted"],
+        game_id="bloom",
+        metrics=[{"peak_openness": 0.6}, {"peak_openness": 0.8}, {"peak_openness": 0.1}],
+    )
+    add_run(
+        session,
+        first,
+        ["success", "miss"],
+        game_id="finger_piano",
+        metrics=[{"hits": 3, "notes_total": 4}, {"hits": 2, "notes_total": 4}],
+    )
+    second = add_session(session, patient, noon(1))
+    add_run(
+        session,
+        second,
+        ["success"],
+        game_id="finger_piano",
+        metrics=[{"hits": 4, "notes_total": 4}],
+    )
+    add_run(session, second, ["success"])  # Reaching games do not count.
+
+    series = client.get("/api/patient/progress", headers=patient_headers).json()["series"]
+
+    # The stopped trial is left out: (0.6 + 0.8) / 2.
+    assert series[0]["bloom_peak_openness"] == pytest.approx(0.7)
+    # 5 notes played of 8.
+    assert series[0]["piano_hit_rate"] == pytest.approx(0.625)
+    assert series[1]["bloom_peak_openness"] is None
+    assert series[1]["piano_hit_rate"] == 1.0
 
 
 def test_progress_first_and_latest_reach(
@@ -461,6 +510,43 @@ def test_summary_of_a_full_session(
     assert body["previous_reach"]["session_id"] == earlier.id
     assert body["feedback"] is None
     assert body["flags"] == []
+
+
+def test_summary_includes_the_hand_games_with_their_measures(
+    client: TestClient, patient_headers: Headers, session: Session
+) -> None:
+    patient = profile(session)
+    record = add_session(session, patient, noon(0))
+    add_run(session, record, ["success", "reach_fail"])
+    add_run(
+        session,
+        record,
+        ["success", "success", "miss"],
+        game_id="bloom",
+        details={"best_openness": 0.82, "mean_time_to_open_ms": 1400},
+    )
+    add_run(
+        session,
+        record,
+        ["success", "miss"],
+        game_id="finger_piano",
+        details={"note_hit_rate": 0.75, "best_finger": "ring", "hit_rate_ring": 1.0},
+    )
+
+    body = client.get(f"/api/sessions/{record.id}/summary", headers=patient_headers).json()
+
+    reach, bloom, piano = body["games"]
+    assert reach["main_measure"] == {"name": "mean_reach_ms", "value": None, "unit": "ms"}
+    assert reach["extra_measure"] is None
+    assert bloom["game_id"] == "bloom"
+    assert bloom["score"] == 20
+    assert bloom["success_rate"] == pytest.approx(2 / 3)
+    assert bloom["main_measure"] == {"name": "flowers_grown", "value": 2, "unit": "count"}
+    assert bloom["extra_measure"] == {"name": "best_openness", "value": 0.82, "unit": "share"}
+    assert piano["game_id"] == "finger_piano"
+    assert piano["success_rate"] == 0.5
+    assert piano["main_measure"] == {"name": "note_hit_rate", "value": 0.75, "unit": "share"}
+    assert piano["extra_measure"] == {"name": "best_finger", "value": "ring", "unit": "finger"}
 
 
 def test_summary_of_a_first_empty_session(client: TestClient, patient_headers: Headers) -> None:

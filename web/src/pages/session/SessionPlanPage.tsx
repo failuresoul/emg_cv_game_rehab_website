@@ -5,29 +5,24 @@ import { useNavigate } from "react-router";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { move } from "@/features/session/gameQueue";
+import { defaultPlanRows, move, type PlanRow } from "@/features/session/gameQueue";
 import { useSession, useSessionStep } from "@/features/session/SessionContext";
 import { GAME_IDS, GAMES } from "@/games/shared/registry";
 import { t } from "@/i18n";
 import { prepareAudio } from "@/lib/beep";
-import type { GameId } from "@/types/api";
 
 const READY = GAME_IDS.filter((id) => GAMES[id].implemented);
 
-interface PlanRow {
-  id: GameId;
-  selected: boolean;
-}
-
 /**
- * Today's games, all ticked, in the default order. The patient can leave a game out or change the
- * order; Start plays them one after another. The planner (Day 13) will choose them later.
+ * Today's games: the default plan ticked and first, other games unticked after them. The patient
+ * can tick or untick any game and change the order; Start plays the ticked ones one after
+ * another. The planner (Day 13) will choose them later.
  */
 export function SessionPlanPage() {
   useSessionStep("plan");
   const navigate = useNavigate();
   const { startGames } = useSession();
-  const [rows, setRows] = useState<PlanRow[]>(() => READY.map((id) => ({ id, selected: true })));
+  const [rows, setRows] = useState<PlanRow[]>(() => defaultPlanRows(READY));
   const chosen = rows.filter((row) => row.selected).map((row) => row.id);
   const minutes = chosen.reduce((total, id) => total + GAMES[id].estimatedMinutes, 0);
   const comingSoon = GAME_IDS.filter((id) => !GAMES[id].implemented);

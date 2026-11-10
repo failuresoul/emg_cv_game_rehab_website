@@ -87,12 +87,6 @@ const FAILED_PHASE_KEYS: Record<"open" | "close", TranslationKey> = {
 };
 
 const bloomColumns: readonly TrialColumn[] = [
-  outcome,
-  {
-    key: "adminSession.column.failedPhase",
-    cell: (trial) =>
-      trial.metrics.failed_phase ? t(FAILED_PHASE_KEYS[trial.metrics.failed_phase]) : dash,
-  },
   {
     key: "adminSession.column.timeToOpen",
     cell: (trial) => whole(trial.metrics.time_to_open_ms),
@@ -109,19 +103,15 @@ const bloomColumns: readonly TrialColumn[] = [
     numeric: true,
   },
   {
-    key: "adminSession.column.riseRate",
-    cell: (trial) => decimal(trial.metrics.openness_rise_rate),
-    numeric: true,
-  },
-  {
     key: "adminSession.column.timeToClose",
     cell: (trial) => whole(trial.metrics.time_to_close_ms),
     numeric: true,
   },
+  outcome,
   {
-    key: "adminSession.column.peakGrip",
-    cell: (trial) => share(trial.metrics.peak_grip),
-    numeric: true,
+    key: "adminSession.column.failedPhase",
+    cell: (trial) =>
+      trial.metrics.failed_phase ? t(FAILED_PHASE_KEYS[trial.metrics.failed_phase]) : dash,
   },
   compensated,
 ];
@@ -141,7 +131,6 @@ const fingerPianoColumns: readonly TrialColumn[] = [
         ?.map((note) => (FINGER_SHORT_KEYS[note] ? t(FINGER_SHORT_KEYS[note]) : note))
         .join(" · ") ?? dash,
   },
-  outcome,
   {
     key: "adminSession.column.notesHit",
     cell: (trial) =>
@@ -164,15 +153,11 @@ const fingerPianoColumns: readonly TrialColumn[] = [
     numeric: true,
   },
   {
-    key: "adminSession.column.hitRate",
-    cell: (trial) => share(trial.metrics.hit_rate),
-    numeric: true,
-  },
-  {
     key: "adminSession.column.timingError",
     cell: (trial) => whole(trial.metrics.mean_timing_error_ms),
     numeric: true,
   },
+  outcome,
   compensated,
 ];
 

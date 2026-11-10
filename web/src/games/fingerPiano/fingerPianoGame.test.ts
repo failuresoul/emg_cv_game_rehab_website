@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { DETAIL_NOTE_HIT_RATE } from "@/features/games/results";
+import { DETAIL_BEST_FINGER, DETAIL_NOTE_HIT_RATE } from "@/features/games/results";
 import { gameAudio } from "@/games/shared/audio";
 import { createRng } from "@/games/shared/rng";
 import type { GameContext, GameParams } from "@/games/shared/types";
@@ -138,7 +138,16 @@ describe("finger_piano game", () => {
       hit_rate: 1,
       mean_timing_error_ms: 150,
     });
-    expect(sim.game.getSummary().summary.details?.[DETAIL_NOTE_HIT_RATE]).toBe(1);
+    const details = sim.game.getSummary().summary.details;
+    expect(details?.[DETAIL_NOTE_HIT_RATE]).toBe(1);
+    // Every finger played its one note: the first in finger order is the best.
+    expect(details?.[DETAIL_BEST_FINGER]).toBe("index");
+    expect(details).toMatchObject({
+      hit_rate_index: 1,
+      hit_rate_middle: 1,
+      hit_rate_ring: 1,
+      hit_rate_little: 1,
+    });
   });
 
   it("plays a muted sound for a wrong finger and records it", () => {
@@ -152,6 +161,9 @@ describe("finger_piano game", () => {
     const [trial] = sim.logged;
     expect(trial.outcome).toBe("miss");
     expect(trial.metrics).toMatchObject({ hits: 0, wrong_finger: 1, missed: 3 });
+    const details = sim.game.getSummary().summary.details;
+    expect(details?.[DETAIL_BEST_FINGER]).toBeNull();
+    expect(details?.hit_rate_index).toBe(0);
     expect(sim.game.getSummary().score).toBe(0);
   });
 

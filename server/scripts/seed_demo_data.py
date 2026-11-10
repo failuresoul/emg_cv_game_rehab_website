@@ -9,7 +9,8 @@ Only patients marked is_demo are ever removed. The data comes from a fixed rando
 the same every time; only the dates follow today's date and the passwords are new on every run.
 
 Demo Rahim (left side affected) improves steadily. Demo Salma (right side affected) improves more
-slowly and has one unreviewed pain alert.
+slowly and has one unreviewed pain alert. Every session plays the three reaching games and the
+two hand games, Bloom and Finger piano.
 """
 
 import argparse
@@ -51,8 +52,18 @@ from app.services.patients import create_patient
 
 SEED = 20261110
 TRIALS_PER_GAME = 20
-GAMES = ("reach_activate", "balloon_pop", "fruit_catch")
-GameName = Literal["reach_activate", "balloon_pop", "fruit_catch"]
+REACH_GAMES = ("reach_activate", "balloon_pop", "fruit_catch")
+HAND_GAMES = ("bloom", "finger_piano")
+GAMES = REACH_GAMES + HAND_GAMES
+GameName = Literal["reach_activate", "balloon_pop", "fruit_catch", "bloom", "finger_piano"]
+#: Trials in one run of each game, as in the games: 15 flowers and 12 melodies.
+TRIAL_COUNTS: dict[str, int] = {
+    "reach_activate": TRIALS_PER_GAME,
+    "balloon_pop": TRIALS_PER_GAME,
+    "fruit_catch": TRIALS_PER_GAME,
+    "bloom": 15,
+    "finger_piano": 12,
+}
 # The hand rests low and close to the body before each reach, in the body frame.
 REST_POINT = (0.15, -0.85)
 TRAJECTORY_POINTS = 12
@@ -425,6 +436,16 @@ class GameSkill:
     movement_ms: float
     efficiency: float
     compensation: float
+    #: Bloom: the usual peak openness, from 0 (fist) to 1 (fully open).
+    openness: float
+    #: Bloom: the usual wobble of openness while holding the hand open (standard deviation).
+    hold_sd: float
+    #: Bloom: the usual time from the bud appearing to holding the hand open, in ms.
+    open_ms: float
+    #: Finger piano: the chance of playing a note with the right finger in time.
+    note_hit: float
+    #: Finger piano: the usual |touch - arrival| of a note played, in ms.
+    timing_error_ms: float
 
 
 def skill_at(progress: float, improvement: float) -> GameSkill:
@@ -434,6 +455,11 @@ def skill_at(progress: float, improvement: float) -> GameSkill:
         movement_ms=lerp(2300, 1350, gain),
         efficiency=lerp(0.62, 0.86, gain),
         compensation=lerp(0.28, 0.07, gain),
+        openness=lerp(0.77, 0.9, gain),
+        hold_sd=lerp(0.07, 0.025, gain),
+        open_ms=lerp(2800, 1300, gain),
+        note_hit=lerp(0.62, 0.9, gain),
+        timing_error_ms=lerp(330, 170, gain),
     )
 
 
@@ -632,16 +658,177 @@ def make_fruit_trial(
     )
 
 
+# Hand games: the hand only has to be visible, so they have no place and no trajectory.
+
+BLOOM_PARAMS = {
+    "open_demand": 0.7,
+    "open_hold_ms": 800,
+    "close_demand": 0.6,
+    "phase_time_limit_ms": 8000,
+    "close_hold_ms": 300,
+    "rest_ms": 1500,
+}
+BLOOM_SHOW_MS = 1000
+FINGERS = ("index", "middle", "ring", "little")
+PIANO_PREVIEW_MS = 2000
+PIANO_FALL_MS = 3000
+PIANO_INTERVAL_MS = 2000
+PIANO_WINDOW_MS = 1200
+#: A melody counts as played well from this share of its notes, as in the game.
+PIANO_SUCCESS_RATE = 0.75
+
+
+def _trunk_only(rng: random.Random, skill: GameSkill) -> dict[str, Any]:
+    """Hand games check the trunk only, and patients move it less than when reaching."""
+    if rng.random() >= skill.compensation / 2:
+        return {"flagged": False, "type": None, "max_values": {}}
+    moved = round(rng.uniform(0.15, 0.22), 3)
+    return {"flagged": True, "type": "trunk", "max_values": {"trunk_displacement_sw": moved}}
+
+
+def make_bloom_trial(
+    rng: random.Random, trial_no: int, radii: Sequence[float], skill: GameSkill
+) -> TrialCreate:
+    """One flower: open the hand and hold it (bloom), then make a fist (collect the seed)."""
+    del radii  # The hand only has to be visible.
+    demand = BLOOM_PARAMS["open_demand"]
+    limit = BLOOM_PARAMS["phase_time_limit_ms"]
+    peak = round(clamp(skill.openness + rng.uniform(-0.1, 0.06), 0.3, 1), 3)
+    opened = peak >= demand + 0.02 and rng.random() < 0.95
+    closed = opened and rng.random() < skill.success + 0.05
+    metrics: dict[str, Any] = {"peak_openness": peak}
+    timings: dict[str, Any] = {"spawn": 0}
+    if not opened:
+        rise = peak / (limit / 1000 * rng.uniform(0.4, 0.7))
+        metrics |= {"openness_rise_rate": round(rise, 3), "failed_phase": "open"}
+        timings["end"] = limit
+    else:
+        to_open = round(skill.open_ms * rng.uniform(0.8, 1.25))
+        close_start = to_open + BLOOM_PARAMS["open_hold_ms"] + BLOOM_SHOW_MS
+        metrics |= {
+            "time_to_open_ms": to_open,
+            "hold_stability": round(skill.hold_sd * rng.uniform(0.7, 1.3), 4),
+            "openness_rise_rate": round(demand / (to_open / 1000 * rng.uniform(0.5, 0.8)), 3),
+        }
+        if closed:
+            to_close = round(rng.uniform(450, 1400))
+            grip = round(rng.uniform(0.66, 0.95), 3)
+            done = close_start + to_close + BLOOM_PARAMS["close_hold_ms"]
+            metrics |= {
+                "time_to_close_ms": to_close,
+                "peak_grip": grip,
+                "activation_latency_ms": to_close,
+                "activation_peak": grip,
+                "failed_phase": None,
+            }
+            timings |= {
+                "activation_start": close_start + to_close,
+                "activation_done": done,
+                "end": done,
+            }
+        else:
+            grip = round(rng.uniform(0.3, 0.55), 3)
+            metrics |= {"peak_grip": grip, "activation_peak": grip, "failed_phase": "close"}
+            timings["end"] = close_start + limit
+    return TrialCreate.model_validate(
+        {
+            "trial_no": trial_no,
+            "params": BLOOM_PARAMS,
+            "target": {"kind": "bloom"},
+            "outcome": "success" if closed else "miss",
+            "timings": timings,
+            "metrics": metrics,
+            "compensation": _trunk_only(rng, skill),
+            "trajectory": [],
+        }
+    )
+
+
+def make_melody(rng: random.Random, length: int) -> list[str]:
+    """Every finger once, then steps to a neighbour, never three of a finger in a row."""
+    melody = list(FINGERS)
+    rng.shuffle(melody)
+    while len(melody) < length:
+        at = FINGERS.index(melody[-1])
+        options = [FINGERS[i] for i in (at - 1, at + 1) if 0 <= i < len(FINGERS)]
+        if melody[-2:] == [melody[-1]] * 2:
+            options = [finger for finger in options if finger != melody[-1]]
+        melody.append(rng.choice(options))
+    return melody[:length]
+
+
+def make_piano_trial(
+    rng: random.Random, trial_no: int, radii: Sequence[float], skill: GameSkill
+) -> TrialCreate:
+    """One melody: each note is played with the right finger in time, a wrong finger, or missed."""
+    del radii  # The hand only has to be visible.
+    # Longer melodies once the patient plays well.
+    length = 5 if skill.note_hit >= 0.8 else 4
+    melody = make_melody(rng, length)
+    per_finger: dict[str, dict[str, int]] = {}
+    hits = wrong = missed = 0
+    errors: list[float] = []
+    for finger in melody:
+        tally = per_finger.setdefault(finger, {"hits": 0, "attempts": 0})
+        tally["attempts"] += 1
+        # The little and ring fingers are harder to reach with the thumb.
+        ease = {"index": 0.06, "middle": 0.03, "ring": -0.03, "little": -0.07}[finger]
+        roll = rng.random()
+        if roll < clamp(skill.note_hit + ease, 0, 1):
+            hits += 1
+            tally["hits"] += 1
+            errors.append(skill.timing_error_ms * rng.uniform(0.4, 1.6))
+        elif rng.random() < 0.45:
+            wrong += 1
+        else:
+            missed += 1
+    rate = hits / length
+    end = PIANO_PREVIEW_MS + PIANO_FALL_MS + (length - 1) * PIANO_INTERVAL_MS + PIANO_WINDOW_MS / 2
+    return TrialCreate.model_validate(
+        {
+            "trial_no": trial_no,
+            "params": {
+                "finger_count": 4,
+                "sequence_length": length,
+                "note_interval_ms": PIANO_INTERVAL_MS,
+                "hit_window_ms": PIANO_WINDOW_MS,
+                "touch_threshold": 0.3,
+                "preview_ms": PIANO_PREVIEW_MS,
+                "rest_ms": 1500,
+                **{f"note_{i + 1}": FINGERS.index(finger) for i, finger in enumerate(melody)},
+            },
+            "target": {"kind": "sequence", "notes": melody},
+            "outcome": "success" if rate >= PIANO_SUCCESS_RATE else "miss",
+            "timings": {"spawn": 0, "end": end},
+            "metrics": {
+                "notes_total": length,
+                "hits": hits,
+                "wrong_finger": wrong,
+                "missed": missed,
+                "hit_rate": round(rate, 4),
+                "mean_timing_error_ms": round(sum(errors) / len(errors)) if errors else None,
+                "per_finger": per_finger,
+            },
+            "compensation": _trunk_only(rng, skill),
+            "trajectory": [],
+        }
+    )
+
+
 TRIAL_MAKERS = {
     "reach_activate": make_reach_trial,
     "balloon_pop": make_balloon_trial,
     "fruit_catch": make_fruit_trial,
+    "bloom": make_bloom_trial,
+    "finger_piano": make_piano_trial,
 }
-#: The summary detail each game fills in, as in web/src/features/games/results.ts.
+#: The summary detail each reaching game fills in, as in web/src/features/games/results.ts.
 SUMMARY_DETAILS = {
     "reach_activate": None,
     "balloon_pop": "highest_popped_frac",
     "fruit_catch": "widest_catch_frac",
+    "bloom": None,
+    "finger_piano": None,
 }
 
 
@@ -651,11 +838,53 @@ def make_game_trials(
     radii: Sequence[float],
     progress: float,
     improvement: float,
-    count: int = TRIALS_PER_GAME,
+    count: int | None = None,
 ) -> list[TrialCreate]:
+    """A run's trials; `count` defaults to the game's own number of trials."""
     skill = skill_at(progress, improvement)
     maker = TRIAL_MAKERS[game_id]
-    return [maker(rng, number, radii, skill) for number in range(1, count + 1)]
+    total = TRIAL_COUNTS[game_id] if count is None else count
+    return [maker(rng, number, radii, skill) for number in range(1, total + 1)]
+
+
+def _hand_details(game_id: GameName, trials: Sequence[TrialCreate]) -> dict[str, Any]:
+    """The summary details the hand games fill in, as the web app's games do."""
+    played = [trial for trial in trials if trial.outcome != "aborted"]
+    if game_id == "bloom":
+        times = [
+            trial.metrics.time_to_open_ms
+            for trial in played
+            if trial.outcome == "success" and trial.metrics.time_to_open_ms is not None
+        ]
+        peaks = [
+            trial.metrics.peak_openness
+            for trial in played
+            if trial.metrics.peak_openness is not None
+        ]
+        return {
+            "mean_time_to_open_ms": round(sum(times) / len(times)) if times else None,
+            "best_openness": max(peaks) if peaks else None,
+        }
+    totals: dict[str, list[int]] = {}
+    for trial in played:
+        for finger, tally in (trial.metrics.per_finger or {}).items():
+            total = totals.setdefault(finger, [0, 0])
+            total[0] += tally.hits
+            total[1] += tally.attempts
+    hits = sum(total[0] for total in totals.values())
+    notes = sum(total[1] for total in totals.values())
+    rates = {finger: totals[finger][0] / totals[finger][1] for finger in FINGERS if finger in totals}
+    # The best rate; with equal rates, more notes played; then the first in finger order.
+    best = max(
+        (finger for finger in rates if totals[finger][0] > 0),
+        key=lambda finger: (rates[finger], totals[finger][0], -FINGERS.index(finger)),
+        default=None,
+    )
+    return {
+        "note_hit_rate": round(hits / notes, 4) if notes else None,
+        "best_finger": best,
+        **{f"hit_rate_{finger}": round(rate, 4) for finger, rate in rates.items()},
+    }
 
 
 def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSummary:
@@ -668,7 +897,7 @@ def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSu
         for trial in successes
         if trial.metrics.path_efficiency is not None
     ]
-    details: dict[str, float | None] = {}
+    details: dict[str, Any] = _hand_details(game_id, trials) if game_id in HAND_GAMES else {}
     detail = SUMMARY_DETAILS[game_id]
     if detail is not None:
         fracs = [
@@ -687,11 +916,19 @@ def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSu
     )
 
 
-def game_score(trials: Sequence[TrialCreate]) -> float:
-    """100 per success plus a bonus for a quick reach, as in the games."""
+def game_score(trials: Sequence[TrialCreate], game_id: GameName = "reach_activate") -> float:
+    """As in the games: Finger piano scores 25 a note and 50 a melody played well; the others
+    100 per success plus a bonus for a quick reach (or, for Bloom, a quick opening)."""
     score = 0
     for trial in trials:
+        if game_id == "finger_piano":
+            score += 25 * (trial.metrics.hits or 0) + (50 if trial.outcome == "success" else 0)
+            continue
         if trial.outcome != "success":
+            continue
+        if game_id == "bloom":
+            to_open = trial.metrics.time_to_open_ms or 8000
+            score += 100 + round(50 * clamp(1 - to_open / 8000, 0, 1))
             continue
         movement = trial.metrics.movement_ms or 6000
         score += 100 + round(50 * clamp(1 - movement / 6000, 0, 1))
@@ -828,7 +1065,7 @@ def _add_session(
             status="completed",
             trials_planned=len(trials),
             trials_done=len(trials),
-            score=game_score(trials),
+            score=game_score(trials, game_id),
             summary=summary.model_dump(),
         )
         session.add(run)

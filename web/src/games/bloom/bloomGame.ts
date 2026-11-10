@@ -1,4 +1,4 @@
-import { DETAIL_MEAN_TIME_TO_OPEN } from "@/features/games/results";
+import { DETAIL_BEST_OPENNESS, DETAIL_MEAN_TIME_TO_OPEN } from "@/features/games/results";
 import { CompensationTally } from "@/games/shared/compensationTally";
 import { arc, drawHandGrab, drawHandOpen, drawLevelBar, TRACK_COLOR } from "@/games/shared/drawing";
 import { Encourager } from "@/games/shared/encourage";
@@ -254,6 +254,9 @@ export function createBloomGame(context: GameContext): GameInstance {
         .filter((record) => record.outcome === "success")
         .map((record) => record.metrics.time_to_open_ms)
         .filter((value): value is number => typeof value === "number");
+      const peaks = records
+        .map((record) => record.metrics.peak_openness)
+        .filter((value): value is number => typeof value === "number");
       return {
         score,
         trialsDone: records.length,
@@ -265,6 +268,7 @@ export function createBloomGame(context: GameContext): GameInstance {
               times.length > 0
                 ? Math.round(times.reduce((total, value) => total + value, 0) / times.length)
                 : null,
+            [DETAIL_BEST_OPENNESS]: peaks.length > 0 ? Math.max(...peaks) : null,
           },
         },
       };

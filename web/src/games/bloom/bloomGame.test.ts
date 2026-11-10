@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { DETAIL_MEAN_TIME_TO_OPEN } from "@/features/games/results";
+import { DETAIL_BEST_OPENNESS, DETAIL_MEAN_TIME_TO_OPEN } from "@/features/games/results";
 import { gameAudio } from "@/games/shared/audio";
 import { defaultParams } from "@/games/shared/registry";
 import { createRng } from "@/games/shared/rng";
@@ -189,6 +189,8 @@ describe("bloom game", () => {
     const summary = sim.game.getSummary().summary;
     expect(summary.successes).toBe(2);
     expect(summary.details?.[DETAIL_MEAN_TIME_TO_OPEN]).toBeGreaterThan(400);
+    // The best of every turn, the missed one (0.3) included.
+    expect(summary.details?.[DETAIL_BEST_OPENNESS]).toBeCloseTo(0.9);
   });
 
   it("counts trunk compensation while the flower is played", () => {

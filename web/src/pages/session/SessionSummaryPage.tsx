@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { mainMeasure, percent } from "@/features/games/results";
+import { extraMeasure, mainMeasure, type MainMeasure, percent } from "@/features/games/results";
 import { useSessionReport } from "@/features/progress/hooks";
 import { type Comparison, compare } from "@/features/progress/progress";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
@@ -137,7 +137,10 @@ function Figures({ report }: { report: SessionReport }) {
 function GameCard({ game }: { game: SessionReportGame }) {
   const definition = GAMES[game.game_id];
   const Icon = definition.icon;
-  const measure = mainMeasure(game.game_id, game.summary);
+  const measures = [
+    mainMeasure(game.game_id, game.summary),
+    extraMeasure(game.game_id, game.summary),
+  ].filter((item): item is MainMeasure => item !== null);
   const rate = percent(game.success_rate);
   const notRecorded = t("sessions.notRecorded");
 
@@ -166,12 +169,14 @@ function GameCard({ game }: { game: SessionReportGame }) {
                 })}
           </dd>
         </div>
-        <div className="flex items-baseline justify-between gap-4">
-          <dt className="text-muted">{t(measure.labelKey)}</dt>
-          <dd className="font-semibold tabular-nums">
-            {measure.value ? t(measure.value.key, measure.value.params) : notRecorded}
-          </dd>
-        </div>
+        {measures.map((measure) => (
+          <div key={measure.labelKey} className="flex items-baseline justify-between gap-4">
+            <dt className="text-muted">{t(measure.labelKey)}</dt>
+            <dd className="font-semibold tabular-nums">
+              {measure.value ? t(measure.value.key, measure.value.params) : notRecorded}
+            </dd>
+          </div>
+        ))}
       </dl>
       <ComparisonLine
         comparison={comparisonOf(

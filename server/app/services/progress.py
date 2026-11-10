@@ -26,6 +26,7 @@ from app.schemas.progress import (
     WarmupComparison,
 )
 from app.services import session_feedback
+from app.services.game_measures import extra_measure, main_measure
 from app.services.sessions import duration_seconds, get_last_session_record, list_calibrations
 from app.services.warmup_summary import summaries_for_sessions, summarise
 
@@ -122,6 +123,50 @@ def game_success_rates(session: Session, session_ids: Sequence[int]) -> dict[int
     }
 
 
+HAND_GAMES = ("bloom", "finger_piano")
+
+
+def hand_game_figures(
+    session: Session, session_ids: Sequence[int]
+) -> dict[int, tuple[float | None, float | None]]:
+    """For each session with a hand game: Bloom's average peak openness and Finger piano's hit rate.
+
+    Trials the patient stopped are left out. A session without one of the games has None for it.
+    """
+    if not session_ids:
+        return {}
+    statement = (
+        select(GameRun.session_id, GameRun.game_id, Trial.metrics)
+        .join(GameRun, col(Trial.game_run_id) == col(GameRun.id))
+        .where(
+            col(GameRun.session_id).in_(session_ids),
+            col(GameRun.game_id).in_(HAND_GAMES),
+            Trial.outcome != "aborted",
+        )
+    )
+    peaks: dict[int, list[float]] = {}
+    notes: dict[int, list[int]] = {}
+    for session_id, game_id, metrics in session.exec(statement).all():
+        values = metrics or {}
+        if game_id == "bloom":
+            peak = values.get("peak_openness")
+            if isinstance(peak, int | float):
+                peaks.setdefault(session_id, []).append(float(peak))
+        else:
+            hits, total = values.get("hits"), values.get("notes_total")
+            if isinstance(hits, int) and isinstance(total, int) and total > 0:
+                tally = notes.setdefault(session_id, [0, 0])
+                tally[0] += hits
+                tally[1] += total
+    return {
+        session_id: (
+            sum(peaks[session_id]) / len(peaks[session_id]) if session_id in peaks else None,
+            notes[session_id][0] / notes[session_id][1] if session_id in notes else None,
+        )
+        for session_id in set(peaks) | set(notes)
+    }
+
+
 def _snapshot(calibration: Calibration, session_record: SessionRecord) -> ReachSnapshot:
     assert session_record.id is not None
     return ReachSnapshot(
@@ -154,10 +199,12 @@ def get_progress(
     areas = _hull_areas(session, ids)
     warmups = summaries_for_sessions(session, ids)
     rates = game_success_rates(session, ids)
+    hands = hand_game_figures(session, ids)
     series: list[ProgressPoint] = []
     for record in completed:
         assert record.id is not None
         warmup = warmups.get(record.id)
+        openness, hit_rate = hands.get(record.id, (None, None))
         series.append(
             ProgressPoint(
                 session_id=record.id,
@@ -167,6 +214,8 @@ def get_progress(
                 warmup_total=warmup.exercises_total if warmup else 0,
                 game_success_rate=rates.get(record.id),
                 total_reps=warmup.total_reps if warmup else 0,
+                bloom_peak_openness=openness,
+                piano_hit_rate=hit_rate,
             )
         )
 
@@ -297,6 +346,8 @@ def get_session_report(session: Session, record: SessionRecord) -> SessionReport
                 successes=summary.successes if summary else None,
                 success_rate=summary.success_rate if summary else None,
                 summary=summary,
+                main_measure=main_measure(run.game_id, summary),
+                extra_measure=extra_measure(run.game_id, summary),
                 previous=_previous_run(session, record, run.game_id),
             )
         )

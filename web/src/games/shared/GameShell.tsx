@@ -28,7 +28,7 @@ import { VisionStatusCard } from "@/vision/VisionStatusCard";
 import { CompensationMonitor } from "@/warmup/compensation";
 import { COMPENSATION_CONFIG } from "@/warmup/compensationConfig";
 
-import { mainMeasure } from "@/features/games/results";
+import { extraMeasure, mainMeasure, type MainMeasure } from "@/features/games/results";
 
 import { gameAudio } from "./audio";
 import { COUNTDOWN_FROM, GameRuntime, type PauseReason, type RuntimeStage } from "./gameRuntime";
@@ -107,14 +107,23 @@ function Results({
   onContinue,
   continueKey,
 }: ResultsProps) {
-  const measure = mainMeasure(definition.id, result.summary);
+  const measures = [
+    mainMeasure(definition.id, result.summary),
+    extraMeasure(definition.id, result.summary),
+  ].filter((item): item is MainMeasure => item !== null);
   const saveKey = SAVE_KEYS[saveStatus];
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-black/60 p-4">
       <Card className="flex w-full max-w-lg flex-col gap-5" role="dialog" aria-modal="true">
         <h2 className="text-2xl font-bold">{t("game.results.title")}</h2>
         <p className="text-muted">{t(definition.nameKey)}</p>
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <dl
+          className={
+            measures.length > 1
+              ? "grid grid-cols-1 gap-4 sm:grid-cols-2"
+              : "grid grid-cols-1 gap-4 sm:grid-cols-3"
+          }
+        >
           <div>
             <dt className="text-muted">{t("game.results.score")}</dt>
             <dd className="text-3xl font-bold tabular-nums">{result.score}</dd>
@@ -128,14 +137,16 @@ function Results({
               })}
             </dd>
           </div>
-          <div>
-            <dt className="text-muted">{t(measure.labelKey)}</dt>
-            <dd className="text-3xl font-bold tabular-nums">
-              {measure.value
-                ? t(measure.value.key, measure.value.params)
-                : t("game.results.noValue")}
-            </dd>
-          </div>
+          {measures.map((measure) => (
+            <div key={measure.labelKey}>
+              <dt className="text-muted">{t(measure.labelKey)}</dt>
+              <dd className="text-3xl font-bold tabular-nums">
+                {measure.value
+                  ? t(measure.value.key, measure.value.params)
+                  : t("game.results.noValue")}
+              </dd>
+            </div>
+          ))}
         </dl>
         {saveKey && (
           <p role="status" className={saveStatus === "unsaved" ? "text-danger font-medium" : ""}>

@@ -6,9 +6,10 @@ import { DIRECTION_KEYS } from "@/features/session/calibration";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { t, type TranslationKey } from "@/i18n";
 import { formatDate, formatDifference, formatNumber } from "@/lib/format";
-import type { AdminCalibration, Patient } from "@/types/api";
+import type { AdminCalibration, Patient, PatientProgress } from "@/types/api";
 
-import { usePatientCalibrations } from "./hooks";
+import { handProgress } from "./handProgress";
+import { useAdminPatientProgress, usePatientCalibrations } from "./hooks";
 import { PatientWarmupSection } from "./PatientWarmupSection";
 
 const RADII_COLUMNS: TranslationKey[] = [
@@ -61,7 +62,7 @@ function RadiiTable({
   );
 }
 
-/** Calibration first, then warm-up; each shows on its own, so either can be empty. */
+/** Calibration, warm-up, then the hand games; each shows on its own, so any can be empty. */
 export function PatientProgressTab({ patient }: { patient: Patient }) {
   return (
     <div className="flex flex-col gap-10">
@@ -70,6 +71,58 @@ export function PatientProgressTab({ patient }: { patient: Patient }) {
         <h2 className="mb-4 text-xl font-bold">{t("adminWarmup.title")}</h2>
         <PatientWarmupSection patientId={patient.id} />
       </section>
+      <HandGamesProgress patientId={patient.id} />
+    </div>
+  );
+}
+
+const asPercent = (value: number) => t("measure.percent", { value });
+
+/** Bloom's peak openness and Finger piano's hit rate, one point per session. */
+function HandGamesProgress({ patientId }: { patientId: number }) {
+  const progress = useAdminPatientProgress(patientId);
+
+  return (
+    <section aria-labelledby="hand-games-progress" className="flex flex-col gap-4">
+      <h2 id="hand-games-progress" className="text-xl font-bold">
+        {t("adminProgress.handTitle")}
+      </h2>
+      {progress.isPending && <Skeleton className="h-64" />}
+      {progress.isError && <QueryError onRetry={() => void progress.refetch()} />}
+      {progress.isSuccess && <HandGamesCharts series={progress.data.series} />}
+    </section>
+  );
+}
+
+function HandGamesCharts({ series }: { series: PatientProgress["series"] }) {
+  const { openness, hitRate } = handProgress(series, formatDate);
+  if (openness.length === 0 && hitRate.length === 0) {
+    return <EmptyState title={t("adminProgress.handEmpty")} />;
+  }
+  return (
+    <div className="grid gap-6 2xl:grid-cols-2">
+      <div>
+        <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.opennessChartTitle")}</h3>
+        <ProgressChart
+          points={openness}
+          seriesName={t("adminProgress.opennessSeries")}
+          emptyTitle={t("adminProgress.handEmpty")}
+          formatValue={asPercent}
+          yDomain={[0, 100]}
+          allowDecimals={false}
+        />
+      </div>
+      <div>
+        <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.hitRateChartTitle")}</h3>
+        <ProgressChart
+          points={hitRate}
+          seriesName={t("adminProgress.hitRateSeries")}
+          emptyTitle={t("adminProgress.handEmpty")}
+          formatValue={asPercent}
+          yDomain={[0, 100]}
+          allowDecimals={false}
+        />
+      </div>
     </div>
   );
 }

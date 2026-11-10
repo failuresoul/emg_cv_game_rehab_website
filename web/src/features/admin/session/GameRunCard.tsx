@@ -18,6 +18,7 @@ import {
 } from "@/types/api";
 
 import { FruitStrip } from "./FruitStrip";
+import { FingerHitChart, OpennessChart } from "./HandCharts";
 import { RunTargetMap } from "./RunTargetMap";
 import { columnsFor } from "./trialColumns";
 
@@ -192,6 +193,8 @@ export function GameRunCard({
               </tbody>
             </table>
           </div>
+          {run.game_id === "bloom" && <OpennessChart run={run} />}
+          {run.game_id === "finger_piano" && <FingerHitChart run={run} />}
           <MovementChart run={run} />
         </>
       )}

@@ -13,7 +13,7 @@ export const fingerPiano: GameDefinition = {
   icon: Piano,
   params: FINGER_PIANO_PARAMS,
   trialsDefault: FINGER_PIANO_TRIALS,
-  estimatedMinutes: 5,
+  estimatedMinutes: 4,
   create: createFingerPianoGame,
   implemented: true,
   // No reaching: the hand only has to be visible, and only the trunk is checked, as in the warm-up.

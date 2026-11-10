@@ -6,7 +6,8 @@ import { t, type TranslationKey } from "@/i18n";
 import { formatNumber } from "@/lib/format";
 import type { GameRun } from "@/types/api";
 
-import { mainMeasure, percent } from "./results";
+import { FingerHitBars } from "./FingerHitBars";
+import { extraMeasure, fingerHitRates, mainMeasure, type MainMeasure, percent } from "./results";
 
 const COLUMNS: TranslationKey[] = [
   "gameResults.column.game",
@@ -76,7 +77,10 @@ export function GameRunsTable({ runs }: { runs: readonly GameRun[] }) {
 export function GameRunSection({ run }: { run: GameRun }) {
   const game = GAMES[run.game_id];
   const Icon = game.icon;
-  const measure = mainMeasure(run.game_id, run.summary);
+  const measures = [
+    mainMeasure(run.game_id, run.summary),
+    extraMeasure(run.game_id, run.summary),
+  ].filter((item): item is MainMeasure => item !== null);
   const notRecorded = t("sessions.notRecorded");
   return (
     <section aria-labelledby={`run-${run.id}`} className="flex flex-col gap-3">
@@ -88,7 +92,13 @@ export function GameRunSection({ run }: { run: GameRun }) {
         <SessionStatusBadge status={run.status} />
         <span className="text-muted">{t(game.movementKey)}</span>
       </div>
-      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <dl
+        className={
+          measures.length > 1
+            ? "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            : "grid grid-cols-1 gap-3 sm:grid-cols-3"
+        }
+      >
         <div>
           <dt className="text-muted">{t("gameResults.column.score")}</dt>
           <dd className="text-2xl font-bold tabular-nums">
@@ -99,13 +109,18 @@ export function GameRunSection({ run }: { run: GameRun }) {
           <dt className="text-muted">{t("gameResults.column.successes")}</dt>
           <dd className="text-2xl font-bold tabular-nums">{successText(run)}</dd>
         </div>
-        <div>
-          <dt className="text-muted">{t(measure.labelKey)}</dt>
-          <dd className="text-2xl font-bold tabular-nums">
-            {measure.value ? t(measure.value.key, measure.value.params) : notRecorded}
-          </dd>
-        </div>
+        {measures.map((measure) => (
+          <div key={measure.labelKey}>
+            <dt className="text-muted">{t(measure.labelKey)}</dt>
+            <dd className="text-2xl font-bold tabular-nums">
+              {measure.value ? t(measure.value.key, measure.value.params) : notRecorded}
+            </dd>
+          </div>
+        ))}
       </dl>
+      {run.game_id === "finger_piano" && (
+        <FingerHitBars rates={fingerHitRates(run.summary)} title={t("history.fingerBarsTitle")} />
+      )}
     </section>
   );
 }

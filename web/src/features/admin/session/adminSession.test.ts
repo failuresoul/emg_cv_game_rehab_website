@@ -46,14 +46,24 @@ describe("trial table columns", () => {
 
   it("shows the hand measures for Bloom", () => {
     expect(keys("bloom")).toEqual([
-      "adminSession.column.outcome",
-      "adminSession.column.failedPhase",
       "adminSession.column.timeToOpen",
       "adminSession.column.peakOpenness",
       "adminSession.column.holdStability",
-      "adminSession.column.riseRate",
       "adminSession.column.timeToClose",
-      "adminSession.column.peakGrip",
+      "adminSession.column.outcome",
+      "adminSession.column.failedPhase",
+      "adminSession.column.compensated",
+    ]);
+  });
+
+  it("shows the notes for Finger piano", () => {
+    expect(keys("finger_piano")).toEqual([
+      "adminSession.column.melody",
+      "adminSession.column.notesHit",
+      "adminSession.column.wrongFinger",
+      "adminSession.column.missedNotes",
+      "adminSession.column.timingError",
+      "adminSession.column.outcome",
       "adminSession.column.compensated",
     ]);
   });

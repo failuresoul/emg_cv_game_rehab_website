@@ -5,10 +5,17 @@ import type { GameRun, GameRunDetail, TrialRead } from "@/types/api";
 import {
   bestOfSuccesses,
   DETAIL_HIGHEST_POPPED,
-  DETAIL_MEAN_TIME_TO_OPEN,
+  bestFinger,
+  DETAIL_BEST_FINGER,
+  DETAIL_BEST_OPENNESS,
+  DETAIL_NOTE_HIT_RATE,
   DETAIL_WIDEST_CATCH,
+  extraMeasure,
+  fingerHitRates,
+  fingerTallies,
   finishedRuns,
   mainMeasure,
+  opennessSeries,
   meanReachSeconds,
   movementSeries,
   percent,
@@ -168,13 +175,40 @@ describe("mainMeasure", () => {
     expect(mainMeasure("fruit_catch", withDetails).value?.params).toEqual({ value: 70 });
   });
 
-  it("is the average time to open the hand, in seconds, for Bloom", () => {
-    const withDetails = { ...summary!, details: { [DETAIL_MEAN_TIME_TO_OPEN]: 1460 } };
+  it("is the flowers grown for Bloom, with the best openness beside it", () => {
+    const withDetails = { ...summary!, successes: 11, details: { [DETAIL_BEST_OPENNESS]: 0.874 } };
     expect(mainMeasure("bloom", withDetails)).toEqual({
-      labelKey: "measure.meanTimeToOpen",
-      value: { key: "game.results.seconds", params: { value: 1.5 } },
+      labelKey: "measure.flowersGrown",
+      value: { key: "measure.count", params: { value: 11 } },
     });
-    expect(mainMeasure("bloom", summary).value).toBeNull();
+    expect(extraMeasure("bloom", withDetails)).toEqual({
+      labelKey: "measure.bestOpenness",
+      value: { key: "measure.percent", params: { value: 87 } },
+    });
+    expect(mainMeasure("bloom", null).value).toBeNull();
+    expect(extraMeasure("bloom", summary)?.value).toBeNull();
+  });
+
+  it("is the hit rate for Finger piano, with the best finger beside it", () => {
+    const withDetails = {
+      ...summary!,
+      details: { [DETAIL_NOTE_HIT_RATE]: 0.8, [DETAIL_BEST_FINGER]: "ring" },
+    };
+    expect(mainMeasure("finger_piano", withDetails)).toEqual({
+      labelKey: "measure.hitRate",
+      value: { key: "measure.ofNotes", params: { value: 80 } },
+    });
+    expect(extraMeasure("finger_piano", withDetails)).toEqual({
+      labelKey: "measure.bestFinger",
+      value: { key: "warmup.sequence.ring", params: {} },
+    });
+    const unknown = { ...summary!, details: { [DETAIL_BEST_FINGER]: "thumb" } };
+    expect(extraMeasure("finger_piano", unknown)?.value).toBeNull();
+  });
+
+  it("has no second figure for the reaching games", () => {
+    expect(extraMeasure("reach_activate", summary)).toBeNull();
+    expect(extraMeasure("balloon_pop", summary)).toBeNull();
   });
 
   it("has no value when there is nothing to show yet", () => {
@@ -197,5 +231,89 @@ describe("bestOfSuccesses", () => {
       ]),
     ).toBe(0.7);
     expect(bestOfSuccesses([{ outcome: "miss", value: 1 }])).toBeNull();
+  });
+});
+
+describe("Finger piano figures", () => {
+  const trial = (outcome: TrialRead["outcome"], perFinger: TrialRead["metrics"]["per_finger"]) => ({
+    outcome,
+    metrics: { per_finger: perFinger },
+  });
+
+  it("adds up each finger's hits and notes over the melodies, leaving out stopped ones", () => {
+    const tallies = fingerTallies([
+      trial("success", { index: { hits: 2, attempts: 2 }, ring: { hits: 1, attempts: 2 } }),
+      trial("miss", { index: { hits: 0, attempts: 1 }, middle: { hits: 1, attempts: 1 } }),
+      trial("aborted", { little: { hits: 1, attempts: 1 } }),
+      trial("miss", null),
+    ]);
+    expect(tallies).toEqual([
+      { finger: "index", hits: 2, attempts: 3 },
+      { finger: "middle", hits: 1, attempts: 1 },
+      { finger: "ring", hits: 1, attempts: 2 },
+    ]);
+  });
+
+  it("picks the finger with the best hit rate, then the one with more notes played", () => {
+    expect(
+      bestFinger([
+        { finger: "index", hits: 2, attempts: 3 },
+        { finger: "middle", hits: 1, attempts: 1 },
+        { finger: "ring", hits: 2, attempts: 2 },
+      ]),
+    ).toBe("ring");
+    expect(
+      bestFinger([
+        { finger: "index", hits: 1, attempts: 2 },
+        { finger: "little", hits: 2, attempts: 4 },
+      ]),
+    ).toBe("little");
+    expect(bestFinger([{ finger: "index", hits: 0, attempts: 3 }])).toBeNull();
+    expect(bestFinger([])).toBeNull();
+  });
+
+  it("reads each finger's hit rate from the summary, in finger order", () => {
+    const summary = {
+      successes: 1,
+      success_rate: 0.5,
+      mean_movement_ms: null,
+      mean_path_efficiency: null,
+      compensated_trials: 0,
+      details: { hit_rate_ring: 0.5, hit_rate_index: 1, hit_rate_little: null },
+    };
+    expect(fingerHitRates(summary)).toEqual([
+      { finger: "index", rate: 1 },
+      { finger: "ring", rate: 0.5 },
+    ]);
+    expect(fingerHitRates(null)).toEqual([]);
+  });
+});
+
+describe("opennessSeries", () => {
+  it("gives each turn's peak openness and demand as percentages, in turn order", () => {
+    const trial = (
+      trialNo: number,
+      outcome: TrialRead["outcome"],
+      peak: number | null,
+      demand?: number,
+    ) =>
+      ({
+        trial_no: trialNo,
+        outcome,
+        metrics: { peak_openness: peak },
+        params: demand === undefined ? {} : { open_demand: demand },
+      }) as unknown as TrialRead;
+    expect(
+      opennessSeries([
+        trial(2, "miss", 0.55, 0.75),
+        trial(1, "success", 0.812, 0.7),
+        trial(3, "aborted", 0.2, 0.75),
+        trial(4, "miss", null),
+      ]),
+    ).toEqual([
+      { trialNo: 1, peak: 81, demand: 70 },
+      { trialNo: 2, peak: 55, demand: 75 },
+      { trialNo: 4, peak: null, demand: null },
+    ]);
   });
 });

@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -27,6 +28,10 @@ class ProgressPoint(BaseModel):
     game_success_rate: float | None
     #: Warm-up repetitions done in full.
     total_reps: int
+    #: Bloom: the average of each turn's peak openness (0-1), or None without Bloom.
+    bloom_peak_openness: float | None = None
+    #: Finger piano: notes played over notes asked (0-1), or None without Finger piano.
+    piano_hit_rate: float | None = None
 
 
 class ReachSnapshot(BaseModel):
@@ -54,6 +59,16 @@ class PatientProgress(BaseModel):
     latest_reach: ReachSnapshot | None
 
 
+class GameMeasure(BaseModel):
+    """One figure of a game run, named so the web app can word it."""
+
+    #: For example "flowers_grown", "note_hit_rate" or "best_finger".
+    name: str
+    #: A share from 0 to 1, a count, milliseconds or a finger's name; None when not recorded.
+    value: float | str | None
+    unit: Literal["ms", "share", "count", "finger"]
+
+
 class GameComparison(BaseModel):
     """The patient's last finished run of the same game in an earlier session."""
 
@@ -73,6 +88,10 @@ class SessionReportGame(BaseModel):
     successes: int | None
     success_rate: float | None
     summary: GameSummary | None
+    #: The game's headline figure, the same one the web app shows.
+    main_measure: GameMeasure | None = None
+    #: A second figure, for the hand games: best openness, or the finger played best.
+    extra_measure: GameMeasure | None = None
     previous: GameComparison | None
 
 

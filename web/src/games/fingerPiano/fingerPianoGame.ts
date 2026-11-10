@@ -1,4 +1,11 @@
-import { DETAIL_NOTE_HIT_RATE } from "@/features/games/results";
+import {
+  bestFinger,
+  DETAIL_BEST_FINGER,
+  DETAIL_NOTE_HIT_RATE,
+  FINGER_LABEL_KEYS,
+  fingerHitRateDetail,
+  fingerTallies,
+} from "@/features/games/results";
 import { CompensationTally } from "@/games/shared/compensationTally";
 import { Encourager } from "@/games/shared/encourage";
 import { summariseTrials } from "@/games/shared/metrics";
@@ -9,7 +16,7 @@ import type {
   GameParams,
   GameResult,
 } from "@/games/shared/types";
-import { t, type TranslationKey } from "@/i18n";
+import { t } from "@/i18n";
 import { type Finger, type FingerTouchEvent, FINGERS } from "@/input/fingerTouch";
 import type { TrialCreate } from "@/types/api";
 
@@ -32,13 +39,6 @@ import { buildMelodyRecord, melodyMetrics, melodyScore } from "./trialRecord";
 /** A played note's ring shows this long; a missed note fades below the line in this time. */
 const EFFECT_MS = 700;
 const DEFAULT_LENGTH = 4;
-
-export const FINGER_LABEL_KEYS: Record<Finger, TranslationKey> = {
-  index: "warmup.sequence.index",
-  middle: "warmup.sequence.middle",
-  ring: "warmup.sequence.ring",
-  little: "warmup.sequence.little",
-};
 
 interface ActiveMelody {
   no: number;
@@ -237,6 +237,7 @@ export function createFingerPianoGame(context: GameContext): GameInstance {
     isFinished: () => records.length >= context.trialsPlanned && melody === null,
 
     getSummary(): GameResult {
+      const tallies = fingerTallies(records);
       return {
         score,
         trialsDone: records.length,
@@ -246,6 +247,13 @@ export function createFingerPianoGame(context: GameContext): GameInstance {
           details: {
             [DETAIL_NOTE_HIT_RATE]:
               notesPlayed > 0 ? Math.round((notesHit / notesPlayed) * 10000) / 10000 : null,
+            [DETAIL_BEST_FINGER]: bestFinger(tallies),
+            ...Object.fromEntries(
+              tallies.map((tally) => [
+                fingerHitRateDetail(tally.finger),
+                Math.round((tally.hits / tally.attempts) * 10000) / 10000,
+              ]),
+            ),
           },
         },
       };

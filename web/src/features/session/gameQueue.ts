@@ -8,6 +8,32 @@ export interface GameQueue {
   index: number;
 }
 
+/**
+ * Today's games when the plan opens, in this order: reaching, raising the arm, opening the hand
+ * and finger control, about 16 minutes. Other games are listed after them, unticked.
+ */
+export const DEFAULT_PLAN: readonly GameId[] = [
+  "reach_activate",
+  "balloon_pop",
+  "bloom",
+  "finger_piano",
+];
+
+export interface PlanRow {
+  id: GameId;
+  selected: boolean;
+}
+
+/** The plan as it first shows: the default games ticked and first, then the rest unticked. */
+export function defaultPlanRows(available: readonly GameId[]): PlanRow[] {
+  const chosen = DEFAULT_PLAN.filter((id) => available.includes(id));
+  const others = available.filter((id) => !chosen.includes(id));
+  return [
+    ...chosen.map((id) => ({ id, selected: true })),
+    ...others.map((id) => ({ id, selected: false })),
+  ];
+}
+
 const STORAGE_PREFIX = "motionlab.gameQueue.";
 
 export function createQueue(sessionId: number, games: readonly GameId[]): GameQueue {
