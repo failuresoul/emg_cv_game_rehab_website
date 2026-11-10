@@ -9,8 +9,12 @@ import { useSession } from "@/features/session/SessionContext";
 import { SessionExitButton } from "@/features/session/SessionExitButton";
 import { sessionStops } from "@/features/session/sessionStop";
 import { t, type TranslationKey } from "@/i18n";
-import { ActivationMeter, type InputManager, useSessionActivation } from "@/input";
-import type { ActivationSourceId } from "@/input";
+import {
+  ActivationMeter,
+  type InputManager,
+  SOURCE_BADGE_KEYS,
+  useSessionActivation,
+} from "@/input";
 import { api } from "@/lib/api";
 import { formatClock, formatNumber } from "@/lib/format";
 import type { Calibration, Side } from "@/types/api";
@@ -56,12 +60,6 @@ const FEEDBACK_SHOW_MS = 2500;
 const COMPENSATION_EXERCISE = "forward_reach";
 /** The posture baseline comes from the game's first second, while the countdown keeps it still. */
 const GAME_COMPENSATION_CONFIG = { ...COMPENSATION_CONFIG, baselineMs: 1000 };
-
-const SOURCE_KEYS: Record<ActivationSourceId, TranslationKey> = {
-  cv_grip: "game.source.webcam",
-  keyboard: "game.source.keyboard",
-  emg: "game.source.emg",
-};
 
 const SAVE_KEYS: Record<SaveStatus, TranslationKey | null> = {
   idle: null,
@@ -506,7 +504,7 @@ const GamePlay = memo(function GamePlay({
             </span>
           )}
           <Badge variant={activation.sourceId === "keyboard" ? "warning" : "neutral"}>
-            {t(SOURCE_KEYS[activation.sourceId])}
+            {t(SOURCE_BADGE_KEYS[activation.sourceId])}
           </Badge>
           {stage === "playing" && (
             <Button

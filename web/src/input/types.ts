@@ -1,15 +1,16 @@
 import type { TranslationKey } from "@/i18n";
 
 export type ActivationSourceId = "cv_grip" | "keyboard" | "emg";
+export type OpennessSourceId = "cv_openness" | "keyboard" | "emg";
 
 export type LevelListener = (level: number) => void;
 
 /**
- * Where a game's "activation" comes from. Games only read a level from 0 (relaxed) to 1 (full
- * squeeze) and never need to know whether it is a closing hand, a key or, from Day 15, a muscle.
+ * Anything that reports one level from 0 to 1. Games only read the level and never need to know
+ * whether it comes from the camera, a key or, from Day 15, a muscle.
  */
-export interface ActivationSource {
-  readonly id: ActivationSourceId;
+export interface LevelSource<Id extends string = string> {
+  readonly id: Id;
   readonly labelKey: TranslationKey;
   /** False while the source cannot measure, for example when the hand is out of view. */
   isReady(): boolean;
@@ -21,23 +22,44 @@ export interface ActivationSource {
   subscribe(listener: LevelListener): () => void;
 }
 
+/** Where a game's "activation" comes from: 0 relaxed, 1 full squeeze. */
+export type ActivationSource = LevelSource<ActivationSourceId>;
+
+/** How open the affected hand is: 0 a fist, 1 fully open. */
+export type OpennessSource = LevelSource<OpennessSourceId>;
+
+/** The source badge's words for each input mode. */
+export const SOURCE_BADGE_KEYS: Readonly<Record<ActivationSourceId, TranslationKey>> = {
+  cv_grip: "game.source.webcam",
+  keyboard: "game.source.keyboard",
+  emg: "game.source.emg",
+};
+
 export function clamp01(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.min(1, Math.max(0, value));
 }
 
 /** The listener bookkeeping every source shares. */
-export class LevelListeners {
-  private readonly listeners = new Set<LevelListener>();
+export class Listeners<T> {
+  private readonly listeners = new Set<(value: T) => void>();
 
-  add(listener: LevelListener): () => void {
+  add(listener: (value: T) => void): () => void {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
     };
   }
 
-  emit(level: number): void {
-    this.listeners.forEach((listener) => listener(level));
+  emit(value: T): void {
+    this.listeners.forEach((listener) => listener(value));
   }
+}
+
+export class LevelListeners extends Listeners<number> {}
+
+/** Key presses in a text field are typing, not input. */
+export function isTyping(target: EventTarget | null): boolean {
+  if (typeof HTMLElement === "undefined" || !(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }

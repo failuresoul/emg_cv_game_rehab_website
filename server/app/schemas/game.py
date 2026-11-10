@@ -1,6 +1,13 @@
 from typing import Annotated, Any, Literal, get_args
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
 
 from app.schemas.common import UtcDatetime
 
@@ -24,6 +31,7 @@ TrialOutcome = Literal["success", "reach_fail", "activation_fail", "miss", "abor
 
 MAX_TRIALS_PER_BATCH = 50
 MAX_TRAJECTORY_POINTS = 2000
+MAX_TARGET_NOTES = 64
 MAX_TRIALS_PER_RUN = 500
 
 NonNegative = Annotated[float, Field(ge=0)]
@@ -43,17 +51,55 @@ class GameRunStart(BaseModel):
     trials_planned: int = Field(ge=1, le=MAX_TRIALS_PER_RUN)
 
 
+#: The fields that place a target in the body frame. A target has all of them or none.
+SPATIAL_TARGET_FIELDS = ("x_sw", "y_sw", "radius_sw", "direction_deg", "distance_frac", "sector")
+TargetKind = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,29}$")]
+TargetNote = Annotated[str, Field(min_length=1, max_length=20)]
+
+
 class TrialTarget(BaseModel):
+    """What a trial asked for.
+
+    Reaching games give a place in the body frame (every spatial field). Hand games, which have no
+    place, give a kind instead, for example {"kind": "bloom"} or
+    {"kind": "sequence", "notes": ["index", "ring"]}. Fields left out are not saved or returned.
+    """
+
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
-    x_sw: float
-    y_sw: float
-    radius_sw: float = Field(gt=0)
-    direction_deg: float = Field(ge=0, lt=360)
+    #: What sort of target this is, such as "bloom" or "sequence". Required without a place.
+    kind: TargetKind | None = None
+    x_sw: float | None = None
+    y_sw: float | None = None
+    radius_sw: Annotated[float, Field(gt=0)] | None = None
+    direction_deg: Annotated[float, Field(ge=0, lt=360)] | None = None
     #: Distance as a share of the calibrated reach radius in that direction.
-    distance_frac: float = Field(ge=0, le=2)
+    distance_frac: Annotated[float, Field(ge=0, le=2)] | None = None
     #: Direction and ring, for example "D3R2".
-    sector: str = Field(pattern=r"^D\d{1,2}R\d{1,2}$")
+    sector: Annotated[str, Field(pattern=r"^D\d{1,2}R\d{1,2}$")] | None = None
+    #: A sequence to play, such as finger names, in order.
+    notes: Annotated[list[TargetNote], Field(min_length=1, max_length=MAX_TARGET_NOTES)] | None = (
+        None
+    )
+
+    @model_validator(mode="after")
+    def _spatial_or_kind(self) -> "TrialTarget":
+        given = [name for name in SPATIAL_TARGET_FIELDS if getattr(self, name) is not None]
+        if given and len(given) != len(SPATIAL_TARGET_FIELDS):
+            missing = [name for name in SPATIAL_TARGET_FIELDS if name not in given]
+            raise ValueError(f"a placed target needs every spatial field; missing {missing}")
+        if not given and self.kind is None:
+            raise ValueError("a target without a place needs a kind")
+        return self
+
+    @property
+    def is_spatial(self) -> bool:
+        return self.x_sw is not None
+
+    @model_serializer(mode="wrap")
+    def _drop_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        data: dict[str, Any] = handler(self)
+        return {key: value for key, value in data.items() if value is not None}
 
 
 class TrialTimings(BaseModel):

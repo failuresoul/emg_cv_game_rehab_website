@@ -2,7 +2,7 @@ import { MarkerShape } from "@/components/ReachMap";
 import { lateralRange } from "@/games/fruitCatch/lateral";
 import { t } from "@/i18n";
 import { formatNumber } from "@/lib/format";
-import type { Calibration, GameRunDetail, Side } from "@/types/api";
+import { type Calibration, type GameRunDetail, isSpatialTarget, type Side } from "@/types/api";
 
 import { OutcomeLegend } from "./OutcomeLegend";
 import { OUTCOME_STYLE, outcomeLabelKey } from "./outcomes";
@@ -48,7 +48,7 @@ export function FruitStrip({
   const side = affectedSide ?? "right";
   const range = lateralRange(calibration?.reach_radii_sw ?? null);
   const trials = [...run.trials]
-    .filter((trial) => trial.target)
+    .filter((trial) => isSpatialTarget(trial.target))
     .sort((a, b) => a.trial_no - b.trial_no);
   const height = TOP + Math.max(1, trials.length) * ROW + BOTTOM;
   const at = (x: number) => stripX(x, range, side);

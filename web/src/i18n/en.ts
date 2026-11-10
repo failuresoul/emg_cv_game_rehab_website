@@ -515,6 +515,8 @@ export const en = {
   "page.admin.system.title": "System",
 
   "input.source.cvGrip": "Closing your hand (camera)",
+  "input.source.cvOpenness": "Opening your hand (camera)",
+  "input.source.cvTouch": "Thumb to finger (camera)",
   "input.source.keyboard": "Keyboard",
   "input.source.emg": "Muscle sensor",
   "input.keyboardBadge": "Keyboard input",

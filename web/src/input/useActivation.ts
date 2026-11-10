@@ -7,7 +7,7 @@ import { CvGripSource, DEFAULT_GRIP_REFS, type GripRefs } from "./cvGripSource";
 import { EmgSource } from "./emgSource";
 import { DEFAULT_SOURCE_ID, InputManager } from "./inputManager";
 import { KeyboardSource } from "./keyboardSource";
-import type { ActivationSourceId } from "./types";
+import { type ActivationSourceId, isTyping } from "./types";
 
 export interface UseActivationOptions {
   affectedSide: Side | null;
@@ -27,11 +27,6 @@ export interface ActivationValue {
   getLevel: () => number;
   /** Null until the affected side is known. */
   manager: InputManager | null;
-}
-
-function isTyping(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
 /**

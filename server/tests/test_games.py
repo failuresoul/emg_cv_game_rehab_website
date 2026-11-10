@@ -341,6 +341,75 @@ def test_upload_invalid_trial_is_422(
     assert response.status_code == 422, response.text
 
 
+def stored_targets(
+    client: TestClient, admin_headers: Headers, session_id: int
+) -> list[dict[str, Any] | None]:
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    return [trial["target"] for trial in detail["games"][0]["trials"]]
+
+
+def test_upload_non_spatial_targets(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    """Hand games have no place in the body frame, so a kind (and notes) stands in for one."""
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="finger_piano")
+    sequence = {"kind": "sequence", "notes": ["index", "ring", "middle", "little"]}
+    trials = [
+        trial_payload(1, target={"kind": "bloom"}, trajectory=[]),
+        trial_payload(2, target=sequence, trajectory=[]),
+        trial_payload(3, target=None, trajectory=[]),
+    ]
+    response = upload(client, patient_headers, run_id, trials)
+    assert response.status_code == 200, response.text
+
+    # Exactly what was sent: fields left out are not filled with nulls.
+    assert stored_targets(client, admin_headers, session_id) == [{"kind": "bloom"}, sequence, None]
+
+
+def test_spatial_target_is_returned_unchanged(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id)
+    with_kind = {**trial_payload()["target"], "kind": "reach"}
+    upload(client, patient_headers, run_id, [trial_payload(1), trial_payload(2, target=with_kind)])
+
+    assert stored_targets(client, admin_headers, session_id) == [
+        trial_payload()["target"],
+        with_kind,
+    ]
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        pytest.param({}, id="empty"),
+        pytest.param({"notes": ["index"]}, id="notes-without-kind"),
+        pytest.param({"kind": "bloom", "x_sw": 0.5}, id="partly-placed"),
+        pytest.param(
+            {k: v for k, v in trial_payload()["target"].items() if k != "sector"},
+            id="placed-without-sector",
+        ),
+        pytest.param({"kind": "Bloom!"}, id="bad-kind"),
+        pytest.param({"kind": "x" * 31}, id="long-kind"),
+        pytest.param({"kind": "sequence", "notes": []}, id="no-notes"),
+        pytest.param({"kind": "sequence", "notes": [""]}, id="empty-note"),
+        pytest.param({"kind": "sequence", "notes": ["n" * 21]}, id="long-note"),
+        pytest.param({"kind": "sequence", "notes": ["index"] * 65}, id="too-many-notes"),
+        pytest.param({"kind": "sequence", "notes": [1, 2]}, id="number-notes"),
+        pytest.param({"kind": "bloom", "colour": "red"}, id="unknown-field"),
+    ],
+)
+def test_upload_invalid_target_is_422(
+    client: TestClient, patient_headers: Headers, target: dict[str, Any]
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id)
+    response = upload(client, patient_headers, run_id, [trial_payload(target=target)])
+    assert response.status_code == 422, response.text
+
+
 def test_upload_rejects_not_a_number(client: TestClient, patient_headers: Headers) -> None:
     session_id = start_session(client, patient_headers)
     run_id = start_run(client, patient_headers, session_id)

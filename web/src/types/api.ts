@@ -301,7 +301,10 @@ export interface GameRunStart {
   trials_planned: number;
 }
 
-export interface TrialTarget {
+/** A target placed in the body frame, for reaching games. */
+export interface SpatialTrialTarget {
+  /** Optional for placed targets. */
+  kind?: string;
   x_sw: number;
   y_sw: number;
   radius_sw: number;
@@ -309,6 +312,31 @@ export interface TrialTarget {
   distance_frac: number;
   /** Direction and ring, for example "D3R2". */
   sector: string;
+  notes?: string[];
+}
+
+/**
+ * A target with no place, for hand games: {kind: "bloom"} or {kind: "sequence", notes: [...]}.
+ * The kind is lower-case letters, digits and underscores, up to 30; each note up to 20 characters.
+ */
+export interface KindTrialTarget {
+  kind: string;
+  /** Up to 64, for example finger names in the order to play them. */
+  notes?: string[];
+  x_sw?: never;
+  y_sw?: never;
+  radius_sw?: never;
+  direction_deg?: never;
+  distance_frac?: never;
+  sector?: never;
+}
+
+export type TrialTarget = SpatialTrialTarget | KindTrialTarget;
+
+export function isSpatialTarget(
+  target: TrialTarget | null | undefined,
+): target is SpatialTrialTarget {
+  return target !== null && target !== undefined && target.x_sw !== undefined;
 }
 
 /** Milliseconds relative to spawn; null when the trial never reached that moment. */

@@ -1,48 +1,49 @@
-import type { ActivationSource, ActivationSourceId } from "./types";
+import type { ActivationSourceId, LevelSource } from "./types";
 
 export const DEFAULT_SOURCE_ID: ActivationSourceId = "cv_grip";
+const KEYBOARD_ID = "keyboard";
 
-export interface ActivationSnapshot {
-  sourceId: ActivationSourceId;
+export interface LevelSnapshot<Id extends string = ActivationSourceId> {
+  sourceId: Id;
   level: number;
   ready: boolean;
 }
 
-type SnapshotListener = (snapshot: ActivationSnapshot) => void;
+export type ActivationSnapshot = LevelSnapshot<ActivationSourceId>;
+
+type SnapshotListener<Id extends string> = (snapshot: LevelSnapshot<Id>) => void;
 
 /**
- * Holds every source and runs the chosen one. Games read getLevel() from the manager, so changing
- * the source never touches a game.
+ * Holds every source of one kind of level (activation or openness) and runs the chosen one. Games
+ * read getLevel() from the manager, so changing the source never touches a game.
  */
-export class InputManager {
-  private readonly sources: ReadonlyMap<ActivationSourceId, ActivationSource>;
-  private readonly listeners = new Set<SnapshotListener>();
-  private activeId: ActivationSourceId;
+export class InputManager<Id extends string = ActivationSourceId> {
+  private readonly sources: ReadonlyMap<Id, LevelSource<Id>>;
+  private readonly listeners = new Set<SnapshotListener<Id>>();
+  private activeId: Id;
   /** The source to go back to when keyboard input is turned off. */
-  private previousId: ActivationSourceId;
+  private previousId: Id;
   private running = false;
   private unsubscribeSource: (() => void) | null = null;
 
-  constructor(
-    sources: readonly ActivationSource[],
-    initial: ActivationSourceId = DEFAULT_SOURCE_ID,
-  ) {
+  /** Without an initial id, an activation manager starts on the camera grip. */
+  constructor(sources: readonly LevelSource<Id>[], initial: Id = DEFAULT_SOURCE_ID as Id) {
     this.sources = new Map(sources.map((source) => [source.id, source]));
-    if (!this.sources.has(initial)) throw new Error(`No activation source "${initial}"`);
+    if (!this.sources.has(initial)) throw new Error(`No input source "${initial}"`);
     this.activeId = initial;
     this.previousId = initial;
   }
 
-  get sourceId(): ActivationSourceId {
+  get sourceId(): Id {
     return this.activeId;
   }
 
-  get source(): ActivationSource {
-    return this.sources.get(this.activeId) as ActivationSource;
+  get source(): LevelSource<Id> {
+    return this.sources.get(this.activeId) as LevelSource<Id>;
   }
 
   get keyboardActive(): boolean {
-    return this.activeId === "keyboard";
+    return this.activeId === KEYBOARD_ID;
   }
 
   getLevel(): number {
@@ -53,15 +54,15 @@ export class InputManager {
     return this.source.isReady();
   }
 
-  snapshot(): ActivationSnapshot {
+  snapshot(): LevelSnapshot<Id> {
     return { sourceId: this.activeId, level: this.getLevel(), ready: this.isReady() };
   }
 
   /** Does nothing for a source the manager does not have. */
-  select(id: ActivationSourceId): void {
+  select(id: Id): void {
     if (id === this.activeId || !this.sources.has(id)) return;
     if (this.running) this.detach();
-    if (id === "keyboard") this.previousId = this.activeId;
+    if (id === KEYBOARD_ID) this.previousId = this.activeId;
     this.activeId = id;
     if (this.running) this.attach();
     this.emit();
@@ -69,7 +70,7 @@ export class InputManager {
 
   /** Keyboard input on, or back to the source used before it. */
   toggleKeyboard(): void {
-    this.select(this.keyboardActive ? this.previousId : "keyboard");
+    this.select(this.keyboardActive ? this.previousId : (KEYBOARD_ID as Id));
   }
 
   start(): void {
@@ -85,7 +86,7 @@ export class InputManager {
     this.detach();
   }
 
-  subscribe(listener: SnapshotListener): () => void {
+  subscribe(listener: SnapshotListener<Id>): () => void {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);

@@ -1,21 +1,25 @@
-import { type ActivationSource, clamp01, LevelListeners } from "./types";
+import { clamp01, isTyping, LevelListeners, type LevelSource } from "./types";
 
-/** Holding Space takes the level from 0 to 1 in this time. */
+/** Holding the key takes the level from 0 to 1 in this time. */
 export const KEYBOARD_RISE_MS = 300;
-/** Releasing Space takes the level from 1 to 0 in this time. */
+/** Releasing the key takes the level from 1 to 0 in this time. */
 export const KEYBOARD_FALL_MS = 200;
 
 export interface KeyboardSourceOptions {
   now?: () => number;
+  /** The KeyboardEvent.code to hold: "Space" (squeeze) by default, "KeyO" to open the hand. */
+  code?: string;
 }
 
 /**
- * For testing without a camera: holding Space squeezes. The level is worked out from the time, so
- * getLevel() is exact whenever it is called; start() also sends it to listeners every frame.
+ * For testing without a camera: holding a key (Space by default) raises the level. The level is
+ * worked out from the time, so getLevel() is exact whenever it is called; start() also sends it to
+ * listeners every frame.
  */
-export class KeyboardSource implements ActivationSource {
+export class KeyboardSource implements LevelSource<"keyboard"> {
   readonly id = "keyboard";
   readonly labelKey = "input.source.keyboard";
+  readonly code: string;
   private readonly now: () => number;
   private readonly listeners = new LevelListeners();
   private pressed = false;
@@ -26,8 +30,9 @@ export class KeyboardSource implements ActivationSource {
   private frameId: number | null = null;
   private running = false;
 
-  constructor({ now = () => performance.now() }: KeyboardSourceOptions = {}) {
+  constructor({ now = () => performance.now(), code = "Space" }: KeyboardSourceOptions = {}) {
     this.now = now;
+    this.code = code;
   }
 
   isReady(): boolean {
@@ -41,7 +46,7 @@ export class KeyboardSource implements ActivationSource {
       : clamp01(this.fromLevel - elapsed / KEYBOARD_FALL_MS);
   }
 
-  /** Space pressed. Repeats while it is held change nothing. */
+  /** The key pressed. Repeats while it is held change nothing. */
   press(at: number = this.now()): void {
     if (this.pressed) return;
     this.fromLevel = this.getLevel(at);
@@ -97,13 +102,15 @@ export class KeyboardSource implements ActivationSource {
 
   // Space would otherwise scroll the page or press whichever button has focus.
   private readonly onKeyDown = (event: KeyboardEvent) => {
-    if (event.code !== "Space") return;
+    if (event.code !== this.code || isTyping(event.target)) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
     event.preventDefault();
     this.press();
   };
 
+  // A release always counts, so a key let go in a text field never stays held.
   private readonly onKeyUp = (event: KeyboardEvent) => {
-    if (event.code !== "Space") return;
+    if (event.code !== this.code) return;
     event.preventDefault();
     this.release();
   };

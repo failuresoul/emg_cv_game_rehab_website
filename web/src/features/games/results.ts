@@ -1,12 +1,13 @@
 import type { TranslationKey } from "@/i18n";
-import type {
-  GameId,
-  GameRun,
-  GameRunDetail,
-  GameSummary,
-  LastSessionGame,
-  TrialOutcome,
-  TrialRead,
+import {
+  type GameId,
+  type GameRun,
+  type GameRunDetail,
+  type GameSummary,
+  isSpatialTarget,
+  type LastSessionGame,
+  type TrialOutcome,
+  type TrialRead,
 } from "@/types/api";
 
 /** Summary `details` keys the games fill in. */
@@ -102,7 +103,7 @@ export interface TargetMarker {
 export function targetMarkers(runs: readonly GameRunDetail[]): TargetMarker[] {
   return runs.flatMap((run) =>
     run.trials.flatMap((trial) =>
-      trial.target
+      isSpatialTarget(trial.target)
         ? [
             {
               key: `${run.id}-${trial.trial_no}`,

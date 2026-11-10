@@ -1,5 +1,6 @@
 // A developer tool that never reaches the production build. Its text is deliberately plain English
 // rather than t(): anything in the translation files would ship to production.
+import clsx from "clsx";
 import { memo, useEffect, useState } from "react";
 import {
   CartesianGrid,
@@ -15,7 +16,15 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
-import { ActivationMeter, ActivationSourceBadge, DEFAULT_GRIP_REFS, useActivation } from "@/input";
+import {
+  ActivationMeter,
+  ActivationSourceBadge,
+  DEFAULT_GRIP_REFS,
+  DEFAULT_TOUCH_THRESHOLD,
+  FINGERS,
+  TOUCH_HYSTERESIS,
+  useHandInput,
+} from "@/input";
 import type { Side } from "@/types/api";
 import type { AngleMeasure } from "@/vision/angles";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
@@ -37,7 +46,6 @@ const LOW_COLOR = "var(--color-warning)";
 const HIGH_COLOR = "var(--color-success)";
 // The smallest gap between low and high, as a share of the measure's range.
 const MIN_THRESHOLD_GAP_SHARE = 0.03;
-const FINGER_NAMES = ["index", "middle", "ring", "little"] as const;
 
 const AngleChart = memo(function AngleChart({
   points,
@@ -216,25 +224,72 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function ActivationCard({ side }: { side: Side }) {
-  const { sourceId, level, ready } = useActivation({ affectedSide: side });
+function HandInputCard({ side }: { side: Side }) {
+  const {
+    sourceId,
+    grip,
+    gripReady,
+    openness,
+    opennessReady,
+    touch,
+    isTouchReady,
+    subscribeTouch,
+  } = useHandInput({ affectedSide: side });
+  const [lastTouch, setLastTouch] = useState("–");
+  useEffect(
+    () =>
+      subscribeTouch((event) =>
+        setLastTouch(`${event.type} ${event.finger} at ${(event.t / 1000).toFixed(2)}s`),
+      ),
+    [subscribeTouch],
+  );
   return (
-    <Card className="flex items-center gap-6">
-      <ActivationMeter level={level} ready={ready} />
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-bold">Activation</h2>
-          <ActivationSourceBadge sourceId={sourceId} />
-        </div>
-        <Stat label="Level" value={number(level, 2)} />
-        <p className="font-medium">
-          Source {sourceId} · {ready ? "ready" : "not ready (hand not visible)"}
-        </p>
-        <p className="text-muted">
-          Open {DEFAULT_GRIP_REFS.openRef} = 0, closed {DEFAULT_GRIP_REFS.closedRef} = 1 (default
-          references). Press K for keyboard input, then hold Space.
-        </p>
+    <Card className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="font-bold">Hand input</h2>
+        <ActivationSourceBadge sourceId={sourceId} />
+        <span className="font-medium">
+          Source {sourceId} · {opennessReady ? "ready" : "not ready (hand not visible)"}
+        </span>
       </div>
+      <div className="flex flex-wrap items-start gap-6">
+        <div className="flex items-center gap-3">
+          <ActivationMeter level={grip} ready={gripReady} />
+          <Stat label="Grip" value={number(grip, 2)} />
+        </div>
+        <div className="flex items-center gap-3">
+          <ActivationMeter level={openness} ready={opennessReady} />
+          <Stat label="Openness" value={number(openness, 2)} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <p className="text-muted">Thumb touching</p>
+          <ul className="flex gap-2" aria-label="Thumb touch">
+            {FINGERS.map((finger) => (
+              <li
+                key={finger}
+                className={clsx(
+                  "flex min-h-11 min-w-16 items-center justify-center rounded-xl border-2 px-2 font-bold",
+                  touch === finger
+                    ? "border-accent bg-accent text-white"
+                    : "border-primary text-ink bg-surface",
+                )}
+              >
+                {finger}
+              </li>
+            ))}
+          </ul>
+          <p className="font-medium">
+            Now {touch ?? "none"} · last {lastTouch}
+            {isTouchReady() ? "" : " · not ready"}
+          </p>
+        </div>
+      </div>
+      <p className="text-muted">
+        Default references: open {DEFAULT_GRIP_REFS.openRef}, closed {DEFAULT_GRIP_REFS.closedRef},
+        touch below {DEFAULT_TOUCH_THRESHOLD} (release above{" "}
+        {DEFAULT_TOUCH_THRESHOLD + TOUCH_HYSTERESIS}). Press K for keyboard input, then hold Space
+        to squeeze, O to open, and 1–4 to touch the index to little finger.
+      </p>
     </Card>
   );
 }
@@ -350,7 +405,7 @@ function LiveLab() {
                 filtered={snapshot?.hand.filtered.handApertureRatio}
                 digits={2}
               />
-              {FINGER_NAMES.map((finger, index) => (
+              {FINGERS.map((finger, index) => (
                 <MeasureRow
                   key={finger}
                   name={`Thumb to ${finger}`}
@@ -419,14 +474,14 @@ function LiveLab() {
           ))}
         </Card>
 
-        <ActivationCard side={config.side} />
+        <HandInputCard side={config.side} />
 
         <Card className="flex flex-col gap-4">
           <Stat label="State" value={snapshot?.counterState ?? "–"} />
           {exercise.counter === "sequence" && (
             <p className="font-medium">
-              Sequence: {snapshot?.sequenceStep ?? 0} of {FINGER_NAMES.length} touched, next{" "}
-              {FINGER_NAMES[snapshot?.sequenceStep ?? 0]} (touch below {thresholds.low.toFixed(2)},
+              Sequence: {snapshot?.sequenceStep ?? 0} of {FINGERS.length} touched, next{" "}
+              {FINGERS[snapshot?.sequenceStep ?? 0]} (touch below {thresholds.low.toFixed(2)},
               release above {thresholds.high.toFixed(2)})
             </p>
           )}

@@ -671,7 +671,11 @@ def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSu
     details: dict[str, float | None] = {}
     detail = SUMMARY_DETAILS[game_id]
     if detail is not None:
-        fracs = [trial.target.distance_frac for trial in successes if trial.target is not None]
+        fracs = [
+            trial.target.distance_frac
+            for trial in successes
+            if trial.target is not None and trial.target.distance_frac is not None
+        ]
         details[detail] = round(max(fracs), 3) if fracs else None
     return GameSummary(
         successes=len(successes),
