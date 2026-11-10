@@ -127,3 +127,20 @@ export function projectOnDirection(point: Point, directionDeg: number): number {
   const radians = (directionDeg * Math.PI) / 180;
   return point.x * Math.cos(radians) + point.y * Math.sin(radians);
 }
+
+/**
+ * Whether a point is inside a polygon (even-odd rule; any corner order). A point exactly on an
+ * edge may count either way.
+ */
+export function pointInPolygon(point: Point, polygon: readonly Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i];
+    const b = polygon[j];
+    if (a.y > point.y !== b.y > point.y) {
+      const crossX = a.x + ((point.y - a.y) * (b.x - a.x)) / (b.y - a.y);
+      if (point.x < crossX) inside = !inside;
+    }
+  }
+  return inside;
+}
