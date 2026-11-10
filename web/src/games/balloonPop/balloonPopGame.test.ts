@@ -67,6 +67,13 @@ function setUp(params: GameParams = PARAMS) {
       };
     },
     activation: { sourceId: "keyboard", getLevel: () => sim.level(now), isReady: () => true },
+    hand: {
+      getOpenness: () => 0,
+      isOpennessReady: () => true,
+      getTouch: () => null,
+      isTouchReady: () => true,
+      subscribeTouch: () => () => {},
+    },
     calibration: null,
     affectedSide: "left",
     rng: createRng(1),

@@ -53,6 +53,13 @@ function setUp(trialsPlanned: number, overrides: GameParams = {}) {
       timestamp: now,
     }),
     activation: { sourceId: "keyboard", getLevel: () => 0, isReady: () => true },
+    hand: {
+      getOpenness: () => 0,
+      isOpennessReady: () => true,
+      getTouch: () => null,
+      isTouchReady: () => true,
+      subscribeTouch: () => () => {},
+    },
     calibration: null,
     affectedSide: "right",
     rng: createRng(1),

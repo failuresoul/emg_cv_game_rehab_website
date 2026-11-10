@@ -137,6 +137,20 @@ class TrialMetrics(BaseModel):
     overshoot_sw: NonNegative | None = None
     #: Side-to-side games: "out" away from the body, "across" towards the other side.
     side: Literal["out", "across"] | None = None
+    #: Hand-opening games: spawn to the start of the hold that made the flower bloom.
+    time_to_open_ms: NonNegative | None = None
+    #: Hand-opening games: the highest openness, from 0 (fist) to 1 (fully open).
+    peak_openness: Share | None = None
+    #: Hand-opening games: standard deviation of openness during the successful hold.
+    hold_stability: Share | None = None
+    #: Hand-opening games: closing phase start to the start of the grip hold that succeeded.
+    time_to_close_ms: NonNegative | None = None
+    #: Hand-opening games: the highest grip level in the closing phase.
+    peak_grip: Share | None = None
+    #: Hand-opening games: how fast the hand opened, in openness level per second.
+    openness_rise_rate: NonNegative | None = None
+    #: Games with phases: which phase ran out of time; empty for a success.
+    failed_phase: Literal["open", "close"] | None = None
 
 
 class TrialCompensation(BaseModel):

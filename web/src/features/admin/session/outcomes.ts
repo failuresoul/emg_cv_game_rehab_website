@@ -35,6 +35,7 @@ export const OUTCOME_ORDER: readonly TrialOutcome[] = [
 const GAME_OUTCOME_KEYS: Partial<Record<GameId, Partial<Record<TrialOutcome, TranslationKey>>>> = {
   balloon_pop: { success: "outcome.popped", miss: "outcome.miss" },
   fruit_catch: { success: "outcome.caught", miss: "outcome.notCaught" },
+  bloom: { success: "outcome.bloomed", miss: "outcome.notBloomed" },
 };
 
 export function outcomeLabelKey(gameId: GameId, outcome: TrialOutcome): TranslationKey {

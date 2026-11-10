@@ -369,6 +369,20 @@ export interface TrialMetrics {
   overshoot_sw?: number | null;
   /** Side-to-side games: towards the outside or across the body. */
   side?: "out" | "across" | null;
+  /** Hand-opening games: spawn to the start of the hold that succeeded, in ms. */
+  time_to_open_ms?: number | null;
+  /** Hand-opening games: the highest openness, 0–1. */
+  peak_openness?: number | null;
+  /** Hand-opening games: standard deviation of openness during the successful hold, 0–1. */
+  hold_stability?: number | null;
+  /** Hand-opening games: closing phase start to the start of the grip hold that succeeded, in ms. */
+  time_to_close_ms?: number | null;
+  /** Hand-opening games: the highest grip in the closing phase, 0–1. */
+  peak_grip?: number | null;
+  /** Hand-opening games: how fast the hand opened, in level per second. */
+  openness_rise_rate?: number | null;
+  /** Two-phase games: which phase ran out of time; null for a success. */
+  failed_phase?: "open" | "close" | null;
 }
 
 export interface TrialCompensation {

@@ -5,6 +5,7 @@ import type { GameRun, GameRunDetail, TrialRead } from "@/types/api";
 import {
   bestOfSuccesses,
   DETAIL_HIGHEST_POPPED,
+  DETAIL_MEAN_TIME_TO_OPEN,
   DETAIL_WIDEST_CATCH,
   finishedRuns,
   mainMeasure,
@@ -165,6 +166,15 @@ describe("mainMeasure", () => {
   it("is the widest catch, as a share of the reach, for Fruit catch", () => {
     const withDetails = { ...summary!, details: { [DETAIL_WIDEST_CATCH]: 0.7 } };
     expect(mainMeasure("fruit_catch", withDetails).value?.params).toEqual({ value: 70 });
+  });
+
+  it("is the average time to open the hand, in seconds, for Bloom", () => {
+    const withDetails = { ...summary!, details: { [DETAIL_MEAN_TIME_TO_OPEN]: 1460 } };
+    expect(mainMeasure("bloom", withDetails)).toEqual({
+      labelKey: "measure.meanTimeToOpen",
+      value: { key: "game.results.seconds", params: { value: 1.5 } },
+    });
+    expect(mainMeasure("bloom", summary).value).toBeNull();
   });
 
   it("has no value when there is nothing to show yet", () => {

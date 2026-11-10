@@ -410,6 +410,77 @@ def test_upload_invalid_target_is_422(
     assert response.status_code == 422, response.text
 
 
+def bloom_metrics(**changes: Any) -> dict[str, Any]:
+    metrics = {
+        "activation_latency_ms": 900,
+        "activation_peak": 0.82,
+        "time_to_open_ms": 1450,
+        "peak_openness": 0.91,
+        "hold_stability": 0.031,
+        "time_to_close_ms": 900,
+        "peak_grip": 0.82,
+        "openness_rise_rate": 1.25,
+        "failed_phase": None,
+    }
+    return {**metrics, **changes}
+
+
+def test_upload_bloom_trials_with_hand_metrics(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="bloom", trials_planned=15)
+    missed = bloom_metrics(
+        activation_latency_ms=None,
+        activation_peak=None,
+        time_to_open_ms=None,
+        hold_stability=None,
+        time_to_close_ms=None,
+        peak_grip=None,
+        peak_openness=0.42,
+        failed_phase="open",
+    )
+    trials = [
+        trial_payload(1, target={"kind": "bloom"}, metrics=bloom_metrics(), trajectory=[]),
+        trial_payload(
+            2, target={"kind": "bloom"}, outcome="miss", metrics=missed, trajectory=[]
+        ),
+    ]
+    response = upload(client, patient_headers, run_id, trials)
+    assert response.status_code == 200, response.text
+
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    first, second = detail["games"][0]["trials"]
+    assert first["metrics"]["time_to_open_ms"] == 1450
+    assert first["metrics"]["hold_stability"] == 0.031
+    assert first["metrics"]["openness_rise_rate"] == 1.25
+    assert first["metrics"]["failed_phase"] is None
+    assert second["outcome"] == "miss"
+    assert second["metrics"]["failed_phase"] == "open"
+    assert second["metrics"]["peak_openness"] == 0.42
+
+
+@pytest.mark.parametrize(
+    "metrics",
+    [
+        pytest.param({"peak_openness": 1.2}, id="openness-over-1"),
+        pytest.param({"peak_grip": -0.1}, id="negative-grip"),
+        pytest.param({"hold_stability": 1.5}, id="stability-over-1"),
+        pytest.param({"time_to_open_ms": -1}, id="negative-time"),
+        pytest.param({"openness_rise_rate": -0.5}, id="negative-rate"),
+        pytest.param({"failed_phase": "middle"}, id="unknown-phase"),
+    ],
+)
+def test_upload_invalid_hand_metrics_is_422(
+    client: TestClient, patient_headers: Headers, metrics: dict[str, Any]
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="bloom")
+    trial = trial_payload(target={"kind": "bloom"}, metrics=metrics, trajectory=[])
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 422, response.text
+
+
 def test_upload_rejects_not_a_number(client: TestClient, patient_headers: Headers) -> None:
     session_id = start_session(client, patient_headers)
     run_id = start_run(client, patient_headers, session_id)

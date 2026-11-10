@@ -1,10 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 
 import type { TranslationKey } from "@/i18n";
-import type { ActivationSourceId } from "@/input";
+import type { ActivationSourceId, Finger, FingerTouchListener } from "@/input";
 import type { Calibration, GameId, GameSummary, Side, TrialCreate } from "@/types/api";
 import type { Point } from "@/vision/geometry";
 import type { CompensationMonitor } from "@/warmup/compensation";
+import type { ExerciseId } from "@/warmup/exercises";
 
 import type { GameAudio } from "./audio";
 import type { Rng } from "./rng";
@@ -58,6 +59,18 @@ export interface GameActivation {
   isReady(): boolean;
 }
 
+/** The affected hand's shape, for hand games. Games never read the webcam directly. */
+export interface GameHandInput {
+  /** From 0 (a fist) to 1 (fully open). 0 while not ready. */
+  getOpenness(): number;
+  isOpennessReady(): boolean;
+  /** The finger the thumb is touching now, or null. */
+  getTouch(): Finger | null;
+  isTouchReady(): boolean;
+  /** Each touchStart and touchEnd as it happens. Returns a function that unsubscribes. */
+  subscribeTouch(listener: FingerTouchListener): () => void;
+}
+
 export type FeedbackTone = "positive" | "neutral" | "gentle";
 
 export interface GameFeedback {
@@ -93,6 +106,7 @@ export interface GameContext {
   readonly pixelsPerSw: number;
   getTracking(): GameTracking;
   readonly activation: GameActivation;
+  readonly hand: GameHandInput;
   readonly calibration: Calibration | null;
   readonly affectedSide: Side;
   readonly rng: Rng;
@@ -152,4 +166,13 @@ export interface GameDefinition {
   estimatedMinutes: number;
   create(context: GameContext): GameInstance;
   implemented: boolean;
+  /**
+   * Whose compensation checks the game uses, from the warm-up exercises. Reaching games check
+   * every kind (the default, forward_reach); hand games check the trunk only (hand_open_close).
+   */
+  compensationExercise?: ExerciseId;
+  /** Draw the fingertip cursor. True by default; off for games with no reaching. */
+  showCursor?: boolean;
+  /** Show the shell's squeeze meter. True by default; off for games that draw their own. */
+  showGripMeter?: boolean;
 }

@@ -9,7 +9,13 @@ import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { GAMES } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
 import { formatNumber } from "@/lib/format";
-import type { Calibration, GameRunDetail, InputSource, Side } from "@/types/api";
+import {
+  type Calibration,
+  type GameRunDetail,
+  type InputSource,
+  isSpatialTarget,
+  type Side,
+} from "@/types/api";
 
 import { FruitStrip } from "./FruitStrip";
 import { RunTargetMap } from "./RunTargetMap";
@@ -140,7 +146,10 @@ export function GameRunCard({
           {run.game_id === "fruit_catch" ? (
             <FruitStrip run={run} calibration={calibration} affectedSide={affectedSide} />
           ) : (
-            <RunTargetMap run={run} calibration={calibration} affectedSide={affectedSide} />
+            // Hand games have no places to show.
+            trials.some((trial) => isSpatialTarget(trial.target)) && (
+              <RunTargetMap run={run} calibration={calibration} affectedSide={affectedSide} />
+            )
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-left">

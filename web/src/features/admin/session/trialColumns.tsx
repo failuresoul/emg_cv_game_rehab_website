@@ -81,6 +81,51 @@ const compensated: TrialColumn = {
   cell: (trial) => compensationText(trial),
 };
 
+const FAILED_PHASE_KEYS: Record<"open" | "close", TranslationKey> = {
+  open: "adminSession.phase.open",
+  close: "adminSession.phase.close",
+};
+
+const bloomColumns: readonly TrialColumn[] = [
+  outcome,
+  {
+    key: "adminSession.column.failedPhase",
+    cell: (trial) =>
+      trial.metrics.failed_phase ? t(FAILED_PHASE_KEYS[trial.metrics.failed_phase]) : dash,
+  },
+  {
+    key: "adminSession.column.timeToOpen",
+    cell: (trial) => whole(trial.metrics.time_to_open_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.peakOpenness",
+    cell: (trial) => share(trial.metrics.peak_openness),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.holdStability",
+    cell: (trial) => decimal(trial.metrics.hold_stability, 3),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.riseRate",
+    cell: (trial) => decimal(trial.metrics.openness_rise_rate),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.timeToClose",
+    cell: (trial) => whole(trial.metrics.time_to_close_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.peakGrip",
+    cell: (trial) => share(trial.metrics.peak_grip),
+    numeric: true,
+  },
+  compensated,
+];
+
 /** The trial table's columns, after the trial number, for each game. */
 export const TRIAL_COLUMNS: Partial<Record<GameId, readonly TrialColumn[]>> = {
   reach_activate: [
@@ -143,6 +188,7 @@ export const TRIAL_COLUMNS: Partial<Record<GameId, readonly TrialColumn[]>> = {
     },
     compensated,
   ],
+  bloom: bloomColumns,
 };
 
 /** Games without their own list show the reaching columns. */

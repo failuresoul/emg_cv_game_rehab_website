@@ -34,7 +34,14 @@ describe("FixedProvider", () => {
   it("returns every setting at its default", () => {
     const provider = new FixedProvider({ specsFor, seed: 1 });
     const params = provider.nextParams("bloom", []);
-    expect(params).toEqual({ demand: 0.5, hold_ms: 1500, rest_ms: 3000 });
+    expect(params).toEqual({
+      open_demand: 0.7,
+      open_hold_ms: 800,
+      close_demand: 0.6,
+      phase_time_limit_ms: 8000,
+      close_hold_ms: 300,
+      rest_ms: 1500,
+    });
     expect(provider.engine).toBe("L0");
   });
 

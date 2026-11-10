@@ -1,6 +1,7 @@
-import { Flower2, Grab, Hand, Paintbrush, Piano, Spline } from "lucide-react";
+import { Grab, Hand, Paintbrush, Piano, Spline } from "lucide-react";
 
 import { balloonPop } from "@/games/balloonPop";
+import { bloom } from "@/games/bloom";
 import { fruitCatch } from "@/games/fruitCatch";
 import { reachActivate } from "@/games/reachActivate";
 import type { GameId } from "@/types/api";
@@ -91,18 +92,7 @@ export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
   reach_activate: reachActivate,
   balloon_pop: balloonPop,
   fruit_catch: fruitCatch,
-  bloom: {
-    id: "bloom",
-    nameKey: "game.bloom.name",
-    descriptionKey: "game.bloom.description",
-    movementKey: "game.bloom.movement",
-    icon: Flower2,
-    params: [demand, { ...holdMs, default: 1500 }, restMs],
-    trialsDefault: 10,
-    estimatedMinutes: 4,
-    create: notImplemented("bloom"),
-    implemented: false,
-  },
+  bloom,
   finger_piano: {
     id: "finger_piano",
     nameKey: "game.finger_piano.name",

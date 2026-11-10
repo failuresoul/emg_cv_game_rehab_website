@@ -63,6 +63,13 @@ function setUp(trialsPlanned = 1) {
       };
     },
     activation: { sourceId: "keyboard", getLevel, isReady: () => true },
+    hand: {
+      getOpenness: () => 0,
+      isOpennessReady: () => true,
+      getTouch: () => null,
+      isTouchReady: () => true,
+      subscribeTouch: () => () => {},
+    },
     calibration: null,
     affectedSide: "right",
     rng: createRng(1),

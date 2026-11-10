@@ -41,7 +41,21 @@ describe("trial table columns", () => {
   });
 
   it("falls back to the reaching columns for other games", () => {
-    expect(keys("bloom")).toEqual(keys("reach_activate"));
+    expect(keys("grip_hold")).toEqual(keys("reach_activate"));
+  });
+
+  it("shows the hand measures for Bloom", () => {
+    expect(keys("bloom")).toEqual([
+      "adminSession.column.outcome",
+      "adminSession.column.failedPhase",
+      "adminSession.column.timeToOpen",
+      "adminSession.column.peakOpenness",
+      "adminSession.column.holdStability",
+      "adminSession.column.riseRate",
+      "adminSession.column.timeToClose",
+      "adminSession.column.peakGrip",
+      "adminSession.column.compensated",
+    ]);
   });
 
   it("names compensation in words", () => {

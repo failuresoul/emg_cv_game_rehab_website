@@ -13,7 +13,7 @@ import {
   ActivationMeter,
   type InputManager,
   SOURCE_BADGE_KEYS,
-  useSessionActivation,
+  useSessionHandInput,
 } from "@/input";
 import { api } from "@/lib/api";
 import { formatClock, formatNumber } from "@/lib/format";
@@ -178,7 +178,7 @@ const GamePlay = memo(function GamePlay({
 }: GamePlayProps) {
   // A refreshed copy of the same calibration must not restart the game.
   const [calibration] = useState(calibrationAtStart);
-  const activation = useSessionActivation(false);
+  const hand = useSessionHandInput(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const trackingRef = useRef<TrackingState | null>(null);
@@ -186,9 +186,13 @@ const GamePlay = memo(function GamePlay({
   const playAreaRef = useRef<PlayArea | null>(null);
   const runtimeRef = useRef<GameRuntime | null>(null);
   const loggerRef = useRef<TrialLogger | null>(null);
-  const activationRef = useRef(activation);
+  const handRef = useRef(hand);
   const [monitor] = useState(
-    () => new CompensationMonitor(COMPENSATION_EXERCISE, GAME_COMPENSATION_CONFIG),
+    () =>
+      new CompensationMonitor(
+        definition.compensationExercise ?? COMPENSATION_EXERCISE,
+        GAME_COMPENSATION_CONFIG,
+      ),
   );
   const [seed] = useState(newSeed);
 
@@ -207,8 +211,8 @@ const GamePlay = memo(function GamePlay({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   useEffect(() => {
-    activationRef.current = activation;
-  }, [activation]);
+    handRef.current = hand;
+  }, [hand]);
 
   useEffect(() => subscribeTracking((state) => (trackingRef.current = state)), [subscribeTracking]);
 
@@ -274,7 +278,7 @@ const GamePlay = memo(function GamePlay({
       run: () => ({
         game_id: definition.id,
         engine: provider.engine,
-        input_source: activationRef.current.sourceId,
+        input_source: handRef.current.sourceId,
         params_initial: { ...firstParams, seed },
         trials_planned: definition.trialsDefault,
       }),
@@ -311,10 +315,18 @@ const GamePlay = memo(function GamePlay({
       },
       activation: {
         get sourceId() {
-          return activationRef.current.sourceId;
+          return handRef.current.sourceId;
         },
-        getLevel: () => activationRef.current.getLevel(),
-        isReady: () => activationRef.current.manager?.isReady() ?? false,
+        getLevel: () => handRef.current.getGrip(),
+        isReady: () => handRef.current.managers?.grip.isReady() ?? false,
+      },
+      hand: {
+        getOpenness: () => handRef.current.getOpenness(),
+        isOpennessReady: () => handRef.current.isOpennessReady(),
+        getTouch: () => handRef.current.getTouch(),
+        isTouchReady: () => handRef.current.isTouchReady(),
+        // The affected side is fixed for a session, so the touch manager does not change mid-game.
+        subscribeTouch: (listener) => handRef.current.subscribeTouch(listener),
       },
       calibration,
       affectedSide,
@@ -410,7 +422,7 @@ const GamePlay = memo(function GamePlay({
         drawSkeletonLayer(context2d, skeletonInput);
       }
       if (runtime.stage !== "countdown") game.render(context2d);
-      const cursor = tracking?.fingertipSmoothSw;
+      const cursor = definition.showCursor === false ? null : tracking?.fingertipSmoothSw;
       if (cursor && runtime.stage !== "finished") {
         const at = playArea.toScreen(cursor);
         context2d.beginPath();
@@ -503,8 +515,8 @@ const GamePlay = memo(function GamePlay({
               {t(saveKey)}
             </span>
           )}
-          <Badge variant={activation.sourceId === "keyboard" ? "warning" : "neutral"}>
-            {t(SOURCE_BADGE_KEYS[activation.sourceId])}
+          <Badge variant={hand.sourceId === "keyboard" ? "warning" : "neutral"}>
+            {t(SOURCE_BADGE_KEYS[hand.sourceId])}
           </Badge>
           {stage === "playing" && (
             <Button
@@ -518,10 +530,12 @@ const GamePlay = memo(function GamePlay({
         </div>
       </header>
 
-      <div className="absolute right-4 bottom-4 flex flex-col items-center gap-2">
-        <LiveMeter manager={activation.manager} />
-        <span className="text-base">{t("game.hud.squeeze")}</span>
-      </div>
+      {definition.showGripMeter !== false && (
+        <div className="absolute right-4 bottom-4 flex flex-col items-center gap-2">
+          <LiveMeter manager={hand.managers?.grip ?? null} />
+          <span className="text-base">{t("game.hud.squeeze")}</span>
+        </div>
+      )}
 
       {feedback && stage === "playing" && (
         <p
