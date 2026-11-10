@@ -48,6 +48,7 @@ function setUp(params: GameParams = PARAMS) {
       handLost: false,
       handLostMs: 0,
       armElevationDeg: null,
+      elbowFlexionDeg: null,
       timestamp: now,
     }),
     activation: { sourceId: "keyboard", getLevel: () => 0, isReady: () => true },

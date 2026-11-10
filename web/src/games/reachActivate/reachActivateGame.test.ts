@@ -59,6 +59,7 @@ function setUp(trialsPlanned = 1) {
         handLost: smooth === null,
         handLostMs: 0,
         armElevationDeg: null,
+        elbowFlexionDeg: null,
         timestamp: now,
       };
     },

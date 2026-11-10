@@ -47,6 +47,7 @@ function setUp(cursor: (t: number) => Point | null) {
         handLost: point === null,
         handLostMs: 0,
         armElevationDeg: null,
+        elbowFlexionDeg: null,
         timestamp: now,
       };
     },

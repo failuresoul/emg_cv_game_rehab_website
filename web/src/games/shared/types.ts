@@ -50,6 +50,11 @@ export interface GameTracking {
   handLostMs: number;
   /** The affected arm's elevation from the body, in degrees (0 is down), unfiltered; null if unseen. */
   armElevationDeg: number | null;
+  /**
+   * The affected elbow's angle in degrees, unfiltered: about 180 straight, smaller when bent. Null
+   * if unseen.
+   */
+  elbowFlexionDeg: number | null;
   /** Game time of the frame: performance.now() minus the time spent paused. */
   timestamp: number;
 }

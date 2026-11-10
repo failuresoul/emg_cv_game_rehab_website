@@ -28,6 +28,7 @@ const COMPENSATION_KEYS: Record<string, TranslationKey> = {
   trunk: "adminSession.compensation.trunk",
   lean: "adminSession.compensation.lean",
   shoulder: "adminSession.compensation.shoulder",
+  upper_arm: "adminSession.compensation.upperArm",
 };
 
 /** "trunk+lean" as words; unknown kinds are shown as saved. */

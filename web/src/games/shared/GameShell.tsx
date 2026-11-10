@@ -240,14 +240,16 @@ const GamePlay = memo(function GamePlay({
   }, []);
 
   const elevationRef = useRef<number | null>(null);
+  const elbowRef = useRef<number | null>(null);
   useEffect(() => {
     const armLengths = new ArmLengthTracker();
     return visionEngine.subscribe((frame) => {
       visionRef.current = frame;
       monitor.addSample(computePosture(frame, affectedSide), frame.timestamp);
       // Unfiltered, for saved data.
-      elevationRef.current =
-        computeJointAngles(frame, affectedSide, armLengths).armElevationDeg?.value ?? null;
+      const angles = computeJointAngles(frame, affectedSide, armLengths);
+      elevationRef.current = angles.armElevationDeg?.value ?? null;
+      elbowRef.current = angles.elbowFlexionDeg?.value ?? null;
     });
   }, [monitor, affectedSide]);
 
@@ -341,6 +343,7 @@ const GamePlay = memo(function GamePlay({
           handLost: !(tracking?.handPresent ?? false),
           handLostMs: tracking?.handLostMs ?? 0,
           armElevationDeg: elevationRef.current,
+          elbowFlexionDeg: elbowRef.current,
           timestamp: runtimeRef.current?.toGameTime(timestamp) ?? timestamp,
         };
       },

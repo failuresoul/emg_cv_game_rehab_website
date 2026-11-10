@@ -50,6 +50,7 @@ function setUp(trialsPlanned: number, overrides: GameParams = {}) {
       handLost: false,
       handLostMs: 0,
       armElevationDeg: null,
+      elbowFlexionDeg: null,
       timestamp: now,
     }),
     activation: { sourceId: "keyboard", getLevel: () => 0, isReady: () => true },

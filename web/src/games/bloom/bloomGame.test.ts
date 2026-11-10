@@ -46,6 +46,7 @@ function setUp(trialsPlanned = 1) {
       handLost: false,
       handLostMs: 0,
       armElevationDeg: null,
+      elbowFlexionDeg: null,
       timestamp: now,
     }),
     activation: { sourceId: "keyboard", getLevel: () => hand.grip(now), isReady: () => true },

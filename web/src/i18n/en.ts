@@ -546,8 +546,8 @@ export const en = {
   "game.path_trace.description": "Follow the ladybird along the path",
   "game.path_trace.movement": "Smooth control",
   "game.paint_wall.name": "Paint the wall",
-  "game.paint_wall.description": "Move your hand around to paint as much of the wall as you can.",
-  "game.paint_wall.movement": "exploring the space you can reach",
+  "game.paint_wall.description": "Bend and straighten your elbow to paint the wall",
+  "game.paint_wall.movement": "Elbow bend and straighten",
   "game.pick_place.name": "Pick and place",
   "game.pick_place.description":
     "Close your hand to pick up an object, carry it, and open your hand to put it down.",
@@ -610,8 +610,6 @@ export const en = {
   "param.tempoBpm": "Tempo",
   "param.touchThreshold": "Touch distance",
   "param.timeLimitMs": "Time limit",
-  "param.brushRadiusSw": "Brush size",
-  "param.coverageGoal": "Area to paint",
   "param.objectRadiusSw": "Object size",
   "param.placeRadiusSw": "Drop zone size",
 
@@ -927,4 +925,13 @@ export const en = {
   "game.path_trace.prompt.follow": "Follow the ladybird",
   "game.path_trace.prompt.startTimeout": "That's fine. Here is a new path.",
   "game.hud.stars": "Stars {n}",
+  "param.requiredRangeFrac": "Share of the elbow range to use",
+  "param.sweepsNeeded": "Coats per stripe",
+  "param.elbowBentDeg": "Most bent elbow angle",
+  "param.elbowStraightDeg": "Most straight elbow angle",
+  "game.paint_wall.prompt.paint": "Bend your elbow to paint up to the line, then straighten it",
+  "game.paint_wall.keepArmStill": "Keep your upper arm still — move only your elbow",
+  "game.paint_wall.counter": "{done} / {needed}",
+  "game.hud.stripes": "Stripes {n}",
+  "adminSession.compensation.upperArm": "Upper arm moved",
 } as const;

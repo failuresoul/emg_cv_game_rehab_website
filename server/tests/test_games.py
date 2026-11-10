@@ -615,6 +615,73 @@ def test_upload_invalid_path_trial_is_422(
     assert response.status_code == 422, response.text
 
 
+def stripe_metrics(**changes: Any) -> dict[str, Any]:
+    metrics = {
+        "achieved_range_deg": 72.5,
+        "max_bend_deg": 76.0,
+        "max_straight_deg": 148.5,
+        "full_sweeps": 3,
+        "partial_sweeps": 1,
+        "mean_sweep_ms": 2100,
+        "angular_sparc": -1.9,
+        "upper_arm_motion_deg": 8.5,
+    }
+    return {**metrics, **changes}
+
+
+STRIPE_TARGET = {"kind": "stripe", "index": 2, "target_frac": 0.75}
+
+
+def test_upload_paint_wall_trial(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="paint_wall")
+    compensation = {
+        "flagged": True,
+        "type": "upper_arm",
+        "max_values": {"upper_arm_motion_deg": 26.0},
+    }
+    trial = trial_payload(
+        target=STRIPE_TARGET, metrics=stripe_metrics(), compensation=compensation
+    )
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 200, response.text
+
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    [saved] = detail["games"][0]["trials"]
+    assert saved["target"] == STRIPE_TARGET
+    assert saved["metrics"]["achieved_range_deg"] == 72.5
+    assert saved["metrics"]["full_sweeps"] == 3
+    assert saved["compensation"]["type"] == "upper_arm"
+
+
+@pytest.mark.parametrize(
+    ("target", "metrics"),
+    [
+        pytest.param({**STRIPE_TARGET, "index": -1}, {}, id="negative-index"),
+        pytest.param({**STRIPE_TARGET, "index": 1.5}, {}, id="fractional-index"),
+        pytest.param({**STRIPE_TARGET, "target_frac": 1.2}, {}, id="frac-over-1"),
+        pytest.param(STRIPE_TARGET, {"max_bend_deg": 190}, id="angle-over-180"),
+        pytest.param(STRIPE_TARGET, {"achieved_range_deg": -5}, id="negative-range"),
+        pytest.param(STRIPE_TARGET, {"full_sweeps": -1}, id="negative-sweeps"),
+        pytest.param(STRIPE_TARGET, {"angular_sparc": 0.3}, id="positive-sparc"),
+        pytest.param(STRIPE_TARGET, {"mean_sweep_ms": -10}, id="negative-duration"),
+    ],
+)
+def test_upload_invalid_stripe_trial_is_422(
+    client: TestClient,
+    patient_headers: Headers,
+    target: dict[str, Any],
+    metrics: dict[str, Any],
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="paint_wall")
+    trial = trial_payload(target=target, metrics=stripe_metrics(**metrics))
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 422, response.text
+
+
 def test_upload_rejects_not_a_number(client: TestClient, patient_headers: Headers) -> None:
     session_id = start_session(client, patient_headers)
     run_id = start_run(client, patient_headers, session_id)

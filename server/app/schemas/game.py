@@ -39,6 +39,7 @@ NonNegative = Annotated[float, Field(ge=0)]
 SummaryDetail = float | Annotated[str, Field(max_length=50)] | bool | None
 Share = Annotated[float, Field(ge=0, le=1)]
 Percent = Annotated[float, Field(ge=0, le=100)]
+Degrees = Annotated[float, Field(ge=0, le=180)]
 #: [t_ms, x_sw, y_sw]. t_ms is relative to the trial's spawn.
 TrajectoryPoint = tuple[float, float, float]
 
@@ -90,6 +91,10 @@ class TrialTarget(BaseModel):
         Annotated[list[tuple[float, float]], Field(min_length=2, max_length=MAX_TARGET_POINTS)]
         | None
     ) = None
+    #: A target's place in a row, from 0, such as a wall stripe's.
+    index: Annotated[int, Field(ge=0, le=MAX_TRIALS_PER_RUN, strict=True)] | None = None
+    #: A target's height or size as a share, such as a stripe's share of the elbow range.
+    target_frac: Share | None = None
 
     @model_validator(mode="after")
     def _spatial_or_kind(self) -> "TrialTarget":
@@ -191,6 +196,21 @@ class TrialMetrics(BaseModel):
     coverage_pct: Percent | None = None
     #: Smoothness of the fingertip's speed (SPARC): 0 or less, closer to 0 is smoother.
     sparc: Annotated[float, Field(le=0)] | None = None
+    #: Elbow games: most straight minus most bent elbow angle reached, in degrees.
+    achieved_range_deg: Degrees | None = None
+    #: Elbow games: the most bent elbow angle reached (the smallest), in degrees.
+    max_bend_deg: Degrees | None = None
+    #: Elbow games: the most straight elbow angle reached (the largest), in degrees.
+    max_straight_deg: Degrees | None = None
+    #: Elbow games: sweeps that reached the target, and those that did not.
+    full_sweeps: Annotated[int, Field(ge=0, le=1000)] | None = None
+    partial_sweeps: Annotated[int, Field(ge=0, le=1000)] | None = None
+    #: Elbow games: mean duration of the full sweeps, in ms.
+    mean_sweep_ms: NonNegative | None = None
+    #: Smoothness of the elbow's angular speed (SPARC): 0 or less.
+    angular_sparc: Annotated[float, Field(le=0)] | None = None
+    #: Elbow games: the most the upper arm moved from its start during a sweep, in degrees.
+    upper_arm_motion_deg: Degrees | None = None
     #: Sequence games: notes in the melody, and how each ended. hits + wrong_finger + missed is
     #: notes_total.
     notes_total: Count | None = None

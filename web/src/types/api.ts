@@ -315,6 +315,8 @@ export interface SpatialTrialTarget {
   notes?: string[];
   shape?: string;
   points?: PointPair[];
+  index?: number;
+  target_frac?: number;
 }
 
 /**
@@ -329,6 +331,10 @@ export interface KindTrialTarget {
   shape?: string;
   /** A drawn target's points in SW, such as a path to follow: 2 to 200. */
   points?: PointPair[];
+  /** A target's place in a row, such as a wall stripe's, from 0. */
+  index?: number;
+  /** A target's height or size as a share, 0–1, such as a stripe's share of the elbow range. */
+  target_frac?: number;
   x_sw?: never;
   y_sw?: never;
   radius_sw?: never;
@@ -415,6 +421,21 @@ export interface TrialMetrics {
   coverage_pct?: number | null;
   /** Smoothness (SPARC) of the fingertip's speed: ≤ 0, closer to 0 is smoother. */
   sparc?: number | null;
+  /** Elbow games: most straight minus most bent angle reached, in degrees. */
+  achieved_range_deg?: number | null;
+  /** Elbow games: the most bent elbow angle reached (the smallest), in degrees. */
+  max_bend_deg?: number | null;
+  /** Elbow games: the most straight elbow angle reached (the largest), in degrees. */
+  max_straight_deg?: number | null;
+  /** Elbow games: sweeps that reached the target, and those that did not. */
+  full_sweeps?: number | null;
+  partial_sweeps?: number | null;
+  /** Elbow games: mean duration of the full sweeps, in ms. */
+  mean_sweep_ms?: number | null;
+  /** Smoothness (SPARC) of the elbow's angular speed: ≤ 0, closer to 0 is smoother. */
+  angular_sparc?: number | null;
+  /** Elbow games: the most the upper arm moved from its start during a sweep, in degrees. */
+  upper_arm_motion_deg?: number | null;
 }
 
 export type FingerName = "index" | "middle" | "ring" | "little";

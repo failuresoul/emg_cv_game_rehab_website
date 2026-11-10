@@ -547,8 +547,8 @@ export const bn: Record<TranslationKey, string> = {
   "game.path_trace.description": "লেডিবার্ডের পেছনে পেছনে পথ ধরে চলুন",
   "game.path_trace.movement": "মসৃণ নিয়ন্ত্রণ",
   "game.paint_wall.name": "দেয়াল রং করা",
-  "game.paint_wall.description": "যতটা পারেন দেয়াল রং করতে হাত চারদিকে নাড়ান।",
-  "game.paint_wall.movement": "যতদূর হাত যায় সেই জায়গা ঘুরে দেখা",
+  "game.paint_wall.description": "কনুই ভাঁজ করে আর সোজা করে দেয়াল রং করুন",
+  "game.paint_wall.movement": "কনুই ভাঁজ ও সোজা করা",
   "game.pick_place.name": "তুলে রাখা",
   "game.pick_place.description":
     "হাত মুঠো করে জিনিস তুলুন, সরিয়ে নিন, তারপর হাত খুলে নামিয়ে রাখুন।",
@@ -610,8 +610,6 @@ export const bn: Record<TranslationKey, string> = {
   "param.tempoBpm": "তাল",
   "param.touchThreshold": "ছোঁয়ার দূরত্ব",
   "param.timeLimitMs": "সময়সীমা",
-  "param.brushRadiusSw": "ব্রাশের আকার",
-  "param.coverageGoal": "রং করার জায়গা",
   "param.objectRadiusSw": "জিনিসের আকার",
   "param.placeRadiusSw": "রাখার জায়গার আকার",
 
@@ -927,4 +925,13 @@ export const bn: Record<TranslationKey, string> = {
   "game.path_trace.prompt.follow": "লেডিবার্ডের পেছনে চলুন",
   "game.path_trace.prompt.startTimeout": "ঠিক আছে। এই যে নতুন পথ।",
   "game.hud.stars": "তারা {n}",
+  "param.requiredRangeFrac": "কনুইয়ের নাগালের যতটা ব্যবহার করতে হবে",
+  "param.sweepsNeeded": "প্রতি দাগে রঙের প্রলেপ",
+  "param.elbowBentDeg": "কনুই সবচেয়ে বেশি ভাঁজের কোণ",
+  "param.elbowStraightDeg": "কনুই সবচেয়ে বেশি সোজার কোণ",
+  "game.paint_wall.prompt.paint": "লাইন পর্যন্ত রং করতে কনুই ভাঁজ করুন, তারপর সোজা করুন",
+  "game.paint_wall.keepArmStill": "বাহুর উপরের অংশ স্থির রাখুন — শুধু কনুই নাড়ান",
+  "game.paint_wall.counter": "{done} / {needed}",
+  "game.hud.stripes": "দাগ {n}",
+  "adminSession.compensation.upperArm": "বাহুর উপরের অংশ নড়েছে",
 };

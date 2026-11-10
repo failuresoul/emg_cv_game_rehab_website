@@ -63,6 +63,7 @@ function setUp(params: GameParams = PARAMS) {
         handLost: smooth === null,
         handLostMs: 0,
         armElevationDeg: sim.elevation(now),
+        elbowFlexionDeg: null,
         timestamp: now,
       };
     },

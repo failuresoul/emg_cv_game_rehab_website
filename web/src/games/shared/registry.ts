@@ -1,8 +1,9 @@
-import { Grab, Hand, Paintbrush } from "lucide-react";
+import { Grab, Hand } from "lucide-react";
 
 import { balloonPop } from "@/games/balloonPop";
 import { bloom } from "@/games/bloom";
 import { fingerPiano } from "@/games/fingerPiano";
+import { paintWall } from "@/games/paintWall";
 import { pathTrace } from "@/games/pathTrace";
 import { fruitCatch } from "@/games/fruitCatch";
 import { reachActivate } from "@/games/reachActivate";
@@ -97,48 +98,7 @@ export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
   bloom,
   finger_piano: fingerPiano,
   path_trace: pathTrace,
-  paint_wall: {
-    id: "paint_wall",
-    nameKey: "game.paint_wall.name",
-    descriptionKey: "game.paint_wall.description",
-    movementKey: "game.paint_wall.movement",
-    icon: Paintbrush,
-    params: [
-      {
-        name: "brush_radius_sw",
-        labelKey: "param.brushRadiusSw",
-        min: 0.08,
-        max: 0.3,
-        step: 0.01,
-        default: 0.18,
-        unit: "sw",
-        harder: "lower",
-      },
-      {
-        name: "coverage_goal",
-        labelKey: "param.coverageGoal",
-        min: 0.4,
-        max: 0.95,
-        step: 0.05,
-        default: 0.7,
-        unit: "share",
-        harder: "higher",
-      },
-      {
-        ...reachTimeoutMs,
-        name: "time_limit_ms",
-        labelKey: "param.timeLimitMs",
-        min: 20000,
-        max: 90000,
-        step: 5000,
-        default: 45000,
-      },
-    ],
-    trialsDefault: 3,
-    estimatedMinutes: 4,
-    create: notImplemented("paint_wall"),
-    implemented: false,
-  },
+  paint_wall: paintWall,
   pick_place: {
     id: "pick_place",
     nameKey: "game.pick_place.name",
