@@ -1,7 +1,8 @@
-import { Grab, Hand, Paintbrush, Piano, Spline } from "lucide-react";
+import { Grab, Hand, Paintbrush, Spline } from "lucide-react";
 
 import { balloonPop } from "@/games/balloonPop";
 import { bloom } from "@/games/bloom";
+import { fingerPiano } from "@/games/fingerPiano";
 import { fruitCatch } from "@/games/fruitCatch";
 import { reachActivate } from "@/games/reachActivate";
 import type { GameId } from "@/types/api";
@@ -93,49 +94,7 @@ export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
   balloon_pop: balloonPop,
   fruit_catch: fruitCatch,
   bloom,
-  finger_piano: {
-    id: "finger_piano",
-    nameKey: "game.finger_piano.name",
-    descriptionKey: "game.finger_piano.description",
-    movementKey: "game.finger_piano.movement",
-    icon: Piano,
-    params: [
-      {
-        name: "finger_count",
-        labelKey: "param.fingerCount",
-        min: 2,
-        max: 4,
-        step: 1,
-        default: 2,
-        unit: "count",
-        harder: "higher",
-      },
-      {
-        name: "tempo_bpm",
-        labelKey: "param.tempoBpm",
-        min: 20,
-        max: 60,
-        step: 5,
-        default: 30,
-        unit: "bpm",
-        harder: "higher",
-      },
-      {
-        name: "touch_threshold",
-        labelKey: "param.touchThreshold",
-        min: 0.2,
-        max: 0.5,
-        step: 0.02,
-        default: 0.35,
-        unit: "share",
-        harder: "lower",
-      },
-    ],
-    trialsDefault: 16,
-    estimatedMinutes: 5,
-    create: notImplemented("finger_piano"),
-    implemented: false,
-  },
+  finger_piano: fingerPiano,
   path_trace: {
     id: "path_trace",
     nameKey: "game.path_trace.name",

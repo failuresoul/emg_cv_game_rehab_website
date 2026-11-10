@@ -55,6 +55,7 @@ function setUp(trialsPlanned = 1) {
       getTouch: () => null,
       isTouchReady: () => true,
       subscribeTouch: () => () => {},
+      setTouchThreshold: () => {},
     },
     calibration: null,
     affectedSide: "right",

@@ -116,6 +116,25 @@ class TrialTimings(BaseModel):
     end: NonNegative | None = None
 
 
+Finger = Literal["index", "middle", "ring", "little"]
+Count = Annotated[int, Field(ge=0, le=MAX_TARGET_NOTES)]
+
+
+class FingerTally(BaseModel):
+    """One finger's notes in a melody: how many it played, of how many it was asked for."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    hits: Count
+    attempts: Count
+
+    @model_validator(mode="after")
+    def _hits_within_attempts(self) -> "FingerTally":
+        if self.hits > self.attempts:
+            raise ValueError("hits cannot exceed attempts")
+        return self
+
+
 class TrialMetrics(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
@@ -151,6 +170,26 @@ class TrialMetrics(BaseModel):
     openness_rise_rate: NonNegative | None = None
     #: Games with phases: which phase ran out of time; empty for a success.
     failed_phase: Literal["open", "close"] | None = None
+    #: Sequence games: notes in the melody, and how each ended. hits + wrong_finger + missed is
+    #: notes_total.
+    notes_total: Count | None = None
+    hits: Count | None = None
+    #: Notes not played, with only wrong fingers touched in their window.
+    wrong_finger: Count | None = None
+    #: Notes with no touch at all.
+    missed: Count | None = None
+    hit_rate: Share | None = None
+    #: Mean of |touch - arrival| over the notes played, in ms.
+    mean_timing_error_ms: NonNegative | None = None
+    per_finger: dict[Finger, FingerTally] | None = None
+
+    @model_validator(mode="after")
+    def _notes_add_up(self) -> "TrialMetrics":
+        parts = (self.hits, self.wrong_finger, self.missed)
+        if self.notes_total is not None and all(part is not None for part in parts):
+            if sum(part for part in parts if part is not None) != self.notes_total:
+                raise ValueError("hits, wrong_finger and missed must add up to notes_total")
+        return self
 
 
 class TrialCompensation(BaseModel):

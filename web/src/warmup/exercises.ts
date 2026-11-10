@@ -149,7 +149,8 @@ export const HAND_KNUCKLES: HandTips = [
   { x: 0.1, y: 1 },
   { x: 0.28, y: 0.92 },
 ];
-const OPEN_TIPS: HandTips = [
+/** An open hand's fingertips, same order and units as HandKeyframe.tips. */
+export const OPEN_TIPS: HandTips = [
   { x: -1, y: 0.95 },
   { x: -0.45, y: 1.85 },
   { x: -0.12, y: 1.95 },

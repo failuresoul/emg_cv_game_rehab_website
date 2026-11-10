@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { respectsRepeats } from "@/games/fingerPiano/melody";
+import { readParams as readPianoParams } from "@/games/fingerPiano/params";
 import { GAMES } from "@/games/shared/registry";
-import type { TrialHistoryEntry } from "@/games/shared/types";
+import type { GameParams, TrialHistoryEntry } from "@/games/shared/types";
 
 import {
   BALLOON_DIRECTIONS_DEG,
@@ -181,5 +183,47 @@ describe("FixedProvider for fruit_catch", () => {
     const second = fruit(provider, 2);
     expect(second.target_side).toBe(-first.target_side);
     expect(fruit(provider, 2)).toEqual(second);
+  });
+});
+
+describe("FixedProvider for finger_piano", () => {
+  const melodyOf = (params: Record<string, number>) => readPianoParams(params).notes;
+
+  it("sends a melody of the default length on every finger, at the default settings", () => {
+    const provider = new FixedProvider({ specsFor, seed: 3 });
+    const params = provider.nextParams("finger_piano", []);
+    expect(params).toMatchObject({
+      finger_count: 4,
+      sequence_length: 4,
+      note_interval_ms: 2000,
+      hit_window_ms: 1200,
+      touch_threshold: 0.3,
+    });
+    const melody = melodyOf(params);
+    expect(melody).toHaveLength(4);
+    expect(new Set(melody).size).toBe(4);
+  });
+
+  it("follows the rules for every melody of a game", () => {
+    const provider = new FixedProvider({ specsFor, seed: 9 });
+    for (let trialNo = 1; trialNo <= 12; trialNo++) {
+      const melody = melodyOf(provider.nextParams("finger_piano", [], trialNo));
+      expect(respectsRepeats(melody)).toBe(true);
+      expect(new Set(melody).size).toBe(4);
+    }
+  });
+
+  it("starts from the patient's own values, such as two fingers after a gentle warm-up", () => {
+    const provider = new FixedProvider({
+      specsFor,
+      seed: 3,
+      defaultsFor: (id): GameParams =>
+        id === "finger_piano" ? { finger_count: 2, touch_threshold: 0.36 } : {},
+    });
+    const params = provider.nextParams("finger_piano", []);
+    expect(params.touch_threshold).toBe(0.36);
+    expect(new Set(melodyOf(params))).toEqual(new Set(["index", "middle"]));
+    // Other games keep their defaults.
+    expect(provider.nextParams("bloom", []).open_demand).toBe(0.7);
   });
 });

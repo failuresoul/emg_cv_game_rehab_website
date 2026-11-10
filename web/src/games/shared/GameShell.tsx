@@ -235,9 +235,17 @@ const GamePlay = memo(function GamePlay({
     return () => clearTimeout(timer);
   }, [feedback]);
 
+  // This session's warm-up, as it was when the game began.
+  const { warmupResults } = useSession();
+  const [warmupAtStart] = useState(warmupResults);
   const provider = useMemo(
-    () => new FixedProvider({ specsFor: (id) => GAMES[id].params, seed }),
-    [seed],
+    () =>
+      new FixedProvider({
+        specsFor: (id) => GAMES[id].params,
+        seed,
+        defaultsFor: (id) => GAMES[id].personalDefaults?.(warmupAtStart) ?? {},
+      }),
+    [seed, warmupAtStart],
   );
 
   useEffect(() => {
@@ -326,7 +334,11 @@ const GamePlay = memo(function GamePlay({
         getTouch: () => handRef.current.getTouch(),
         isTouchReady: () => handRef.current.isTouchReady(),
         // The affected side is fixed for a session, so the touch manager does not change mid-game.
-        subscribeTouch: (listener) => handRef.current.subscribeTouch(listener),
+        subscribeTouch: (listener) =>
+          handRef.current.subscribeTouch((event) =>
+            listener({ ...event, t: runtimeRef.current?.toGameTime(event.t) ?? event.t }),
+          ),
+        setTouchThreshold: (threshold) => handRef.current.setTouchThreshold(threshold),
       },
       calibration,
       affectedSide,

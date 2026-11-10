@@ -383,7 +383,23 @@ export interface TrialMetrics {
   openness_rise_rate?: number | null;
   /** Two-phase games: which phase ran out of time; null for a success. */
   failed_phase?: "open" | "close" | null;
+  /** Sequence games: notes in the melody. */
+  notes_total?: number | null;
+  /** Sequence games: notes played with the right finger in time. */
+  hits?: number | null;
+  /** Sequence games: notes not played, with only wrong fingers touched. */
+  wrong_finger?: number | null;
+  /** Sequence games: notes with no touch at all. */
+  missed?: number | null;
+  /** Sequence games: hits over notes, 0–1. */
+  hit_rate?: number | null;
+  /** Sequence games: mean absolute touch time minus arrival over the hits, in ms. */
+  mean_timing_error_ms?: number | null;
+  /** Sequence games: hits and notes asked, for each finger used. */
+  per_finger?: Partial<Record<FingerName, { hits: number; attempts: number }>> | null;
 }
+
+export type FingerName = "index" | "middle" | "ring" | "little";
 
 export interface TrialCompensation {
   flagged: boolean;

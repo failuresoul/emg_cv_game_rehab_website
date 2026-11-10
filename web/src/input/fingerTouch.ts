@@ -34,6 +34,8 @@ export interface FingerTouchSource {
   stop(): void;
   /** Called with each touchStart and touchEnd. Returns a function that unsubscribes. */
   subscribe(listener: FingerTouchListener): () => void;
+  /** Changes the touch distance, for sources that measure one. A touch in progress carries on. */
+  setThreshold?(threshold: number): void;
 }
 
 export type TouchThresholdOrigin = "warmup" | "default";

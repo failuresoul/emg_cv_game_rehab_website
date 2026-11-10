@@ -126,6 +126,56 @@ const bloomColumns: readonly TrialColumn[] = [
   compensated,
 ];
 
+const FINGER_SHORT_KEYS: Record<string, TranslationKey> = {
+  index: "warmup.sequence.index",
+  middle: "warmup.sequence.middle",
+  ring: "warmup.sequence.ring",
+  little: "warmup.sequence.little",
+};
+
+const fingerPianoColumns: readonly TrialColumn[] = [
+  {
+    key: "adminSession.column.melody",
+    cell: (trial) =>
+      trial.target?.notes
+        ?.map((note) => (FINGER_SHORT_KEYS[note] ? t(FINGER_SHORT_KEYS[note]) : note))
+        .join(" · ") ?? dash,
+  },
+  outcome,
+  {
+    key: "adminSession.column.notesHit",
+    cell: (trial) =>
+      trial.metrics.hits == null || trial.metrics.notes_total == null
+        ? dash
+        : t("gameResults.successesValue", {
+            done: trial.metrics.hits,
+            total: trial.metrics.notes_total,
+          }),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.wrongFinger",
+    cell: (trial) => whole(trial.metrics.wrong_finger),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.missedNotes",
+    cell: (trial) => whole(trial.metrics.missed),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.hitRate",
+    cell: (trial) => share(trial.metrics.hit_rate),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.timingError",
+    cell: (trial) => whole(trial.metrics.mean_timing_error_ms),
+    numeric: true,
+  },
+  compensated,
+];
+
 /** The trial table's columns, after the trial number, for each game. */
 export const TRIAL_COLUMNS: Partial<Record<GameId, readonly TrialColumn[]>> = {
   reach_activate: [
@@ -189,6 +239,7 @@ export const TRIAL_COLUMNS: Partial<Record<GameId, readonly TrialColumn[]>> = {
     compensated,
   ],
   bloom: bloomColumns,
+  finger_piano: fingerPianoColumns,
 };
 
 /** Games without their own list show the reaching columns. */

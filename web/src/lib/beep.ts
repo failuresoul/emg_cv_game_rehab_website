@@ -22,14 +22,14 @@ export function isMuted(): boolean {
   return muted;
 }
 
-function playTone(hz: number, seconds: number, delaySeconds = 0): void {
+function playTone(hz: number, seconds: number, delaySeconds = 0, volume = BEEP_VOLUME): void {
   if (!audioContext || muted) return;
   const oscillator = audioContext.createOscillator();
   const gain = audioContext.createGain();
   const startAt = audioContext.currentTime + delaySeconds;
   const stopAt = startAt + seconds;
   oscillator.frequency.value = hz;
-  gain.gain.setValueAtTime(BEEP_VOLUME, startAt);
+  gain.gain.setValueAtTime(volume, startAt);
   gain.gain.linearRampToValueAtTime(0, stopAt);
   oscillator.connect(gain).connect(audioContext.destination);
   oscillator.start(startAt);
@@ -74,4 +74,22 @@ export function playChime(): void {
   CHIME_NOTES_HZ.forEach((hz, index) => {
     playTone(hz, CHIME_NOTE_SECONDS, index * CHIME_STEP_SECONDS);
   });
+}
+
+/** C, D, E and G: a major pentatonic scale, so any order of notes sounds pleasant together. */
+export const PENTATONIC_HZ = [523, 587, 659, 784] as const;
+const NOTE_SECONDS = 0.4;
+const MUTED_HZ = 165;
+const MUTED_SECONDS = 0.08;
+const MUTED_VOLUME = 0.02;
+
+/** One note of the pentatonic scale, from 0 (lowest) upwards; wraps after the last. */
+export function playNote(index: number): void {
+  const notes = PENTATONIC_HZ.length;
+  playTone(PENTATONIC_HZ[((Math.floor(index) % notes) + notes) % notes], NOTE_SECONDS);
+}
+
+/** A short, quiet, low sound: something did not land, with no "wrong" buzzer. */
+export function playMuted(): void {
+  playTone(MUTED_HZ, MUTED_SECONDS, 0, MUTED_VOLUME);
 }

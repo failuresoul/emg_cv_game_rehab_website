@@ -43,6 +43,11 @@ export class TouchManager {
     return this.source.isReady();
   }
 
+  /** Sets the touch distance on every source that measures one, chosen or not. */
+  setThreshold(threshold: number): void {
+    this.sources.forEach((source) => source.setThreshold?.(threshold));
+  }
+
   /** Does nothing for a source the manager does not have. */
   select(id: FingerTouchSourceId): void {
     if (id === this.activeId || !this.sources.has(id)) return;

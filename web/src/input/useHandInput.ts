@@ -80,6 +80,8 @@ export interface HandInputValue {
   isTouchReady: () => boolean;
   /** Each touchStart and touchEnd as it happens. Returns a function that unsubscribes. */
   subscribeTouch: (listener: FingerTouchListener) => () => void;
+  /** Changes the camera's touch distance, in palm lengths, for example per game trial. */
+  setTouchThreshold: (threshold: number) => void;
   /** Null until the affected side is known. */
   managers: HandInputManagers | null;
 }
@@ -179,6 +181,10 @@ export function useHandInput({
     (listener: FingerTouchListener) => touchManager?.subscribe(listener) ?? (() => {}),
     [touchManager],
   );
+  const setTouchThreshold = useCallback(
+    (threshold: number) => touchManager?.setThreshold(threshold),
+    [touchManager],
+  );
   const managers = useMemo(
     () =>
       gripManager && opennessManager && touchManager
@@ -201,6 +207,7 @@ export function useHandInput({
     isOpennessReady,
     isTouchReady,
     subscribeTouch,
+    setTouchThreshold,
     managers,
   };
 }

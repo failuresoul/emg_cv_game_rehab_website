@@ -1,3 +1,5 @@
+import { generateMelody } from "@/games/fingerPiano/melody";
+import { activeFingers, MAX_SEQUENCE_LENGTH, melodyToParams } from "@/games/fingerPiano/params";
 import { createRng, type Rng } from "@/games/shared/rng";
 import type { GameParams, ParamSpec, TrialHistoryEntry } from "@/games/shared/types";
 import type { GameEngine, GameId } from "@/types/api";
@@ -22,6 +24,11 @@ export interface FixedProviderOptions {
   /** Each game's settings; their defaults are what this provider returns. */
   specsFor: (gameId: GameId) => readonly ParamSpec[];
   seed: number;
+  /**
+   * The patient's own starting values, which replace a setting's default, such as the touch
+   * distance from their warm-up. None by default.
+   */
+  defaultsFor?: (gameId: GameId) => GameParams;
 }
 
 /** Balloon Pop's upward directions: up-and-out, straight up, up-and-across. */
@@ -44,18 +51,22 @@ export const FRUIT_TARGET_FRACS = [0.4, 0.7, 1.0] as const;
  *   upward directions and three heights in a shuffled order every nine trials.
  * - fruit_catch: `target_side` (1 out, -1 across), alternating from out, and `target_frac`, each
  *   side's three distances in a shuffled order every three fruits on that side.
+ * - finger_piano: a melody as `note_1` … `note_n` (0 index to 3 little finger), from
+ *   generateMelody: every active finger, mostly neighbouring steps, never three in a row.
  *
  * The same choice never comes twice in a row across two blocks.
  */
 export class FixedProvider implements ParamsProvider {
   readonly engine = "L0";
   private readonly specsFor: (gameId: GameId) => readonly ParamSpec[];
+  private readonly defaultsFor: (gameId: GameId) => GameParams;
   private readonly rng: Rng;
   /** Blocks of shuffled choices (indices), by game or game and side, made as they are needed. */
   private readonly blocks = new Map<string, number[][]>();
 
-  constructor({ specsFor, seed }: FixedProviderOptions) {
+  constructor({ specsFor, seed, defaultsFor = () => ({}) }: FixedProviderOptions) {
     this.specsFor = specsFor;
+    this.defaultsFor = defaultsFor;
     this.rng = createRng(seed);
   }
 
@@ -64,8 +75,12 @@ export class FixedProvider implements ParamsProvider {
     history: readonly TrialHistoryEntry[],
     trialNo = history.length + 1,
   ): GameParams {
+    const personal = this.defaultsFor(gameId);
     const params: GameParams = Object.fromEntries(
-      this.specsFor(gameId).map((spec) => [spec.name, spec.default]),
+      this.specsFor(gameId).map((spec) => [
+        spec.name,
+        Number.isFinite(personal[spec.name]) ? personal[spec.name] : spec.default,
+      ]),
     );
     const position = Math.max(0, trialNo - 1);
     if (gameId === "reach_activate") {
@@ -86,6 +101,10 @@ export class FixedProvider implements ParamsProvider {
       );
       params.target_side = out ? 1 : -1;
       params.target_frac = FRUIT_TARGET_FRACS[index];
+    } else if (gameId === "finger_piano") {
+      const length = Math.min(MAX_SEQUENCE_LENGTH, Math.max(1, Math.round(params.sequence_length)));
+      const melody = generateMelody(this.rng, activeFingers(params.finger_count), length);
+      Object.assign(params, melodyToParams(melody));
     }
     return params;
   }

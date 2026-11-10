@@ -14,6 +14,7 @@ import {
 export const DETAIL_HIGHEST_POPPED = "highest_popped_frac";
 export const DETAIL_WIDEST_CATCH = "widest_catch_frac";
 export const DETAIL_MEAN_TIME_TO_OPEN = "mean_time_to_open_ms";
+export const DETAIL_NOTE_HIT_RATE = "note_hit_rate";
 
 /** Runs the patient finished or stopped; a run left open has no result yet. */
 export function finishedRuns<T extends Pick<GameRun, "status">>(runs: readonly T[]): T[] {
@@ -57,7 +58,7 @@ const detail = (summary: GameSummary | null, key: string): number | null => {
  * Each game's headline figure, shown on the results screen, in history and to the admin: the
  * average reach time for Reach and squeeze, the highest balloon popped for Balloon pop, and the
  * widest catch for Fruit catch (both shares of the patient's own reach), and the average time to
- * open the hand for Bloom.
+ * open the hand for Bloom, and the share of notes played for Finger piano.
  */
 export function mainMeasure(gameId: GameId, summary: GameSummary | null): MainMeasure {
   if (gameId === "balloon_pop") {
@@ -72,6 +73,13 @@ export function mainMeasure(gameId: GameId, summary: GameSummary | null): MainMe
     return {
       labelKey: "measure.widestCatch",
       value: share === null ? null : { key: "measure.ofReach", params: { value: share } },
+    };
+  }
+  if (gameId === "finger_piano") {
+    const share = percent(detail(summary, DETAIL_NOTE_HIT_RATE));
+    return {
+      labelKey: "measure.notesPlayed",
+      value: share === null ? null : { key: "measure.ofNotes", params: { value: share } },
     };
   }
   if (gameId === "bloom") {

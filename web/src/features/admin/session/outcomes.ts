@@ -36,6 +36,7 @@ const GAME_OUTCOME_KEYS: Partial<Record<GameId, Partial<Record<TrialOutcome, Tra
   balloon_pop: { success: "outcome.popped", miss: "outcome.miss" },
   fruit_catch: { success: "outcome.caught", miss: "outcome.notCaught" },
   bloom: { success: "outcome.bloomed", miss: "outcome.notBloomed" },
+  finger_piano: { success: "outcome.melodyPlayed", miss: "outcome.melodyPartly" },
 };
 
 export function outcomeLabelKey(gameId: GameId, outcome: TrialOutcome): TranslationKey {

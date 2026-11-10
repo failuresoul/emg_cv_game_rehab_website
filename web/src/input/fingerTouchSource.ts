@@ -46,6 +46,10 @@ export class CvFingerTouchSource implements FingerTouchSource {
     return this.detector.threshold;
   }
 
+  setThreshold(threshold: number): void {
+    this.detector.setThreshold(threshold);
+  }
+
   isReady(): boolean {
     return this.ready;
   }

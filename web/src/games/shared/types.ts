@@ -5,6 +5,7 @@ import type { ActivationSourceId, Finger, FingerTouchListener } from "@/input";
 import type { Calibration, GameId, GameSummary, Side, TrialCreate } from "@/types/api";
 import type { Point } from "@/vision/geometry";
 import type { CompensationMonitor } from "@/warmup/compensation";
+import type { ExerciseResult } from "@/warmup/exerciseRunner";
 import type { ExerciseId } from "@/warmup/exercises";
 
 import type { GameAudio } from "./audio";
@@ -12,7 +13,8 @@ import type { Rng } from "./rng";
 
 export type { GameId } from "@/types/api";
 
-export type ParamUnit = "sw" | "ms" | "deg" | "level" | "share" | "count" | "sw_per_s" | "bpm";
+export type ParamUnit =
+  "sw" | "ms" | "deg" | "level" | "share" | "count" | "sw_per_s" | "bpm" | "palm_ratio";
 
 /** One adjustable setting of a game. The adaptive engine (Day 12) moves it within min and max. */
 export interface ParamSpec {
@@ -67,8 +69,13 @@ export interface GameHandInput {
   /** The finger the thumb is touching now, or null. */
   getTouch(): Finger | null;
   isTouchReady(): boolean;
-  /** Each touchStart and touchEnd as it happens. Returns a function that unsubscribes. */
+  /**
+   * Each touchStart and touchEnd as it happens, with `t` in game time. Returns a function that
+   * unsubscribes.
+   */
   subscribeTouch(listener: FingerTouchListener): () => void;
+  /** Changes the touch distance, in palm lengths, from the next camera frame. */
+  setTouchThreshold(threshold: number): void;
 }
 
 export type FeedbackTone = "positive" | "neutral" | "gentle";
@@ -175,4 +182,9 @@ export interface GameDefinition {
   showCursor?: boolean;
   /** Show the shell's squeeze meter. True by default; off for games that draw their own. */
   showGripMeter?: boolean;
+  /**
+   * The patient's own starting values from this session's warm-up, replacing the defaults of the
+   * settings they name. Without it, every setting starts at its default.
+   */
+  personalDefaults?: (warmup: readonly ExerciseResult[]) => GameParams;
 }

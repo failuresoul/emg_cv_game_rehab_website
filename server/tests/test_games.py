@@ -481,6 +481,65 @@ def test_upload_invalid_hand_metrics_is_422(
     assert response.status_code == 422, response.text
 
 
+def piano_metrics(**changes: Any) -> dict[str, Any]:
+    metrics = {
+        "notes_total": 4,
+        "hits": 3,
+        "wrong_finger": 1,
+        "missed": 0,
+        "hit_rate": 0.75,
+        "mean_timing_error_ms": 180,
+        "per_finger": {
+            "index": {"hits": 1, "attempts": 1},
+            "middle": {"hits": 1, "attempts": 2},
+            "little": {"hits": 1, "attempts": 1},
+        },
+    }
+    return {**metrics, **changes}
+
+
+def test_upload_finger_piano_trial(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="finger_piano")
+    target = {"kind": "sequence", "notes": ["index", "middle", "little", "middle"]}
+    trial = trial_payload(target=target, metrics=piano_metrics(), trajectory=[])
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 200, response.text
+
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    [saved] = detail["games"][0]["trials"]
+    assert saved["target"] == target
+    assert saved["metrics"]["hits"] == 3
+    assert saved["metrics"]["hit_rate"] == 0.75
+    assert saved["metrics"]["per_finger"]["middle"] == {"hits": 1, "attempts": 2}
+    assert "ring" not in saved["metrics"]["per_finger"]
+
+
+@pytest.mark.parametrize(
+    "metrics",
+    [
+        pytest.param({"hits": -1}, id="negative-hits"),
+        pytest.param({"hits": 2}, id="does-not-add-up"),
+        pytest.param({"hit_rate": 1.5}, id="rate-over-1"),
+        pytest.param({"mean_timing_error_ms": -5}, id="negative-error"),
+        pytest.param({"per_finger": {"thumb": {"hits": 0, "attempts": 1}}}, id="unknown-finger"),
+        pytest.param({"per_finger": {"index": {"hits": 2, "attempts": 1}}}, id="hits-over-attempts"),
+        pytest.param({"per_finger": {"index": {"hits": 1}}}, id="no-attempts"),
+    ],
+)
+def test_upload_invalid_piano_metrics_is_422(
+    client: TestClient, patient_headers: Headers, metrics: dict[str, Any]
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="finger_piano")
+    target = {"kind": "sequence", "notes": ["index", "middle"]}
+    trial = trial_payload(target=target, metrics=piano_metrics(**metrics), trajectory=[])
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 422, response.text
+
+
 def test_upload_rejects_not_a_number(client: TestClient, patient_headers: Headers) -> None:
     session_id = start_session(client, patient_headers)
     run_id = start_run(client, patient_headers, session_id)

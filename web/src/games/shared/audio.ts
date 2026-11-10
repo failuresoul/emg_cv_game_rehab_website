@@ -1,4 +1,13 @@
-import { playBeep, playChime, playPlop, playStar, playTick, prepareAudio } from "@/lib/beep";
+import {
+  playBeep,
+  playChime,
+  playMuted,
+  playNote,
+  playPlop,
+  playStar,
+  playTick,
+  prepareAudio,
+} from "@/lib/beep";
 
 /** The warm-up's soft sounds, for games. Each does nothing when sound is unavailable or muted. */
 export interface GameAudio {
@@ -14,6 +23,10 @@ export interface GameAudio {
   plop(): void;
   /** The end of a game. */
   finish(): void;
+  /** A musical note, from 0 upwards on a pentatonic scale. */
+  note(index: number): void;
+  /** A soft, muted sound for a note not played right. */
+  muted(): void;
 }
 
 export const gameAudio: GameAudio = {
@@ -23,4 +36,6 @@ export const gameAudio: GameAudio = {
   success: (step = 0) => playStar(step),
   plop: playPlop,
   finish: playChime,
+  note: playNote,
+  muted: playMuted,
 };
