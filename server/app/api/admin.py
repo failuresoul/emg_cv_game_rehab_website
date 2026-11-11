@@ -7,6 +7,7 @@ from app.models import PatientProfile, User
 from app.models import Session as SessionRecord
 from app.schemas.game import MetricsRecomputeRead
 from app.schemas.game_setting import AdminGameRead, GameSettingUpdate
+from app.schemas.metrics import PatientMetrics
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
 from app.schemas.session import (
     AdminCalibrationRead,
@@ -96,6 +97,15 @@ def get_patient_progress(
     """As GET /api/patient/progress, for one patient."""
     profile, _ = _get_patient_or_404(session, patient_id)
     return progress.get_progress(session, profile, tz_offset_minutes)
+
+
+@router.get("/patients/{patient_id}/metrics")
+def get_patient_metrics(patient_id: int, session: SessionDep) -> PatientMetrics:
+    """Each catalogue measure: baseline, latest, change against the (provisional) MDC and
+    status, with every series behind them."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    assert profile.id is not None
+    return progress.patient_metrics(session, profile.id)
 
 
 @router.get("/patients/{patient_id}/calibrations")

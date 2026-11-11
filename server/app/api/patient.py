@@ -4,10 +4,12 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import CurrentPatient, SessionDep, TzOffset
 from app.schemas.patient import PatientDashboard, PatientProfileRead, TodayPlanStep
+from app.schemas.metrics import MetricSeries
 from app.schemas.progress import PatientProgress
 from app.schemas.session import CalibrationRead, LastSession, SessionDetail, SessionSummary
 from app.schemas.warmup import ExerciseId, WarmupResultRead
 from app.services import games, progress, sessions, warmup
+from app.services.metrics_catalog import get_metric
 
 router = APIRouter(prefix="/patient", tags=["patient"])
 
@@ -50,6 +52,33 @@ def get_progress(
 ) -> PatientProgress:
     """Streak, this week, the last 28 days and one point per completed session."""
     return progress.get_progress(session, patient, tz_offset_minutes)
+
+
+@router.get("/progress/metrics")
+def get_progress_metrics(
+    patient: CurrentPatient,
+    session: SessionDep,
+    ids: Annotated[
+        str | None,
+        Query(
+            max_length=200,
+            description="Comma-separated catalogue ids, such as K1,K6; every measure if left out",
+        ),
+    ] = None,
+) -> list[MetricSeries]:
+    """Each measure over the patient's own completed sessions, oldest first; trial measures have
+    one series per game. Unknown ids are 422."""
+    wanted = None
+    if ids is not None:
+        wanted = [item.strip() for item in ids.split(",") if item.strip()]
+        unknown = [item for item in wanted if get_metric(item) is None]
+        if unknown:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Unknown metric ids: {', '.join(unknown)}",
+            )
+    assert patient.id is not None
+    return progress.metric_series(session, patient.id, wanted)
 
 
 @router.get("/calibration/latest")

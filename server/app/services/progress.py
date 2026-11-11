@@ -11,11 +11,20 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import ColumnElement, case, func
 from sqlmodel import Session, and_, col, or_, select
 
-from app.models import Calibration, GameRun, PatientProfile, Trial, WarmupResult
+from app.core.mdc import PROVISIONAL, mdc_for
+from app.models import Calibration, GameRun, PatientProfile, SessionMetric, Trial, WarmupResult
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
 from app.schemas.common import as_utc
 from app.schemas.game import GameSummary
+from app.schemas.metrics import (
+    BetterWhen,
+    MetricChange,
+    MetricPoint,
+    MetricSeries,
+    MetricStatus,
+    PatientMetrics,
+)
 from app.schemas.progress import (
     CalendarDay,
     GameComparison,
@@ -28,6 +37,7 @@ from app.schemas.progress import (
 )
 from app.services import session_feedback
 from app.services.game_measures import extra_measures, main_measure
+from app.services.metrics_catalog import load_catalog
 from app.services.sessions import duration_seconds, get_last_session_record, list_calibrations
 from app.services.warmup_summary import summaries_for_sessions, summarise
 
@@ -409,4 +419,153 @@ def get_session_report(session: Session, record: SessionRecord) -> SessionReport
         previous_reach=_previous_reach(session, record),
         feedback=session_feedback.to_read(feedback, record) if feedback else None,
         flags=list(record.flags or []),  # type: ignore[arg-type]
+    )
+
+
+# Catalogue measures over time, against the patient's baseline
+
+#: The baseline is the mean of the patient's first this-many sessions with the measure.
+BASELINE_SESSIONS = 2
+#: A change is judged only with at least this many sessions: the baseline ones and a later one.
+MIN_SESSIONS_FOR_CHANGE = 3
+
+
+def signed_change(better_when: BetterWhen, baseline: float, latest: float) -> float:
+    """latest against baseline, positive when better: for a measure where lower is better, a
+    fall is positive; for one best close to zero (SPARC), getting closer to zero is."""
+    if better_when == "higher":
+        return latest - baseline
+    if better_when == "lower":
+        return baseline - latest
+    return abs(baseline) - abs(latest)
+
+
+@dataclass(frozen=True)
+class ChangeResult:
+    baseline: float | None
+    latest: float | None
+    change: float | None
+    change_mdc: float | None
+    status: MetricStatus
+
+
+def judge_change(metric_id: str, better_when: BetterWhen, values: Sequence[float]) -> ChangeResult:
+    """Values oldest first, the latest last. The baseline is the mean of the first two; the
+    change is judged against the measure's MDC: improved at +1 MDC or more, worse at -1 or
+    less. Fewer than three values: no baseline to judge against."""
+    if not values:
+        return ChangeResult(None, None, None, None, "no_baseline")
+    latest = values[-1]
+    baseline = (
+        sum(values[:BASELINE_SESSIONS]) / BASELINE_SESSIONS
+        if len(values) >= BASELINE_SESSIONS
+        else None
+    )
+    if baseline is None or len(values) < MIN_SESSIONS_FOR_CHANGE:
+        return ChangeResult(baseline, latest, None, None, "no_baseline")
+    change = latest - baseline
+    mdc = mdc_for(metric_id)
+    if mdc is None or not mdc > 0:
+        return ChangeResult(baseline, latest, change, None, "no_detectable_change")
+    change_mdc = signed_change(better_when, baseline, latest) / mdc
+    status: MetricStatus = (
+        "improved"
+        if change_mdc >= 1
+        else "worse"
+        if change_mdc <= -1
+        else "no_detectable_change"
+    )
+    return ChangeResult(baseline, latest, change, round(change_mdc, 3), status)
+
+
+def metric_series(
+    session: Session,
+    patient_id: int,
+    ids: Iterable[str] | None = None,
+    session_ids: Sequence[int] | None = None,
+) -> list[MetricSeries]:
+    """Each catalogue measure (one per game for trial measures) over the patient's completed
+    sessions, oldest first, in catalogue order. `ids` keeps only those measures; `session_ids`
+    uses those sessions, in that order, instead of the completed ones."""
+    if session_ids is None:
+        records = _completed_sessions(session, patient_id)
+    else:
+        found = {
+            record.id: record
+            for record in session.exec(
+                select(SessionRecord).where(col(SessionRecord.id).in_(list(session_ids)))
+            ).all()
+        }
+        records = [found[session_id] for session_id in session_ids if session_id in found]
+    order = {record.id: index for index, record in enumerate(records)}
+    dates = {record.id: record.started_at for record in records}
+    wanted = set(ids) if ids is not None else None
+    catalog = [metric for metric in load_catalog() if wanted is None or metric.id in wanted]
+    if not records or not catalog:
+        return []
+
+    statement = select(SessionMetric).where(
+        col(SessionMetric.session_id).in_(list(order)),
+        col(SessionMetric.metric_id).in_([metric.id for metric in catalog]),
+    )
+    grouped: dict[tuple[str, str | None], list[SessionMetric]] = defaultdict(list)
+    for row in session.exec(statement).all():
+        grouped[(row.metric_id, row.game_id)].append(row)
+
+    series: list[MetricSeries] = []
+    for metric in catalog:
+        games = sorted(
+            (game for metric_id, game in grouped if metric_id == metric.id), key=lambda g: g or ""
+        )
+        for game_id in games:
+            rows = sorted(grouped[(metric.id, game_id)], key=lambda row: order[row.session_id])
+            series.append(
+                MetricSeries(
+                    metric_id=metric.id,
+                    game_id=game_id,
+                    name=metric.name,
+                    unit=metric.unit,
+                    better_when=metric.better_when,
+                    points=[
+                        MetricPoint(
+                            session_id=row.session_id,
+                            date=dates[row.session_id],
+                            value=row.value,
+                        )
+                        for row in rows
+                    ],
+                )
+            )
+    return series
+
+
+def metric_change(series: MetricSeries) -> MetricChange:
+    """A series' latest value against its baseline."""
+    result = judge_change(
+        series.metric_id, series.better_when, [point.value for point in series.points]
+    )
+    return MetricChange(
+        metric_id=series.metric_id,
+        game_id=series.game_id,
+        name=series.name,
+        unit=series.unit,
+        better_when=series.better_when,
+        baseline=result.baseline,
+        latest=result.latest,
+        change=result.change,
+        change_mdc=result.change_mdc,
+        status=result.status,
+        mdc=mdc_for(series.metric_id),
+        provisional=PROVISIONAL,
+        n_sessions=len(series.points),
+    )
+
+
+def patient_metrics(session: Session, patient_id: int) -> PatientMetrics:
+    """Every measure's change against the patient's baseline, with the series behind it."""
+    series = metric_series(session, patient_id)
+    return PatientMetrics(
+        metrics=[metric_change(item) for item in series],
+        series=series,
+        mdc_provisional=PROVISIONAL,
     )

@@ -2,7 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Response, status
 
-from app.api.deps import CurrentPatient, SessionDep
+from app.api.deps import CurrentPatient, CurrentUser, SessionDep
+from app.models import PatientProfile
 from app.models import Session as SessionRecord
 from app.schemas.session import (
     CalibrationCreate,
@@ -13,10 +14,11 @@ from app.schemas.session import (
     SessionRead,
     SessionStart,
 )
+from app.schemas.metrics import SessionFacts
 from app.schemas.progress import SessionReport
 from app.schemas.session_feedback import SessionFeedbackCreate, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultCreate, WarmupResultRead
-from app.services import progress, session_feedback, sessions, warmup
+from app.services import progress, session_facts, session_feedback, sessions, warmup
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -182,3 +184,17 @@ def get_summary(session_id: int, session: SessionDep, patient: CurrentPatient) -
     """The end-of-session summary, with figures from earlier sessions to compare against."""
     record = _get_own_session_or_404(session, patient, session_id)
     return progress.get_session_report(session, record)
+
+
+@router.get("/{session_id}/facts")
+def get_session_facts(session_id: int, session: SessionDep, user: CurrentUser) -> SessionFacts:
+    """The session's facts for the feedback module (docs/session-facts.md): codes and numbers,
+    never a name or an email. The patient's own sessions, or any session for an admin."""
+    record = session.get(SessionRecord, session_id)
+    if record is not None and user.role != "admin":
+        owner = session.get(PatientProfile, record.patient_id)
+        if owner is None or owner.user_id != user.id:
+            record = None
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    return session_facts.build_facts(session, record)
