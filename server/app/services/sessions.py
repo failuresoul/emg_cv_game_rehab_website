@@ -23,6 +23,7 @@ from app.schemas.session import (
 )
 from app.schemas.game import LastSessionGame
 from app.schemas.warmup import WarmupSummary
+from app.services import session_metrics
 from app.services.game_summary import finished_games_for_sessions
 from app.services.warmup_summary import summaries_for_sessions
 
@@ -158,6 +159,10 @@ def end_session(session: Session, record: SessionRecord, status: str) -> Session
     if record.id is not None:
         abort_active_runs(session, record.id)
     session.commit()
+    if record.id is not None:
+        # The session's summary of every catalogue measure (never fails the request).
+        session_metrics.compute_quietly(session, record.id)
+        session.refresh(record)
     return record
 
 

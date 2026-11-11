@@ -323,6 +323,8 @@ class MetricsRecomputeRead(BaseModel):
     trials: int
     #: Trials where a server measure differs from the client's by more than 10%.
     mismatched_trials: int
+    #: Session metric rows saved (one per catalogue measure, and per game for trial measures).
+    session_metrics: int = 0
 
 
 class GameSummary(BaseModel):

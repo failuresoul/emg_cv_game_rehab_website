@@ -253,7 +253,14 @@ def test_admin_recomputes_one_session_or_all(
     url = f"/api/admin/metrics/recompute?session_id={session_id}"
     response = client.post(url, headers=admin_headers)
     assert response.status_code == 200, response.text
-    assert response.json() == {"sessions": 1, "runs": 2, "trials": 3, "mismatched_trials": 1}
+    # Session metrics: K5-K10 for the reaches, H6 for the flower, G1 and K12 over all trials.
+    assert response.json() == {
+        "sessions": 1,
+        "runs": 2,
+        "trials": 3,
+        "mismatched_trials": 1,
+        "session_metrics": 9,
+    }
     first = [trial.model_dump() for trial in session.exec(select(Trial)).all()]
 
     # Idempotent: the same results again.
@@ -277,4 +284,10 @@ def test_recompute_needs_an_admin_and_a_real_session(
     missing = client.post("/api/admin/metrics/recompute?session_id=999", headers=admin_headers)
     assert missing.status_code == 404
     empty = client.post("/api/admin/metrics/recompute", headers=admin_headers)
-    assert empty.json() == {"sessions": 0, "runs": 0, "trials": 0, "mismatched_trials": 0}
+    assert empty.json() == {
+        "sessions": 0,
+        "runs": 0,
+        "trials": 0,
+        "mismatched_trials": 0,
+        "session_metrics": 0,
+    }

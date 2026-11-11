@@ -13,7 +13,7 @@ from app.schemas.session_feedback import (
     SessionFeedbackCreate,
     SessionFeedbackRead,
 )
-from app.services import safety
+from app.services import safety, session_metrics
 
 
 class DuplicateFeedbackError(Exception):
@@ -70,6 +70,9 @@ def save_feedback(
     except IntegrityError:
         session.rollback()
         raise DuplicateFeedbackError from None
+    # The answers are part of the session's measures (P1-P3); never fails the request.
+    session_metrics.compute_quietly(session, record.id)
+    session.refresh(feedback)
     return feedback
 
 

@@ -8,6 +8,9 @@ Run from server/ with the virtual environment active:
 Only patients marked is_demo are ever removed. The data comes from a fixed random seed, so it is
 the same every time; only the dates follow today's date and the passwords are new on every run.
 
+Each session also gets the server's trial measures and its catalogue measures (SessionMetric),
+as real sessions do when their games and the session end.
+
 Demo Rahim (left side affected) improves steadily. Demo Salma (right side affected) improves more
 slowly and has one unreviewed pain alert. Every session plays the three reaching games and the
 two hand games, Bloom and Finger piano.
@@ -35,6 +38,7 @@ from app.models import (
     GameRun,
     PatientProfile,
     SessionFeedback,
+    SessionMetric,
     Trial,
     User,
     WarmupResult,
@@ -47,7 +51,7 @@ from app.schemas.patient import PatientCreate
 from app.schemas.session import DIRECTIONS_DEG, CalibrationCreate
 from app.schemas.session_feedback import SessionFeedbackCreate
 from app.schemas.warmup import ExerciseId, WarmupResultCreate
-from app.services import safety
+from app.services import safety, session_metrics, trial_metrics
 from app.services.patients import create_patient
 
 SEED = 20261110
@@ -1047,7 +1051,8 @@ def point_toward(radii: Sequence[float], degrees: float, frac: float) -> tuple[f
 def make_pick_trial(
     rng: random.Random, trial_no: int, radii: Sequence[float], skill: GameSkill
 ) -> TrialCreate:
-    """One object: reach to it, pinch, carry it to the box and let go; drops go back to the start."""
+    """One object: reach to it, pinch, carry it to the box and let go; a drop goes back to the
+    start."""
     pick_deg, place_deg = CARRY_DIRECTIONS[(trial_no - 1) % len(CARRY_DIRECTIONS)]
     pick = point_toward(radii, pick_deg, PICK_PLACE_PARAMS["pick_distance_frac"])
     place = point_toward(radii, place_deg, PICK_PLACE_PARAMS["place_distance_frac"])
@@ -1133,7 +1138,9 @@ def make_grip_trial(
     metrics: dict[str, Any] = {
         "time_to_band_ms": to_band,
         "time_in_band_pct": round(100 * (hold if held else limit * in_band / 160) / active, 1),
-        "longest_continuous_hold_ms": round(min(hold, hold * in_band / 100 * rng.uniform(0.7, 1.1))),
+        "longest_continuous_hold_ms": round(
+            min(hold, hold * in_band / 100 * rng.uniform(0.7, 1.1))
+        ),
         "overshoot_count": overshoots,
         "max_overshoot": round(rng.uniform(0.03, 0.2), 3) if overshoots else None,
         "steadiness": round(skill.grip_sd * rng.uniform(0.75, 1.3), 4),
@@ -1237,7 +1244,9 @@ def _hand_details(game_id: GameName, trials: Sequence[TrialCreate]) -> dict[str,
             total[1] += tally.attempts
     hits = sum(total[0] for total in totals.values())
     notes = sum(total[1] for total in totals.values())
-    rates = {finger: totals[finger][0] / totals[finger][1] for finger in FINGERS if finger in totals}
+    rates = {
+        finger: totals[finger][0] / totals[finger][1] for finger in FINGERS if finger in totals
+    }
     # The best rate; with equal rates, more notes played; then the first in finger order.
     best = max(
         (finger for finger in rates if totals[finger][0] > 0),
@@ -1441,6 +1450,7 @@ def clear_demo_data(session: Session) -> int:
     _delete(
         session, delete(SessionFeedback).where(col(SessionFeedback.session_id).in_(session_ids))
     )
+    _delete(session, delete(SessionMetric).where(col(SessionMetric.session_id).in_(session_ids)))
     _delete(session, delete(SessionRecord).where(col(SessionRecord.id).in_(session_ids)))
     user_ids = [profile.user_id for profile in profiles]
     _delete(session, delete(PatientProfile).where(col(PatientProfile.id).in_(profile_ids)))
@@ -1574,8 +1584,19 @@ def seed_demo_data(
             started_at = session_start(days_ago, now, rng)
             _add_session(session, rng, profile, demo, index, started_at, histories)
         session.commit()
+        compute_demo_metrics(session, profile)
         logins.append((demo.email, password))
     return logins
+
+
+def compute_demo_metrics(session: Session, profile: PatientProfile) -> None:
+    """The server's trial measures and each session's catalogue measures, as a real session's
+    are when its games and the session end."""
+    statement = select(SessionRecord.id).where(SessionRecord.patient_id == profile.id)
+    for session_id in session.exec(statement).all():
+        assert session_id is not None
+        trial_metrics.recompute(session, session_id)
+        session_metrics.compute_session_metrics(session, session_id)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

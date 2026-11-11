@@ -23,6 +23,7 @@ from app.services import (
     patients,
     progress,
     session_feedback,
+    session_metrics,
     sessions,
     trial_metrics,
     warmup,
@@ -197,17 +198,22 @@ def reset_game_setting(game_id: str, session: SessionDep) -> AdminGameRead:
 
 @router.post("/metrics/recompute")
 def recompute_metrics(session: SessionDep, session_id: int | None = None) -> MetricsRecomputeRead:
-    """Recomputes the server's measures of every trial of one session, or of every session when
-    `session_id` is left out. Safe to run again: the results are replaced."""
+    """Recomputes the server's measures of every trial, then each session's catalogue measures,
+    of one session or of every session when `session_id` is left out. Safe to run again: the
+    results are replaced."""
     try:
         result = trial_metrics.recompute(session, session_id)
     except trial_metrics.SessionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
         ) from None
+    rows = session_metrics.compute_for_sessions(
+        session, None if session_id is None else [session_id]
+    )
     return MetricsRecomputeRead(
         sessions=result.sessions,
         runs=result.runs,
         trials=result.trials,
         mismatched_trials=result.mismatched_trials,
+        session_metrics=rows,
     )
