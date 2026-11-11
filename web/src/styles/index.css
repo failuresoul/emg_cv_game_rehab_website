@@ -45,3 +45,23 @@
     @apply outline-accent outline-3 outline-offset-2;
   }
 }
+
+/* The landing page's forearm EMG trace scrolls gently; it stays still for reduced motion. */
+@keyframes emg-flow {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-270px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .landing-emg-flow {
+    animation: emg-flow 7s linear infinite;
+  }
+}

@@ -16,7 +16,7 @@ describe("project identity", () => {
       "Dr. Md. Abdul Awal",
     ]);
     expect(project.supervisors[1].affiliation).toBe(
-      "Postdoctoral Research Fellow, The University of Queensland",
+      "Postdoctoral Fellow, The University of Queensland",
     );
     expect(project.team.map((person) => person.name)).toEqual([
       "Nurul Absar Shadik",

@@ -45,11 +45,12 @@ export const router = createBrowserRouter([
         },
       ]
     : []),
+  // The landing page has its own navbar and footer.
+  { path: "/", element: <HomePage />, errorElement: <ErrorPage /> },
   {
     element: <PublicLayout />,
     errorElement: <ErrorPage />,
     children: [
-      { path: "/", element: <HomePage /> },
       { path: "/login", element: <LoginPage /> },
       { path: "/signup", element: <SignupPage /> },
       { path: "*", element: <NotFoundPage /> },

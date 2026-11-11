@@ -19,6 +19,8 @@ export interface Person {
 
 export interface Institution {
   name: string;
+  /** For tight spaces, such as "KUET × The University of Queensland". */
+  shortName: string;
   department?: string;
   country: string;
   /** Under web/public; the name is shown as text while it is missing. */
@@ -28,6 +30,8 @@ export interface Institution {
 export const project = {
   name: "MuVi Rehab",
   nameLong: "MuVi Rehab — Muscle + Vision Rehabilitation",
+  /** What "MuVi" stands for. */
+  expansion: "Muscle + Vision Rehabilitation",
   tagline: "EMG and vision-guided home rehabilitation for stroke",
   /** The browser tab title. */
   tabTitle: "MuVi Rehab — EMG & vision rehabilitation",
@@ -35,12 +39,14 @@ export const project = {
     "Multimodal EMG and Webcam-Based Hand Posture Recognition for Real-Time Adaptive Rehabilitation Gaming",
   institution: {
     name: "Khulna University of Engineering & Technology (KUET)",
+    shortName: "KUET",
     department: "Department of Computer Science and Engineering",
     country: "Bangladesh",
     logo: "/logos/kuet.png",
   } satisfies Institution,
   collaborator: {
     name: "The University of Queensland",
+    shortName: "UQ",
     country: "Australia",
     logo: "/logos/uq.png",
   } satisfies Institution,
@@ -54,7 +60,7 @@ export const project = {
     {
       name: "Dr. Md. Abdul Awal",
       role: "Supervisor",
-      affiliation: "Postdoctoral Research Fellow, The University of Queensland",
+      affiliation: "Postdoctoral Fellow, The University of Queensland",
       photo: "/team/awal.jpg",
     },
   ] satisfies Person[],

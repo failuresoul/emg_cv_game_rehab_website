@@ -1,47 +1,41 @@
-import { Gamepad2, type LucideIcon, ShieldCheck, TrendingUp, Video } from "lucide-react";
-import { Link } from "react-router";
+import { t } from "@/i18n";
 
-import { buttonClasses } from "@/components/ui/buttonStyles";
-import { Card } from "@/components/ui/Card";
-import { project } from "@/config/project";
-import { t, type TranslationKey } from "@/i18n";
+import { CallToAction } from "./landing/CallToAction";
+import { Collaboration } from "./landing/Collaboration";
+import { Games } from "./landing/Games";
+import { Hero } from "./landing/Hero";
+import { HowItWorks } from "./landing/HowItWorks";
+import { LandingFooter } from "./landing/LandingFooter";
+import { LandingNavbar } from "./landing/LandingNavbar";
+import { Privacy } from "./landing/Privacy";
+import { Research } from "./landing/Research";
+import { Stats } from "./landing/Stats";
+import { Team } from "./landing/Team";
 
-const FEATURES: { titleKey: TranslationKey; icon: LucideIcon }[] = [
-  { titleKey: "landing.feature.warmup", icon: Video },
-  { titleKey: "landing.feature.games", icon: Gamepad2 },
-  { titleKey: "landing.feature.progress", icon: TrendingUp },
-];
-
+/** The public landing page: what the project is, who makes it, and the way in. It has its own
+ * navbar and footer, outside the public layout. No version number. */
 export function HomePage() {
   return (
-    <div className="flex flex-col items-center gap-8 py-8 text-center">
-      <div>
-        <h1 className="text-primary text-4xl font-bold">{project.name}</h1>
-        <p className="mt-3 max-w-2xl text-xl">{t("landing.tagline")}</p>
-      </div>
-
-      <div className="flex flex-wrap justify-center gap-3">
-        <Link to="/login" className={buttonClasses("primary", "lg")}>
-          {t("nav.login")}
-        </Link>
-        <Link to="/signup" className={buttonClasses("secondary", "lg")}>
-          {t("signup.action")}
-        </Link>
-      </div>
-
-      <div className="grid w-full gap-4 md:grid-cols-3">
-        {FEATURES.map(({ titleKey, icon: Icon }) => (
-          <Card key={titleKey} className="flex flex-col items-center gap-3">
-            <Icon size={40} aria-hidden className="text-primary" />
-            <h2 className="text-lg font-semibold">{t(titleKey)}</h2>
-          </Card>
-        ))}
-      </div>
-
-      <p className="bg-primary-light text-primary flex items-center gap-2 rounded-lg px-4 py-3 font-medium">
-        <ShieldCheck size={24} aria-hidden className="shrink-0" />
-        {t("landing.privacy")}
-      </p>
+    <div className="bg-background min-h-dvh overflow-x-clip">
+      <a
+        href="#main"
+        className="bg-primary sr-only z-50 rounded-lg px-4 py-3 font-semibold text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        {t("landing.skip")}
+      </a>
+      <LandingNavbar />
+      <main id="main">
+        <Hero />
+        <Stats />
+        <HowItWorks />
+        <Games />
+        <Research />
+        <Team />
+        <Collaboration />
+        <Privacy />
+        <CallToAction />
+      </main>
+      <LandingFooter />
     </div>
   );
 }
