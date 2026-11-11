@@ -1,0 +1,784 @@
+{
+  "generated_by": "cd web; npm run export:specs",
+  "games": [
+    {
+      "id": "reach_activate",
+      "name_key": "game.reach_activate.name",
+      "description_key": "game.reach_activate.description",
+      "movement_key": "game.reach_activate.movement",
+      "implemented": true,
+      "trials_default": 20,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "distance_frac",
+          "label_key": "param.distanceFrac",
+          "min": 0.4,
+          "max": 1.1,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "share",
+          "harder": "higher"
+        },
+        {
+          "name": "direction_deg",
+          "label_key": "param.directionDeg",
+          "min": 0,
+          "max": 315,
+          "step": 45,
+          "default": 0,
+          "unit": "deg",
+          "harder": null
+        },
+        {
+          "name": "target_radius_sw",
+          "label_key": "param.targetRadiusSw",
+          "min": 0.25,
+          "max": 0.6,
+          "step": 0.01,
+          "default": 0.45,
+          "unit": "sw",
+          "harder": "lower"
+        },
+        {
+          "name": "dwell_ms",
+          "label_key": "param.dwellMs",
+          "min": 300,
+          "max": 1000,
+          "step": 50,
+          "default": 500,
+          "unit": "ms",
+          "harder": "higher"
+        },
+        {
+          "name": "activation_demand",
+          "label_key": "param.activationDemand",
+          "min": 0.2,
+          "max": 0.9,
+          "step": 0.05,
+          "default": 0.5,
+          "unit": "level",
+          "harder": "higher"
+        },
+        {
+          "name": "activation_hold_ms",
+          "label_key": "param.activationHoldMs",
+          "min": 200,
+          "max": 200,
+          "step": 0,
+          "default": 200,
+          "unit": "ms",
+          "harder": "higher"
+        },
+        {
+          "name": "activation_window_ms",
+          "label_key": "param.activationWindowMs",
+          "min": 1500,
+          "max": 4000,
+          "step": 250,
+          "default": 3000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "reach_time_limit_ms",
+          "label_key": "param.reachTimeLimitMs",
+          "min": 8000,
+          "max": 8000,
+          "step": 0,
+          "default": 8000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "rest_ms",
+          "label_key": "param.restMs",
+          "min": 1500,
+          "max": 1500,
+          "step": 0,
+          "default": 1500,
+          "unit": "ms",
+          "harder": null
+        }
+      ]
+    },
+    {
+      "id": "balloon_pop",
+      "name_key": "game.balloon_pop.name",
+      "description_key": "game.balloon_pop.description",
+      "movement_key": "game.balloon_pop.movement",
+      "implemented": true,
+      "trials_default": 20,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "height_frac",
+          "label_key": "param.heightFrac",
+          "min": 0.4,
+          "max": 1.1,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "share",
+          "harder": "higher"
+        },
+        {
+          "name": "direction_deg",
+          "label_key": "param.directionDeg",
+          "min": 45,
+          "max": 135,
+          "step": 45,
+          "default": 90,
+          "unit": "deg",
+          "harder": null
+        },
+        {
+          "name": "balloon_radius_sw",
+          "label_key": "param.balloonRadiusSw",
+          "min": 0.3,
+          "max": 0.6,
+          "step": 0.01,
+          "default": 0.45,
+          "unit": "sw",
+          "harder": "lower"
+        },
+        {
+          "name": "rise_ms",
+          "label_key": "param.riseMs",
+          "min": 1500,
+          "max": 4000,
+          "step": 250,
+          "default": 2500,
+          "unit": "ms",
+          "harder": null
+        },
+        {
+          "name": "hover_ms",
+          "label_key": "param.hoverMs",
+          "min": 4000,
+          "max": 10000,
+          "step": 500,
+          "default": 7000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "squeeze_to_pop",
+          "label_key": "param.squeezeToPop",
+          "min": 0,
+          "max": 1,
+          "step": 1,
+          "default": 0,
+          "unit": "count",
+          "harder": "higher"
+        },
+        {
+          "name": "activation_demand",
+          "label_key": "param.activationDemand",
+          "min": 0.2,
+          "max": 0.9,
+          "step": 0.05,
+          "default": 0.5,
+          "unit": "level",
+          "harder": "higher"
+        },
+        {
+          "name": "activation_hold_ms",
+          "label_key": "param.activationHoldMs",
+          "min": 200,
+          "max": 200,
+          "step": 0,
+          "default": 200,
+          "unit": "ms",
+          "harder": "higher"
+        },
+        {
+          "name": "activation_window_ms",
+          "label_key": "param.activationWindowMs",
+          "min": 3000,
+          "max": 3000,
+          "step": 0,
+          "default": 3000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "rest_ms",
+          "label_key": "param.restMs",
+          "min": 1200,
+          "max": 1200,
+          "step": 0,
+          "default": 1200,
+          "unit": "ms",
+          "harder": null
+        }
+      ]
+    },
+    {
+      "id": "fruit_catch",
+      "name_key": "game.fruit_catch.name",
+      "description_key": "game.fruit_catch.description",
+      "movement_key": "game.fruit_catch.movement",
+      "implemented": true,
+      "trials_default": 20,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "fall_speed_sw_s",
+          "label_key": "param.fallSpeedSwS",
+          "min": 0.2,
+          "max": 0.8,
+          "step": 0.05,
+          "default": 0.35,
+          "unit": "sw_per_s",
+          "harder": "higher"
+        },
+        {
+          "name": "spread_frac",
+          "label_key": "param.spreadFrac",
+          "min": 0.3,
+          "max": 1,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "share",
+          "harder": "higher"
+        },
+        {
+          "name": "basket_width_sw",
+          "label_key": "param.basketWidthSw",
+          "min": 0.4,
+          "max": 1,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "sw",
+          "harder": "lower"
+        },
+        {
+          "name": "spawn_interval_ms",
+          "label_key": "param.spawnIntervalMs",
+          "min": 2500,
+          "max": 6000,
+          "step": 250,
+          "default": 4000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "max_on_screen",
+          "label_key": "param.maxOnScreen",
+          "min": 1,
+          "max": 2,
+          "step": 1,
+          "default": 1,
+          "unit": "count",
+          "harder": "higher"
+        },
+        {
+          "name": "target_side",
+          "label_key": "param.targetSide",
+          "min": -1,
+          "max": 1,
+          "step": 2,
+          "default": 1,
+          "unit": "count",
+          "harder": null
+        },
+        {
+          "name": "target_frac",
+          "label_key": "param.targetFrac",
+          "min": 0.4,
+          "max": 1,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "share",
+          "harder": "higher"
+        }
+      ]
+    },
+    {
+      "id": "bloom",
+      "name_key": "game.bloom.name",
+      "description_key": "game.bloom.description",
+      "movement_key": "game.bloom.movement",
+      "implemented": true,
+      "trials_default": 15,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "open_demand",
+          "label_key": "param.openDemand",
+          "min": 0.5,
+          "max": 0.95,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "level",
+          "harder": "higher"
+        },
+        {
+          "name": "open_hold_ms",
+          "label_key": "param.openHoldMs",
+          "min": 300,
+          "max": 2500,
+          "step": 100,
+          "default": 800,
+          "unit": "ms",
+          "harder": "higher"
+        },
+        {
+          "name": "close_demand",
+          "label_key": "param.closeDemand",
+          "min": 0.4,
+          "max": 0.9,
+          "step": 0.05,
+          "default": 0.6,
+          "unit": "level",
+          "harder": "higher"
+        },
+        {
+          "name": "phase_time_limit_ms",
+          "label_key": "param.phaseTimeLimitMs",
+          "min": 4000,
+          "max": 10000,
+          "step": 500,
+          "default": 8000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "close_hold_ms",
+          "label_key": "param.closeHoldMs",
+          "min": 300,
+          "max": 300,
+          "step": 0,
+          "default": 300,
+          "unit": "ms",
+          "harder": "higher"
+        },
+        {
+          "name": "rest_ms",
+          "label_key": "param.restMs",
+          "min": 1500,
+          "max": 1500,
+          "step": 0,
+          "default": 1500,
+          "unit": "ms",
+          "harder": null
+        }
+      ]
+    },
+    {
+      "id": "finger_piano",
+      "name_key": "game.finger_piano.name",
+      "description_key": "game.finger_piano.description",
+      "movement_key": "game.finger_piano.movement",
+      "implemented": true,
+      "trials_default": 12,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "finger_count",
+          "label_key": "param.fingerCount",
+          "min": 2,
+          "max": 4,
+          "step": 1,
+          "default": 4,
+          "unit": "count",
+          "harder": "higher"
+        },
+        {
+          "name": "sequence_length",
+          "label_key": "param.sequenceLength",
+          "min": 3,
+          "max": 8,
+          "step": 1,
+          "default": 4,
+          "unit": "count",
+          "harder": "higher"
+        },
+        {
+          "name": "note_interval_ms",
+          "label_key": "param.noteIntervalMs",
+          "min": 1200,
+          "max": 3000,
+          "step": 100,
+          "default": 2000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "hit_window_ms",
+          "label_key": "param.hitWindowMs",
+          "min": 600,
+          "max": 1500,
+          "step": 100,
+          "default": 1200,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "touch_threshold",
+          "label_key": "param.touchThreshold",
+          "min": 0.2,
+          "max": 0.4,
+          "step": 0.02,
+          "default": 0.3,
+          "unit": "palm_ratio",
+          "harder": "lower"
+        },
+        {
+          "name": "preview_ms",
+          "label_key": "param.previewMs",
+          "min": 2000,
+          "max": 2000,
+          "step": 0,
+          "default": 2000,
+          "unit": "ms",
+          "harder": null
+        },
+        {
+          "name": "rest_ms",
+          "label_key": "param.restMs",
+          "min": 1500,
+          "max": 1500,
+          "step": 0,
+          "default": 1500,
+          "unit": "ms",
+          "harder": null
+        }
+      ]
+    },
+    {
+      "id": "path_trace",
+      "name_key": "game.path_trace.name",
+      "description_key": "game.path_trace.description",
+      "movement_key": "game.path_trace.movement",
+      "implemented": true,
+      "trials_default": 10,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "shape_index",
+          "label_key": "param.shape",
+          "min": 0,
+          "max": 3,
+          "step": 1,
+          "default": 0,
+          "unit": "count",
+          "harder": null
+        },
+        {
+          "name": "path_length_frac",
+          "label_key": "param.pathLengthFrac",
+          "min": 0.4,
+          "max": 1,
+          "step": 0.05,
+          "default": 0.6,
+          "unit": "share",
+          "harder": "higher"
+        },
+        {
+          "name": "guide_speed_sw_s",
+          "label_key": "param.guideSpeedSwS",
+          "min": 0.15,
+          "max": 0.6,
+          "step": 0.05,
+          "default": 0.25,
+          "unit": "sw_per_s",
+          "harder": "higher"
+        },
+        {
+          "name": "corridor_width_sw",
+          "label_key": "param.corridorWidthSw",
+          "min": 0.2,
+          "max": 0.6,
+          "step": 0.05,
+          "default": 0.4,
+          "unit": "sw",
+          "harder": "lower"
+        },
+        {
+          "name": "ring_frac",
+          "label_key": "param.ringFrac",
+          "min": 0.5,
+          "max": 0.9,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "share",
+          "harder": "higher"
+        },
+        {
+          "name": "direction",
+          "label_key": "param.pathDirection",
+          "min": -1,
+          "max": 1,
+          "step": 2,
+          "default": 1,
+          "unit": "count",
+          "harder": null
+        },
+        {
+          "name": "start_hold_ms",
+          "label_key": "param.startHoldMs",
+          "min": 500,
+          "max": 500,
+          "step": 0,
+          "default": 500,
+          "unit": "ms",
+          "harder": "higher"
+        },
+        {
+          "name": "rest_ms",
+          "label_key": "param.restMs",
+          "min": 2000,
+          "max": 2000,
+          "step": 0,
+          "default": 2000,
+          "unit": "ms",
+          "harder": null
+        }
+      ]
+    },
+    {
+      "id": "paint_wall",
+      "name_key": "game.paint_wall.name",
+      "description_key": "game.paint_wall.description",
+      "movement_key": "game.paint_wall.movement",
+      "implemented": true,
+      "trials_default": 8,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "required_range_frac",
+          "label_key": "param.requiredRangeFrac",
+          "min": 0.5,
+          "max": 1,
+          "step": 0.05,
+          "default": 0.75,
+          "unit": "share",
+          "harder": "higher"
+        },
+        {
+          "name": "sweeps_needed",
+          "label_key": "param.sweepsNeeded",
+          "min": 2,
+          "max": 5,
+          "step": 1,
+          "default": 3,
+          "unit": "count",
+          "harder": "higher"
+        },
+        {
+          "name": "time_limit_ms",
+          "label_key": "param.timeLimitMs",
+          "min": 15000,
+          "max": 40000,
+          "step": 1000,
+          "default": 30000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "elbow_bent_deg",
+          "label_key": "param.elbowBentDeg",
+          "min": 20,
+          "max": 150,
+          "step": 1,
+          "default": 70,
+          "unit": "deg",
+          "harder": null
+        },
+        {
+          "name": "elbow_straight_deg",
+          "label_key": "param.elbowStraightDeg",
+          "min": 50,
+          "max": 180,
+          "step": 1,
+          "default": 150,
+          "unit": "deg",
+          "harder": null
+        },
+        {
+          "name": "rest_ms",
+          "label_key": "param.restMs",
+          "min": 2000,
+          "max": 2000,
+          "step": 0,
+          "default": 2000,
+          "unit": "ms",
+          "harder": null
+        }
+      ]
+    },
+    {
+      "id": "pick_place",
+      "name_key": "game.pick_place.name",
+      "description_key": "game.pick_place.description",
+      "movement_key": "game.pick_place.movement",
+      "implemented": true,
+      "trials_default": 12,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "object_radius_sw",
+          "label_key": "param.objectRadiusSw",
+          "min": 0.2,
+          "max": 0.5,
+          "step": 0.01,
+          "default": 0.35,
+          "unit": "sw",
+          "harder": "lower"
+        },
+        {
+          "name": "pick_distance_frac",
+          "label_key": "param.pickDistanceFrac",
+          "min": 0.4,
+          "max": 1,
+          "step": 0.05,
+          "default": 0.6,
+          "unit": "share",
+          "harder": "higher"
+        },
+        {
+          "name": "place_distance_frac",
+          "label_key": "param.placeDistanceFrac",
+          "min": 0.4,
+          "max": 1,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "share",
+          "harder": "higher"
+        },
+        {
+          "name": "box_size_sw",
+          "label_key": "param.boxSizeSw",
+          "min": 0.4,
+          "max": 0.9,
+          "step": 0.05,
+          "default": 0.7,
+          "unit": "sw",
+          "harder": "lower"
+        },
+        {
+          "name": "carry_angle_deg",
+          "label_key": "param.carryAngleDeg",
+          "min": 45,
+          "max": 180,
+          "step": 15,
+          "default": 90,
+          "unit": "deg",
+          "harder": "higher"
+        },
+        {
+          "name": "time_limit_ms",
+          "label_key": "param.timeLimitMs",
+          "min": 8000,
+          "max": 20000,
+          "step": 500,
+          "default": 15000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "carry_direction",
+          "label_key": "param.carryDirection",
+          "min": 0,
+          "max": 3,
+          "step": 1,
+          "default": 0,
+          "unit": "count",
+          "harder": null
+        },
+        {
+          "name": "rest_ms",
+          "label_key": "param.restMs",
+          "min": 1500,
+          "max": 1500,
+          "step": 0,
+          "default": 1500,
+          "unit": "ms",
+          "harder": null
+        }
+      ]
+    },
+    {
+      "id": "grip_hold",
+      "name_key": "game.grip_hold.name",
+      "description_key": "game.grip_hold.description",
+      "movement_key": "game.grip_hold.movement",
+      "implemented": true,
+      "trials_default": 8,
+      "estimated_minutes": 4,
+      "params": [
+        {
+          "name": "band_center",
+          "label_key": "param.bandCenter",
+          "min": 0.3,
+          "max": 0.8,
+          "step": 0.05,
+          "default": 0.5,
+          "unit": "level",
+          "harder": "higher"
+        },
+        {
+          "name": "band_width",
+          "label_key": "param.bandWidth",
+          "min": 0.1,
+          "max": 0.35,
+          "step": 0.05,
+          "default": 0.3,
+          "unit": "level",
+          "harder": "lower"
+        },
+        {
+          "name": "hold_ms",
+          "label_key": "param.holdMs",
+          "min": 2000,
+          "max": 8000,
+          "step": 500,
+          "default": 3000,
+          "unit": "ms",
+          "harder": "higher"
+        },
+        {
+          "name": "time_limit_ms",
+          "label_key": "param.timeLimitMs",
+          "min": 10000,
+          "max": 20000,
+          "step": 1000,
+          "default": 15000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "relax_below",
+          "label_key": "param.relaxBelow",
+          "min": 0.15,
+          "max": 0.15,
+          "step": 0,
+          "default": 0.15,
+          "unit": "level",
+          "harder": "lower"
+        },
+        {
+          "name": "relax_within_ms",
+          "label_key": "param.relaxWithinMs",
+          "min": 3000,
+          "max": 3000,
+          "step": 0,
+          "default": 3000,
+          "unit": "ms",
+          "harder": "lower"
+        },
+        {
+          "name": "rest_ms",
+          "label_key": "param.restMs",
+          "min": 2000,
+          "max": 2000,
+          "step": 0,
+          "default": 2000,
+          "unit": "ms",
+          "harder": null
+        }
+      ]
+    }
+  ]
+}

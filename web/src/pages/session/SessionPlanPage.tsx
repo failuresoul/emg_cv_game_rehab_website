@@ -2,30 +2,55 @@ import { ArrowDown, ArrowUp, Play } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Spinner } from "@/components/ui/Spinner";
+import {
+  estimatedMinutes,
+  playableGames,
+  settingFor,
+  useGameSettings,
+} from "@/features/games/gameSettings";
 import { defaultPlanRows, move, type PlanRow } from "@/features/session/gameQueue";
 import { useSession, useSessionStep } from "@/features/session/SessionContext";
-import { GAME_IDS, GAMES } from "@/games/shared/registry";
+import { GAMES } from "@/games/shared/registry";
 import { t } from "@/i18n";
 import { prepareAudio } from "@/lib/beep";
-
-const READY = GAME_IDS.filter((id) => GAMES[id].implemented);
+import type { GameId, PatientGameSetting } from "@/types/api";
 
 /**
- * Today's games: the default plan ticked and first, other games unticked after them. The patient
+ * Today's games: the default plan ticked and first, other games unticked after them. Only the
+ * games the admin turned on are listed, with the number of turns the admin chose. The patient
  * can tick or untick any game and change the order; Start plays the ticked ones one after
  * another. The planner (Day 13) will choose them later.
  */
 export function SessionPlanPage() {
   useSessionStep("plan");
+  const settings = useGameSettings();
+  if (settings.isPending) {
+    return (
+      <div className="m-auto">
+        <Spinner size={40} />
+      </div>
+    );
+  }
+  return <PlanList available={playableGames(settings.data)} settings={settings.data} />;
+}
+
+function PlanList({
+  available,
+  settings,
+}: {
+  available: GameId[];
+  settings: PatientGameSetting[] | undefined;
+}) {
   const navigate = useNavigate();
   const { startGames } = useSession();
-  const [rows, setRows] = useState<PlanRow[]>(() => defaultPlanRows(READY));
+  const [rows, setRows] = useState<PlanRow[]>(() => defaultPlanRows(available));
+  const trialsOf = (id: GameId) => settingFor(settings, id)?.trials ?? GAMES[id].trialsDefault;
+  const minutesOf = (id: GameId) => estimatedMinutes(GAMES[id], trialsOf(id));
   const chosen = rows.filter((row) => row.selected).map((row) => row.id);
-  const minutes = chosen.reduce((total, id) => total + GAMES[id].estimatedMinutes, 0);
-  const comingSoon = GAME_IDS.filter((id) => !GAMES[id].implemented);
+  const minutes = chosen.reduce((total, id) => total + minutesOf(id), 0);
 
   function start() {
     if (chosen.length === 0) return;
@@ -42,6 +67,7 @@ export function SessionPlanPage() {
         <p className="text-white/80">{t("plan.intro")}</p>
       </div>
 
+      {rows.length === 0 && <p className="text-lg">{t("plan.noGames")}</p>}
       <ol className="flex flex-col gap-3" aria-label={t("plan.listLabel")}>
         {rows.map((row, index) => {
           const game = GAMES[row.id];
@@ -73,10 +99,7 @@ export function SessionPlanPage() {
                   <span className="block text-xl font-bold">{name}</span>
                   <span className="text-muted block">
                     {t("plan.trains", { movement: t(game.movementKey) })} ·{" "}
-                    {t("plan.length", {
-                      targets: game.trialsDefault,
-                      minutes: game.estimatedMinutes,
-                    })}
+                    {t("plan.length", { targets: trialsOf(row.id), minutes: minutesOf(row.id) })}
                   </span>
                   <span className="mt-1 block">{t(game.descriptionKey)}</span>
                 </label>
@@ -120,32 +143,6 @@ export function SessionPlanPage() {
           </Button>
         </div>
       </div>
-
-      <section aria-labelledby="coming-soon">
-        <h2 id="coming-soon" className="mb-3 text-xl font-semibold">
-          {t("plan.comingSoonTitle")}
-        </h2>
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {comingSoon.map((id) => {
-            const game = GAMES[id];
-            const Icon = game.icon;
-            return (
-              <li key={id}>
-                <Card aria-disabled="true" className="flex h-full flex-col gap-2 opacity-75">
-                  <div className="flex items-center gap-2">
-                    <Icon size={24} aria-hidden className="text-muted shrink-0" />
-                    <h3 className="font-bold">{t(game.nameKey)}</h3>
-                  </div>
-                  <p className="text-muted text-base">{t(game.movementKey)}</p>
-                  <div className="mt-auto">
-                    <Badge>{t("game.comingSoon")}</Badge>
-                  </div>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
     </div>
   );
 }

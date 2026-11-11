@@ -10,14 +10,14 @@ export interface GameQueue {
 
 /**
  * Today's games when the plan opens, until the planner (Day 13) chooses them, in this order:
- * reaching, raising the arm, opening the hand and smooth control, about 16 minutes. Other games
- * are listed after them, unticked.
+ * reaching, raising the arm, opening the hand, and reaching to grasp, carry and let go, about 16
+ * minutes. Other games are listed after them, unticked. A game the admin turned off is left out.
  */
 export const DEFAULT_PLAN: readonly GameId[] = [
   "reach_activate",
   "balloon_pop",
   "bloom",
-  "path_trace",
+  "pick_place",
 ];
 
 export interface PlanRow {

@@ -13,7 +13,7 @@ export const pickPlace: GameDefinition = {
   icon: Grab,
   params: PICK_PLACE_PARAMS,
   trialsDefault: PICK_PLACE_TRIALS,
-  estimatedMinutes: 5,
+  estimatedMinutes: 4,
   create: createPickPlaceGame,
   implemented: true,
   // The game draws its own hand, open or closed with the pinch.

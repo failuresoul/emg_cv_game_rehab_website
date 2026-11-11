@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.deps import SessionDep, TzOffset, require_admin
 from app.models import PatientProfile, User
 from app.models import Session as SessionRecord
+from app.schemas.game_setting import AdminGameRead, GameSettingUpdate
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
 from app.schemas.session import (
     AdminCalibrationRead,
@@ -15,7 +16,15 @@ from app.schemas.session import (
 from app.schemas.progress import PatientProgress
 from app.schemas.session_feedback import AdminAlert, AlertReview
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
-from app.services import games, patients, progress, session_feedback, sessions, warmup
+from app.services import (
+    game_settings,
+    games,
+    patients,
+    progress,
+    session_feedback,
+    sessions,
+    warmup,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -148,3 +157,37 @@ def review_alert(
 @router.get("/stats")
 def stats(session: SessionDep) -> AdminStats:
     return patients.get_stats(session)
+
+
+def _unknown_game() -> HTTPException:
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+
+
+@router.get("/games")
+def list_game_settings(session: SessionDep) -> list[AdminGameRead]:
+    """Every game's spec with the admin's setting, in the registry's order."""
+    return game_settings.list_admin(session)
+
+
+@router.put("/games/{game_id}")
+def update_game_setting(
+    game_id: str, payload: GameSettingUpdate, session: SessionDep
+) -> AdminGameRead:
+    """Replaces the game's setting. Each default must be a setting of the game, within its range."""
+    try:
+        return game_settings.update(session, game_id, payload)
+    except game_settings.UnknownGameError:
+        raise _unknown_game() from None
+    except game_settings.InvalidSettingError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)
+        ) from None
+
+
+@router.post("/games/{game_id}/reset")
+def reset_game_setting(game_id: str, session: SessionDep) -> AdminGameRead:
+    """Back to the game's own defaults and trials, enabled."""
+    try:
+        return game_settings.reset(session, game_id)
+    except game_settings.UnknownGameError:
+        raise _unknown_game() from None

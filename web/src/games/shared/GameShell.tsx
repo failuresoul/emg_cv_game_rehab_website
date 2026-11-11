@@ -263,11 +263,12 @@ const GamePlay = memo(function GamePlay({
   const provider = useMemo(
     () =>
       new FixedProvider({
-        specsFor: (id) => GAMES[id].params,
+        // This game's settings, with the defaults the admin chose for it.
+        specsFor: (id) => (id === definition.id ? definition.params : GAMES[id].params),
         seed,
         defaultsFor: (id) => GAMES[id].personalDefaults?.(warmupAtStart) ?? {},
       }),
-    [seed, warmupAtStart],
+    [seed, warmupAtStart, definition],
   );
 
   useEffect(() => {

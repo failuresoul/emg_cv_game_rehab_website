@@ -17,6 +17,14 @@ class Settings(BaseSettings):
     ADMIN_NAME: str
     # Comma-separated list of allowed origins.
     CORS_ORIGINS: str = "http://localhost:5173"
+    # The game settings exported by the web app. Empty: shared/game-specs.json in the repository.
+    GAME_SPECS_PATH: str = ""
+
+    @property
+    def game_specs_path(self) -> Path:
+        if self.GAME_SPECS_PATH:
+            return Path(self.GAME_SPECS_PATH)
+        return SERVER_DIR.parent / "shared" / "game-specs.json"
 
     @property
     def cors_origins_list(self) -> list[str]:

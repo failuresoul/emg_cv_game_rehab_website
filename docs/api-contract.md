@@ -64,6 +64,10 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/patient/progress`              | `patient` | Streak, week, calendar and trends |
 | GET    | `/api/admin/patients/{id}/progress`  | `admin`   | A patient's progress, as above  |
 | GET    | `/api/sessions/{id}/summary`         | `patient` | End-of-session summary with comparisons |
+| GET    | `/api/admin/games`                   | `admin`   | Every game's spec and the admin's setting |
+| PUT    | `/api/admin/games/{game_id}`         | `admin`   | Save a game's setting           |
+| POST   | `/api/admin/games/{game_id}/reset`   | `admin`   | Put a game back to its own defaults |
+| GET    | `/api/games/settings`                | `patient` | The games to offer, with their defaults and trials |
 
 ## Errors
 
@@ -863,6 +867,68 @@ Response `200`: everything recorded in one session: the session fields as in `GE
 | `reviewed_at`, `review_note` | When an admin reviewed the alert and their note, or `null` |
 
 Errors: `404`.
+
+## Game settings
+
+Each game's settings and their ranges come from the web registry, exported to `shared/game-specs.json` with `cd web; npm run export:specs` (a web test fails when the file is out of date). The server reads that file (or `GAME_SPECS_PATH`) to check the admin's settings. A game the admin never saved is enabled, with its own defaults and number of trials.
+
+### GET /api/admin/games
+
+Response `200`: all nine games in the registry's order:
+
+```json
+[
+  {
+    "spec": {
+      "id": "grip_hold",
+      "name_key": "game.grip_hold.name",
+      "description_key": "game.grip_hold.description",
+      "movement_key": "game.grip_hold.movement",
+      "implemented": true,
+      "trials_default": 8,
+      "estimated_minutes": 4,
+      "params": [
+        { "name": "band_width", "label_key": "param.bandWidth", "min": 0.1, "max": 0.35, "step": 0.05, "default": 0.3, "unit": "level", "harder": "lower" }
+      ]
+    },
+    "enabled": true,
+    "default_params": { "hold_ms": 5000 },
+    "trials_default": 10,
+    "notes": null,
+    "updated_at": "2026-11-11T10:00:00Z",
+    "effective_params": { "band_center": 0.5, "band_width": 0.3, "hold_ms": 5000 },
+    "effective_trials": 10
+  }
+]
+```
+
+`default_params` holds only the admin's changes; `effective_params` is every setting's starting value (the admin's where set, the game's otherwise). `updated_at` is `null` until the game is first saved.
+
+### PUT /api/admin/games/{game_id}
+
+Request (the whole setting, replacing the one before):
+
+```json
+{ "enabled": true, "default_params": { "hold_ms": 5000 }, "trials_default": 10, "notes": "Start with short holds" }
+```
+
+Each `default_params` entry must be one of the game's settings, between its `min` and `max`; `trials_default` is a whole number from 5 to 40, or `null` for the game's own; `notes` up to 1000 characters. Response `200`: the game as in the list.
+
+Errors: `404` for an unknown game, `422` for a setting the game does not have, a value outside its range (the message names the range), trials outside 5–40, or another invalid field.
+
+### POST /api/admin/games/{game_id}/reset
+
+Deletes the admin's setting: the game is enabled again with its own defaults and trials. Response `200`: the game as in the list. Errors: `404` for an unknown game.
+
+### GET /api/games/settings
+
+Response `200`: the games patients may play (built and enabled), in the registry's order, with each setting's starting value and the number of trials:
+
+```json
+[{ "game_id": "grip_hold", "params": { "band_center": 0.5, "band_width": 0.3, "hold_ms": 5000 }, "trials": 10 }]
+```
+
+A saved default no longer inside its range (the game's settings changed since) is ignored. The plan lists only these games, and the games start every trial from these defaults; a patient's own value from the warm-up still comes first where a game has one.
 
 ## Cool-down questionnaire and safety alerts
 

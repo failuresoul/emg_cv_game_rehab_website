@@ -705,3 +705,56 @@ export interface SessionReport {
   feedback: SessionFeedback | null;
   flags: SafetyFlag[];
 }
+
+/** One adjustable setting of a game, as exported to shared/game-specs.json. */
+export interface GameParamSpec {
+  name: string;
+  label_key: string;
+  min: number;
+  max: number;
+  step: number;
+  default: number;
+  unit: string;
+  harder: "higher" | "lower" | null;
+}
+
+export interface GameSpec {
+  id: GameId;
+  name_key: string;
+  description_key: string;
+  movement_key: string;
+  implemented: boolean;
+  trials_default: number;
+  estimated_minutes: number;
+  params: GameParamSpec[];
+}
+
+/** A game's spec with the admin's setting, and the defaults and trials patients get. */
+export interface AdminGameSetting {
+  spec: GameSpec;
+  enabled: boolean;
+  /** Only the settings the admin changed. */
+  default_params: Record<string, number>;
+  /** Null: the game's own number of trials. */
+  trials_default: number | null;
+  notes: string | null;
+  /** Null until the admin first saves a setting for the game. */
+  updated_at: string | null;
+  effective_params: Record<string, number>;
+  effective_trials: number;
+}
+
+export interface GameSettingUpdate {
+  enabled: boolean;
+  default_params: Record<string, number>;
+  /** 5 to 40, or null for the game's own number. */
+  trials_default: number | null;
+  notes: string | null;
+}
+
+/** A game a patient may play, with the defaults and trials to start from. */
+export interface PatientGameSetting {
+  game_id: GameId;
+  params: Record<string, number>;
+  trials: number;
+}

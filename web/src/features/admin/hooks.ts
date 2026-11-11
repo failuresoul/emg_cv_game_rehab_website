@@ -3,13 +3,17 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { tzOffsetMinutes } from "@/features/progress/progress";
 import { api } from "@/lib/api";
 import { SILENT } from "@/lib/apiErrors";
+import { GAME_SETTINGS_KEY } from "@/features/games/gameSettings";
 import type {
   AdminAlert,
+  AdminGameSetting,
   AdminCalibration,
   AdminRecentSession,
   AdminSessionDetail,
   AdminWarmupHistory,
   AdminStats,
+  GameId,
+  GameSettingUpdate,
   Patient,
   PatientCreate,
   PatientProgress,
@@ -156,6 +160,41 @@ export function useSetPatientActive(id: number) {
       const action = active ? "activate" : "deactivate";
       return (await api.post<Patient>(`/admin/patients/${id}/${action}`)).data;
     },
+    onSuccess: invalidate,
+  });
+}
+
+/** Every game's spec with the admin's setting. */
+export function useAdminGames() {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "games"],
+    queryFn: async () => (await api.get<AdminGameSetting[]>("/admin/games")).data,
+  });
+}
+
+/** Saving or resetting a game also refreshes the patient-side settings in this browser. */
+function useInvalidateGames() {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, "games"] });
+    void queryClient.invalidateQueries({ queryKey: [GAME_SETTINGS_KEY] });
+  };
+}
+
+export function useUpdateGameSetting() {
+  const invalidate = useInvalidateGames();
+  return useMutation({
+    mutationFn: async ({ gameId, setting }: { gameId: GameId; setting: GameSettingUpdate }) =>
+      (await api.put<AdminGameSetting>(`/admin/games/${gameId}`, setting)).data,
+    onSuccess: invalidate,
+  });
+}
+
+export function useResetGameSetting() {
+  const invalidate = useInvalidateGames();
+  return useMutation({
+    mutationFn: async (gameId: GameId) =>
+      (await api.post<AdminGameSetting>(`/admin/games/${gameId}/reset`)).data,
     onSuccess: invalidate,
   });
 }

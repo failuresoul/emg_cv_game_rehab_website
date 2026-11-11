@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Spinner } from "@/components/ui/Spinner";
+import { applyGameSetting, settingFor, useGameSettings } from "@/features/games/gameSettings";
 import { GameShell } from "@/games/shared/GameShell";
 import { useSession, useSessionStep } from "@/features/session/SessionContext";
 import { GAMES, isGameId } from "@/games/shared/registry";
@@ -43,14 +46,27 @@ export function SessionGamePage() {
 function QueuedGame({ definition }: { definition: (typeof GAMES)[keyof typeof GAMES] }) {
   const navigate = useNavigate();
   const { gameQueue, finishGame } = useSession();
+  const settings = useGameSettings();
+  // The admin's defaults and trials. Without settings (the request failed), the game's own.
+  const configured = useMemo(
+    () => applyGameSetting(definition, settingFor(settings.data, definition.id)),
+    [definition, settings.data],
+  );
   const queue = gameQueue?.games ?? [];
   const position = queue.indexOf(definition.id);
   const hasNext = position >= 0 && position < queue.length - 1;
+  if (settings.isPending) {
+    return (
+      <div className="m-auto" role="status" aria-label={t("common.loading")}>
+        <Spinner size={40} />
+      </div>
+    );
+  }
   return (
     // A new key for each game, so moving between games starts afresh.
     <GameShell
       key={definition.id}
-      definition={definition}
+      definition={configured}
       continueKey={hasNext ? "game.nextGame" : "game.continue"}
       onContinue={() => {
         const next = finishGame(definition.id);

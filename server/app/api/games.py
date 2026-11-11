@@ -12,7 +12,8 @@ from app.schemas.game import (
     GameRunStart,
     TrialCreate,
 )
-from app.services import games, sessions
+from app.schemas.game_setting import PatientGameSetting
+from app.services import game_settings, games, sessions
 
 router = APIRouter(tags=["games"])
 
@@ -37,6 +38,12 @@ def _get_own_run_or_404(session: SessionDep, patient: CurrentPatient, run_id: in
 
 def _run_ended() -> HTTPException:
     return HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Game run has already ended")
+
+
+@router.get("/games/settings")
+def list_game_settings(session: SessionDep, _patient: CurrentPatient) -> list[PatientGameSetting]:
+    """The games this patient may play, with the starting defaults and trials the admin set."""
+    return game_settings.patient_settings(session)
 
 
 @router.post("/sessions/{session_id}/games", status_code=status.HTTP_201_CREATED)
