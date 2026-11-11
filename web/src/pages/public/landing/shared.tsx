@@ -1,8 +1,17 @@
 import clsx from "clsx";
-import type { ReactNode } from "react";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
+import { Link } from "react-router";
 
-/** Where "About" and "About the project" lead. A section of this page until /about exists. */
-export const ABOUT_HREF = "#research";
+/** Where "About" and "About the project" lead. */
+export const ABOUT_HREF = "/about";
+
+/** A link to a section of this page ("#games") or to another page ("/about"). */
+export function PageLink({
+  href,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) {
+  return href.startsWith("/") ? <Link to={href} {...props} /> : <a href={href} {...props} />;
+}
 
 /** The page's sections, for the navbar's links. */
 export const SECTION_IDS = {

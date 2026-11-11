@@ -8,7 +8,7 @@ import { buttonClasses } from "@/components/ui/buttonStyles";
 import { project } from "@/config/project";
 import { t, type TranslationKey } from "@/i18n";
 
-import { ABOUT_HREF, Container, SECTION_IDS } from "./shared";
+import { ABOUT_HREF, Container, PageLink, SECTION_IDS } from "./shared";
 
 const LINKS: { href: string; labelKey: TranslationKey }[] = [
   { href: `#${SECTION_IDS.how}`, labelKey: "landing.nav.how" },
@@ -73,12 +73,12 @@ export function LandingNavbar() {
           <ul className="ml-auto hidden items-center gap-1 lg:flex">
             {LINKS.map((link) => (
               <li key={link.labelKey}>
-                <a
+                <PageLink
                   href={link.href}
                   className="text-ink/80 hover:text-primary hover:bg-primary-light inline-flex min-h-11 items-center rounded-lg px-3 text-[0.9rem] font-medium transition-colors"
                 >
                   {t(link.labelKey)}
-                </a>
+                </PageLink>
               </li>
             ))}
           </ul>
@@ -110,13 +110,13 @@ export function LandingNavbar() {
           <ul className="flex flex-col gap-1 border-t border-black/10 pt-3">
             {LINKS.map((link) => (
               <li key={link.labelKey}>
-                <a
+                <PageLink
                   href={link.href}
                   onClick={() => setOpen(false)}
                   className="text-ink hover:bg-primary-light flex min-h-12 items-center rounded-lg px-3 font-medium"
                 >
                   {t(link.labelKey)}
-                </a>
+                </PageLink>
               </li>
             ))}
           </ul>

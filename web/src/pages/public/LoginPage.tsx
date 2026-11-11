@@ -4,6 +4,8 @@ import { Eye, EyeOff } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Link, type Location, Navigate, useLocation } from "react-router";
 
+import { CreditLine } from "@/components/brand/CreditLine";
+import { InstitutionLogo } from "@/components/brand/Identity";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -52,6 +54,7 @@ export function LoginPage() {
       <div className="mb-4 flex flex-col items-center gap-2 text-center">
         <LogoMark size={64} />
         <p className="text-primary text-2xl font-bold">{project.name}</p>
+        <p className="text-muted">{project.tagline}</p>
       </div>
       <PageHeader title={t("page.public.login.title")} />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -96,6 +99,23 @@ export function LoginPage() {
           {t("signup.action")}
         </Link>
       </p>
+      <footer className="mt-8 flex flex-col items-center gap-4 border-t border-black/10 pt-5 text-center">
+        <CreditLine />
+        <div className="flex items-center gap-5" role="group" aria-label={t("login.partners")}>
+          <InstitutionLogo
+            institution={project.institution}
+            height={40}
+            fallback="short"
+            fallbackClassName="text-muted text-sm"
+          />
+          <InstitutionLogo
+            institution={project.collaborator}
+            height={40}
+            fallback="short"
+            fallbackClassName="text-muted text-sm"
+          />
+        </div>
+      </footer>
     </Card>
   );
 }

@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { FileText, History, House, type LucideIcon, TrendingUp, User } from "lucide-react";
 import { NavLink, Outlet, useMatch } from "react-router";
 
+import { CreditLine } from "@/components/brand/CreditLine";
 import { StartSessionButton } from "@/features/session/StartSessionButton";
 import { t, type TranslationKey } from "@/i18n";
 
@@ -53,6 +54,9 @@ export function PatientLayout() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         <Outlet />
       </main>
+      <footer className="border-t border-black/10">
+        <CreditLine className="mx-auto max-w-6xl px-4 py-4" />
+      </footer>
     </div>
   );
 }

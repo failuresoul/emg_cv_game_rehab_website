@@ -27,11 +27,16 @@ What to click and what to say, in order. Times are a guide; the whole demo takes
 
 ## The demo
 
-### 1. Landing page (0:00–0:45)
+### 1. Landing page: research and team (0:00–0:45)
 
 **Click:** open `http://localhost:5173`.
 
-**Say:** "MuVi Rehab is a home rehabilitation platform for arm and hand practice after stroke. The patient needs only a webcam. Video never leaves the browser: MediaPipe runs locally, and only landmarks and measures go to the server."
+**Say:** "MuVi Rehab, Muscle + Vision Rehabilitation, is a research prototype for home arm and hand practice after stroke. The patient needs a webcam, and later a forearm EMG sensor. Video never leaves the browser: MediaPipe runs locally, and only landmarks and measures go to the server."
+
+- **Click** **Research** in the top bar. Read the research title, and point to KUET's Department of CSE and the collaboration with The University of Queensland, with both logos.
+- Point to the three aims: multimodal EMG and vision sensing, safe and explainable adaptive difficulty, and measurable movement-quality outcomes.
+- **Click** **Team**. "Supervised by Professor Akhand at KUET and Dr. Awal at The University of Queensland; built by Nurul Absar Shadik and Nafis Ahammad."
+- Optional: **click** **About** for the background, the system overview and how data is handled. Point to "Research prototype — not a medical device".
 
 ### 2. Admin overview with demo data (0:45–2:30)
 

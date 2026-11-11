@@ -7,7 +7,7 @@ import { project } from "@/config/project";
 import { t } from "@/i18n";
 
 import { HeroPreview } from "./HeroPreview";
-import { ABOUT_HREF, Container } from "./shared";
+import { ABOUT_HREF, Container, PageLink } from "./shared";
 
 const BACKGROUND = [
   "radial-gradient(900px 520px at 85% 10%, rgba(242,167,121,0.22), transparent 60%)",
@@ -78,9 +78,9 @@ export function Hero() {
               {t("landing.login")}
               <ArrowRight size={22} aria-hidden />
             </Link>
-            <a href={ABOUT_HREF} className={buttonClasses("secondary", "lg", "rounded-xl")}>
+            <PageLink href={ABOUT_HREF} className={buttonClasses("secondary", "lg", "rounded-xl")}>
               {t("landing.hero.about")}
-            </a>
+            </PageLink>
           </div>
           <ul className="mt-8 flex flex-col gap-3 text-[0.85rem] font-medium text-[#3F5258] sm:flex-row sm:gap-6">
             <li className="flex items-center gap-2">

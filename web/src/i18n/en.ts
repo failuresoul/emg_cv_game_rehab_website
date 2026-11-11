@@ -1318,4 +1318,47 @@ export const en = {
   "landing.footer.explore": "Explore",
   "landing.footer.links": "Footer",
   "landing.footer.video": "Camera video never leaves your browser.",
+  "credit.line": "{name} · {department} · in collaboration with {collaborator}",
+  "login.partners": "Partner institutions",
+  "about.kicker": "About {name}",
+  "about.intro":
+    "{name} is a research prototype from the {department}, {institution}, in collaboration with {collaborator}.",
+  "about.background.kicker": "Background",
+  "about.background.title": "Why this research",
+  "about.background.home.title": "Why home rehabilitation after stroke",
+  "about.background.home.text":
+    "After a stroke, many people keep practising arm and hand movements for months, and much of that practice happens at home. There, it is hard to know whether a movement was done well, to keep the practice at the right level, and to stay motivated.",
+  "about.background.multimodal.title": "Why combine surface EMG and webcam vision",
+  "about.background.multimodal.text":
+    "A webcam shows how the arm and hand move: reach, posture and smoothness. A surface EMG sensor on the forearm shows how the muscles activate, even when a movement is small. Together they can describe practice more completely, with low-cost equipment.",
+  "about.system.kicker": "The system",
+  "about.system.title": "How the system works",
+  "about.system.sensing.title": "Sensing",
+  "about.system.sensing.text":
+    "The webcam image is turned into hand and body landmarks inside the browser; a forearm EMG sensor adds muscle activity.",
+  "about.system.games.title": "{n} games",
+  "about.system.games.text":
+    "Each game trains a movement: reaching, raising the arm, the elbow, opening the hand, the fingers and grip.",
+  "about.system.adaptation.title": "Adaptive difficulty with safety rules",
+  "about.system.adaptation.text":
+    "Difficulty follows each person's results, within the limits the therapist sets. Safety rules ease it for tiredness or compensation, and every change is recorded with its reason.",
+  "about.system.metrics.title": "Movement-quality measures",
+  "about.system.metrics.text":
+    "Reach area, smoothness, range, speed and grip are measured in every session, not just scores.",
+  "about.system.reports.title": "Personal feedback reports",
+  "about.system.reports.text": "A short, plain-language report after each session.",
+  "about.privacy.title": "Privacy and data handling",
+  "about.privacy.video.title": "Video stays in your browser",
+  "about.privacy.video.text":
+    "The camera image is processed on your computer. No video or picture is ever uploaded or stored.",
+  "about.privacy.saved.title": "What is saved",
+  "about.privacy.saved.text":
+    "Movement numbers (landmark positions over time and measures from them), game results and your answers to the short questionnaire.",
+  "about.privacy.access.title": "Who can see it",
+  "about.privacy.access.text":
+    "You, and the therapists and researchers of the project who manage your programme.",
+  "about.privacy.research.title": "How it is used",
+  "about.privacy.research.text":
+    "To set your practice and show your progress, and, under supervision, for the research described on this page.",
+  "about.contact": "Contact:",
 } as const;

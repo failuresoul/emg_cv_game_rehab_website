@@ -5,7 +5,7 @@
 A research prototype from the Department of Computer Science and Engineering, Khulna University of Engineering & Technology (KUET), Bangladesh, with The University of Queensland, Australia. It is not a medical device.
 
 - **Research title:** Multimodal EMG and Webcam-Based Hand Posture Recognition for Real-Time Adaptive Rehabilitation Gaming
-- **Supervisors:** Dr. Muhammad Aminul Haque Akhand (Dept. of CSE, KUET) and Dr. Md. Abdul Awal (Postdoctoral Fellow, The University of Queensland)
+- **Supervisors:** Dr. Muhammad Aminul Haque Akhand (Professor, Dept. of CSE, KUET) and Dr. Md. Abdul Awal (Postdoctoral Fellow, The University of Queensland)
 - **Team:** Nurul Absar Shadik and Nafis Ahammad (Dept. of CSE, KUET)
 
 The project's name, institutions and people live in one file, [web/src/config/project.ts](web/src/config/project.ts). "MotionLab" is the internal code name: it stays in identifiers (storage keys, package names, the database file) but never in anything a user sees.

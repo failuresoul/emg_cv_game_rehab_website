@@ -22,6 +22,8 @@ export interface Institution {
   /** For tight spaces, such as "KUET × The University of Queensland". */
   shortName: string;
   department?: string;
+  /** As in "Dept. of CSE, KUET". */
+  departmentShort?: string;
   country: string;
   /** Under web/public; the name is shown as text while it is missing. */
   logo: string;
@@ -41,6 +43,7 @@ export const project = {
     name: "Khulna University of Engineering & Technology (KUET)",
     shortName: "KUET",
     department: "Department of Computer Science and Engineering",
+    departmentShort: "Dept. of CSE",
     country: "Bangladesh",
     logo: "/logos/kuet.png",
   } satisfies Institution,
@@ -54,7 +57,7 @@ export const project = {
     {
       name: "Dr. Muhammad Aminul Haque Akhand",
       role: "Supervisor",
-      affiliation: "Dept. of CSE, KUET",
+      affiliation: "Professor, Dept. of CSE, KUET",
       photo: "/team/akhand.jpg",
     },
     {
@@ -78,6 +81,8 @@ export const project = {
       photo: "/team/nafis.jpg",
     },
   ] satisfies Person[],
+  /** Shown on the About page when set; none yet. */
+  contactEmail: null as string | null,
   /** From package.json. Shown only on the admin System page, never on public pages. */
   version: typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev",
 } as const;

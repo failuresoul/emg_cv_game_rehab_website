@@ -71,6 +71,26 @@ function Group({
   );
 }
 
+/** "Supervisors" and "Research team", with a card for each person in project.ts. */
+export function TeamGroups({ idPrefix = "team" }: { idPrefix?: string }) {
+  return (
+    <>
+      <Group
+        titleId={`${idPrefix}-supervisors`}
+        title={t("landing.team.supervisors")}
+        people={project.supervisors}
+        tone="primary"
+      />
+      <Group
+        titleId={`${idPrefix}-researchers`}
+        title={t("landing.team.researchers")}
+        people={project.team}
+        tone="accent"
+      />
+    </>
+  );
+}
+
 export function Team() {
   return (
     <section
@@ -85,18 +105,7 @@ export function Team() {
           kicker={t("landing.team.kicker")}
           title={t("landing.team.title")}
         />
-        <Group
-          titleId="team-supervisors"
-          title={t("landing.team.supervisors")}
-          people={project.supervisors}
-          tone="primary"
-        />
-        <Group
-          titleId="team-researchers"
-          title={t("landing.team.researchers")}
-          people={project.team}
-          tone="accent"
-        />
+        <TeamGroups />
       </Container>
     </section>
   );

@@ -4,7 +4,7 @@ import { LogoMark } from "@/components/brand/LogoMark";
 import { project } from "@/config/project";
 import { t } from "@/i18n";
 
-import { ABOUT_HREF, Container } from "./shared";
+import { ABOUT_HREF, Container, PageLink } from "./shared";
 
 /** Dark footer. The logos are written as names: the KUET crest loses its lettering when made
  * monochrome with a CSS filter, so neither logo is drawn here. No version number. */
@@ -56,9 +56,9 @@ export function LandingFooter() {
             </h2>
             <ul>
               <li>
-                <a href={ABOUT_HREF} className={link}>
+                <PageLink href={ABOUT_HREF} className={link}>
                   {t("landing.nav.about")}
-                </a>
+                </PageLink>
               </li>
               <li>
                 <Link to="/login" className={link}>

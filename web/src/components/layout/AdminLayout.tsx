@@ -12,6 +12,7 @@ import {
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
 
+import { CreditLine } from "@/components/brand/CreditLine";
 import { Button } from "@/components/ui/Button";
 import { t, type TranslationKey } from "@/i18n";
 
@@ -97,6 +98,9 @@ export function AdminLayout() {
         <main className="flex-1 p-4 lg:p-8">
           <Outlet />
         </main>
+        <footer className="border-t border-black/10 px-4 py-4 lg:px-8">
+          <CreditLine />
+        </footer>
       </div>
     </div>
   );

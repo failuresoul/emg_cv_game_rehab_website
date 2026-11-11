@@ -1313,4 +1313,46 @@ export const bn: Record<TranslationKey, string> = {
   "landing.footer.explore": "ঘুরে দেখুন",
   "landing.footer.links": "ফুটার",
   "landing.footer.video": "ক্যামেরার ভিডিও কখনো আপনার ব্রাউজারের বাইরে যায় না।",
+  "credit.line": "{name} · {department} · {collaborator}-এর সহযোগিতায়",
+  "login.partners": "সহযোগী প্রতিষ্ঠান",
+  "about.kicker": "{name} পরিচিতি",
+  "about.intro":
+    "{name} হলো {institution}-এর {department}-এর একটি গবেষণা প্রোটোটাইপ, {collaborator}-এর সহযোগিতায়।",
+  "about.background.kicker": "প্রেক্ষাপট",
+  "about.background.title": "কেন এই গবেষণা",
+  "about.background.home.title": "স্ট্রোকের পরে কেন ঘরে বসে পুনর্বাসন",
+  "about.background.home.text":
+    "স্ট্রোকের পরে অনেকে মাসের পর মাস হাত ও বাহুর নড়াচড়া অনুশীলন করেন, এবং তার বেশিরভাগই হয় বাড়িতে। সেখানে নড়াচড়া ঠিকমতো হলো কি না বোঝা, অনুশীলন সঠিক মাত্রায় রাখা এবং উৎসাহ ধরে রাখা কঠিন।",
+  "about.background.multimodal.title": "কেন সারফেস EMG ও ওয়েবক্যাম দৃষ্টি একসঙ্গে",
+  "about.background.multimodal.text":
+    "ওয়েবক্যাম দেখায় বাহু ও হাত কীভাবে নড়ে: নাগাল, ভঙ্গি ও মসৃণতা। বাহুর সারফেস EMG সেন্সর দেখায় পেশি কীভাবে সক্রিয় হয়, নড়াচড়া ছোট হলেও। দুটো মিলে কম খরচের যন্ত্রে অনুশীলনের আরও পূর্ণ ছবি পাওয়া যায়।",
+  "about.system.kicker": "ব্যবস্থা",
+  "about.system.title": "ব্যবস্থাটি কীভাবে কাজ করে",
+  "about.system.sensing.title": "সংবেদন",
+  "about.system.sensing.text":
+    "ওয়েবক্যামের ছবি ব্রাউজারের ভেতরেই হাত ও শরীরের চিহ্নবিন্দুতে রূপান্তরিত হয়; বাহুর EMG সেন্সর যোগ করে পেশির কাজ।",
+  "about.system.games.title": "{n}টি খেলা",
+  "about.system.games.text":
+    "প্রতিটি খেলা একটি নড়াচড়া অনুশীলন করায়: হাত বাড়ানো, বাহু তোলা, কনুই, হাত খোলা, আঙুল ও মুঠো।",
+  "about.system.adaptation.title": "নিরাপত্তা নিয়মসহ অভিযোজিত কঠিনতা",
+  "about.system.adaptation.text":
+    "কঠিনতা প্রত্যেকের ফলাফল অনুসরণ করে, থেরাপিস্টের ঠিক করা সীমার মধ্যে। ক্লান্তি বা ক্ষতিপূরণে নিরাপত্তা নিয়ম তা সহজ করে, এবং প্রতিটি পরিবর্তন কারণসহ লেখা থাকে।",
+  "about.system.metrics.title": "নড়াচড়ার মানের পরিমাপ",
+  "about.system.metrics.text":
+    "প্রতিটি সেশনে নাগালের এলাকা, মসৃণতা, পরিসর, গতি ও মুঠো মাপা হয়, শুধু স্কোর নয়।",
+  "about.system.reports.title": "ব্যক্তিগত মতামত প্রতিবেদন",
+  "about.system.reports.text": "প্রতিটি সেশনের পরে সহজ ভাষায় ছোট একটি প্রতিবেদন।",
+  "about.privacy.title": "গোপনীয়তা ও তথ্য ব্যবস্থাপনা",
+  "about.privacy.video.title": "ভিডিও থাকে আপনার ব্রাউজারে",
+  "about.privacy.video.text":
+    "ক্যামেরার ছবি আপনার কম্পিউটারেই প্রক্রিয়া হয়। কোনো ভিডিও বা ছবি কখনো আপলোড বা সংরক্ষণ করা হয় না।",
+  "about.privacy.saved.title": "কী সংরক্ষণ করা হয়",
+  "about.privacy.saved.text":
+    "নড়াচড়ার সংখ্যা (সময়ের সঙ্গে চিহ্নবিন্দুর অবস্থান ও তা থেকে পরিমাপ), খেলার ফলাফল এবং ছোট প্রশ্নমালায় আপনার উত্তর।",
+  "about.privacy.access.title": "কে দেখতে পান",
+  "about.privacy.access.text": "আপনি, এবং প্রকল্পের যে থেরাপিস্ট ও গবেষকেরা আপনার পরিকল্পনা দেখেন।",
+  "about.privacy.research.title": "কীভাবে ব্যবহার হয়",
+  "about.privacy.research.text":
+    "আপনার অনুশীলন ঠিক করতে ও অগ্রগতি দেখাতে, এবং তত্ত্বাবধানে এই পাতায় বর্ণিত গবেষণার জন্য।",
+  "about.contact": "যোগাযোগ:",
 };

@@ -19,6 +19,7 @@ import { PatientProfilePage } from "@/pages/patient/PatientProfilePage";
 import { PatientProgressPage } from "@/pages/patient/PatientProgressPage";
 import { PatientReportsPage } from "@/pages/patient/PatientReportsPage";
 import { PatientSessionDetailPage } from "@/pages/patient/PatientSessionDetailPage";
+import { AboutPage } from "@/pages/public/AboutPage";
 import { HomePage } from "@/pages/public/HomePage";
 import { LoginPage } from "@/pages/public/LoginPage";
 import { NotFoundPage } from "@/pages/public/NotFoundPage";
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     errorElement: <ErrorPage />,
     children: [
+      { path: "/about", element: <AboutPage /> },
       { path: "/login", element: <LoginPage /> },
       { path: "/signup", element: <SignupPage /> },
       { path: "*", element: <NotFoundPage /> },
