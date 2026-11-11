@@ -6,9 +6,9 @@ Start the server first, then run from server/ with the virtual environment activ
 
 The default base_url is http://localhost:8000. The admin login comes from server/.env. Each run
 adds one test patient with one session (a calibration, six warm-up results and one
-run each of reach_activate, balloon_pop and fruit_catch with 20 trials, one run each of the hand
-games bloom and finger_piano with 4 trials whose targets have no place, and a cool-down
-questionnaire with pain 5) to the database. Its pain alert is marked reviewed, and the patient is
+run each of reach_activate, balloon_pop and fruit_catch with 20 trials, one run each of bloom,
+finger_piano, path_trace and paint_wall with 4 trials whose targets have no place, and a
+cool-down questionnaire with pain 5) to the database. Its pain alert is marked reviewed, and the patient is
 deactivated at the end.
 The exit code is 0 if every step passes and 1 otherwise.
 """
@@ -162,7 +162,6 @@ PARAMS: dict[str, dict[str, float]] = {
 # Hand games: the hand only has to be visible, so their targets have no place in the body frame.
 HAND_GAME_IDS = ("bloom", "finger_piano")
 HAND_TRIALS = 4
-ALL_GAME_IDS = GAME_IDS + HAND_GAME_IDS
 BLOOM_PARAMS: dict[str, float] = {
     "open_demand": 0.7,
     "open_hold_ms": 800,
@@ -255,6 +254,115 @@ def hand_summary(game_id: str, trials: list[dict[str, Any]]) -> dict[str, Any]:
         "compensated_trials": 0,
         "details": details,
     }
+
+
+# Movement-quality games: their targets have no place either, but carry a path or a stripe.
+MOVEMENT_GAME_IDS = ("path_trace", "paint_wall")
+UNPLACED_GAME_IDS = HAND_GAME_IDS + MOVEMENT_GAME_IDS
+PATH_TRACE_PARAMS: dict[str, float] = {
+    "shape_index": 2,
+    "path_length_frac": 0.6,
+    "guide_speed_sw_s": 0.25,
+    "corridor_width_sw": 0.4,
+    "ring_frac": 0.7,
+    "direction": 1,
+    "start_hold_ms": 500,
+    "rest_ms": 2000,
+}
+PAINT_WALL_PARAMS: dict[str, float] = {
+    "required_range_frac": 0.75,
+    "sweeps_needed": 3,
+    "time_limit_ms": 30000,
+    "elbow_bent_deg": 70,
+    "elbow_straight_deg": 150,
+    "rest_ms": 2000,
+}
+PATH = [[round(0.1 * i, 2), round(0.2 * math.sin(i / 3), 4)] for i in range(10)]
+#: Per trace: time in the corridor (the fourth is a miss) and SPARC.
+TRACES = [(85.0, -1.7), (92.0, -1.5), (95.0, -1.6), (55.0, -2.4)]
+#: Per stripe: elbow range reached and full sweeps (the fourth runs out of time).
+STRIPES = [(70.0, 3), (74.0, 3), (72.0, 3), (50.0, 1)]
+
+
+def path_trial(trial_no: int) -> dict[str, Any]:
+    """A trace of an S-curve: the fingertip's raw path follows it closely."""
+    in_corridor, smoothness = TRACES[trial_no - 1]
+    return {
+        "trial_no": trial_no,
+        "params": PATH_TRACE_PARAMS,
+        "target": {"kind": "path", "shape": "s_curve", "points": PATH},
+        "outcome": "success" if in_corridor >= 70 else "miss",
+        "timings": {"spawn": 0, "enter": 1000, "dwell_done": 1500, "end": 5500},
+        "metrics": {
+            "peak_speed_sw_s": 0.45,
+            "mean_tracking_error_sw": 0.06,
+            "mean_path_error_sw": 0.03,
+            "time_in_corridor_pct": in_corridor,
+            "lag_ms": 280,
+            "coverage_pct": min(100.0, in_corridor + 5),
+            "sparc": smoothness,
+        },
+        "compensation": {"flagged": False, "type": None, "max_values": {}},
+        "trajectory": [[1500 + 400 * i, x, y + 0.02] for i, (x, y) in enumerate(PATH)],
+    }
+
+
+def wall_trial(trial_no: int) -> dict[str, Any]:
+    """A stripe of the wall; the fourth runs out of time with one full sweep."""
+    achieved, full = STRIPES[trial_no - 1]
+    return {
+        "trial_no": trial_no,
+        "params": PAINT_WALL_PARAMS,
+        "target": {"kind": "stripe", "index": trial_no - 1, "target_frac": 0.75},
+        "outcome": "success" if full >= 3 else "miss",
+        "timings": {"spawn": 0, "end": 7000 if full >= 3 else 30000},
+        "metrics": {
+            "achieved_range_deg": achieved,
+            "max_bend_deg": 150 - achieved,
+            "max_straight_deg": 150.0,
+            "full_sweeps": full,
+            "partial_sweeps": 1,
+            "mean_sweep_ms": 2100,
+            "angular_sparc": -1.9,
+            "upper_arm_motion_deg": 8.0,
+        },
+        "compensation": {
+            "flagged": False,
+            "type": None,
+            "max_values": {"upper_arm_motion_deg": 8.0},
+        },
+        "trajectory": [[0, 0.3, -0.6], [1000, 0.31, -0.3], [2000, 0.3, -0.6]],
+    }
+
+
+def movement_summary(game_id: str, trials: list[dict[str, Any]]) -> dict[str, Any]:
+    """The summary each movement-quality game sends, with the details its measures read."""
+    successes = sum(1 for trial in trials if trial["outcome"] == "success")
+    if game_id == "path_trace":
+        # Stars: 2 for 85%, 3 for 92% and 95%, 1 for 55%.
+        details: dict[str, Any] = {
+            "mean_in_corridor_pct": 81.8,
+            "total_stars": 9,
+            "best_sparc": -1.5,
+        }
+    else:
+        details = {"mean_range_deg": 66.5, "best_range_deg": 74.0}
+    return {
+        "successes": successes,
+        "success_rate": successes / len(trials),
+        "compensated_trials": 0,
+        "details": details,
+    }
+
+
+#: How the smoke test plays each game whose targets have no place: settings, trials, summary.
+UNPLACED_GAMES: dict[str, tuple[dict[str, float], Callable[[int], dict[str, Any]], Any]] = {
+    "bloom": (BLOOM_PARAMS, bloom_trial, hand_summary),
+    "finger_piano": (PIANO_PARAMS, piano_trial, hand_summary),
+    "path_trace": (PATH_TRACE_PARAMS, path_trial, movement_summary),
+    "paint_wall": (PAINT_WALL_PARAMS, wall_trial, movement_summary),
+}
+ALL_GAME_IDS = GAME_IDS + UNPLACED_GAME_IDS
 
 
 def straight_path(to: tuple[float, float]) -> list[list[float]]:
@@ -506,23 +614,24 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(body["trials_done"] == GAME_TRIALS, f"trials_done is {body['trials_done']}")
         require(body["summary"]["details"] == summary["details"], "summary details differ")
 
-    def play_hand_game(game_id: str) -> None:
-        """Starts a hand-game run, uploads its trials in one batch and ends it."""
+    def play_unplaced_game(game_id: str) -> None:
+        """Starts a run of a game without placed targets, uploads its trials in one batch and
+        ends it."""
+        params, make, summarise = UNPLACED_GAMES[game_id]
         url = f"/api/sessions/{state['session_id']}/games"
         payload = {
             "game_id": game_id,
             "engine": "L0",
             "input_source": "keyboard",
-            "params_initial": BLOOM_PARAMS if game_id == "bloom" else PIANO_PARAMS,
+            "params_initial": params,
             "trials_planned": HAND_TRIALS,
         }
         run = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
-        make = bloom_trial if game_id == "bloom" else piano_trial
         trials = [make(n) for n in range(1, HAND_TRIALS + 1)]
         url = f"/api/games/{run['id']}/trials"
         body = expect(client.post(url, json=trials, headers=bearer("patient")), 200)
         require(body["trials_done"] == HAND_TRIALS, f"trials_done is {body['trials_done']}")
-        summary = hand_summary(game_id, trials)
+        summary = summarise(game_id, trials)
         score = 100 * summary["successes"]
         state[game_id] = {"run_id": run["id"], "trials": trials, "score": score}
         end = {"status": "completed", "score": score, "summary": summary}
@@ -579,6 +688,26 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(
             piano["extra_measures"][0]["value"] == "index", "Finger piano's best finger is wrong"
         )
+        trace, wall = body["games"][5], body["games"][6]
+        require(trace["success_rate"] == 0.75, "Path trace's success rate is wrong")
+        require(
+            trace["main_measure"] == {"name": "stars", "value": 9, "unit": "count"},
+            f"Path trace's main measure is {trace['main_measure']}",
+        )
+        require(
+            [(m["name"], m["value"]) for m in trace["extra_measures"]]
+            == [("mean_in_corridor_pct", 81.8), ("best_sparc", -1.5)],
+            f"Path trace's extra measures are {trace['extra_measures']}",
+        )
+        require(wall["success_rate"] == 0.75, "Paint the wall's success rate is wrong")
+        require(
+            wall["main_measure"] == {"name": "stripes_finished", "value": 3, "unit": "count"},
+            f"Paint the wall's main measure is {wall['main_measure']}",
+        )
+        require(
+            wall["extra_measures"] == [{"name": "best_range_deg", "value": 74.0, "unit": "deg"}],
+            f"Paint the wall's extra measures are {wall['extra_measures']}",
+        )
         require(body["warmup"]["goals_reached"] == 6, "the summary's warm-up goals are wrong")
         require(body["reach"]["hull_area_sw2"] == 2.0, "the summary's reach is wrong")
         require(body["feedback"]["pain_0_10"] == 5, "the summary has no questionnaire")
@@ -592,9 +721,17 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         point = series[0]
         require(point["session_id"] == state["session_id"], "progress shows another session")
         require(point["warmup_goals_reached"] == 6, "progress warm-up goals are wrong")
-        # Every fourth reaching trial and flower is not a success; every melody is: 52 of 68.
+        # Every fourth reaching trial, flower, trace and stripe is not a success; every melody
+        # is: 45 + 3 + 4 + 3 + 3 = 58 of 76.
         rate = point["game_success_rate"]
-        require(rate is not None and abs(rate - 52 / 68) < 1e-9, f"success rate is {rate}")
+        require(rate is not None and abs(rate - 58 / 76) < 1e-9, f"success rate is {rate}")
+        # Path trace: SPARC -1.7, -1.5, -1.6 and -2.4. Paint the wall: 70, 74, 72 and 50 degrees.
+        smoothness = point["path_sparc"]
+        require(
+            smoothness is not None and abs(smoothness + 1.8) < 1e-9,
+            f"Path trace's smoothness is {smoothness}",
+        )
+        require(point["elbow_range_deg"] == 66.5, f"the elbow range is {point['elbow_range_deg']}")
         # Bloom: three flowers opened to 0.85 and one to 0.5. Finger piano: 12 of 16 notes.
         openness = point["bloom_peak_openness"]
         require(
@@ -671,7 +808,7 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(body["calibration"] is not None, "calibration is missing")
         require(len(body["warmup_results"]) == 6, "a warm-up result is missing")
         all_runs = body["games"]
-        require(len(all_runs) == 5, f"expected 5 game runs, got {len(all_runs)}")
+        require(len(all_runs) == 7, f"expected 7 game runs, got {len(all_runs)}")
         require(
             [run["game_id"] for run in all_runs] == list(ALL_GAME_IDS), "the runs are out of order"
         )
@@ -708,6 +845,24 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         hand_trials = bloom["trials"] + piano["trials"]
         require(all(trial["trajectory"] == [] for trial in hand_trials), "a hand trial has a path")
 
+        trace, wall = all_runs[5], all_runs[6]
+        require(len(trace["trials"]) == HAND_TRIALS, "a Path trace trial is missing")
+        traced = trace["trials"][0]
+        require(
+            traced["target"] == {"kind": "path", "shape": "s_curve", "points": PATH},
+            f"the path target is {traced['target']}",
+        )
+        require(len(traced["trajectory"]) == len(PATH), "the trace's raw path is missing")
+        require(traced["metrics"]["sparc"] == -1.7, "the trace's SPARC is wrong")
+        require(trace["trials"][3]["outcome"] == "miss", "the wobbly trace is not a miss")
+        require(len(wall["trials"]) == HAND_TRIALS, "a Paint the wall trial is missing")
+        stripes = [trial["target"] for trial in wall["trials"]]
+        require(
+            stripes == [{"kind": "stripe", "index": n, "target_frac": 0.75} for n in range(4)],
+            f"the stripe targets are {stripes}",
+        )
+        require(wall["trials"][3]["metrics"]["full_sweeps"] == 1, "the last stripe's sweeps differ")
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -737,10 +892,13 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             )
         ],
         *[
-            (f"Patient plays a {game_id} run with non-spatial targets", partial(play_hand_game, game_id))
-            for game_id in HAND_GAME_IDS
+            (
+                f"Patient plays a {game_id} run with non-spatial targets",
+                partial(play_unplaced_game, game_id),
+            )
+            for game_id in UNPLACED_GAME_IDS
         ],
-        ("Dashboard shows the last session's five games", dashboard_last_games),
+        ("Dashboard shows the last session's seven games", dashboard_last_games),
         ("Patient sends the cool-down with pain 5 and gets the pain flag", cooldown_with_pain),
         ("Patient ends the session", end_session),
         ("Patient reads the session summary", session_summary),

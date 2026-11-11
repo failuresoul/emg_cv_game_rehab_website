@@ -749,7 +749,7 @@ Request: an array of 1 to 50 trials. A trial whose `trial_no` was already saved 
 | --- | --- |
 | `trial_no` | 1–500, unique within the request |
 | `params` | That trial's settings, names and numbers only |
-| `target` | Optional. Either **placed** (reaching games): every one of `x_sw`, `y_sw`, `radius_sw` (above 0), `direction_deg` (0 up to 360), `distance_frac` (0–2) and `sector` (like `D3R2`: the direction index, 0 outward then 45° steps anticlockwise to 7, and the ring, R1 below 0.55 of the reach, R2 to 0.85, R3 beyond). Or **unplaced** (hand games): a `kind` (lower-case letters, digits and `_`, up to 30) and none of the placed fields, such as `{"kind": "bloom"}`. Either may add `kind`, and `notes` (1–64 strings of 1–20 characters). Some but not all placed fields, or neither a place nor a `kind`, is `422`. Fields left out are not saved and not returned |
+| `target` | Optional. Either **placed** (reaching games): every one of `x_sw`, `y_sw`, `radius_sw` (above 0), `direction_deg` (0 up to 360), `distance_frac` (0–2) and `sector` (like `D3R2`: the direction index, 0 outward then 45° steps anticlockwise to 7, and the ring, R1 below 0.55 of the reach, R2 to 0.85, R3 beyond). Or **unplaced** (hand games): a `kind` (lower-case letters, digits and `_`, up to 30) and none of the placed fields, such as `{"kind": "bloom"}`. Either may add `kind`; `notes` (1–64 strings of 1–20 characters); `shape` (as `kind`); `points` (2–200 `[x_sw, y_sw]` pairs, such as a path to follow); `index` (a whole number 0–500, such as a stripe's place on the wall); and `target_frac` (0–1). Some but not all placed fields, or neither a place nor a `kind`, is `422`. Fields left out are not saved and not returned |
 | `timings` | Milliseconds from spawn, each 0 or more, or `null` if never reached. `activation_start` is when the successful squeeze began |
 | `metrics` | Each 0 or more, or `null`; `path_efficiency` and `activation_peak` are 0–1. Reach measures use the raw fingertip from move onset to entering the target; move onset is the first point faster than 0.15 SW/s. Some games add optional metrics, listed below |
 | `compensation.max_values` | Up to 20 named numbers |
@@ -775,6 +775,18 @@ Optional metrics for particular games (leave them out, or send `null`):
 | `hit_rate` | `finger_piano` | 0–1: `hits / notes_total` |
 | `mean_timing_error_ms` | `finger_piano` | 0 or more: the mean of \|touch − arrival\| over the hits |
 | `per_finger` | `finger_piano` | For each finger used (`index`, `middle`, `ring`, `little`): `{ "hits": n, "attempts": n }`, attempts being the notes that asked for it; `hits` may not exceed `attempts` |
+| `mean_tracking_error_sw` | `path_trace` | 0 or more: mean distance from the moving guide |
+| `mean_path_error_sw` | `path_trace` | 0 or more: mean distance from the path |
+| `time_in_corridor_pct` | `path_trace` | 0–100: share of the trace within half the corridor's width of the path |
+| `lag_ms` | `path_trace` | Any number: mean delay behind the guide (from the closest point on the path); negative when ahead |
+| `coverage_pct` | `path_trace` | 0–100: share of the path's stretches reached inside the corridor |
+| `sparc` | `path_trace` | 0 or less: SPARC of the raw fingertip's speed during the trace; closer to 0 is smoother |
+| `achieved_range_deg` | `paint_wall` | 0–180: most straight minus most bent elbow angle in the stripe |
+| `max_bend_deg`, `max_straight_deg` | `paint_wall` | 0–180: the smallest and the largest elbow angle reached |
+| `full_sweeps`, `partial_sweeps` | `paint_wall` | Whole numbers 0–1000: sweeps that reached the target height, and those that did not |
+| `mean_sweep_ms` | `paint_wall` | 0 or more: mean duration of the full sweeps |
+| `angular_sparc` | `paint_wall` | 0 or less: SPARC of the raw elbow angle's speed over the stripe |
+| `upper_arm_motion_deg` | `paint_wall` | 0–180: the most the upper arm moved from its start during a sweep |
 
 How each game fills the shared fields:
 
@@ -782,6 +794,8 @@ How each game fills the shared fields:
 - **`fruit_catch`:** `target.x_sw` is where the fruit fell, `y_sw` is the basket line (-0.3), `direction_deg` is 0 (out) or 180 (across) and `sector` is `D0Rn` or `D4Rn`; `enter` is when the basket was first under the fruit; reach measures are sideways only, using the basket's x (the raw fingertip's x kept within the reach). Outcomes are `success` (caught) or `miss`.
 - **`bloom`** (one trial is one flower): `target` is `{"kind": "bloom"}` and `trajectory` is empty, since the hand only has to be visible. `activation_start` and `activation_done` are the grip hold that collected the seed, and `activation_latency_ms` and `activation_peak` repeat `time_to_close_ms` and `peak_grip`. The reach measures are `null`. Outcomes are `success` (both phases done) or `miss` (a phase ran out of time; see `failed_phase`).
 - **`finger_piano`** (one trial is one melody): `target` is `{"kind": "sequence", "notes": ["index", "ring", …]}` and `trajectory` is empty. `params` carries the melody as `note_1` … `note_n` (0 index to 3 little) beside the settings. Only `spawn` and `end` timings are set. Outcomes are `success` (at least 75% of the notes hit) or `miss`.
+- **`path_trace`** (one trial is one trace): `target` is `{"kind": "path", "shape": "line" | "arc" | "s_curve" | "circle_part", "points": [[x, y], …]}` (at most 200 points, in SW). `enter` is when the fingertip first entered the start circle and `dwell_done` when its 500 ms hold was done and the guide set off; `movement_ms` is `null` (the guide sets the pace). `trajectory` is the raw fingertip. Outcomes are `success` (at least 70% of the trace in the corridor), `miss`, or `reach_fail` when the start circle was not held within 15 s (then the tracing metrics are `null`).
+- **`paint_wall`** (one trial is one stripe): `target` is `{"kind": "stripe", "index": n, "target_frac": share}`, `index` being the stripe's place on the wall from 0 and `target_frac` the share of the patient's elbow range it asked for; `params` carries that range as `elbow_bent_deg` and `elbow_straight_deg`. Only `spawn` and `end` timings are set. Outcomes are `success` (the sweeps needed) or `miss` (the time limit, the paint kept). Moving the upper arm more than 20° during a sweep adds `upper_arm` to `compensation.type`, with `upper_arm_motion_deg` in `max_values`.
 
 Response `200`: the game run, with `trials_done` counting every trial saved.
 

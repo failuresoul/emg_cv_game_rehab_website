@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { OUTCOME_MS, type StripeEvent, StripeMachine, type StripeSettings } from "./stripeMachine";
-import { BOTTOM_HEIGHT, type Sweep, SweepDetector } from "./sweepDetector";
+import { BOTTOM_HEIGHT, MAX_BOTTOM_HEIGHT, type Sweep, SweepDetector } from "./sweepDetector";
 
 const STEP = 1000 / 60;
 const SETTINGS: StripeSettings = {
@@ -52,6 +52,28 @@ describe("SweepDetector", () => {
       return base > 0.5 ? base + 0.08 * Math.sin(t / 40) : base;
     };
     expect(detect(wobbly, 4000).map((sweep) => sweep.kind)).toEqual(["full"]);
+  });
+
+  it("still counts sweeps for an elbow that cannot straighten as far as its reference", () => {
+    // Never below 0.3 of the wall (for example 126° with the default 150° reference).
+    const stiff = (t: number) => 0.3 + hump(500, 2000, 0.55)(t);
+    const twice = (t: number) => (t < 2700 ? stiff(t) : 0.3 + hump(2700, 2000, 0.55)(t));
+    const sweeps = detect(twice, 5200);
+    expect(sweeps.map((sweep) => sweep.kind)).toEqual(["full", "full"]);
+  });
+
+  it("keeps the usual bottom for an arm that straightens fully", () => {
+    const detector = new SweepDetector(0.75);
+    detector.update(0, 10);
+    expect(detector.bottom).toBe(BOTTOM_HEIGHT);
+    detector.update(0.9, 20);
+    expect(detector.bottom).toBe(BOTTOM_HEIGHT);
+  });
+
+  it("never raises the bottom above half the wall", () => {
+    const detector = new SweepDetector(0.75);
+    detector.update(0.9, 10);
+    expect(detector.bottom).toBe(MAX_BOTTOM_HEIGHT);
   });
 
   it("waits while the arm is out of sight", () => {

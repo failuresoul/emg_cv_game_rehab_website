@@ -1,7 +1,14 @@
-/** The brush is "at the bottom" (arm straight) at or below this height. */
+/**
+ * The brush is "at the bottom" (arm straight) at or below this height, or this much above the
+ * straightest the arm has been in the stripe, whichever is higher.
+ */
 export const BOTTOM_HEIGHT = 0.15;
-/** A sweep begins once the brush rises above this height, so jitter near the bottom is ignored. */
-export const SWEEP_START_HEIGHT = 0.25;
+/** A sweep begins once the brush is this much above the bottom, so jitter there is ignored. */
+export const SWEEP_START_GAP = 0.1;
+/** The start height with an arm that straightens fully. */
+export const SWEEP_START_HEIGHT = BOTTOM_HEIGHT + SWEEP_START_GAP;
+/** The bottom never rises above half the wall, however little the arm straightens. */
+export const MAX_BOTTOM_HEIGHT = 0.5;
 
 export type SweepKind = "full" | "partial";
 
@@ -19,8 +26,11 @@ export interface Sweep {
  * Counts sweeps: up from the bottom (arm straight) and back down again. A sweep that reached the
  * target height is full; one that rose past the start height but not to the target is partial.
  * Movement that never rises past the start height is jitter, not a sweep, and a sweep only ends
- * back at the bottom, so wobbling near the top does not split it in two. Pure: give it each
- * frame's height and time.
+ * back at the bottom, so wobbling near the top does not split it in two.
+ *
+ * The bottom follows the straightest the arm has been in the stripe, so an elbow that cannot
+ * straighten as far as its reference (for example with the default 150° and no warm-up) still
+ * finishes its sweeps. Pure: give it each frame's height and time.
  */
 export class SweepDetector {
   private readonly targetHeight: number;
@@ -28,6 +38,8 @@ export class SweepDetector {
   private leftBottomAt: number | null = null;
   private inSweep = false;
   private peak = 0;
+  /** The lowest height seen: the straightest the arm has been. */
+  private lowest = Infinity;
 
   constructor(targetHeight: number) {
     this.targetHeight = Math.min(1, Math.max(SWEEP_START_HEIGHT, targetHeight));
@@ -42,6 +54,11 @@ export class SweepDetector {
     return this.inSweep;
   }
 
+  /** The height at or below which the brush counts as at the bottom. */
+  get bottom(): number {
+    return Math.min(MAX_BOTTOM_HEIGHT, Math.max(BOTTOM_HEIGHT, this.lowest + BOTTOM_HEIGHT));
+  }
+
   /** The highest point of the sweep in progress, or 0. */
   get currentPeak(): number {
     return this.inSweep ? this.peak : 0;
@@ -50,7 +67,8 @@ export class SweepDetector {
   /** One frame's brush height, or null when the arm is not seen (ignored). */
   update(height: number | null, nowMs: number): Sweep | null {
     if (height === null || !Number.isFinite(height)) return null;
-    if (height <= BOTTOM_HEIGHT) {
+    this.lowest = Math.min(this.lowest, height);
+    if (height <= this.bottom) {
       const finished = this.inSweep ? this.finish(nowMs) : null;
       this.leftBottomAt = null;
       this.inSweep = false;
@@ -59,7 +77,7 @@ export class SweepDetector {
     }
     this.leftBottomAt ??= nowMs;
     this.peak = Math.max(this.peak, height);
-    if (!this.inSweep && height > SWEEP_START_HEIGHT) this.inSweep = true;
+    if (!this.inSweep && height > this.bottom + SWEEP_START_GAP) this.inSweep = true;
     return null;
   }
 
