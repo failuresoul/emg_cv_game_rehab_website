@@ -321,6 +321,8 @@ export interface SpatialTrialTarget {
   place?: PointPair;
   object_radius_sw?: number;
   box_size_sw?: number;
+  center?: number;
+  width?: number;
 }
 
 /**
@@ -345,6 +347,9 @@ export interface KindTrialTarget {
   /** Carrying games: the object's radius and the box's width, in SW. */
   object_radius_sw?: number;
   box_size_sw?: number;
+  /** Level games: the middle and the width of the band of levels to hold, 0–1. */
+  center?: number;
+  width?: number;
   x_sw?: never;
   y_sw?: never;
   radius_sw?: never;
@@ -404,7 +409,7 @@ export interface TrialMetrics {
   /** Hand-opening games: how fast the hand opened, in level per second. */
   openness_rise_rate?: number | null;
   /** Two-phase games: which phase ran out of time; null for a success. */
-  failed_phase?: "open" | "close" | null;
+  failed_phase?: "open" | "close" | "hold" | "relax" | null;
   /** Sequence games: notes in the melody. */
   notes_total?: number | null;
   /** Sequence games: notes played with the right finger in time. */
@@ -458,6 +463,21 @@ export interface TrialMetrics {
   drops?: number | null;
   /** Carrying games: distance from the box's centre at the release, in SW. */
   release_error_sw?: number | null;
+  /** Holding games: spawn to the level first entering the band, in ms. */
+  time_to_band_ms?: number | null;
+  /** Holding games: share of the holding phase spent inside the band, 0–100. */
+  time_in_band_pct?: number | null;
+  /** Holding games: the longest stretch inside the band without leaving it, in ms. */
+  longest_continuous_hold_ms?: number | null;
+  /** Holding games: times the level went above the band, and the most it went above, 0–1. */
+  overshoot_count?: number | null;
+  max_overshoot?: number | null;
+  /** Holding games: standard deviation of the level while inside the band, 0–1. */
+  steadiness?: number | null;
+  /** Holding games: the relax prompt to the level first falling below the relax level, in ms. */
+  relaxation_ms?: number | null;
+  /** Where the level came from in this trial. */
+  input_source?: InputSource | null;
 }
 
 export type FingerName = "index" | "middle" | "ring" | "little";

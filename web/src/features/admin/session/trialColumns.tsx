@@ -82,9 +82,11 @@ const compensated: TrialColumn = {
   cell: (trial) => compensationText(trial),
 };
 
-const FAILED_PHASE_KEYS: Record<"open" | "close", TranslationKey> = {
+const FAILED_PHASE_KEYS: Record<"open" | "close" | "hold" | "relax", TranslationKey> = {
   open: "adminSession.phase.open",
   close: "adminSession.phase.close",
+  hold: "adminSession.phase.hold",
+  relax: "adminSession.phase.relax",
 };
 
 const bloomColumns: readonly TrialColumn[] = [

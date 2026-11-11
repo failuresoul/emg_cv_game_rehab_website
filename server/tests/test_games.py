@@ -755,6 +755,79 @@ def test_upload_invalid_pick_place_trial_is_422(
     assert response.status_code == 422, response.text
 
 
+def hold_metrics(**changes: Any) -> dict[str, Any]:
+    metrics = {
+        "time_to_band_ms": 900,
+        "time_in_band_pct": 76.5,
+        "longest_continuous_hold_ms": 2400,
+        "overshoot_count": 2,
+        "max_overshoot": 0.08,
+        "steadiness": 0.035,
+        "relaxation_ms": 650,
+        "input_source": "cv_grip",
+        "failed_phase": None,
+    }
+    return {**metrics, **changes}
+
+
+GRIP_BAND_TARGET = {"kind": "grip_band", "center": 0.5, "width": 0.3}
+
+
+def test_upload_grip_hold_trial(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="grip_hold")
+    relax_missed = hold_metrics(relaxation_ms=None, failed_phase="relax", input_source="keyboard")
+    hold_missed = hold_metrics(
+        time_to_band_ms=None, relaxation_ms=None, failed_phase="hold", input_source="emg"
+    )
+    trials = [
+        trial_payload(1, target=GRIP_BAND_TARGET, metrics=hold_metrics()),
+        trial_payload(2, target=GRIP_BAND_TARGET, metrics=relax_missed, outcome="miss"),
+        trial_payload(3, target=GRIP_BAND_TARGET, metrics=hold_missed, outcome="miss"),
+    ]
+    response = upload(client, patient_headers, run_id, trials)
+    assert response.status_code == 200, response.text
+
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    first, second, third = detail["games"][0]["trials"]
+    assert first["target"] == GRIP_BAND_TARGET
+    assert first["metrics"]["time_in_band_pct"] == 76.5
+    assert first["metrics"]["steadiness"] == 0.035
+    assert first["metrics"]["input_source"] == "cv_grip"
+    assert second["metrics"]["failed_phase"] == "relax"
+    assert third["metrics"]["failed_phase"] == "hold"
+    assert third["metrics"]["input_source"] == "emg"
+
+
+@pytest.mark.parametrize(
+    ("target", "metrics"),
+    [
+        pytest.param({**GRIP_BAND_TARGET, "center": 1.2}, {}, id="center-over-1"),
+        pytest.param({**GRIP_BAND_TARGET, "width": -0.1}, {}, id="negative-width"),
+        pytest.param(GRIP_BAND_TARGET, {"time_in_band_pct": 120}, id="pct-over-100"),
+        pytest.param(GRIP_BAND_TARGET, {"overshoot_count": -1}, id="negative-overshoots"),
+        pytest.param(GRIP_BAND_TARGET, {"overshoot_count": 1.5}, id="fractional-overshoots"),
+        pytest.param(GRIP_BAND_TARGET, {"max_overshoot": 1.5}, id="overshoot-over-1"),
+        pytest.param(GRIP_BAND_TARGET, {"steadiness": -0.01}, id="negative-steadiness"),
+        pytest.param(GRIP_BAND_TARGET, {"input_source": "mouse"}, id="unknown-source"),
+        pytest.param(GRIP_BAND_TARGET, {"failed_phase": "squeeze"}, id="unknown-phase"),
+    ],
+)
+def test_upload_invalid_grip_hold_trial_is_422(
+    client: TestClient,
+    patient_headers: Headers,
+    target: dict[str, Any],
+    metrics: dict[str, Any],
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="grip_hold")
+    trial = trial_payload(target=target, metrics=hold_metrics(**metrics))
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 422, response.text
+
+
 def test_upload_rejects_not_a_number(client: TestClient, patient_headers: Headers) -> None:
     session_id = start_session(client, patient_headers)
     run_id = start_run(client, patient_headers, session_id)

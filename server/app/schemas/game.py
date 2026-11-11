@@ -104,6 +104,9 @@ class TrialTarget(BaseModel):
     #: Carrying games: the object's radius and the box's width, in SW.
     object_radius_sw: PositiveSw | None = None
     box_size_sw: PositiveSw | None = None
+    #: Level games: the middle and the width of the band of levels to hold, from 0 to 1.
+    center: Share | None = None
+    width: Share | None = None
 
     @model_validator(mode="after")
     def _spatial_or_kind(self) -> "TrialTarget":
@@ -192,7 +195,7 @@ class TrialMetrics(BaseModel):
     #: Hand-opening games: how fast the hand opened, in openness level per second.
     openness_rise_rate: NonNegative | None = None
     #: Games with phases: which phase ran out of time; empty for a success.
-    failed_phase: Literal["open", "close"] | None = None
+    failed_phase: Literal["open", "close", "hold", "relax"] | None = None
     #: Tracing games: mean distance from the moving guide, in SW.
     mean_tracking_error_sw: NonNegative | None = None
     #: Tracing games: mean distance from the path, in SW.
@@ -232,6 +235,21 @@ class TrialMetrics(BaseModel):
     drops: Annotated[int, Field(ge=0, le=1000, strict=True)] | None = None
     #: Carrying games: distance from the box's centre at the release, in SW.
     release_error_sw: NonNegative | None = None
+    #: Holding games: spawn to the level first entering the band, in ms.
+    time_to_band_ms: NonNegative | None = None
+    #: Holding games: share of the holding phase spent inside the band, 0-100.
+    time_in_band_pct: Percent | None = None
+    #: Holding games: the longest stretch inside the band without leaving it, in ms.
+    longest_continuous_hold_ms: NonNegative | None = None
+    #: Holding games: times the level went above the band, and the most it went above, 0-1.
+    overshoot_count: Annotated[int, Field(ge=0, le=1000, strict=True)] | None = None
+    max_overshoot: Share | None = None
+    #: Holding games: standard deviation of the level while inside the band, 0-1.
+    steadiness: Share | None = None
+    #: Holding games: the relax prompt to the level first falling below the relax level, in ms.
+    relaxation_ms: NonNegative | None = None
+    #: Where the level came from in this trial: the camera, the keyboard or a muscle sensor.
+    input_source: InputSource | None = None
     #: Sequence games: notes in the melody, and how each ended. hits + wrong_finger + missed is
     #: notes_total.
     notes_total: Count | None = None
