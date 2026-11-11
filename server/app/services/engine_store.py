@@ -35,6 +35,26 @@ def warm_restart(state: EngineData) -> EngineData:
     )
 
 
+def starting_state(
+    engine: Engine, context: EngineContext, stored: EngineData | None, new_session: bool
+) -> EngineData:
+    """The state a game starts from: the engine's initial state the first time; else the stored
+    one, eased by the warm restart the first time in a new session (adapting engines only).
+    Always capped at the patient's maximum."""
+    if stored is None:
+        state = engine.initial(context)
+    elif new_session and engine.adapts:
+        state = warm_restart(stored)
+    else:
+        state = stored
+    cap = context.max_difficulty
+    return EngineData(
+        d={component: min(d, cap) for component, d in state.d.items()},
+        streak=state.streak,
+        turn=state.turn,
+    )
+
+
 def max_difficulty(profile: PatientProfile, game_id: str) -> float:
     """The admin's maximum for this patient and game: 1.0 unless set."""
     value = (profile.max_difficulty or {}).get(game_id, 1.0)
@@ -80,18 +100,10 @@ def load(
     ).first()
     if row is None:
         row = EngineState(patient_id=profile.id, game_id=game_id, engine=engine.name)
-        state = engine.initial(context)
+        state = starting_state(engine, context, None, new_session=True)
     else:
-        state = EngineData.from_json(row.state)
         new_session = session_id is not None and row.state.get(SESSION_KEY) != session_id
-        if new_session and engine.adapts:
-            state = warm_restart(state)
-    cap = context.max_difficulty
-    state = EngineData(
-        d={component: min(d, cap) for component, d in state.d.items()},
-        streak=state.streak,
-        turn=state.turn,
-    )
+        state = starting_state(engine, context, EngineData.from_json(row.state), new_session)
     return LoadedEngine(engine=engine, context=context, row=row, state=state)
 
 

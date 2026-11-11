@@ -5,15 +5,18 @@ The engine's reasons go to the admin and the research data only; the patient see
 to 10 and, sometimes, a gentle cue.
 """
 
+from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
 from app.core.config import settings
-from app.engine.base import Decision, EngineData, TrialResult
+from app.engine.base import Decision, Engine, EngineContext, EngineData, TrialResult
 from app.engine.difficulty import level_of
-from app.engine.safety import SafetyInput, TrialRecord, apply_safety
+from app.engine.safety import Cue, SafetyInput, TrialRecord, apply_safety
 from app.models import AdaptationLog, GameRun, PatientProfile
 from app.models.user import utc_now
 from app.schemas.common import as_utc
@@ -49,6 +52,86 @@ def _record(trial: dict[str, object] | LastTrial) -> TrialRecord:
         compensated=bool(data.get("compensated")),
         time_ms=float(time_ms) if isinstance(time_ms, int | float) else None,
         activation_peak=float(peak) if isinstance(peak, int | float) else None,
+    )
+
+
+@dataclass(frozen=True)
+class PastStep:
+    """An earlier decision of the same run, as the next step needs it."""
+
+    trial_no: int
+    #: The trial summary the decision learned from (LastTrial as a dict); None at the start.
+    trial: dict[str, Any] | None
+    cue: str | None
+
+
+@dataclass(frozen=True)
+class Step:
+    """One decision: the new state, the next trial's settings and what to tell whom."""
+
+    state: EngineData
+    params: dict[str, float]
+    decision: str
+    safety_override: str | None
+    cue: Cue | None
+    level: int
+
+
+def decide(
+    engine: Engine,
+    context: EngineContext,
+    before: EngineData,
+    last_trial: LastTrial | None,
+    past: Sequence[PastStep],
+    active_minutes: float = 0.0,
+    finish_soon_minutes: float | None = None,
+    finish_minutes: float | None = None,
+) -> Step:
+    """The engine learns from the last trial, the safety rules check its proposal, and the next
+    trial's settings follow. Pure: the API (next_step) and the simulator (app.engine.sim) both
+    use it, so they share one code path."""
+    trial_no = last_trial.trial_no if last_trial else 0
+    if last_trial is None:
+        after, decision = before, Decision(engine.name, "Start of the game.")
+        history: list[TrialRecord] = []
+    else:
+        outcome = last_trial.failure_type or last_trial.outcome
+        if last_trial.outcome in ("success", "aborted"):
+            outcome = last_trial.outcome
+        after, decision = engine.update(before, TrialResult(outcome), context)
+        history = [_record(step.trial) for step in past if step.trial is not None]
+        history.append(_record(last_trial))
+        history = [trial for trial in history if trial.outcome != "aborted"]
+
+    rests = [step.trial_no for step in past if step.cue == "rest"]
+    checked = apply_safety(
+        SafetyInput(
+            before=before,
+            after=after,
+            history=history,
+            max_difficulty=context.max_difficulty,
+            active_minutes=active_minutes,
+            trials_since_rest=trial_no - rests[-1] if rests else None,
+            finish_soon_minutes=(
+                settings.SESSION_FINISH_SOON_MIN
+                if finish_soon_minutes is None
+                else finish_soon_minutes
+            ),
+            finish_minutes=settings.SESSION_FINISH_MIN if finish_minutes is None else finish_minutes,
+        )
+    )
+    if not engine.adapts:
+        # Fixed settings: the cues still help the patient, but nothing is eased.
+        checked.state = before
+        checked.overrides = []
+    params, _ = engine.next_params(checked.state, context)
+    return Step(
+        state=checked.state,
+        params=params,
+        decision=describe(decision),
+        safety_override=checked.safety_override,
+        cue=checked.cue,
+        level=level_of(checked.state.d),
     )
 
 
@@ -114,40 +197,18 @@ def next_step(
         ).all()
     )
 
-    if last_trial is None:
-        after, decision = before, Decision(loaded.engine.name, "Start of the game.")
-        history: list[TrialRecord] = []
-    else:
-        outcome = last_trial.failure_type or last_trial.outcome
-        if last_trial.outcome in ("success", "aborted"):
-            outcome = last_trial.outcome
-        after, decision = loaded.engine.update(before, TrialResult(outcome), loaded.context)
-        history = [_record(log.trial) for log in logs if log.trial is not None]
-        history.append(_record(last_trial))
-        history = [trial for trial in history if trial.outcome != "aborted"]
-
-    rests = [log.trial_no for log in logs if log.cue == "rest"]
-    checked = apply_safety(
-        SafetyInput(
-            before=before,
-            after=after,
-            history=history,
-            max_difficulty=loaded.context.max_difficulty,
-            active_minutes=active_minutes(session, run, now),
-            trials_since_rest=trial_no - rests[-1] if rests else None,
-            finish_soon_minutes=settings.SESSION_FINISH_SOON_MIN,
-            finish_minutes=settings.SESSION_FINISH_MIN,
-        )
+    step = decide(
+        loaded.engine,
+        loaded.context,
+        before,
+        last_trial,
+        [PastStep(log.trial_no, log.trial, log.cue) for log in logs],
+        active_minutes=active_minutes(session, run, now),
     )
-    if not loaded.engine.adapts:
-        # Fixed settings: the cues still help the patient, but nothing is eased.
-        checked.state = before
-        checked.overrides = []
-    params, _ = loaded.engine.next_params(checked.state, loaded.context)
     engine_store.save(
         session,
         loaded,
-        checked.state,
+        step.state,
         run.session_id,
         trials=1 if last_trial else 0,
         commit=False,
@@ -157,11 +218,11 @@ def next_step(
         trial_no=trial_no,
         engine=loaded.engine.name,
         state_before=before.to_json(),
-        state_after=checked.state.to_json(),
-        params=params,
-        decision=describe(decision),
-        safety_override=checked.safety_override,
-        cue=checked.cue,
+        state_after=step.state.to_json(),
+        params=step.params,
+        decision=step.decision,
+        safety_override=step.safety_override,
+        cue=step.cue,
         trial=last_trial.model_dump() if last_trial else None,
     )
     session.add(log)
