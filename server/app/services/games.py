@@ -24,7 +24,7 @@ from app.schemas.session import (
     SessionRead,
 )
 from app.schemas.warmup import WarmupResultRead
-from app.services import session_feedback, warmup
+from app.services import session_feedback, trial_metrics, warmup
 from app.services.game_summary import finished_games_for_sessions
 from app.services.sessions import SessionEndedError, abort_active_runs, duration_seconds
 
@@ -126,6 +126,9 @@ def end_run(session: Session, run: GameRun, payload: GameRunEnd) -> GameRun:
     run.trials_done = _count_trials(session, run.id)
     session.add(run)
     session.commit()
+    # The server's own measures of every trial, from the RAW data (never fails the request).
+    trial_metrics.recompute_run(session, run)
+    session.refresh(run)
     return run
 
 

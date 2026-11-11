@@ -309,7 +309,20 @@ class TrialRead(BaseModel):
     metrics: TrialMetrics
     compensation: TrialCompensation
     trajectory: list[TrajectoryPoint]
+    #: The server's own measures and the data quality; null until computed.
+    metrics_server: dict[str, Any] | None = None
+    data_quality: dict[str, Any] | None = None
     created_at: UtcDatetime
+
+
+class MetricsRecomputeRead(BaseModel):
+    """What an admin's recomputation of the server's trial measures covered."""
+
+    sessions: int
+    runs: int
+    trials: int
+    #: Trials where a server measure differs from the client's by more than 10%.
+    mismatched_trials: int
 
 
 class GameSummary(BaseModel):

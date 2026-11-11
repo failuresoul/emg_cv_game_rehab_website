@@ -43,6 +43,10 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "weekly_goal": "INTEGER NOT NULL DEFAULT 5",
         "is_demo": "BOOLEAN NOT NULL DEFAULT 0",
     },
+    "trial": {
+        "metrics_server": "JSON",
+        "data_quality": "JSON",
+    },
 }
 
 

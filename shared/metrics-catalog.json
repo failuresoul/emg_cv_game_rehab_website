@@ -1,0 +1,243 @@
+{
+  "description": "The measures MotionLab reports, one entry each. The server reads this file (server/app/services/metrics_catalog.py); the web app and the feedback module word figures from it. Units: SW is one shoulder width (body frame, origin at the affected shoulder); angles in degrees; hand distances as ratios of palm length; times in ms.",
+  "better_when_values": ["higher", "lower", "closer_to_zero"],
+  "metrics": [
+    {
+      "id": "K1",
+      "name": "Reach area",
+      "unit": "sw2",
+      "better_when": "higher",
+      "source": "calibration.hull_area_sw2",
+      "level": "session",
+      "description": "Area of the convex hull of the reach calibration, in square shoulder widths."
+    },
+    {
+      "id": "K5",
+      "name": "Reaction time",
+      "unit": "ms",
+      "better_when": "lower",
+      "source": "trial.metrics_server.reaction_ms",
+      "games": ["reach_activate", "balloon_pop", "fruit_catch", "pick_place"],
+      "level": "trial",
+      "description": "Target shown to movement onset: the filtered fingertip speed first above 0.15 SW/s for 50 ms."
+    },
+    {
+      "id": "K6",
+      "name": "Movement time",
+      "unit": "ms",
+      "better_when": "lower",
+      "source": "trial.metrics_server.movement_ms",
+      "games": ["reach_activate", "balloon_pop", "fruit_catch", "pick_place"],
+      "level": "trial",
+      "description": "Movement onset to reaching the target (entering it, popping the balloon, the basket under the fruit, or reaching the object)."
+    },
+    {
+      "id": "K7",
+      "name": "Path efficiency",
+      "unit": "share",
+      "better_when": "higher",
+      "source": "trial.metrics_server.path_efficiency, or transport_path_efficiency for pick_place",
+      "games": ["reach_activate", "balloon_pop", "fruit_catch", "pick_place"],
+      "level": "trial",
+      "description": "Straight distance over the length of the RAW path, 0-1; 1 is perfectly straight. Sideways only for fruit_catch; the carry for pick_place."
+    },
+    {
+      "id": "K8",
+      "name": "Smoothness (SPARC)",
+      "unit": "sparc",
+      "better_when": "closer_to_zero",
+      "source": "trial.metrics_server.sparc",
+      "games": ["reach_activate", "balloon_pop", "fruit_catch", "path_trace", "pick_place"],
+      "level": "trial",
+      "description": "Spectral arc length of the RAW fingertip speed during the movement (Balasubramanian et al. 2015); 0 or less, closer to 0 is smoother."
+    },
+    {
+      "id": "K9",
+      "name": "Peak speed",
+      "unit": "sw_per_s",
+      "better_when": "higher",
+      "source": "trial.metrics_server.peak_speed_sw_s",
+      "games": ["reach_activate", "balloon_pop", "fruit_catch", "path_trace", "pick_place"],
+      "level": "trial",
+      "description": "The highest filtered fingertip speed during the movement, in SW per second."
+    },
+    {
+      "id": "K10",
+      "name": "Speed peaks per movement",
+      "unit": "count",
+      "better_when": "lower",
+      "source": "trial.metrics_server.speed_peaks",
+      "games": ["reach_activate", "balloon_pop", "fruit_catch", "path_trace", "pick_place"],
+      "level": "trial",
+      "description": "Distinct peaks of the filtered speed (each standing out by more than 10% of the highest); a smooth movement has one."
+    },
+    {
+      "id": "K12",
+      "name": "Compensation rate",
+      "unit": "share",
+      "better_when": "lower",
+      "source": "trial.compensation.flagged",
+      "level": "session",
+      "description": "Share of trials with compensation flagged (trunk, lean, shoulder hike or upper arm), leaving out trials the patient stopped."
+    },
+    {
+      "id": "R1",
+      "name": "Shoulder raise forward: best angle",
+      "unit": "deg",
+      "better_when": "higher",
+      "source": "warmupresult.best_peak (shoulder_flexion)",
+      "level": "warmup",
+      "description": "The highest arm angle forward from the body in the warm-up."
+    },
+    {
+      "id": "R2",
+      "name": "Shoulder raise sideways: best angle",
+      "unit": "deg",
+      "better_when": "higher",
+      "source": "warmupresult.best_peak (shoulder_abduction)",
+      "level": "warmup",
+      "description": "The highest arm angle sideways from the body in the warm-up."
+    },
+    {
+      "id": "R3",
+      "name": "Elbow range",
+      "unit": "deg",
+      "better_when": "higher",
+      "source": "trial.metrics_server.achieved_range_deg (paint_wall)",
+      "games": ["paint_wall"],
+      "level": "trial",
+      "description": "Most straight minus most bent elbow angle reached in a stripe of Paint the wall."
+    },
+    {
+      "id": "R4",
+      "name": "Forward reach: best ratio",
+      "unit": "arm_ratio",
+      "better_when": "higher",
+      "source": "warmupresult.best_peak (forward_reach)",
+      "level": "warmup",
+      "description": "The farthest forward reach in the warm-up, as a share of arm length."
+    },
+    {
+      "id": "H1",
+      "name": "Hand opening range",
+      "unit": "palm_ratio",
+      "better_when": "higher",
+      "source": "warmupresult (hand_open_close): best_peak minus the low threshold",
+      "level": "warmup",
+      "description": "How far the hand opened beyond its closed level in the warm-up, in palm lengths."
+    },
+    {
+      "id": "H2",
+      "name": "Finger piano hit rate",
+      "unit": "share",
+      "better_when": "higher",
+      "source": "trial.metrics_server.hits / notes_total (finger_piano)",
+      "games": ["finger_piano"],
+      "level": "trial",
+      "description": "Notes played with the right finger in time over notes asked, 0-1."
+    },
+    {
+      "id": "H3",
+      "name": "Grip steadiness",
+      "unit": "share",
+      "better_when": "lower",
+      "source": "trial.metrics_server.steadiness (grip_hold)",
+      "games": ["grip_hold"],
+      "level": "trial",
+      "description": "Standard deviation of the grip level while inside the green band, 0-1; smaller is steadier."
+    },
+    {
+      "id": "H4",
+      "name": "Relaxation time",
+      "unit": "ms",
+      "better_when": "lower",
+      "source": "trial.metrics_server.relaxation_ms (grip_hold)",
+      "games": ["grip_hold"],
+      "level": "trial",
+      "description": "The relax prompt to the grip level first falling below the relax level."
+    },
+    {
+      "id": "H5",
+      "name": "Pick-and-place transport time",
+      "unit": "ms",
+      "better_when": "lower",
+      "source": "trial.metrics_server.transport_ms (pick_place)",
+      "games": ["pick_place"],
+      "level": "trial",
+      "description": "The last grasp to letting go inside the box, for objects placed."
+    },
+    {
+      "id": "H6",
+      "name": "Bloom peak openness",
+      "unit": "share",
+      "better_when": "higher",
+      "source": "trial.metrics_server.peak_openness (bloom)",
+      "games": ["bloom"],
+      "level": "trial",
+      "description": "The widest the hand opened for a flower, 0 (fist) to 1 (fully open)."
+    },
+    {
+      "id": "G1",
+      "name": "Overall game success rate",
+      "unit": "share",
+      "better_when": "higher",
+      "source": "trial.outcome",
+      "level": "session",
+      "description": "Successful trials over all trials of every game, leaving out trials the patient stopped."
+    },
+    {
+      "id": "G2",
+      "name": "Active minutes",
+      "unit": "min",
+      "better_when": "higher",
+      "source": "warm-up active time plus each finished game run's time",
+      "level": "session",
+      "description": "Time spent on warm-up exercises and games, in minutes."
+    },
+    {
+      "id": "G3",
+      "name": "Warm-up repetitions",
+      "unit": "count",
+      "better_when": "higher",
+      "source": "warmupresult.full_reps",
+      "level": "session",
+      "description": "Warm-up repetitions done in full, over all exercises."
+    },
+    {
+      "id": "G4",
+      "name": "Warm-up goals reached",
+      "unit": "count",
+      "better_when": "higher",
+      "source": "warmupresult (goal reached)",
+      "level": "session",
+      "description": "Warm-up exercises whose goal was reached."
+    },
+    {
+      "id": "P1",
+      "name": "Pain",
+      "unit": "score_0_10",
+      "better_when": "lower",
+      "source": "sessionfeedback.pain_0_10",
+      "level": "session",
+      "description": "Self-reported pain after the session, 0 (none) to 10."
+    },
+    {
+      "id": "P2",
+      "name": "Fatigue",
+      "unit": "score_0_10",
+      "better_when": "lower",
+      "source": "sessionfeedback.fatigue_0_10",
+      "level": "session",
+      "description": "Self-reported tiredness after the session, 0 (none) to 10."
+    },
+    {
+      "id": "P3",
+      "name": "Enjoyment",
+      "unit": "score_1_5",
+      "better_when": "higher",
+      "source": "sessionfeedback.enjoyment_1_5",
+      "level": "session",
+      "description": "Self-reported enjoyment of the session, 1 to 5."
+    }
+  ]
+}

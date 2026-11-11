@@ -537,10 +537,27 @@ export interface LastSessionGame {
   success_rate: number | null;
 }
 
+/** How usable a trial's RAW data was, from the server's recomputation. */
+export interface TrialDataQuality {
+  engine_version: number;
+  n_points: number;
+  sampling_hz: number | null;
+  gaps_over_200ms: number;
+  max_gap_ms: number | null;
+  /** "trajectory": recomputed from the RAW points; "client": the browser's figures, checked. */
+  source: "trajectory" | "client";
+  client_metrics_valid?: boolean;
+  /** Measures where the server's value differs from the browser's by more than 10%. */
+  mismatches: Record<string, { client: number; server: number }>;
+}
+
 export interface TrialRead extends TrialCreate {
   id: number;
   game_run_id: number;
   created_at: string;
+  /** The server's own measures; null until the run ends or an admin recomputes. */
+  metrics_server?: Record<string, number | string | null> | null;
+  data_quality?: TrialDataQuality | null;
 }
 
 export interface GameRunDetail extends GameRun {

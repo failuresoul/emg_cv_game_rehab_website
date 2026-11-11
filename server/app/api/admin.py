@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.deps import SessionDep, TzOffset, require_admin
 from app.models import PatientProfile, User
 from app.models import Session as SessionRecord
+from app.schemas.game import MetricsRecomputeRead
 from app.schemas.game_setting import AdminGameRead, GameSettingUpdate
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
 from app.schemas.session import (
@@ -23,6 +24,7 @@ from app.services import (
     progress,
     session_feedback,
     sessions,
+    trial_metrics,
     warmup,
 )
 
@@ -191,3 +193,21 @@ def reset_game_setting(game_id: str, session: SessionDep) -> AdminGameRead:
         return game_settings.reset(session, game_id)
     except game_settings.UnknownGameError:
         raise _unknown_game() from None
+
+
+@router.post("/metrics/recompute")
+def recompute_metrics(session: SessionDep, session_id: int | None = None) -> MetricsRecomputeRead:
+    """Recomputes the server's measures of every trial of one session, or of every session when
+    `session_id` is left out. Safe to run again: the results are replaced."""
+    try:
+        result = trial_metrics.recompute(session, session_id)
+    except trial_metrics.SessionNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+        ) from None
+    return MetricsRecomputeRead(
+        sessions=result.sessions,
+        runs=result.runs,
+        trials=result.trials,
+        mismatched_trials=result.mismatched_trials,
+    )

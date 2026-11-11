@@ -8,6 +8,7 @@ services:
     environment:
       DATABASE_URL: sqlite:////data/motionlab.db
       GAME_SPECS_PATH: /shared/game-specs.json
+      METRICS_CATALOG_PATH: /shared/metrics-catalog.json
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
       - ./server/app:/app/app
