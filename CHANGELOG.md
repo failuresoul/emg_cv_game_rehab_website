@@ -4,6 +4,60 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 12)
+
+- **Adaptive difficulty engine** (`server/app/engine/`, [docs/ai-engine.md](docs/ai-engine.md)):
+  - every adaptable game setting belongs to a difficulty component (spatial, activation, speed, precision), mapped from one d (0–1) per component within the spec bounds;
+  - **L0** keeps the admin's defaults; **L1** is a transformed up-down staircase (Levitt 1971): two successes make one component harder, a failure eases the component it points at;
+  - a warm restart eases every d by 0.05 once per session and game;
+  - **L2** is selectable and behaves like L1 until Day 13.
+- **Safety layer**, applied after every decision in a fixed order:
+  - hard bounds and the patient's maximum difficulty;
+  - compensation blocks harder reaches (posture cue);
+  - 3 failures in a row ease everything (encouragement);
+  - signs of tiring ease everything (rest);
+  - session time gives "finish soon" after 25 minutes and "finish" after 35 (`SESSION_FINISH_SOON_MIN`, `SESSION_FINISH_MIN`).
+- **Decision log** (`AdaptationLog`): one row per engine call with the states before and after, the settings, the reason in plain words, any safety override and the cue. Per-patient state is kept in `EngineState`.
+- **API:**
+  - `POST /api/engine/next` and `GET /api/admin/patients/{id}/levels`;
+  - each run's `adaptation` in the admin session detail;
+  - `level_start` and `level_end` per game in the session summary and the session facts.
+
+  See [the API contract](docs/api-contract.md#adaptive-difficulty).
+- **Every game uses the engine** through a remote provider: it never waits more than 300 ms, keeps the previous settings without an answer, and keeps a patient's own warm-up values. Each trial reports its failure type.
+- **Patients see:** the level in the game's top bar, gentle level-up and level-down messages, cues (posture, encouragement, finish soon) and a rest overlay, and "Level reached: 6 (started at 5)" on the results screen and the session summary. The word "AI" never appears to patients.
+- **Admins see:**
+  - an Adaptation panel per game run: each component's difficulty and the level per trial, success and failure markers, safety overrides as coloured flags, and a decisions table;
+  - an "AI levels" card on the patient page.
+- **Demo data** replays every demo trial through the engine: Rahim's levels climb over his later sessions, and Salma's sessions show compensation and tiring overrides.
+- **Project identity:** the public name is **MuVi Rehab** (Muscle + Vision Rehabilitation).
+  - The name, research title, institutions (KUET, with The University of Queensland), supervisors and team all live in `web/src/config/project.ts`.
+  - There is a new logo mark (pulse line and lens), with a generated favicon, tab title and meta description.
+  - The admin System page shows the name, version, institution and collaborator.
+- **Landing page** (`/`), rebuilt as a research-grade page:
+  - sticky navbar with a mobile menu;
+  - a hero with an animated forearm EMG preview (still under reduced motion);
+  - stats, how it works, the nine games with original illustrations, research aims, the team with photos, the collaboration, privacy and safety, and a call to action;
+  - responsive from 360 px; no version number.
+- **About page** (`/about`): background, system overview, team, collaboration, privacy and data handling, "Research prototype — not a medical device".
+- **Credit line** in the admin and patient footers and on the login page; the login page also shows the tagline and both logos.
+- **Images** fall back gracefully: initials for a missing photo, the name for a missing logo.
+- **Tests** fail when "MotionLab" is visible anywhere, or when a name, institution or image path is written outside `project.ts`.
+
+### Changed (Day 12)
+
+- A game run's `engine` is now the patient's `engine_mode` (`L1` by default), whatever the web app sends.
+- Every user-visible "MotionLab" is now "MuVi Rehab": pages, translations, guides, the API title and `APP_NAME`, and the trials export (`muvi-rehab-trials.csv`). Internal identifiers keep the code name.
+- The smoke test adds a second session that checks the engine: the level rises and falls, a decision is logged at the start and after every trial, and a tiring run gets the "rest" cue.
+
+### Fixed (Day 12 review)
+
+- L0 patients' stored difficulty no longer drifts: no warm restart and no easing for fixed settings, so their level stays steady.
+- The same trial reported twice at once returns one answer instead of an error; the state and its log row are saved together.
+- The compensation rule never restores a spatial difficulty above a lowered maximum.
+- The browser ignores a late engine answer from an earlier run.
+- The light-orange "Collaboration" label on the collaboration card now meets AA contrast.
+
 ### Added (Day 11)
 
 - **Server metrics library** (`server/app/metrics/`, numpy and scipy): resampling exactly as the web app, a zero-phase Butterworth low-pass safe for short signals, speed, SPARC (reproducing the shared test vectors to about 1e-15), reach timings and path measures, speed peaks, distance to a path, time in a corridor, and robust summaries.

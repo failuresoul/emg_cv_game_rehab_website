@@ -1,0 +1,177 @@
+# The adaptive difficulty engine
+
+How MuVi Rehab sets each trial's difficulty, keeps it safe and explains every change. Written for the research paper: the numbers below are the ones in the code (`server/app/engine/`, `server/app/services/adaptation.py`), and each claim names the test that checks it.
+
+## Principles
+
+1. **Bounded.** The engine never sets a value outside the game's spec bounds or above the maximum difficulty a therapist sets for the patient.
+2. **Safety wins.** A safety layer runs after every engine decision and can block or reverse it. The engine never sees or overrides the safety rules.
+3. **Explained.** Every decision is logged with a reason in plain words, the state before and after, and any safety override.
+4. **Gentle for patients.** Patients see only a level from 1 to 10 and, sometimes, a short cue ("Let's take a short rest"). The word "AI" and the reasons are for therapists and researchers.
+
+## Difficulty components
+
+Each game's adaptable settings are grouped into up to four **components**. One number per component, **d ∈ [0, 1]** (0 easiest, 1 hardest), moves all the settings of that component together.
+
+| Component | What it makes harder |
+| --- | --- |
+| `spatial` | How far, how high or how wide the movement must go |
+| `activation` | How strong, long or complete a squeeze or hand opening must be |
+| `speed` | How little time there is |
+| `precision` | How small or exact the target is |
+
+The grouping is part of each game's spec (`web/src/games/*/params.ts`, exported to `shared/game-specs.json`). Settings marked `fixed` (for example rest times, the number of turns) are never adapted.
+
+| Game | spatial | activation | speed | precision |
+| --- | --- | --- | --- | --- |
+| Reach and squeeze | `distance_frac` | `activation_demand`, `activation_window_ms` | — | `target_radius_sw`, `dwell_ms` |
+| Balloon pop | `height_frac` | `activation_demand` | `hover_ms` | `balloon_radius_sw` |
+| Fruit catch | `spread_frac` | — | `fall_speed_sw_s`, `spawn_interval_ms` | `basket_width_sw` |
+| Bloom | — | `open_demand`, `open_hold_ms`, `close_demand` | `phase_time_limit_ms` | — |
+| Finger piano | — | — | `note_interval_ms`, `hit_window_ms` | `finger_count`, `sequence_length`, `touch_threshold` |
+| Path trace | `path_length_frac`, `ring_frac` | — | `guide_speed_sw_s` | `corridor_width_sw` |
+| Paint the wall | `required_range_frac` | `sweeps_needed` | `time_limit_ms` | — |
+| Pick and place | `pick_distance_frac`, `place_distance_frac`, `carry_angle_deg` | — | `time_limit_ms` | `object_radius_sw`, `box_size_sw` |
+| Grip and hold | — | `band_center`, `hold_ms` | `time_limit_ms` | `band_width` |
+
+## From d to a setting
+
+Each adaptable setting has spec bounds `min`, `max`, a `step` and a direction `harder` (`higher` or `lower`). Its **easy** end is the bound on the easier side, and its **hard** end the other:
+
+```
+value(d) = snap(easy + d · (hard − easy))
+```
+
+`snap` rounds to the setting's step from `min` and keeps the result within `[min, max]`. So for any d, every setting is inside its spec bounds (`test_engine.py::test_values_are_rounded_to_the_step_and_kept_in_bounds`).
+
+**Starting point.** A patient's first state is the d of each component that reproduces the admin's default settings: the mean of the inverse mapping `d = (value − easy) / (hard − easy)` over the component's settings. A component with several settings reproduces each default only approximately (for example Reach and squeeze's dwell time of 500 ms becomes 550 ms), so the very first trial of a run uses the admin's defaults exactly and the engine takes over from the second.
+
+**Level.** Patients see `level = 1 + floor(9 · mean(d) + 0.5)`, from 1 (all easiest) to 10 (all hardest).
+
+## Engines
+
+Every engine implements one interface (`server/app/engine/base.py`):
+
+| Method or field | Purpose |
+| --- | --- |
+| `name` | `L0`, `L1` or `L2`, stored with the state and every decision |
+| `adapts` | Whether the settings ever change |
+| `initial(context)` | The state that reproduces the admin's defaults, capped at the patient's maximum |
+| `update(state, trial, context)` | The state after a trial's outcome, with the reason |
+| `next_params(state, context)` | Every setting for the next trial, within the spec bounds and the maximum |
+
+The context holds the game spec, the admin's current settings for it and the patient's maximum difficulty for the game.
+
+### L0: fixed settings
+
+Always the admin's defaults; nothing adapts. The safety layer's cues (rest, finish) still reach the patient, but nothing is eased, and the level never moves (`test_engine_review.py::test_l0_patients_get_exactly_the_admin_defaults_and_a_steady_level`).
+
+### L1: transformed up-down staircase
+
+A staircase per component, after Levitt's transformed up-down method:
+
+> Levitt H (1971). Transformed up-down methods in psychoacoustics. *Journal of the Acoustical Society of America* 49(2B):467–477. https://doi.org/10.1121/1.1912375
+
+Levitt's 2-down-1-up rule (here, two successes make it harder, one failure makes it easier) converges on the level at which the probability of two successes in a row is 0.5, that is about **70.7% success**. L1 uses a larger step down than up:
+
+| Constant | Value |
+| --- | --- |
+| Successes in a row to step up | 2 |
+| Step up | 0.06 (one component) |
+| Step down | 0.08 (the component the failure points at) |
+
+With unequal steps the equilibrium moves (the weighted up-down idea of Kaernbach, *Perception & Psychophysics* 49:227–229, 1991). In simulation, a patient of fixed ability settles at about **75% success**, inside the 60–80% band commonly aimed for in motor practice. The larger step down also means one failure eases things quickly (`test_engine.py::test_a_simulated_patient_settles_between_60_and_80_percent`).
+
+**Which component moves.**
+
+- **After two successes:** the component with the most room left below the patient's maximum. Components with equal room take turns.
+- **After a failure:** the one it points at, routed by the trial's failure type:
+
+  | Failure type | Eases, in order of preference |
+  | --- | --- |
+  | `reach_fail` (did not get there) | spatial, then precision |
+  | `activation_fail` (could not squeeze, open or hold enough) | activation |
+  | `miss` (too slow or off target) | speed, then spatial |
+  | other, or none of those left to ease | every component by half a step (0.04) |
+
+- **A stopped (aborted) trial** changes nothing.
+
+The browser works out each trial's failure type from the game's own outcome (`web/src/ai/trialSummary.ts`); the server has the same mapping for replayed data (`server/app/engine/trial_summary.py`).
+
+**Warm restart.** The first time a game is played in a new session, every d is eased by 0.05 (not below 0), so a day never starts at the very edge of what the patient managed last time. It happens once per session per game: a second run of the same game in the same session carries on where the first ended (`test_engine_review.py::test_the_warm_restart_happens_once_per_session_and_game`).
+
+### L2: how it plugs in (Day 13)
+
+L2 is selected today but behaves like L1, with its own name and stored state. A model-based L2 only has to implement the interface above:
+
+- **`initial`:** the same starting point.
+- **`update`:** a model update from the trial, for example a per-component estimate of the patient's ability and its uncertainty.
+- **`next_params`:** chooses d from that model, for example the d with a predicted success near the target rate.
+
+The state is a JSON object, so the model's own fields can be stored beside `d`. Nothing else changes:
+
+- the safety layer still runs after it;
+- every decision is still logged in the same form;
+- the mapping still keeps every setting within bounds;
+- an L2 patient's levels and decision log appear on the same admin pages.
+
+## The safety layer
+
+`server/app/engine/safety.py::apply_safety` runs after every engine decision, with the state before and the engine's proposal. The rules apply in this order (`test_safety.py::test_rules_apply_in_order_and_the_most_important_cue_wins`):
+
+| # | Rule | Condition | Effect | Cue |
+| --- | --- | --- | --- | --- |
+| 1 | Hard bounds | Any d outside [0, max] | Clipped to [0, the patient's maximum] | — |
+| 2 | Compensation | 2 of the last 3 trials compensated (trunk lean, shoulder hike) | No spatial component may get harder; spatial stays where it was | `posture` |
+| 3 | Repeated failure | 3 failures in a row | Every component 0.15 easier | `encourage` |
+| 4 | Tiring | Comparing the last 5 trials of the run with its first 5 (needs 10): any of the three signs below | Every component 0.1 easier; at most once every 5 trials | `rest` |
+| 5 | Session time | Active play over 25 minutes; over 35 | Nothing eased | `finish_soon`; `finish` |
+
+The three signs of tiring are:
+- the success rate falls by 0.4 or more;
+- the median movement (or completion) time rises by more than 30%;
+- the median activation peak falls by more than 20%.
+
+The time limits come from the server's environment (`SESSION_FINISH_SOON_MIN`, `SESSION_FINISH_MIN`), so they can be lowered for testing.
+
+Every rule that changes or blocks something writes a reason to `safety_override`. When several rules give a cue, the most important is sent, in this order: `finish`, `rest`, `finish_soon`, `encourage`, `posture`.
+
+Rules 2–4 only ever ease or hold, never make harder, so after rule 1 every d stays within the bounds. A random-play test drives every game for 120 trials at maximum difficulties 1, 0.6, 0.25 and 0. It checks every d and every setting after each trial (`test_engine_review.py::test_random_play_never_leaves_the_spec_bounds_or_the_maximum`).
+
+## The decision log
+
+Every call to the engine writes exactly one `AdaptationLog` row (`test_engine_review.py::test_every_engine_call_writes_exactly_one_log_row`):
+
+| Field | Meaning |
+| --- | --- |
+| `game_run_id`, `trial_no` | The run, and the trial the decision came after (0 for the start); unique together |
+| `engine` | `L0`, `L1` or `L2` |
+| `state_before`, `state_after` | `{d, streak, turn}` before the trial and after the engine and the safety layer |
+| `params` | The settings sent for the next trial |
+| `decision` | The engine's reason with its numbers, for example "Two successes in a row: spatial a little harder (0.52 → 0.58)." |
+| `safety_override` | What the safety layer changed or blocked, or empty |
+| `cue` | The cue sent, or empty |
+| `trial` | The trial summary the engine learned from |
+| `created_at` | When |
+
+**How the log is written:**
+- The state and the log row are saved in one transaction.
+- Reporting the same trial again returns the stored answer and writes nothing, even when two copies arrive at once (`test_the_same_trial_reported_twice_at_once_gives_one_answer`).
+- Admins see the log as a chart and a table on the session page, and each patient's current level per game on the patient page.
+
+## Runtime
+
+- **Endpoint:** `POST /api/engine/next` (see the [API contract](api-contract.md#adaptive-difficulty)).
+- **State:** the patient's state per game and engine is kept in `EngineState`, with the session it was last used in.
+- **Speed:** a call takes well under 100 ms on a laptop (`test_engine_api.py::test_fast_enough_for_every_trial`).
+- **The browser never waits for the server.**
+  - The next trial always starts from the settings already known.
+  - The answer is applied when it arrives.
+  - Without an answer within 300 ms, or on an error, the previous settings stay and a fallback is counted (`web/src/ai/remoteProvider.ts`).
+  - Answers from an earlier run, or older than one already applied, are ignored.
+
+## Limitations
+
+- **Approximate starting values:** the inverse mapping averages a component's settings, so multi-setting components reproduce the admin's defaults only approximately; the first trial of each run uses the defaults exactly.
+- **Tuning:** the tiring rule is sensitive on noisy data (it fires often on the synthetic demo data), and its thresholds are not yet tuned on real patients.
+- **No admin controls yet:** the maximum difficulty and the engine mode are stored per patient, but admins cannot change them in the app yet.

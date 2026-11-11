@@ -136,6 +136,27 @@ describe("RemoteProvider", () => {
     expect(remote.nextParams("reach_activate", [], 3).distance_frac).toBe(0.9);
   });
 
+  it("ignores a late answer from an earlier run and starts the next run fresh", async () => {
+    const { request, pending } = controlled();
+    const remote = provider(request);
+    void remote.start(1, "reach_activate");
+    pending[0].resolve(answer({ distance_frac: 0.5 }));
+    await Promise.resolve();
+    await Promise.resolve();
+    for (let n = 1; n <= 5; n++) remote.report("reach_activate", record("success", {}, {}, n));
+    // A second run before the first run's last answers arrive.
+    const second = remote.start(2, "reach_activate");
+    expect(pending[6].body).toEqual({ run_id: 2, last_trial: null });
+    pending[5].resolve(answer({ distance_frac: 0.95 }));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(remote.nextParams("reach_activate", [], 1).distance_frac).toBe(0.5);
+    pending[6].resolve(answer({ distance_frac: 0.6 }, { level: 3 }));
+    await second;
+    expect(remote.nextParams("reach_activate", [], 1).distance_frac).toBe(0.6);
+    expect(remote.level).toBe(3);
+  });
+
   it("does nothing before the run has started", () => {
     const { request, pending } = controlled();
     provider(request).report("reach_activate", record("success"));

@@ -6,6 +6,7 @@ from app.engine.difficulty import initial_state, params_for
 
 class FixedEngine:
     name = "L0"
+    adapts = False
 
     def initial(self, context: EngineContext) -> EngineData:
         return EngineData(d=initial_state(context.game, context.settings))

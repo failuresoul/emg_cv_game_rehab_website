@@ -41,6 +41,8 @@ def _round(d: float) -> float:
 
 
 class StaircaseEngine:
+    adapts = True
+
     def __init__(self, name: str = "L1") -> None:
         self.name = name
 

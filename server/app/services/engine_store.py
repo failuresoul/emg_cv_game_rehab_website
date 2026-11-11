@@ -83,7 +83,8 @@ def load(
         state = engine.initial(context)
     else:
         state = EngineData.from_json(row.state)
-        if session_id is not None and row.state.get(SESSION_KEY) != session_id:
+        new_session = session_id is not None and row.state.get(SESSION_KEY) != session_id
+        if new_session and engine.adapts:
             state = warm_restart(state)
     cap = context.max_difficulty
     state = EngineData(

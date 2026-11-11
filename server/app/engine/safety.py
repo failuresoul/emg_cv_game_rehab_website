@@ -145,7 +145,7 @@ def apply_safety(data: SafetyInput) -> SafetyResult:
                 f"Compensation in {COMPENSATION_LIMIT} of the last {COMPENSATION_WINDOW} trials: "
                 f"spatial kept at {before:.2f} instead of {d['spatial']:.2f}"
             )
-            d["spatial"] = before
+            d["spatial"] = min(cap, before)
 
     # 3. Repeated failure.
     last = data.history[-FAILURES_IN_A_ROW:]

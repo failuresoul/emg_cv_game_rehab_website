@@ -20,6 +20,14 @@ const text = html
   .replace(/&#x27;|&#39;/g, "'")
   .replace(/\s+/g, " ");
 
+/** Each heading level in document order; a level may rise by at most one at a time. */
+function headingJumps(markup: string): string[] {
+  const levels = [...markup.matchAll(/<h([1-6])[\s>]/g)].map((match) => Number(match[1]));
+  return levels.flatMap((level, index) =>
+    index > 0 && level > levels[index - 1]! + 1 ? [`h${levels[index - 1]} -> h${level}`] : [],
+  );
+}
+
 describe("landing page", () => {
   it("uses semantic landmarks with one main heading", () => {
     for (const tag of ["<header", "<nav", "<main", "<footer"]) expect(html).toContain(tag);
@@ -110,5 +118,11 @@ describe("landing page", () => {
 
   it("animates only the EMG trace, through a class that index.css limits to no-preference", () => {
     expect(html.match(/class="landing-emg-flow"/g)).toHaveLength(1);
+  });
+
+  it("never skips a heading level, and every image has alt text", () => {
+    expect(headingJumps(html)).toEqual([]);
+    expect([...html.matchAll(/<img(?![^>]*alt="[^"]+")[^>]*>/g)]).toEqual([]);
+    expect([...html.matchAll(/role="img"(?![^>]*aria-label="[^"]+")[^>]*>/g)]).toEqual([]);
   });
 });

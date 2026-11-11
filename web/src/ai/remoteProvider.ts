@@ -121,6 +121,7 @@ export class RemoteProvider implements ParamsProvider {
   /** The run has started: asks for its first settings (eased a little in a new session). */
   start(runId: number, gameId: GameId): Promise<void> {
     this.runId = runId;
+    this.newestApplied = -1;
     return this.send(gameId, null);
   }
 
@@ -147,7 +148,8 @@ export class RemoteProvider implements ParamsProvider {
         this.request({ run_id: runId, last_trial: last }, this.timeoutMs),
         this.timeoutMs,
       );
-      if (trialNo < this.newestApplied) return;
+      // An answer for an earlier run, or older than one already used, is ignored.
+      if (runId !== this.runId || trialNo < this.newestApplied) return;
       this.newestApplied = trialNo;
       this.apply(gameId, response);
     } catch (error) {

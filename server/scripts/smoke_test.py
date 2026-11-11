@@ -9,7 +9,10 @@ adds one test patient with one session (a calibration, six warm-up results and o
 run each of reach_activate, balloon_pop and fruit_catch with 20 trials, one run each of bloom,
 finger_piano, path_trace, paint_wall, pick_place and grip_hold with 4 trials whose targets have
 no place, and a cool-down questionnaire with pain 5) to the database. Its pain alert is marked
-reviewed, and the patient is deactivated at the end.
+reviewed. A second session then checks the adaptive engine (POST /api/engine/next): a
+reach_activate run of 20 trials (12 successes, then 8 failures) whose level rises and then falls,
+with a logged decision at the start and after every trial, and a run that tires (5 quick
+successes, then 5 slow failures) and gets the "rest" cue. The patient is deactivated at the end.
 
 It also turns Bloom off and changes a Grip and hold default in the game library, checks that the
 patient's game settings follow, and then puts both games' settings back as they were. After the
@@ -31,6 +34,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import httpx
 
 DEFAULT_BASE_URL = "http://localhost:8000"
+#: The adaptive engine's run: this many trials, the first ENGINE_SUCCESSES of them successes.
+ENGINE_TRIALS = 20
+ENGINE_SUCCESSES = 12
 DIRECTIONS_DEG = [0, 45, 90, 135, 180, 225, 270, 315]
 # Every warm-up exercise, with its unit, thresholds and target reps.
 WARMUP_EXERCISES: list[tuple[str, str, float, float, int]] = [
@@ -1181,6 +1187,93 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             "the export is not a download",
         )
 
+    # The adaptive engine, in a second session so the first stays exactly as checked above.
+    def engine_session() -> None:
+        body = expect(client.post("/api/sessions", headers=bearer("patient")), 201)
+        require(body["id"] != state["session_id"], "the first session was reused")
+        state["engine_session_id"] = body["id"]
+
+    def engine_run() -> int:
+        url = f"/api/sessions/{state['engine_session_id']}/games"
+        payload = {
+            "game_id": "reach_activate",
+            "engine": "L1",
+            "input_source": "keyboard",
+            "params_initial": PARAMS["reach_activate"],
+            "trials_planned": ENGINE_TRIALS,
+        }
+        run = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
+        require(run["engine"] == "L1", f"the run's engine is {run['engine']}, not L1")
+        return int(run["id"])
+
+    def engine_next(run_id: int, last: dict[str, Any] | None) -> dict[str, Any]:
+        payload = {"run_id": run_id, "last_trial": last}
+        body: dict[str, Any] = expect(
+            client.post("/api/engine/next", json=payload, headers=bearer("patient")), 200
+        )
+        require(1 <= body["level"] <= 10, f"level {body['level']} is outside 1-10")
+        return body
+
+    def end_engine_run(run_id: int) -> None:
+        end = {"status": "aborted", "score": 0}
+        expect(client.post(f"/api/games/{run_id}/end", json=end, headers=bearer("patient")), 200)
+
+    def engine_staircase() -> None:
+        """12 successes then 8 reach failures: the level rises, then falls."""
+        run_id = engine_run()
+        state["engine_run_id"] = run_id
+        levels = [engine_next(run_id, None)["level"]]
+        for n in range(1, ENGINE_TRIALS + 1):
+            success = n <= ENGINE_SUCCESSES
+            last = {
+                "trial_no": n,
+                "outcome": "success" if success else "reach_fail",
+                "movement_ms": 900,
+            }
+            levels.append(engine_next(run_id, last)["level"])
+        peak = max(levels[: ENGINE_SUCCESSES + 1])
+        require(peak > levels[0], f"the level did not rise: {levels}")
+        require(levels[-1] < peak, f"the level did not fall after the failures: {levels}")
+        state["engine_levels"] = levels
+        end_engine_run(run_id)
+
+    def engine_log_rows() -> None:
+        url = f"/api/admin/sessions/{state['engine_session_id']}"
+        body = expect(client.get(url, headers=bearer("admin")), 200)
+        run = next(run for run in body["games"] if run["id"] == state["engine_run_id"])
+        trial_nos = [row["trial_no"] for row in run["adaptation"]]
+        # One row at the start of the run (trial 0) and one after each of the 20 trials.
+        expected = list(range(ENGINE_TRIALS + 1))
+        require(trial_nos == expected, f"logged decisions for trials {trial_nos}")
+        require(
+            [row["level"] for row in run["adaptation"]] == state["engine_levels"],
+            "the logged levels differ from the answers",
+        )
+        require(all(row["decision"] for row in run["adaptation"]), "a decision has no reason")
+
+    def engine_fatigue_rest() -> None:
+        """5 quick successes, then 5 slow failures: the tenth answer asks for a rest."""
+        run_id = engine_run()
+        engine_next(run_id, None)
+        answer: dict[str, Any] = {}
+        for n in range(1, 11):
+            quick = n <= 5
+            last = {
+                "trial_no": n,
+                "outcome": "success" if quick else "reach_fail",
+                "movement_ms": 800 if quick else 1600,
+            }
+            answer = engine_next(run_id, last)
+        require(answer["cue"] == "rest", f"the cue after trial 10 is {answer['cue']}, not rest")
+        override = answer["safety_override"] or ""
+        require("Signs of tiring" in override, f"no tiring override: {override!r}")
+        end_engine_run(run_id)
+
+    def end_engine_session() -> None:
+        url = f"/api/sessions/{state['engine_session_id']}/end"
+        body = expect(client.post(url, json={"status": "completed"}, headers=bearer("patient")), 200)
+        require(body["status"] == "completed", "the second session is not completed")
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -1235,6 +1328,11 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Admin downloads all trials as CSV", export_all_trials),
         ("Admin sees the pain alert", admin_sees_alert),
         ("Admin marks the alert reviewed", admin_reviews_alert),
+        ("Patient starts a second session for the adaptive engine", engine_session),
+        ("Engine: 12 successes raise the level, 8 failures lower it", engine_staircase),
+        ("Engine: a decision is logged at the start and after each trial", engine_log_rows),
+        ("Engine: quick successes then slow failures ask for a rest", engine_fatigue_rest),
+        ("Patient ends the second session", end_engine_session),
         ("Admin deactivates the test patient", deactivate_patient),
     ]
 

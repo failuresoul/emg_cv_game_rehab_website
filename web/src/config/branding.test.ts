@@ -16,6 +16,11 @@ const sources = import.meta.glob<string>(["/src/**/*.tsx", "!/src/**/*.test.tsx"
   import: "default",
   eager: true,
 });
+const code = import.meta.glob<string>(["/src/**/*.{ts,tsx}", "!/src/**/*.test.{ts,tsx}"], {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
 const html = import.meta.glob<string>("/index.html", {
   query: "?raw",
   import: "default",
@@ -62,5 +67,35 @@ describe("no visible MotionLab", () => {
     expect(visibleIn('<h1 className="x">Welcome to MotionLab</h1>')).toBe(true);
     expect(visibleIn('<img alt="MotionLab logo" />')).toBe(true);
     expect(visibleIn('const KEY = "motionlab_token";')).toBe(false);
+  });
+});
+
+/** Names, institutions and image paths that belong only in src/config/project.ts. */
+const IDENTITY =
+  /MuVi|Muscle \+ Vision|KUET|Khulna|Queensland|Akhand|Awal|Shadik|Nafis|\/team\/|\/logos\//;
+
+/** The source without its comments, so a comment may still name things. */
+function withoutComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
+}
+
+describe("identity comes only from project.ts", () => {
+  it("is written nowhere else in the code", () => {
+    const found = Object.entries(code)
+      .filter(([path]) => path !== "/src/config/project.ts")
+      .flatMap(([path, source]) =>
+        withoutComments(source)
+          .split("\n")
+          .filter((line) => IDENTITY.test(line))
+          .map((line) => `${path}: ${line.trim()}`),
+      );
+    expect(found).toEqual([]);
+  });
+
+  it("would catch a hard-coded name but not one in a comment", () => {
+    expect(IDENTITY.test(withoutComments('const who = "Nafis Ahammad";'))).toBe(true);
+    expect(IDENTITY.test(withoutComments("/** The KUET logo. */\n// From Queensland."))).toBe(
+      false,
+    );
   });
 });

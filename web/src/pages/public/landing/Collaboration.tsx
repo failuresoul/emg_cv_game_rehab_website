@@ -29,7 +29,7 @@ export function CollaborationCard({ titleId = "collab-title" }: { titleId?: stri
         className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-[radial-gradient(circle,rgba(242,167,121,0.35),transparent_65%)]"
       />
       <div className="relative">
-        <p className="mb-2 text-[0.75rem] font-bold tracking-[0.12em] text-[#F7C29F] uppercase">
+        <p className="mb-2 text-[0.75rem] font-bold tracking-[0.12em] text-[#FFE3CF] uppercase">
           {t("landing.collab.kicker")}
         </p>
         <h2 id={titleId} className="text-[1.5rem] leading-tight font-extrabold sm:text-[1.7rem]">

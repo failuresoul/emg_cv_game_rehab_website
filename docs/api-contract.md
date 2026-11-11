@@ -74,6 +74,8 @@ This document lists every API route the server provides today, plus the routes r
 | POST   | `/api/admin/metrics/recompute`       | `admin`   | Recompute server trial and session measures |
 | GET    | `/api/admin/patients/{id}/export.csv` | `admin`  | One patient's session measures as CSV |
 | GET    | `/api/admin/export/trials.csv`       | `admin`   | Every trial as CSV, by patient code |
+| POST   | `/api/engine/next`                   | `patient` | The next trial's settings from the adaptive engine |
+| GET    | `/api/admin/patients/{id}/levels`    | `admin`   | A patient's engine mode and level per game |
 
 ## Errors
 
@@ -882,7 +884,7 @@ Response `200`: everything recorded in one session: the session fields as in `GE
 | `duration_seconds` | `null` without an `ended_at` |
 | `calibration` | The calibration object, or `null` |
 | `warmup_results` | Every warm-up result, as in `GET /api/sessions/{id}/warmup` |
-| `games` | Every game run in the order started, each with `trials`: every trial in `trial_no` order, with its trajectory, `id`, `game_run_id` and `created_at` |
+| `games` | Every game run in the order started, each with `trials`: every trial in `trial_no` order, with its trajectory, `id`, `game_run_id` and `created_at`; and `adaptation`: the engine's decisions (see [the decision log](#the-decision-log-in-the-admin-session-detail)) |
 | `feedback` | The cool-down questionnaire, as in `GET /api/sessions/{id}/questionnaire`, or `null` |
 | `flags`, `needs_review` | The safety flags the questionnaire raised, and whether any did |
 | `reviewed_at`, `review_note` | When an admin reviewed the alert and their note, or `null` |
@@ -1181,7 +1183,7 @@ Role: `patient`, own session only. Errors: `404` for a missing or another patien
 | `active_seconds` | Warm-up exercise time (skipped exercises left out) plus the time of each finished game |
 | `warmup` | The warm-up summary (`exercises_done`, `exercises_total`, `total_reps`, `goals_reached`, `mean_compensation_rate`), or `null` |
 | `previous_warmup` | The same for the most recent earlier session with a warm-up, plus its `session_id`, or `null` |
-| `games` | Finished runs in the order played: `run_id`, `game_id`, `status`, `score`, `trials_done`, `trials_planned`, `successes`, `success_rate`, `summary`, `main_measure`, `extra_measures`, and `previous` — the patient's last finished run of the same game in an earlier session (`session_id`, `score`, `success_rate`, `summary`), or `null` |
+| `games` | Finished runs in the order played: `run_id`, `game_id`, `status`, `score`, `trials_done`, `trials_planned`, `successes`, `success_rate`, `summary`, `main_measure`, `extra_measures`, `level_start` and `level_end` (the difficulty level, 1–10, the run started and ended at; `null` with fixed settings), and `previous` — the patient's last finished run of the same game in an earlier session (`session_id`, `score`, `success_rate`, `summary`), or `null` |
 | `reach` | This session's calibration, as in `latest_reach` above, or `null` |
 | `previous_reach` | The most recent calibration from an earlier session, or `null` |
 | `feedback` | The cool-down questionnaire, or `null` |
@@ -1204,6 +1206,83 @@ Role: `patient`, own session only. Errors: `404` for a missing or another patien
 | `grip_hold` | `holds_completed` (count of successes) | `best_steadiness` (share: the smallest standard deviation; smaller is steadier), `mean_relaxation_ms` (ms) |
 
 They read the run summary's `details`: `path_trace` sends `total_stars`, `mean_in_corridor_pct` and `best_sparc` (the trace closest to 0); `paint_wall` sends `mean_range_deg` and `best_range_deg`; `pick_place` sends `mean_transport_ms` (over the objects placed) and `total_drops`; `grip_hold` sends `mean_in_band_pct`, `best_hold_ms`, and over the holds completed `best_steadiness` and `mean_relaxation_ms`.
+
+## Adaptive difficulty
+
+From Day 12 each game's difficulty can adapt to the patient (see [docs/ai-engine.md](ai-engine.md)). A patient's `engine_mode` (`L0` fixed settings, `L1` staircase, `L2` model-based from Day 13, `L1` by default) is on the profile in `GET /api/auth/me` (`patient_profile.engine_mode`) and is copied to each new game run's `engine`, whatever the web app sends. A patient's maximum difficulty per game (`max_difficulty`, 0–1, 1 when unset) is stored on the profile; neither has an admin route yet.
+
+### POST /api/engine/next
+
+Role: `patient`, own active run only. The next trial's settings. The web app calls it once when a run starts (`last_trial: null`) and after every trial, and waits at most 300 ms: without an answer it keeps the previous settings.
+
+```json
+{
+  "run_id": 12,
+  "last_trial": {
+    "trial_no": 3,
+    "outcome": "reach_fail",
+    "failure_type": "reach_fail",
+    "compensated": false,
+    "movement_ms": 1240,
+    "completion_ms": null,
+    "activation_peak": 0.62
+  }
+}
+```
+
+`trial_no` is 1–500; `outcome` as in a trial; `failure_type` (`reach_fail`, `activation_fail`, `miss` or `null`) says which kind of difficulty a failure points at, the outcome when left out; `completion_ms` is for games without a movement time; `activation_peak` is 0–1. Unknown fields are refused.
+
+Response `200`:
+
+```json
+{
+  "params": { "distance_frac": 0.66, "target_radius_sw": 0.27, "dwell_ms": 500, "activation_demand": 0.5, "rest_ms": 1500 },
+  "level": 5,
+  "cue": null,
+  "decision": "A reach fail: spatial a little easier (0.52 -> 0.44).",
+  "safety_override": null,
+  "engine": "L1"
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `params` | Every setting of the next trial, within the game's spec bounds and the patient's maximum |
+| `level` | 1–10, from the mean difficulty; the only figure patients see |
+| `cue` | `posture`, `encourage`, `rest`, `finish_soon`, `finish` or `null`: the most important cue the safety rules gave |
+| `decision` | The engine's reason in plain words, with its numbers (admin and research only) |
+| `safety_override` | What the safety rules changed or blocked, `; `-separated, or `null` |
+| `engine` | `L0`, `L1` or `L2` |
+
+Every call writes one decision log row (the run and `trial_no`, 0 for the start). Reporting the same trial again returns the stored answer and writes nothing. For `L0` the settings are always the admin's defaults and the level never moves; the cues still come.
+
+Errors: `404` for a missing or another patient's run, `403` for an admin, `409` for a run that has ended, `422` for an invalid trial (for example `trial_no` 0 or an unknown outcome).
+
+### GET /api/admin/patients/{id}/levels
+
+Role: `admin`. The patient's engine mode and current difficulty in each game played with it.
+
+```json
+{
+  "engine_mode": "L1",
+  "games": [
+    {
+      "game_id": "reach_activate",
+      "engine": "L1",
+      "level": 6,
+      "d": { "spatial": 0.58, "activation": 0.5, "precision": 0.52 },
+      "trials_seen": 140,
+      "updated_at": "2026-11-11T10:20:00Z"
+    }
+  ]
+}
+```
+
+`games` lists the stored states of the current `engine_mode` only, by game id; `d` is each component's difficulty (0 easiest, 1 hardest). Errors: `404`.
+
+### The decision log in the admin session detail
+
+`GET /api/admin/sessions/{id}` gives each run an `adaptation` list, in `trial_no` order: `trial_no` (0 for the start), `engine`, `state_before`, `state_after` (`{d, streak, turn}`), `params`, `decision`, `safety_override`, `cue`, `trial` (the `last_trial` sent, or `null` at the start), `level` (after the decision) and `created_at`. Runs with fixed settings that never called the engine have an empty list.
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

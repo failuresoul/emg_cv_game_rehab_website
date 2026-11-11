@@ -67,6 +67,9 @@ class EngineData:
 class Engine(Protocol):
     #: "L0", "L1" or "L2": stored with the state and the decisions.
     name: str
+    #: False for L0: its settings never change, so its state (and the level shown) never moves:
+    #: no warm restart, and the safety rules give their cues without easing anything.
+    adapts: bool
 
     def initial(self, context: EngineContext) -> EngineData:
         """The state that reproduces the admin's defaults."""

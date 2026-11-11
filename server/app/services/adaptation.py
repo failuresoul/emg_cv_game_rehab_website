@@ -7,6 +7,7 @@ to 10 and, sometimes, a gentle cue.
 
 from datetime import datetime, timedelta
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
 from app.core.config import settings
@@ -63,6 +64,13 @@ def active_minutes(session: Session, run: GameRun, now: datetime | None = None) 
     return total.total_seconds() / 60
 
 
+def _existing(session: Session, run_id: int, trial_no: int) -> AdaptationLog | None:
+    statement = select(AdaptationLog).where(
+        AdaptationLog.game_run_id == run_id, AdaptationLog.trial_no == trial_no
+    )
+    return session.exec(statement).first()
+
+
 def _response(log: AdaptationLog) -> EngineNextResponse:
     return EngineNextResponse(
         params={key: float(value) for key, value in log.params.items()},
@@ -92,11 +100,7 @@ def next_step(
         raise RunEndedError
     assert run.id is not None
     trial_no = last_trial.trial_no if last_trial else 0
-    existing = session.exec(
-        select(AdaptationLog).where(
-            AdaptationLog.game_run_id == run.id, AdaptationLog.trial_no == trial_no
-        )
-    ).first()
+    existing = _existing(session, run.id, trial_no)
     if existing is not None:
         return _response(existing)
 
@@ -135,6 +139,10 @@ def next_step(
             finish_minutes=settings.SESSION_FINISH_MIN,
         )
     )
+    if not loaded.engine.adapts:
+        # Fixed settings: the cues still help the patient, but nothing is eased.
+        checked.state = before
+        checked.overrides = []
     params, _ = loaded.engine.next_params(checked.state, loaded.context)
     engine_store.save(
         session,
@@ -142,7 +150,7 @@ def next_step(
         checked.state,
         run.session_id,
         trials=1 if last_trial else 0,
-        commit=not replay,
+        commit=False,
     )
     log = AdaptationLog(
         game_run_id=run.id,
@@ -159,7 +167,15 @@ def next_step(
     session.add(log)
     if replay:
         session.flush()
-    else:
+        return _response(log)
+    try:
         session.commit()
-        session.refresh(log)
+    except IntegrityError:
+        # The same trial reported twice at once: the first answer stands.
+        session.rollback()
+        stored = _existing(session, run.id, trial_no)
+        if stored is None:
+            raise
+        return _response(stored)
+    session.refresh(log)
     return _response(log)
