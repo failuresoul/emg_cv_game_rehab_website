@@ -68,6 +68,12 @@ This document lists every API route the server provides today, plus the routes r
 | PUT    | `/api/admin/games/{game_id}`         | `admin`   | Save a game's setting           |
 | POST   | `/api/admin/games/{game_id}/reset`   | `admin`   | Put a game back to its own defaults |
 | GET    | `/api/games/settings`                | `patient` | The games to offer, with their defaults and trials |
+| GET    | `/api/patient/progress/metrics`      | `patient` | Own catalogue measures over the sessions |
+| GET    | `/api/admin/patients/{id}/metrics`   | `admin`   | Each measure against the baseline, with series |
+| GET    | `/api/sessions/{id}/facts`           | owner or `admin` | The session's facts for the feedback module |
+| POST   | `/api/admin/metrics/recompute`       | `admin`   | Recompute server trial and session measures |
+| GET    | `/api/admin/patients/{id}/export.csv` | `admin`  | One patient's session measures as CSV |
+| GET    | `/api/admin/export/trials.csv`       | `admin`   | Every trial as CSV, by patient code |
 
 ## Errors
 
@@ -944,6 +950,77 @@ Response `200`: the games patients may play (built and enabled), in the registry
 ```
 
 A saved default no longer inside its range (the game's settings changed since) is ignored. The plan lists only these games, and the games start every trial from these defaults; a patient's own value from the warm-up still comes first where a game has one.
+
+## Server metrics
+
+The server works out its own measures from the RAW data the browser saves (`server/app/metrics/`, numpy and scipy). Every reported measure is listed, with its unit and which way is better, in [the metrics catalogue](../shared/metrics-catalog.json) (ids such as `K6` movement time, `H3` grip steadiness, `P1` pain).
+
+### Trial measures: `metrics_server` and `data_quality`
+
+When a game run ends (`POST /api/games/{run_id}/end`), every trial of the run gets two more fields, returned in the admin session detail's trials:
+
+- **`metrics_server`** depends on the game.
+  - Spatial games (`reach_activate`, `balloon_pop`, `fruit_catch`, `path_trace`, `pick_place`) are recomputed from the RAW trajectory and timings: `reaction_ms` (filtered fingertip speed above 0.15 SW/s for 50 ms), `movement_ms`, `path_length_sw`, `straight_dist_sw`, `path_efficiency` (`transport_path_efficiency` for `pick_place`), `sparc`, `peak_speed_sw_s` and `speed_peaks`.
+  - Other games' client metrics are checked against the trial schema and copied.
+  - `null` until the run ends or an admin recomputes.
+- **`data_quality`**: `{engine_version, n_points, sampling_hz, gaps_over_200ms, max_gap_ms, source: "trajectory" | "client", mismatches}`. `mismatches` holds, for each measure where the server's value differs from the browser's by more than 10%, `{client, server}`. The browser's own `metrics` are never changed.
+
+### Session measures
+
+Each session gets one row per catalogue measure it has, with trial measures per game. They are computed when the questionnaire is sent, when the session ends, and by the admin recompute. The admin session detail (`GET /api/admin/sessions/{id}`) lists them as `session_metrics`: `[{metric_id, game_id, value, unit, n, details, computed_at}]`.
+
+- **Trial measures** are the median per game (quartiles in `details`), from the server's values first and the browser's only where the server did not compute a measure.
+- **Range measures** take the best value.
+- **Rates** cover every counted item.
+- **Missing parts:** a measure the session lacks (no games, a skipped exercise, no questionnaire) has no row.
+
+### Changes against the baseline
+
+- **Baseline:** the mean of the first two completed sessions with the measure.
+- **Change:** `change` is the latest value minus the baseline, in the measure's unit.
+- **change_mdc:** the change divided by the measure's minimal detectable change. It is signed so that **positive is always better**: a fall in movement time, or SPARC closer to 0, is positive.
+- **Status:** `improved` (change_mdc of 1 or more), `worse` (−1 or less), `no_detectable_change`, or `no_baseline` (fewer than three sessions with the measure).
+- **The MDC values are provisional placeholders** (`server/app/core/mdc.py`) until measured on Day 19.
+
+### GET /api/patient/progress/metrics
+
+Query `ids` (optional, comma-separated catalogue ids such as `K1,K6`; every measure if left out; an unknown id is `422`). Response `200`: the patient's own completed sessions, one series per measure (per game for trial measures):
+
+```json
+[{ "metric_id": "K6", "game_id": "reach_activate", "name": "Movement time", "unit": "ms", "better_when": "lower",
+   "points": [{ "session_id": 12, "date": "2026-11-10T10:00:00Z", "value": 1120.0 }] }]
+```
+
+### GET /api/admin/patients/{id}/metrics
+
+Response `200`:
+
+- **`metrics`:** a table with one row per measure (and game): `metric_id`, `game_id`, `name`, `unit`, `better_when`, `baseline`, `latest`, `change`, `change_mdc`, `status`, `mdc`, `provisional`, `n_sessions`.
+- **`series`:** the series behind the table.
+- **`mdc_provisional`:** true while the MDC values are placeholders.
+
+Errors: `404`.
+
+### GET /api/sessions/{id}/facts
+
+The session's facts for the LLM feedback module: codes and numbers only, never a name or an email. Only the patient who owns the session, or an admin, may read them; anyone else gets `404`. The schema, with an example, is in [session-facts.md](session-facts.md).
+
+### POST /api/admin/metrics/recompute
+
+Query `session_id` (optional: every session when left out). It recomputes every trial's `metrics_server` and `data_quality`, then the session measures. Running it again replaces the results.
+
+Response `200`: `{ "sessions", "runs", "trials", "mismatched_trials", "session_metrics" }` (counts). Errors: `404` for an unknown session.
+
+### CSV exports
+
+Both are admin only (`403` for a patient) and downloads (`Content-Disposition: attachment`). Patients appear only by `patient_code`: never a name or an email.
+
+- **`GET /api/admin/patients/{id}/export.csv`** (`P001-metrics.csv`): the patient's session measures, one row each (long format), oldest session first. Columns: `patient_code, session_id, session_started_at, session_status, metric_id, metric_name, game_id, value, unit, n, computed_at`. Errors: `404`.
+- **`GET /api/admin/export/trials.csv`** (`motionlab-trials.csv`): every trial of every patient, one row each. Columns:
+  - `patient_code, is_demo, session_id, session_started_at, run_id, game_id, engine, input_source, trial_no, outcome, compensated`;
+  - `params`, `target` and `timings`, each as JSON text;
+  - `n_points, sampling_hz, gaps_over_200ms`, and `mismatches` (the names of the measures that differ);
+  - one `server_<measure>` column for each server measure any trial has.
 
 ## Cool-down questionnaire and safety alerts
 

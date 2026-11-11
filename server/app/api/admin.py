@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.api.deps import SessionDep, TzOffset, require_admin
 from app.models import PatientProfile, User
@@ -19,6 +19,7 @@ from app.schemas.progress import PatientProgress
 from app.schemas.session_feedback import AdminAlert, AlertReview
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
 from app.services import (
+    exports,
     game_settings,
     games,
     patients,
@@ -227,3 +228,25 @@ def recompute_metrics(session: SessionDep, session_id: int | None = None) -> Met
         mismatched_trials=result.mismatched_trials,
         session_metrics=rows,
     )
+
+
+def _csv(content: str, filename: str) -> Response:
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/patients/{patient_id}/export.csv", response_class=Response)
+def export_patient_metrics(patient_id: int, session: SessionDep) -> Response:
+    """The patient's session measures, one row each (long format), by patient code only."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    content = exports.patient_metrics_csv(session, profile)
+    return _csv(content, f"{profile.patient_code}-metrics.csv")
+
+
+@router.get("/export/trials.csv", response_class=Response)
+def export_trials(session: SessionDep) -> Response:
+    """Every trial of every patient, one row each, by patient code only."""
+    return _csv(exports.trials_csv(session), "motionlab-trials.csv")

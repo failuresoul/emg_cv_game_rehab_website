@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useAdminSession } from "@/features/admin/hooks";
 import { GameRunCard } from "@/features/admin/session/GameRunCard";
 import { QuestionnaireCard } from "@/features/admin/session/QuestionnaireCard";
+import { SessionMetricsCard } from "@/features/admin/session/SessionMetricsCard";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { t } from "@/i18n";
@@ -125,6 +126,7 @@ export function AdminSessionDetailPage() {
           )}
         </Card>
         <QuestionnaireCard session={data} />
+        <SessionMetricsCard rows={data.session_metrics ?? []} />
         <Card className="lg:col-span-3">
           <h2 className="mb-2 text-xl font-bold">{t("history.warmupTitle")}</h2>
           {warmup.length > 0 ? (

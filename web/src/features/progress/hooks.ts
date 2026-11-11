@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { PATIENT_KEY } from "@/features/patient/usePatientData";
 import { api } from "@/lib/api";
-import type { PatientProgress, SessionReport } from "@/types/api";
+import type { MetricSeries, PatientProgress, SessionReport } from "@/types/api";
 
 import { tzOffsetMinutes } from "./progress";
 
@@ -25,5 +25,18 @@ export function useSessionReport(sessionId: number | null) {
     queryKey: [...PATIENT_KEY, "sessions", sessionId, "report"],
     queryFn: async () => (await api.get<SessionReport>(`/sessions/${sessionId}/summary`)).data,
     enabled: sessionId !== null,
+  });
+}
+
+/** The patient's own measures over their completed sessions, oldest first. */
+export function usePatientMetricSeries(ids: readonly string[]) {
+  return useQuery({
+    queryKey: [...PATIENT_KEY, "progress", "metrics", ids.join(",")],
+    queryFn: async () =>
+      (
+        await api.get<MetricSeries[]>("/patient/progress/metrics", {
+          params: { ids: ids.join(",") },
+        })
+      ).data,
   });
 }

@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.schemas.common import Side, UtcDatetime
 from app.schemas.game import GameId, GameRunDetail, LastSessionGame
+from app.schemas.metrics import SessionMetricRead
 from app.schemas.session_feedback import SafetyFlag, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultRead, WarmupSummary
 
@@ -180,6 +181,8 @@ class AdminSessionDetail(SessionRead):
     needs_review: bool = False
     reviewed_at: UtcDatetime | None = None
     review_note: str | None = None
+    #: The session's catalogue measures, by metric id then game; empty until computed.
+    session_metrics: list[SessionMetricRead] = Field(default_factory=list)
 
 
 class AdminRecentSession(BaseModel):

@@ -578,6 +578,8 @@ export interface AdminSessionDetail extends SessionRecord {
   needs_review: boolean;
   reviewed_at: string | null;
   review_note: string | null;
+  /** The session's catalogue measures, by metric id then game; empty until computed. */
+  session_metrics?: SessionMetricRow[];
 }
 
 export interface AdminRecentSession {
@@ -780,4 +782,64 @@ export interface PatientGameSetting {
   game_id: GameId;
   params: Record<string, number>;
   trials: number;
+}
+
+// Catalogue measures (shared/metrics-catalog.json)
+
+export type MetricBetterWhen = "higher" | "lower" | "closer_to_zero";
+export type MetricStatus = "improved" | "worse" | "no_detectable_change" | "no_baseline";
+
+/** One stored catalogue measure of a session. */
+export interface SessionMetricRow {
+  metric_id: string;
+  /** The game a trial measure comes from; null for session measures. */
+  game_id: GameId | null;
+  value: number;
+  unit: string;
+  /** How many items (trials, warm-up results, answers) the value comes from. */
+  n: number;
+  details: Record<string, unknown> | null;
+  computed_at: string;
+}
+
+export interface MetricPoint {
+  session_id: number;
+  date: string;
+  value: number;
+}
+
+/** One measure over the patient's completed sessions, oldest first; per game for trial measures. */
+export interface MetricSeries {
+  metric_id: string;
+  game_id: GameId | null;
+  name: string;
+  unit: string;
+  better_when: MetricBetterWhen;
+  points: MetricPoint[];
+}
+
+/** A measure's latest value against the patient's baseline (the first two sessions). */
+export interface MetricChange {
+  metric_id: string;
+  game_id: GameId | null;
+  name: string;
+  unit: string;
+  better_when: MetricBetterWhen;
+  baseline: number | null;
+  latest: number | null;
+  /** latest − baseline, in the measure's unit. */
+  change: number | null;
+  /** The change in MDC units, positive when better. */
+  change_mdc: number | null;
+  status: MetricStatus;
+  mdc: number | null;
+  /** True while the MDC is a placeholder. */
+  provisional: boolean;
+  n_sessions: number;
+}
+
+export interface PatientMetrics {
+  metrics: MetricChange[];
+  series: MetricSeries[];
+  mdc_provisional: boolean;
 }

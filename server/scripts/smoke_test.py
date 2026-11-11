@@ -12,7 +12,9 @@ no place, and a cool-down questionnaire with pain 5) to the database. Its pain a
 reviewed, and the patient is deactivated at the end.
 
 It also turns Bloom off and changes a Grip and hold default in the game library, checks that the
-patient's game settings follow, and then puts both games' settings back as they were.
+patient's game settings follow, and then puts both games' settings back as they were. After the
+session ends it checks the server's measures: the session metrics, the admin's metrics table,
+the session facts for the feedback module (no name or email), and both CSV exports.
 The exit code is 0 if every step passes and 1 otherwise.
 """
 
@@ -639,6 +641,7 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         }
         body = expect(client.post("/api/admin/patients", json=payload, headers=bearer("admin")), 201)
         state["patient_id"] = body["id"]
+        state["patient_code"] = body["patient_code"]
 
     def patient_login() -> None:
         form = {"username": email, "password": password}
@@ -1092,6 +1095,92 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             "the last hold's failed phase is not relax",
         )
 
+    def session_metrics_exist() -> None:
+        url = f"/api/admin/sessions/{state['session_id']}"
+        body = expect(client.get(url, headers=bearer("admin")), 200)
+        rows = {(row["metric_id"], row["game_id"]): row for row in body["session_metrics"]}
+        require(rows.get(("K1", None), {}).get("value") == 2.0, "the reach area metric is missing")
+        require(("G1", None) in rows, "the game success rate metric is missing")
+        require(rows.get(("P1", None), {}).get("value") == 5, "the pain metric is missing")
+        require(("H5", "pick_place") in rows, "Pick and place's transport time is missing")
+        require(("H3", "grip_hold") in rows, "Grip and hold's steadiness is missing")
+        moving = [run for run in body["games"] if run["game_id"] == "reach_activate"]
+        require(
+            all(trial["metrics_server"] is not None for run in moving for trial in run["trials"]),
+            "a reach trial has no server measures",
+        )
+
+    def admin_metrics_table() -> None:
+        url = f"/api/admin/patients/{state['patient_id']}/metrics"
+        body = expect(client.get(url, headers=bearer("admin")), 200)
+        require(body["mdc_provisional"] is True, "the MDC values are not marked provisional")
+        rows = {(row["metric_id"], row["game_id"]): row for row in body["metrics"]}
+        area = rows.get(("K1", None))
+        require(area is not None and area["latest"] == 2.0, "the table has no reach area")
+        # One completed session: nothing can be judged yet.
+        require(
+            all(row["status"] == "no_baseline" for row in body["metrics"]),
+            "a measure has a status without a baseline",
+        )
+
+    def session_facts() -> None:
+        url = f"/api/sessions/{state['session_id']}/facts"
+        response = client.get(url, headers=bearer("patient"))
+        facts = expect(response, 200)
+        require(facts["patient_code"] == state["patient_code"], "the facts have another code")
+        require("Smoke Test" not in response.text, "the facts contain the patient's name")
+        require(
+            email not in response.text and "@" not in response.text, "the facts contain an email"
+        )
+        require(facts["safety_notice_present"] is True, "pain 5 did not set the safety notice")
+        require(facts["self_report"]["pain_0_10"] == 5, "the facts have no self-report")
+        require(len(facts["metrics"]) <= 8, "the facts have more than eight measures")
+        require(facts["next_session"] is None, "the facts already have a next session")
+        expect(client.get(url, headers=bearer("admin")), 200)
+
+    def export_patient_metrics() -> None:
+        url = f"/api/admin/patients/{state['patient_id']}/export.csv"
+        response = client.get(url, headers=bearer("admin"))
+        expect_csv(response)
+        lines = response.text.splitlines()
+        require(lines[0].startswith("patient_code,session_id,"), "the metrics CSV header is wrong")
+        require(len(lines) > 10, f"the metrics CSV has only {len(lines) - 1} rows")
+        require(
+            all(line.startswith(state["patient_code"] + ",") for line in lines[1:]),
+            "a row has another code",
+        )
+        require(
+            "Smoke Test" not in response.text and email not in response.text,
+            "the CSV names the patient",
+        )
+
+    def export_all_trials() -> None:
+        response = client.get("/api/admin/export/trials.csv", headers=bearer("admin"))
+        expect_csv(response)
+        lines = response.text.splitlines()
+        require(
+            lines[0].startswith("patient_code,is_demo,session_id,"),
+            "the trials CSV header is wrong",
+        )
+        mine = [line for line in lines[1:] if line.startswith(state["patient_code"] + ",")]
+        # 20 trials for each reaching game and 4 for each other game.
+        require(len(mine) == 84, f"expected 84 trials of the test patient, got {len(mine)}")
+        require(
+            "Smoke Test" not in response.text and email not in response.text,
+            "the CSV names the patient",
+        )
+
+    def expect_csv(response: httpx.Response) -> None:
+        require(response.status_code == 200, f"expected 200, got {response.status_code}")
+        require(
+            response.headers.get("content-type", "").startswith("text/csv"),
+            f"the export is {response.headers.get('content-type')}, not CSV",
+        )
+        require(
+            "attachment" in response.headers.get("content-disposition", ""),
+            "the export is not a download",
+        )
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -1139,6 +1228,11 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Admin lists the patient's calibrations", admin_lists_calibrations),
         ("Admin reads the patient's warm-up history", admin_reads_warmup_history),
         ("Admin reads the full session detail", admin_reads_session_detail),
+        ("The session's metrics were computed when it ended", session_metrics_exist),
+        ("Admin reads the patient's metrics table", admin_metrics_table),
+        ("Patient reads the session facts, with no name or email", session_facts),
+        ("Admin downloads the patient's metrics CSV", export_patient_metrics),
+        ("Admin downloads all trials as CSV", export_all_trials),
         ("Admin sees the pain alert", admin_sees_alert),
         ("Admin marks the alert reviewed", admin_reviews_alert),
         ("Admin deactivates the test patient", deactivate_patient),

@@ -11,6 +11,7 @@ import { formatDate, formatDifference, formatNumber } from "@/lib/format";
 import type { AdminCalibration, Patient, PatientProgress } from "@/types/api";
 
 import { handProgress, movementQualityProgress } from "./handProgress";
+import { MetricsSection } from "./MetricsSection";
 import { useAdminPatientProgress, usePatientCalibrations } from "./hooks";
 import { PatientWarmupSection } from "./PatientWarmupSection";
 
@@ -68,6 +69,7 @@ function RadiiTable({
 export function PatientProgressTab({ patient }: { patient: Patient }) {
   return (
     <div className="flex flex-col gap-10">
+      <MetricsSection patientId={patient.id} />
       <CalibrationProgress patient={patient} />
       <section>
         <h2 className="mb-4 text-xl font-bold">{t("adminWarmup.title")}</h2>

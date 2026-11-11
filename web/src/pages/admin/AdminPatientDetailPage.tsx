@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { usePatient, useSetPatientActive } from "@/features/admin/hooks";
 import { DemoBadge } from "@/features/admin/DemoBadge";
 import { EditPatientModal } from "@/features/admin/PatientModals";
+import { ExportButton } from "@/features/admin/ExportButton";
 import { PatientPracticeSummary } from "@/features/admin/PatientPracticeSummary";
 import { PatientProgressTab } from "@/features/admin/PatientProgressTab";
 import { PatientSessionsTab } from "@/features/admin/PatientSessionsTab";
@@ -198,6 +199,11 @@ export function AdminPatientDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             {patient.data.is_demo && <DemoBadge />}
             <PatientStatusBadge isActive={patient.data.user.is_active} />
+            <ExportButton
+              path={`/admin/patients/${patient.data.id}/export.csv`}
+              filename={`${patient.data.patient_code}-metrics.csv`}
+              labelKey="adminMetrics.export"
+            />
           </div>
         }
       />

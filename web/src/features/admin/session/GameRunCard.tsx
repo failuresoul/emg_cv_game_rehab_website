@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { mainMeasure, movementSeries, percent } from "@/features/games/results";
+import { RUN_QUALITY_STYLE, runQuality } from "@/features/metrics/metricDisplay";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { GAMES } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
@@ -107,6 +108,7 @@ export function GameRunCard({
   const measure = mainMeasure(run.game_id, run.summary);
   const trials = [...run.trials].sort((a, b) => a.trial_no - b.trial_no);
   const columns = columnsFor(run.game_id);
+  const quality = runQuality(run.trials);
 
   return (
     <Card className="flex flex-col gap-4 lg:col-span-3">
@@ -115,6 +117,9 @@ export function GameRunCard({
         <SessionStatusBadge status={run.status} />
         <Badge>{t("adminSession.engine", { engine: run.engine })}</Badge>
         <Badge>{t(SOURCE_KEYS[run.input_source])}</Badge>
+        <Badge variant={RUN_QUALITY_STYLE[quality].tone}>
+          {t("dataQuality.label", { status: t(RUN_QUALITY_STYLE[quality].labelKey) })}
+        </Badge>
       </div>
       <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Figure

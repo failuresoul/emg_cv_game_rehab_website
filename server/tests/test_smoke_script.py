@@ -21,7 +21,7 @@ def test_smoke_passes_every_step(
     assert run_smoke(client, "admin@motionlab.local", "test-password") is True
 
     output = capsys.readouterr().out
-    assert output.count("PASS") == 45
+    assert output.count("PASS") == 50
     assert "FAIL" not in output
     assert "PASS  Patient plays a bloom run with non-spatial targets" in output
     assert "PASS  Patient plays a finger_piano run with non-spatial targets" in output
@@ -31,6 +31,8 @@ def test_smoke_passes_every_step(
     assert "PASS  Patient plays a grip_hold run with non-spatial targets" in output
     assert "PASS  Patient's game settings follow the admin's" in output
     assert "PASS  Admin puts both games' settings back" in output
+    assert "PASS  Patient reads the session facts, with no name or email" in output
+    assert "PASS  Admin downloads all trials as CSV" in output
     assert len(session.exec(select(Calibration)).all()) == 1
     assert len(session.exec(select(WarmupResult)).all()) == 6
     assert len(session.exec(select(GameRun)).all()) == 9

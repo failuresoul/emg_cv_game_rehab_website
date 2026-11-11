@@ -4,6 +4,23 @@ All notable changes to MotionLab. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Added (Day 11)
+
+- **Server metrics library** (`server/app/metrics/`, numpy and scipy): resampling exactly as the web app, a zero-phase Butterworth low-pass safe for short signals, speed, SPARC (reproducing the shared test vectors to about 1e-15), reach timings and path measures, speed peaks, distance to a path, time in a corridor, and robust summaries.
+- **Metrics catalogue** (`shared/metrics-catalog.json`): every reported measure (K, R, H, G and P ids) with its unit, which way is better, source and description.
+- **Server trial measures:** spatial games' reaction and movement time, path efficiency, smoothness, peak speed and speed peaks recomputed from the RAW trajectory when a run ends; other games' figures checked and copied; data quality per trial (points, sampling rate, gaps over 200 ms, measures more than 10% from the browser's).
+- **Session measures** (`SessionMetric`): one clean row per measure (per game for trial measures) when the questionnaire is sent and the session ends; `scripts/backfill_metrics.py` for older sessions; demo data includes them.
+- **Changes against the baseline:** the mean of the first two sessions; changes in provisional minimal-detectable-change units, positive when better; improved, worse, no detectable change or no baseline.
+- **Session facts** for the LLM feedback module (`GET /api/sessions/{id}/facts`, [docs/session-facts.md](docs/session-facts.md)): codes and numbers only, never a name or an email.
+- **Dashboards:** the admin Progress tab starts with a Metrics table (baseline, latest, change, status) and a chart of any measure with its baseline dashed, with a note that the MDC values are provisional; the admin session page lists the session's metrics and a data-quality badge per game; the patient's progress page shows reach area, time to reach a target, smoothness, turns done well and hand opening in plain words, with which way is better.
+- **CSV exports** for research: one patient's session measures (on the patient page) and every trial (on /admin/research, "Export all trials (CSV)"), by patient code only.
+- **API:** see [the API contract](docs/api-contract.md#server-metrics).
+
+### Changed (Day 11)
+
+- The patient progress page's trend charts now come from the server's session measures.
+- The smoke test checks the session metrics, the admin metrics table, the facts and both exports.
+
 ### Added (Day 10)
 
 - **Pinch input:** whether the thumb and index finger of the affected hand pinch, how strongly (0–1), and where (midway between the two tips, RAW and smoothed, in SW). A pinch starts below 0.25 palm lengths (or the patient's own distance from the thumb opposition warm-up) and ends only 0.1 farther, so jitter never makes a second pinch. Hold P to pinch at the fingertip cursor for testing. `useHandInput()`, the game context and the Exercise Lab have it; EMG mode keeps the camera for the pinch.

@@ -1,12 +1,26 @@
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.common import Language, Side, UtcDatetime
 
 BetterWhen = Literal["higher", "lower", "closer_to_zero"]
 #: How the latest value compares with the baseline, judged against the measure's MDC.
 MetricStatus = Literal["improved", "worse", "no_detectable_change", "no_baseline"]
+
+
+class SessionMetricRead(BaseModel):
+    """One stored catalogue measure of a session (SessionMetric)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    metric_id: str
+    game_id: str | None
+    value: float
+    unit: str
+    n: int
+    details: dict[str, Any] | None = None
+    computed_at: UtcDatetime
 
 
 class MetricPoint(BaseModel):

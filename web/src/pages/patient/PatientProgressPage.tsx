@@ -7,7 +7,7 @@ import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
 import { usePatientProgress } from "@/features/progress/hooks";
-import { TrendCharts } from "@/features/progress/ProgressCards";
+import { MetricCharts } from "@/features/progress/MetricCharts";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { t } from "@/i18n";
 import { formatDate, formatNumber } from "@/lib/format";
@@ -87,7 +87,7 @@ export function PatientProgressPage() {
           </Card>
         ) : (
           <div className="flex flex-col gap-4">
-            <TrendCharts series={progress.data.series} size="lg" className="grid gap-4" />
+            <MetricCharts />
             <Card>
               <h2 className="mb-3 text-xl font-bold">{t("progress.reach.title")}</h2>
               <ReachHistory

@@ -3,6 +3,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -33,6 +34,8 @@ interface ProgressChartProps {
   /** Fixed y-axis range, such as [0, 100] for percentages. */
   yDomain?: [number, number];
   allowDecimals?: boolean;
+  /** A dashed horizontal line, such as the patient's baseline, with its label. */
+  reference?: { value: number; label: string };
 }
 
 export function ProgressChart({
@@ -43,6 +46,7 @@ export function ProgressChart({
   formatValue,
   yDomain,
   allowDecimals = true,
+  reference,
 }: ProgressChartProps) {
   if (points.length === 0) {
     return <EmptyState icon={TrendingUp} title={emptyTitle} />;
@@ -75,6 +79,21 @@ export function ProgressChart({
               formatValue && typeof value === "number" ? formatValue(value) : String(value)
             }
           />
+          {reference && (
+            <ReferenceLine
+              y={reference.value}
+              stroke="var(--color-ink)"
+              strokeDasharray="6 4"
+              strokeWidth={2}
+              ifOverflow="extendDomain"
+              label={{
+                value: reference.label,
+                position: "insideTopLeft",
+                fill: "var(--color-ink)",
+                fontSize: 16,
+              }}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="value"

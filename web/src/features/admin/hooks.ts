@@ -16,6 +16,7 @@ import type {
   GameSettingUpdate,
   Patient,
   PatientCreate,
+  PatientMetrics,
   PatientProgress,
   PatientUpdate,
   SessionSummary,
@@ -196,5 +197,13 @@ export function useResetGameSetting() {
     mutationFn: async (gameId: GameId) =>
       (await api.post<AdminGameSetting>(`/admin/games/${gameId}/reset`)).data,
     onSuccess: invalidate,
+  });
+}
+
+/** Each catalogue measure's change against the patient's baseline, with every series. */
+export function useAdminPatientMetrics(id: number) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "patient", id, "metrics"],
+    queryFn: async () => (await api.get<PatientMetrics>(`/admin/patients/${id}/metrics`)).data,
   });
 }

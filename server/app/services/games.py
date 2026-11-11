@@ -17,6 +17,7 @@ from app.schemas.game import (
     TrialCreate,
     TrialRead,
 )
+from app.schemas.metrics import SessionMetricRead
 from app.schemas.session import (
     AdminRecentSession,
     AdminSessionDetail,
@@ -24,7 +25,7 @@ from app.schemas.session import (
     SessionRead,
 )
 from app.schemas.warmup import WarmupResultRead
-from app.services import session_feedback, trial_metrics, warmup
+from app.services import session_feedback, session_metrics, trial_metrics, warmup
 from app.services.game_summary import finished_games_for_sessions
 from app.services.sessions import SessionEndedError, abort_active_runs, duration_seconds
 
@@ -206,4 +207,8 @@ def get_admin_session_detail(session: Session, record: SessionRecord) -> AdminSe
         needs_review=record.needs_review,
         reviewed_at=record.reviewed_at,
         review_note=record.review_note,
+        session_metrics=[
+            SessionMetricRead.model_validate(row)
+            for row in session_metrics.list_session_metrics(session, record.id)
+        ],
     )
