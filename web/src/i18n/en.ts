@@ -517,6 +517,7 @@ export const en = {
   "input.source.cvGrip": "Closing your hand (camera)",
   "input.source.cvOpenness": "Opening your hand (camera)",
   "input.source.cvTouch": "Thumb to finger (camera)",
+  "input.source.cvPinch": "Pinching thumb and index finger (camera)",
   "input.source.keyboard": "Keyboard",
   "input.source.emg": "Muscle sensor",
   "input.keyboardBadge": "Keyboard input",

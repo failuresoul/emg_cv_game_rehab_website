@@ -34,6 +34,22 @@ export {
 export { CvFingerTouchSource, KeyboardFingerTouchSource } from "./fingerTouchSource";
 export { type ActivationSnapshot, InputManager, type LevelSnapshot } from "./inputManager";
 export { KeyboardSource } from "./keyboardSource";
+export {
+  DEFAULT_PINCH_THRESHOLD,
+  IDLE_PINCH,
+  PINCH_HYSTERESIS,
+  PINCH_STRENGTH_SPAN,
+  type PinchEvent,
+  PinchDetector,
+  type PinchListener,
+  type PinchSource,
+  type PinchSourceId,
+  type PinchState,
+  type PinchStateListener,
+  pinchStrength,
+  pinchThresholdFromWarmup,
+} from "./pinch";
+export { CvPinchSource, KeyboardPinchSource, PINCH_KEY_CODE, PinchManager } from "./pinchSource";
 export { apertureToOpenness, CvOpennessSource, OPENNESS_KEY_CODE } from "./opennessSource";
 export { TouchManager } from "./touchManager";
 export {

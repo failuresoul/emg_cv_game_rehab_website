@@ -60,10 +60,21 @@ type ThumbWarmupResult = Pick<ExerciseResult, "exerciseId" | "skipped" | "thresh
 export function touchThresholdFromWarmup(
   results: readonly ThumbWarmupResult[],
 ): TouchThresholdChoice {
+  return thumbThresholdFromWarmup(results, DEFAULT_TOUCH_THRESHOLD);
+}
+
+/**
+ * The low threshold of the latest thumb opposition warm-up, kept within the usable touch
+ * distances, or `fallback` without a usable result. Shared by finger touches and the pinch.
+ */
+export function thumbThresholdFromWarmup(
+  results: readonly ThumbWarmupResult[],
+  fallback: number,
+): TouchThresholdChoice {
   const result = results.findLast((item) => item.exerciseId === "thumb_opposition");
   const low = result?.thresholds.low;
   if (!result || result.skipped || low === undefined || !Number.isFinite(low) || !(low > 0)) {
-    return { threshold: DEFAULT_TOUCH_THRESHOLD, origin: "default" };
+    return { threshold: fallback, origin: "default" };
   }
   return {
     threshold: Math.min(MAX_TOUCH_THRESHOLD, Math.max(MIN_TOUCH_THRESHOLD, low)),

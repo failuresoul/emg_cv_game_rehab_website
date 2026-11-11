@@ -20,8 +20,10 @@ import {
   ActivationMeter,
   ActivationSourceBadge,
   DEFAULT_GRIP_REFS,
+  DEFAULT_PINCH_THRESHOLD,
   DEFAULT_TOUCH_THRESHOLD,
   FINGERS,
+  PINCH_HYSTERESIS,
   TOUCH_HYSTERESIS,
   useHandInput,
 } from "@/input";
@@ -118,6 +120,9 @@ const AngleChart = memo(function AngleChart({
 
 const number = (value: number | null | undefined, digits = 1) =>
   value === null || value === undefined ? "–" : value.toFixed(digits);
+
+const point = (value: { x: number; y: number } | null) =>
+  value ? `(${value.x.toFixed(2)}, ${value.y.toFixed(2)})` : "–";
 
 function MeasureRow({
   name,
@@ -234,8 +239,20 @@ function HandInputCard({ side }: { side: Side }) {
     touch,
     isTouchReady,
     subscribeTouch,
+    pinch,
+    subscribePinch,
   } = useHandInput({ affectedSide: side });
   const [lastTouch, setLastTouch] = useState("–");
+  const [lastPinch, setLastPinch] = useState("–");
+  useEffect(
+    () =>
+      subscribePinch((event) =>
+        setLastPinch(
+          `${event.type} at ${(event.t / 1000).toFixed(2)}s, ${point(event.pointRawSw)}`,
+        ),
+      ),
+    [subscribePinch],
+  );
   useEffect(
     () =>
       subscribeTouch((event) =>
@@ -283,12 +300,36 @@ function HandInputCard({ side }: { side: Side }) {
             {isTouchReady() ? "" : " · not ready"}
           </p>
         </div>
+        <div className="flex items-center gap-3">
+          <ActivationMeter level={pinch.strength} ready={pinch.ready} />
+          <div className="flex flex-col gap-1">
+            <p className="text-muted">Pinch (thumb and index)</p>
+            <p
+              className={clsx(
+                "flex min-h-11 w-fit items-center rounded-xl border-2 px-3 font-bold",
+                pinch.pinching
+                  ? "border-accent bg-accent text-white"
+                  : "border-primary text-ink bg-surface",
+              )}
+            >
+              {pinch.pinching ? "Pinching" : "Not pinching"}
+              {pinch.ready ? "" : " · not ready"}
+            </p>
+            <p className="font-medium">Strength {number(pinch.strength, 2)}</p>
+            <p className="font-medium">
+              Point raw {point(pinch.pointRawSw)} · smooth {point(pinch.pointSmoothSw)} SW
+            </p>
+            <p className="font-medium">Last {lastPinch}</p>
+          </div>
+        </div>
       </div>
       <p className="text-muted">
         Default references: open {DEFAULT_GRIP_REFS.openRef}, closed {DEFAULT_GRIP_REFS.closedRef},
         touch below {DEFAULT_TOUCH_THRESHOLD} (release above{" "}
-        {DEFAULT_TOUCH_THRESHOLD + TOUCH_HYSTERESIS}). Press K for keyboard input, then hold Space
-        to squeeze, O to open, and 1–4 to touch the index to little finger.
+        {DEFAULT_TOUCH_THRESHOLD + TOUCH_HYSTERESIS}), pinch below {DEFAULT_PINCH_THRESHOLD}{" "}
+        (release above {DEFAULT_PINCH_THRESHOLD + PINCH_HYSTERESIS}). Press K for keyboard input,
+        then hold Space to squeeze, O to open, 1–4 to touch the index to little finger, and P to
+        pinch at the fingertip cursor.
       </p>
     </Card>
   );

@@ -518,6 +518,7 @@ export const bn: Record<TranslationKey, string> = {
   "input.source.cvGrip": "হাত মুঠো করা (ক্যামেরা)",
   "input.source.cvOpenness": "হাত খোলা (ক্যামেরা)",
   "input.source.cvTouch": "বুড়ো আঙুল থেকে আঙুল (ক্যামেরা)",
+  "input.source.cvPinch": "বুড়ো আঙুল ও তর্জনী দিয়ে চিমটি (ক্যামেরা)",
   "input.source.keyboard": "কীবোর্ড",
   "input.source.emg": "পেশি সেন্সর",
   "input.keyboardBadge": "কীবোর্ড ইনপুট",
