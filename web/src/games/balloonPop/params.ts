@@ -1,11 +1,12 @@
 import type { GameParams, ParamSpec } from "@/games/shared/types";
 
 /** A setting the adaptive engine may not change: its range is a single value. */
-const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step">): ParamSpec => ({
+const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step" | "component">): ParamSpec => ({
   ...spec,
   min: spec.default,
   max: spec.default,
   step: 0,
+  component: "fixed",
 });
 
 /** How a balloon is popped. Settings are numbers, so `squeeze_to_pop` holds it as 0 or 1. */
@@ -14,6 +15,7 @@ export type PopMode = "touch" | "touch_squeeze";
 export const BALLOON_POP_PARAMS: readonly ParamSpec[] = [
   {
     name: "height_frac",
+    component: "spatial",
     labelKey: "param.heightFrac",
     min: 0.4,
     max: 1.1,
@@ -24,6 +26,7 @@ export const BALLOON_POP_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "direction_deg",
+    component: "fixed",
     labelKey: "param.directionDeg",
     min: 45,
     max: 135,
@@ -34,6 +37,7 @@ export const BALLOON_POP_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "balloon_radius_sw",
+    component: "precision",
     labelKey: "param.balloonRadiusSw",
     min: 0.3,
     max: 0.6,
@@ -44,6 +48,7 @@ export const BALLOON_POP_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "rise_ms",
+    component: "fixed",
     labelKey: "param.riseMs",
     min: 1500,
     max: 4000,
@@ -54,6 +59,7 @@ export const BALLOON_POP_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "hover_ms",
+    component: "speed",
     labelKey: "param.hoverMs",
     min: 4000,
     max: 10000,
@@ -64,6 +70,7 @@ export const BALLOON_POP_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "squeeze_to_pop",
+    component: "fixed",
     labelKey: "param.squeezeToPop",
     min: 0,
     max: 1,
@@ -75,6 +82,7 @@ export const BALLOON_POP_PARAMS: readonly ParamSpec[] = [
   // Used only when a squeeze is needed; the same as Reach and squeeze.
   {
     name: "activation_demand",
+    component: "activation",
     labelKey: "param.activationDemand",
     min: 0.2,
     max: 0.9,

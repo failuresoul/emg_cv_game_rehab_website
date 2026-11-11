@@ -22,9 +22,25 @@ export type { GameId } from "@/types/api";
 export type ParamUnit =
   "sw" | "ms" | "deg" | "level" | "share" | "count" | "sw_per_s" | "bpm" | "palm_ratio";
 
-/** One adjustable setting of a game. The adaptive engine (Day 12) moves it within min and max. */
+/**
+ * Which kind of difficulty a setting is, so the adaptive engine moves the right one after a
+ * success or a failure: how far (spatial), how hard to squeeze or open (activation), how fast
+ * (speed), how exact (precision). "fixed" settings are never adapted, such as rest times, the
+ * direction chosen for each turn or a single-value setting.
+ */
+export type DifficultyComponent = "spatial" | "activation" | "speed" | "precision" | "fixed";
+
+export const DIFFICULTY_COMPONENTS: readonly Exclude<DifficultyComponent, "fixed">[] = [
+  "spatial",
+  "activation",
+  "speed",
+  "precision",
+];
+
+/** One adjustable setting of a game. The adaptive engine moves it within min and max. */
 export interface ParamSpec {
   name: string;
+  component: DifficultyComponent;
   labelKey: TranslationKey;
   min: number;
   max: number;

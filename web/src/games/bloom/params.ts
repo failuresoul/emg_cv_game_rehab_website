@@ -1,16 +1,18 @@
 import type { GameParams, ParamSpec } from "@/games/shared/types";
 
 /** A setting the adaptive engine may not change: its range is a single value. */
-const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step">): ParamSpec => ({
+const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step" | "component">): ParamSpec => ({
   ...spec,
   min: spec.default,
   max: spec.default,
   step: 0,
+  component: "fixed",
 });
 
 export const BLOOM_PARAMS: readonly ParamSpec[] = [
   {
     name: "open_demand",
+    component: "activation",
     labelKey: "param.openDemand",
     min: 0.5,
     max: 0.95,
@@ -21,6 +23,7 @@ export const BLOOM_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "open_hold_ms",
+    component: "activation",
     labelKey: "param.openHoldMs",
     min: 300,
     max: 2500,
@@ -31,6 +34,7 @@ export const BLOOM_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "close_demand",
+    component: "activation",
     labelKey: "param.closeDemand",
     min: 0.4,
     max: 0.9,
@@ -41,6 +45,7 @@ export const BLOOM_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "phase_time_limit_ms",
+    component: "speed",
     labelKey: "param.phaseTimeLimitMs",
     min: 4000,
     max: 10000,

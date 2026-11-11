@@ -25,6 +25,8 @@ class ParamSpec(BaseModel):
     default: float
     unit: str
     harder: Literal["higher", "lower"] | None
+    #: Which kind of difficulty the adaptive engine treats it as; "fixed" is never adapted.
+    component: Literal["spatial", "activation", "speed", "precision", "fixed"] = "fixed"
 
 
 class GameSpec(BaseModel):

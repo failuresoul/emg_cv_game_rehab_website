@@ -1,4 +1,5 @@
 import { GAME_IDS, GAMES } from "./registry";
+import type { DifficultyComponent } from "./types";
 
 /**
  * The game settings as the server reads them, in shared/game-specs.json: the server checks the
@@ -15,6 +16,7 @@ export interface ExportedParamSpec {
   default: number;
   unit: string;
   harder: "higher" | "lower" | null;
+  component: DifficultyComponent;
 }
 
 export interface ExportedGameSpec {
@@ -58,6 +60,7 @@ export function exportGameSpecs(): ExportedGameSpecs {
           default: spec.default,
           unit: spec.unit,
           harder: spec.harder,
+          component: spec.component,
         })),
       };
     }),

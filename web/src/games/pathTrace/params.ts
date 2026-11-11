@@ -2,17 +2,19 @@ import type { GameParams, ParamSpec } from "@/games/shared/types";
 import { PATH_SHAPES, type PathShape } from "@/metrics/paths";
 
 /** A setting the adaptive engine may not change: its range is a single value. */
-const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step">): ParamSpec => ({
+const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step" | "component">): ParamSpec => ({
   ...spec,
   min: spec.default,
   max: spec.default,
   step: 0,
+  component: "fixed",
 });
 
 export const PATH_TRACE_PARAMS: readonly ParamSpec[] = [
   // Settings are numbers: the shape is its place in PATH_SHAPES. The provider chooses it.
   {
     name: "shape_index",
+    component: "fixed",
     labelKey: "param.shape",
     min: 0,
     max: PATH_SHAPES.length - 1,
@@ -23,6 +25,7 @@ export const PATH_TRACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "path_length_frac",
+    component: "spatial",
     labelKey: "param.pathLengthFrac",
     min: 0.4,
     max: 1.0,
@@ -33,6 +36,7 @@ export const PATH_TRACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "guide_speed_sw_s",
+    component: "speed",
     labelKey: "param.guideSpeedSwS",
     min: 0.15,
     max: 0.6,
@@ -43,6 +47,7 @@ export const PATH_TRACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "corridor_width_sw",
+    component: "precision",
     labelKey: "param.corridorWidthSw",
     min: 0.2,
     max: 0.6,
@@ -53,6 +58,7 @@ export const PATH_TRACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "ring_frac",
+    component: "spatial",
     labelKey: "param.ringFrac",
     min: 0.5,
     max: 0.9,
@@ -64,6 +70,7 @@ export const PATH_TRACE_PARAMS: readonly ParamSpec[] = [
   // 1 outward (the path starts nearer the body), −1 inward. The provider alternates it.
   {
     name: "direction",
+    component: "fixed",
     labelKey: "param.pathDirection",
     min: -1,
     max: 1,

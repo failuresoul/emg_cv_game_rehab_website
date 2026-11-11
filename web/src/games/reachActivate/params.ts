@@ -1,16 +1,18 @@
 import type { GameParams, ParamSpec } from "@/games/shared/types";
 
 /** A setting the adaptive engine may not change: its range is a single value. */
-const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step">): ParamSpec => ({
+const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step" | "component">): ParamSpec => ({
   ...spec,
   min: spec.default,
   max: spec.default,
   step: 0,
+  component: "fixed",
 });
 
 export const REACH_ACTIVATE_PARAMS: readonly ParamSpec[] = [
   {
     name: "distance_frac",
+    component: "spatial",
     labelKey: "param.distanceFrac",
     min: 0.4,
     max: 1.1,
@@ -21,6 +23,7 @@ export const REACH_ACTIVATE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "direction_deg",
+    component: "fixed",
     labelKey: "param.directionDeg",
     min: 0,
     max: 315,
@@ -31,6 +34,7 @@ export const REACH_ACTIVATE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "target_radius_sw",
+    component: "precision",
     labelKey: "param.targetRadiusSw",
     min: 0.25,
     max: 0.6,
@@ -41,6 +45,7 @@ export const REACH_ACTIVATE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "dwell_ms",
+    component: "precision",
     labelKey: "param.dwellMs",
     min: 300,
     max: 1000,
@@ -51,6 +56,7 @@ export const REACH_ACTIVATE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "activation_demand",
+    component: "activation",
     labelKey: "param.activationDemand",
     min: 0.2,
     max: 0.9,
@@ -68,6 +74,7 @@ export const REACH_ACTIVATE_PARAMS: readonly ParamSpec[] = [
   }),
   {
     name: "activation_window_ms",
+    component: "activation",
     labelKey: "param.activationWindowMs",
     min: 1500,
     max: 4000,

@@ -10,6 +10,7 @@ export type CarryDirection = (typeof CARRY_DIRECTIONS)[number];
 export const PICK_PLACE_PARAMS: readonly ParamSpec[] = [
   {
     name: "object_radius_sw",
+    component: "precision",
     labelKey: "param.objectRadiusSw",
     min: 0.2,
     max: 0.5,
@@ -20,6 +21,7 @@ export const PICK_PLACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "pick_distance_frac",
+    component: "spatial",
     labelKey: "param.pickDistanceFrac",
     min: 0.4,
     max: 1.0,
@@ -30,6 +32,7 @@ export const PICK_PLACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "place_distance_frac",
+    component: "spatial",
     labelKey: "param.placeDistanceFrac",
     min: 0.4,
     max: 1.0,
@@ -40,6 +43,7 @@ export const PICK_PLACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "box_size_sw",
+    component: "precision",
     labelKey: "param.boxSizeSw",
     min: 0.4,
     max: 0.9,
@@ -50,6 +54,7 @@ export const PICK_PLACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "carry_angle_deg",
+    component: "spatial",
     labelKey: "param.carryAngleDeg",
     min: 45,
     max: 180,
@@ -60,6 +65,7 @@ export const PICK_PLACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "time_limit_ms",
+    component: "speed",
     labelKey: "param.timeLimitMs",
     min: 8000,
     max: 20000,
@@ -71,6 +77,7 @@ export const PICK_PLACE_PARAMS: readonly ParamSpec[] = [
   // The carry's direction, as its place in CARRY_DIRECTIONS. The provider chooses it.
   {
     name: "carry_direction",
+    component: "fixed",
     labelKey: "param.carryDirection",
     min: 0,
     max: CARRY_DIRECTIONS.length - 1,
@@ -81,6 +88,7 @@ export const PICK_PLACE_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "rest_ms",
+    component: "fixed",
     labelKey: "param.restMs",
     min: 1500,
     max: 1500,

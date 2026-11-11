@@ -69,6 +69,7 @@ def test_admin_lists_every_game_with_its_spec_and_defaults(
         "default": 0.3,
         "unit": "level",
         "harder": "lower",
+        "component": "precision",
     }
 
 

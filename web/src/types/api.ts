@@ -741,6 +741,8 @@ export interface GameParamSpec {
   default: number;
   unit: string;
   harder: "higher" | "lower" | null;
+  /** Which kind of difficulty the engine treats it as; "fixed" is never adapted. */
+  component: "spatial" | "activation" | "speed" | "precision" | "fixed";
 }
 
 export interface GameSpec {

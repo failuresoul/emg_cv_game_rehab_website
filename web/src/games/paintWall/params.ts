@@ -4,16 +4,18 @@ import type { ExerciseResult } from "@/warmup/exerciseRunner";
 import { DEFAULT_ELBOW_RANGE, type ElbowRange, elbowRangeFromWarmup } from "./elbowRange";
 
 /** A setting the adaptive engine may not change: its range is a single value. */
-const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step">): ParamSpec => ({
+const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step" | "component">): ParamSpec => ({
   ...spec,
   min: spec.default,
   max: spec.default,
   step: 0,
+  component: "fixed",
 });
 
 export const PAINT_WALL_PARAMS: readonly ParamSpec[] = [
   {
     name: "required_range_frac",
+    component: "spatial",
     labelKey: "param.requiredRangeFrac",
     min: 0.5,
     max: 1.0,
@@ -24,6 +26,7 @@ export const PAINT_WALL_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "sweeps_needed",
+    component: "activation",
     labelKey: "param.sweepsNeeded",
     min: 2,
     max: 5,
@@ -34,6 +37,7 @@ export const PAINT_WALL_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "time_limit_ms",
+    component: "speed",
     labelKey: "param.timeLimitMs",
     min: 15000,
     max: 40000,
@@ -46,6 +50,7 @@ export const PAINT_WALL_PARAMS: readonly ParamSpec[] = [
   // what the wall's bottom and top mean, so it is saved with every stripe.
   {
     name: "elbow_bent_deg",
+    component: "fixed",
     labelKey: "param.elbowBentDeg",
     min: 20,
     max: 150,
@@ -56,6 +61,7 @@ export const PAINT_WALL_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "elbow_straight_deg",
+    component: "fixed",
     labelKey: "param.elbowStraightDeg",
     min: 50,
     max: 180,

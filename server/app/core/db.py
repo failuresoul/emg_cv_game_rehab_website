@@ -42,6 +42,8 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
     "patientprofile": {
         "weekly_goal": "INTEGER NOT NULL DEFAULT 5",
         "is_demo": "BOOLEAN NOT NULL DEFAULT 0",
+        "engine_mode": "VARCHAR NOT NULL DEFAULT 'L1'",
+        "max_difficulty": "JSON NOT NULL DEFAULT '{}'",
     },
     "trial": {
         "metrics_server": "JSON",

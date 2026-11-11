@@ -1,3 +1,4 @@
+from app.models.engine_state import EngineState
 from app.models.game import GameRun, Trial
 from app.models.game_setting import GameSetting
 from app.models.patient import PatientProfile
@@ -9,6 +10,7 @@ from app.models.warmup import WarmupResult
 
 __all__ = [
     "Calibration",
+    "EngineState",
     "GameRun",
     "GameSetting",
     "PatientProfile",

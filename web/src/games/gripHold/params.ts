@@ -1,16 +1,18 @@
 import type { GameParams, ParamSpec } from "@/games/shared/types";
 
 /** A setting the adaptive engine may not change: its range is a single value. */
-const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step">): ParamSpec => ({
+const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step" | "component">): ParamSpec => ({
   ...spec,
   min: spec.default,
   max: spec.default,
   step: 0,
+  component: "fixed",
 });
 
 export const GRIP_HOLD_PARAMS: readonly ParamSpec[] = [
   {
     name: "band_center",
+    component: "activation",
     labelKey: "param.bandCenter",
     min: 0.3,
     max: 0.8,
@@ -21,6 +23,7 @@ export const GRIP_HOLD_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "band_width",
+    component: "precision",
     labelKey: "param.bandWidth",
     min: 0.1,
     max: 0.35,
@@ -31,6 +34,7 @@ export const GRIP_HOLD_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "hold_ms",
+    component: "activation",
     labelKey: "param.holdMs",
     min: 2000,
     max: 8000,
@@ -41,6 +45,7 @@ export const GRIP_HOLD_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "time_limit_ms",
+    component: "speed",
     labelKey: "param.timeLimitMs",
     min: 10000,
     max: 20000,

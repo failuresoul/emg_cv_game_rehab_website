@@ -51,6 +51,11 @@ def effective_params(spec: GameSpec, row: GameSetting | None) -> dict[str, float
     return values
 
 
+def effective_params_for(session: Session, spec: GameSpec) -> dict[str, float]:
+    """The admin's defaults for a game, as the engines start from them."""
+    return effective_params(spec, _get_row(session, spec.id))
+
+
 def effective_trials(spec: GameSpec, row: GameSetting | None) -> int:
     return row.trials_default if row and row.trials_default is not None else spec.trials_default
 

@@ -3,6 +3,7 @@ import type { GameParams, ParamSpec } from "@/games/shared/types";
 export const FRUIT_CATCH_PARAMS: readonly ParamSpec[] = [
   {
     name: "fall_speed_sw_s",
+    component: "speed",
     labelKey: "param.fallSpeedSwS",
     min: 0.2,
     max: 0.8,
@@ -13,6 +14,7 @@ export const FRUIT_CATCH_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "spread_frac",
+    component: "spatial",
     labelKey: "param.spreadFrac",
     min: 0.3,
     max: 1.0,
@@ -23,6 +25,7 @@ export const FRUIT_CATCH_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "basket_width_sw",
+    component: "precision",
     labelKey: "param.basketWidthSw",
     min: 0.4,
     max: 1.0,
@@ -33,6 +36,7 @@ export const FRUIT_CATCH_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "spawn_interval_ms",
+    component: "speed",
     labelKey: "param.spawnIntervalMs",
     min: 2500,
     max: 6000,
@@ -43,6 +47,7 @@ export const FRUIT_CATCH_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "max_on_screen",
+    component: "fixed",
     labelKey: "param.maxOnScreen",
     min: 1,
     max: 2,
@@ -54,6 +59,7 @@ export const FRUIT_CATCH_PARAMS: readonly ParamSpec[] = [
   // Where each fruit falls; the provider chooses them.
   {
     name: "target_side",
+    component: "fixed",
     labelKey: "param.targetSide",
     min: -1,
     max: 1,
@@ -64,6 +70,7 @@ export const FRUIT_CATCH_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "target_frac",
+    component: "fixed",
     labelKey: "param.targetFrac",
     min: 0.4,
     max: 1.0,

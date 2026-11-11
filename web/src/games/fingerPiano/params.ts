@@ -3,11 +3,12 @@ import { FINGERS, type Finger, touchThresholdFromWarmup } from "@/input/fingerTo
 import type { ExerciseResult } from "@/warmup/exerciseRunner";
 
 /** A setting the adaptive engine may not change: its range is a single value. */
-const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step">): ParamSpec => ({
+const fixed = (spec: Omit<ParamSpec, "min" | "max" | "step" | "component">): ParamSpec => ({
   ...spec,
   min: spec.default,
   max: spec.default,
   step: 0,
+  component: "fixed",
 });
 
 /**
@@ -23,6 +24,7 @@ export const MAX_SEQUENCE_LENGTH = 8;
 export const FINGER_PIANO_PARAMS: readonly ParamSpec[] = [
   {
     name: "finger_count",
+    component: "precision",
     labelKey: "param.fingerCount",
     min: 2,
     max: 4,
@@ -33,6 +35,7 @@ export const FINGER_PIANO_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "sequence_length",
+    component: "precision",
     labelKey: "param.sequenceLength",
     min: 3,
     max: MAX_SEQUENCE_LENGTH,
@@ -43,6 +46,7 @@ export const FINGER_PIANO_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "note_interval_ms",
+    component: "speed",
     labelKey: "param.noteIntervalMs",
     min: 1200,
     max: 3000,
@@ -53,6 +57,7 @@ export const FINGER_PIANO_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "hit_window_ms",
+    component: "speed",
     labelKey: "param.hitWindowMs",
     min: 600,
     max: 1500,
@@ -63,6 +68,7 @@ export const FINGER_PIANO_PARAMS: readonly ParamSpec[] = [
   },
   {
     name: "touch_threshold",
+    component: "precision",
     labelKey: "param.touchThreshold",
     min: MIN_TOUCH_THRESHOLD,
     max: MAX_TOUCH_THRESHOLD,
