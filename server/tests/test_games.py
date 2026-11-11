@@ -4,9 +4,11 @@ from typing import Any
 import pytest
 from conftest import PATIENT_PASSWORD, Headers
 from fastapi.testclient import TestClient
+from sqlmodel import Session, select
 from test_sessions import calibration_payload
 from test_warmup import result_payload
 
+from app.models import PatientProfile
 from app.schemas.game import GAME_IDS
 
 CreatePatient = Callable[..., dict[str, Any]]
@@ -125,7 +127,8 @@ def test_start_run(client: TestClient, patient_headers: Headers) -> None:
     body = response.json()
     assert body["session_id"] == session_id
     assert body["game_id"] == "reach_activate"
-    assert body["engine"] == "L0"
+    # The patient's engine mode (L1 by default), not the one the browser sent.
+    assert body["engine"] == "L1"
     assert body["input_source"] == "cv_grip"
     assert body["params_initial"]["dwell_ms"] == 500
     assert body["status"] == "active"
@@ -137,14 +140,22 @@ def test_start_run(client: TestClient, patient_headers: Headers) -> None:
     assert body["started_at"].endswith("Z") or body["started_at"].endswith("+00:00")
 
 
-def test_start_run_defaults_engine_to_l0(client: TestClient, patient_headers: Headers) -> None:
+def test_run_engine_follows_the_patients_engine_mode(
+    client: TestClient, patient_headers: Headers, session: Session
+) -> None:
     session_id = start_session(client, patient_headers)
     payload = run_payload()
     del payload["engine"]
-    response = client.post(
-        f"/api/sessions/{session_id}/games", json=payload, headers=patient_headers
-    )
+    url = f"/api/sessions/{session_id}/games"
+    response = client.post(url, json=payload, headers=patient_headers)
     assert response.status_code == 201, response.text
+    assert response.json()["engine"] == "L1"
+
+    profile = session.exec(select(PatientProfile)).one()
+    profile.engine_mode = "L0"
+    session.add(profile)
+    session.commit()
+    response = client.post(url, json=run_payload(engine="L2"), headers=patient_headers)
     assert response.json()["engine"] == "L0"
 
 

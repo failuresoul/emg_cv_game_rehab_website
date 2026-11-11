@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     GAME_SPECS_PATH: str = ""
     # The measures MotionLab reports. Empty: shared/metrics-catalog.json in the repository.
     METRICS_CATALOG_PATH: str = ""
+    # Minutes of active game play after which the games suggest finishing soon, then finishing.
+    SESSION_FINISH_SOON_MIN: float = 25.0
+    SESSION_FINISH_MIN: float = 35.0
 
     @property
     def game_specs_path(self) -> Path:

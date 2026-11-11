@@ -9,6 +9,7 @@ from sqlmodel import Session
 
 from app import __version__
 from app.api import admin, auth, games, health, patient, sessions
+from app.api import engine as engine_api
 from app.core.config import settings
 from app.core.db import create_db_and_tables, engine
 from app.services.users import ensure_admin
@@ -49,3 +50,4 @@ app.include_router(admin.router, prefix="/api")
 app.include_router(patient.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")
 app.include_router(games.router, prefix="/api")
+app.include_router(engine_api.router, prefix="/api")

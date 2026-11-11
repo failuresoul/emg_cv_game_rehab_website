@@ -72,6 +72,10 @@ def start_run(session: Session, record: SessionRecord, payload: GameRunStart) ->
     assert record.id is not None
     abort_active_runs(session, record.id)
     run = GameRun(**payload.model_dump(), session_id=record.id)
+    # The engine is the patient's, whatever the browser says.
+    profile = session.get(PatientProfile, record.patient_id)
+    if profile is not None:
+        run.engine = profile.engine_mode
     session.add(run)
     session.commit()
     return run
