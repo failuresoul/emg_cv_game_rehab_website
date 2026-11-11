@@ -270,4 +270,4 @@ def export_patient_metrics(patient_id: int, session: SessionDep) -> Response:
 @router.get("/export/trials.csv", response_class=Response)
 def export_trials(session: SessionDep) -> Response:
     """Every trial of every patient, one row each, by patient code only."""
-    return _csv(exports.trials_csv(session), "motionlab-trials.csv")
+    return _csv(exports.trials_csv(session), "muvi-rehab-trials.csv")

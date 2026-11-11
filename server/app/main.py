@@ -23,7 +23,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
 
-app = FastAPI(title="MotionLab API", version=__version__, lifespan=lifespan)
+app = FastAPI(title="MuVi Rehab API", version=__version__, lifespan=lifespan)
 
 
 

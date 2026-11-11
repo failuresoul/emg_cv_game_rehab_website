@@ -1,8 +1,8 @@
-# MotionLab: guide for patients
+# MuVi Rehab: guide for patients
 
 This guide shows you how to do a practice session at home. A family member or carer can read it with you.
 
-MotionLab uses your webcam to follow your arm and hand. **Your video stays on your computer.** Only numbers about your movement are saved, never pictures.
+MuVi Rehab uses your webcam to follow your arm and hand. **Your video stays on your computer.** Only numbers about your movement are saved, never pictures.
 
 > **Screenshots:** each `[Screenshot: …]` below marks where a picture of that screen will go.
 
@@ -25,7 +25,7 @@ MotionLab uses your webcam to follow your arm and hand. **Your video stays on yo
 
 ## 2. Log in
 
-1. Open MotionLab in Chrome or Edge.
+1. Open MuVi Rehab in Chrome or Edge.
 2. Click **Log in**, type your email and password, and click **Log in** again.
 
 You now see your **home page**: today's plan, your streak, your weekly goal, the last four weeks and your progress.
@@ -61,7 +61,7 @@ If you stopped a session earlier today, you will see **Continue your session?** 
 
 ## 5. Calibration
 
-MotionLab measures how far you can comfortably reach, so the games fit you.
+MuVi Rehab measures how far you can comfortably reach, so the games fit you.
 
 1. Read the instructions and click **Start**.
 2. Stars appear around you on the screen. Reach towards each star with your affected arm and hold until it lights up.
@@ -150,7 +150,7 @@ If you report pain or something new or unusual, the summary shows this message:
 
 Your therapist also sees your answers.
 
-MotionLab is a practice tool. It does not diagnose anything, and it does not replace your therapist.
+MuVi Rehab is a practice tool. It does not diagnose anything, and it does not replace your therapist.
 
 ## Your progress
 

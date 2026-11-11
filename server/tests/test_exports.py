@@ -94,7 +94,7 @@ def test_trials_csv(
 
     response = client.get("/api/admin/export/trials.csv", headers=admin_headers)
     assert response.status_code == 200, response.text
-    assert 'filename="motionlab-trials.csv"' in response.headers["content-disposition"]
+    assert 'filename="muvi-rehab-trials.csv"' in response.headers["content-disposition"]
     header = response.text.splitlines()[0].split(",")
     assert header[: len(TRIAL_COLUMNS)] == list(TRIAL_COLUMNS)
     measures = header[len(TRIAL_COLUMNS) :]

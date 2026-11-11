@@ -1,4 +1,4 @@
-# MotionLab server
+# MuVi Rehab server
 
 FastAPI back end. Run every command below from `server/`. Requires Python 3.11 or newer.
 

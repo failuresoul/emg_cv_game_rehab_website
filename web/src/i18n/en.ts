@@ -1,6 +1,4 @@
 export const en = {
-  "app.name": "MotionLab",
-
   "common.close": "Close",
   "common.loading": "Loading",
   "common.comingSoon": "This page is coming soon.",
@@ -419,7 +417,7 @@ export const en = {
   "login.submit": "Log in",
   "login.error.invalid": "Incorrect email or password.",
   "login.error.generic": "We could not log you in. Please try again.",
-  "login.noAccount": "New to MotionLab?",
+  "login.noAccount": "New to {name}?",
 
   "signup.title": "Create your account",
   "signup.action": "Sign up",
@@ -844,7 +842,7 @@ export const en = {
   "resume.startOverError": "We could not start a new session. Please try again.",
   "warmup.resumeFrom": "You will carry on from {name}.",
   "warmup.resumeButton": "Continue the warm-up",
-  "apiError.network": "We cannot reach MotionLab. Please check your internet connection.",
+  "apiError.network": "We cannot connect right now. Please check your internet connection.",
   "apiError.timeout": "The server took too long to answer. Please try again.",
   "apiError.signedOut": "You have been signed out. Please log in again.",
   "apiError.forbidden": "You do not have access to this.",
@@ -1199,4 +1197,12 @@ export const en = {
   "adminLevels.levelValue": "{n} of 10",
   "adminLevels.empty":
     "No adaptive levels yet: they appear after the first game with the adaptive engine.",
+  "adminSystem.project": "Project",
+  "adminSystem.version": "Version",
+  "adminSystem.research": "Research title",
+  "adminSystem.institution": "Institution",
+  "adminSystem.collaborator": "Collaborator",
+  "adminSystem.name": "Name",
+  "adminSystem.department": "Department",
+  "adminSystem.country": "Country",
 } as const;

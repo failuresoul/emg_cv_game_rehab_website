@@ -3,6 +3,7 @@ import { Link } from "react-router";
 
 import { buttonClasses } from "@/components/ui/buttonStyles";
 import { Card } from "@/components/ui/Card";
+import { project } from "@/config/project";
 import { t, type TranslationKey } from "@/i18n";
 
 const FEATURES: { titleKey: TranslationKey; icon: LucideIcon }[] = [
@@ -15,7 +16,7 @@ export function HomePage() {
   return (
     <div className="flex flex-col items-center gap-8 py-8 text-center">
       <div>
-        <h1 className="text-primary text-4xl font-bold">{t("app.name")}</h1>
+        <h1 className="text-primary text-4xl font-bold">{project.name}</h1>
         <p className="mt-3 max-w-2xl text-xl">{t("landing.tagline")}</p>
       </div>
 

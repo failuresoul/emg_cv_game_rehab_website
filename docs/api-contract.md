@@ -1,4 +1,4 @@
-# MotionLab API contract
+# MuVi Rehab API contract
 
 This document lists every API route the server provides today, plus the routes reserved for the LLM feedback module. The examples are real responses captured from the server, with the token shortened. The game examples show the exact shape with made-up numbers.
 
@@ -111,7 +111,7 @@ A 422 response usually lists each problem, and `loc` names the field. The submit
 Response `200`:
 
 ```json
-{ "status": "ok", "app": "MotionLab", "version": "0.1.0" }
+{ "status": "ok", "app": "MuVi Rehab", "version": "0.1.0" }
 ```
 
 ## Authentication
@@ -135,7 +135,7 @@ Response `200`:
   "user": {
     "id": 1,
     "email": "admin@motionlab.local",
-    "full_name": "MotionLab Admin",
+    "full_name": "MuVi Rehab Admin",
     "role": "admin",
     "is_active": true,
     "created_at": "2026-11-01T10:11:40.983764Z",
@@ -1016,7 +1016,7 @@ Response `200`: `{ "sessions", "runs", "trials", "mismatched_trials", "session_m
 Both are admin only (`403` for a patient) and downloads (`Content-Disposition: attachment`). Patients appear only by `patient_code`: never a name or an email.
 
 - **`GET /api/admin/patients/{id}/export.csv`** (`P001-metrics.csv`): the patient's session measures, one row each (long format), oldest session first. Columns: `patient_code, session_id, session_started_at, session_status, metric_id, metric_name, game_id, value, unit, n, computed_at`. Errors: `404`.
-- **`GET /api/admin/export/trials.csv`** (`motionlab-trials.csv`): every trial of every patient, one row each. Columns:
+- **`GET /api/admin/export/trials.csv`** (`muvi-rehab-trials.csv`): every trial of every patient, one row each. Columns:
   - `patient_code, is_demo, session_id, session_started_at, run_id, game_id, engine, input_source, trial_no, outcome, compensated`;
   - `params`, `target` and `timings`, each as JSON text;
   - `n_points, sampling_hz, gaps_over_200ms`, and `mismatches` (the names of the measures that differ);

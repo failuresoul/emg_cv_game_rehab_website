@@ -118,7 +118,7 @@ Before you start:
 ### Admin: research
 
 1. **Export all trials.** Open /admin/research and click "Export all trials (CSV)".
-   - Expected: `motionlab-trials.csv` downloads.
+   - Expected: `muvi-rehab-trials.csv` downloads.
    - It has one row per trial, patient codes, `is_demo`, settings as JSON and `server_…` columns; there are no names or emails.
 
 ### Patient progress

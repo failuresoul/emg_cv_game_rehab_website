@@ -8,7 +8,7 @@ SERVER_DIR = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=SERVER_DIR / ".env", extra="ignore")
 
-    APP_NAME: str = "MotionLab"
+    APP_NAME: str = "MuVi Rehab"
     DATABASE_URL: str = "sqlite:///../data/motionlab.db"
     JWT_SECRET: str
     JWT_EXPIRE_MINUTES: int = 720

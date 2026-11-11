@@ -1,7 +1,7 @@
-import { Activity } from "lucide-react";
 import { Link } from "react-router";
 
-import { t } from "@/i18n";
+import { LogoMark } from "@/components/brand/LogoMark";
+import { project } from "@/config/project";
 
 export function Logo({ to = "/" }: { to?: string }) {
   return (
@@ -9,8 +9,8 @@ export function Logo({ to = "/" }: { to?: string }) {
       to={to}
       className="text-primary inline-flex min-h-11 items-center gap-2 text-xl font-bold"
     >
-      <Activity size={28} aria-hidden />
-      {t("app.name")}
+      <LogoMark size={32} />
+      {project.name}
     </Link>
   );
 }

@@ -1,4 +1,4 @@
-# MotionLab v0.1: 10-minute supervisor demo
+# MuVi Rehab v0.1: 10-minute supervisor demo
 
 What to click and what to say, in order. Times are a guide; the whole demo takes about 10 minutes.
 
@@ -31,7 +31,7 @@ What to click and what to say, in order. Times are a guide; the whole demo takes
 
 **Click:** open `http://localhost:5173`.
 
-**Say:** "MotionLab is a home rehabilitation platform for arm and hand practice after stroke. The patient needs only a webcam. Video never leaves the browser: MediaPipe runs locally, and only landmarks and measures go to the server."
+**Say:** "MuVi Rehab is a home rehabilitation platform for arm and hand practice after stroke. The patient needs only a webcam. Video never leaves the browser: MediaPipe runs locally, and only landmarks and measures go to the server."
 
 ### 2. Admin overview with demo data (0:45–2:30)
 

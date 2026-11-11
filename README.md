@@ -1,6 +1,16 @@
-# MotionLab
+# MuVi Rehab
 
-MotionLab is a web platform for home-based arm and hand rehabilitation after stroke. A patient logs in, checks their camera, calibrates their reach, and completes warm-up exercises tracked by the webcam with MediaPipe. They then play rehabilitation games controlled by hand and arm movement, with an AI engine planning the session and adapting each game's difficulty to the patient. Each session ends with a short cool-down questionnaire and an AI feedback report. Therapists and researchers use an admin area to manage patients, programmes and games, and to review analytics. Webcam video and images never leave the browser: only landmarks, metrics and events go to the server.
+**MuVi Rehab — Muscle + Vision Rehabilitation.** EMG and vision-guided home rehabilitation for stroke.
+
+A research prototype from the Department of Computer Science and Engineering, Khulna University of Engineering & Technology (KUET), Bangladesh, with The University of Queensland, Australia. It is not a medical device.
+
+- **Research title:** Multimodal EMG and Webcam-Based Hand Posture Recognition for Real-Time Adaptive Rehabilitation Gaming
+- **Supervisors:** Dr. Muhammad Aminul Haque Akhand (Dept. of CSE, KUET) and Dr. Md. Abdul Awal (Postdoctoral Research Fellow, The University of Queensland)
+- **Team:** Nurul Absar Shadik and Nafis Ahammad (Dept. of CSE, KUET)
+
+The project's name, institutions and people live in one file, [web/src/config/project.ts](web/src/config/project.ts). "MotionLab" is the internal code name: it stays in identifiers (storage keys, package names, the database file) but never in anything a user sees.
+
+MuVi Rehab is a web platform for home-based arm and hand rehabilitation after stroke. A patient logs in, checks their camera, calibrates their reach, and completes warm-up exercises tracked by the webcam with MediaPipe. They then play rehabilitation games controlled by hand and arm movement, with an AI engine planning the session and adapting each game's difficulty to the patient. Each session ends with a short cool-down questionnaire and an AI feedback report. Therapists and researchers use an admin area to manage patients, programmes and games, and to review analytics. Webcam video and images never leave the browser: only landmarks, metrics and events go to the server.
 
 **Version 0.1.0.** See the [changelog](CHANGELOG.md) for what changed.
 

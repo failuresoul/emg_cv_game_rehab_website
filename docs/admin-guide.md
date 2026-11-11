@@ -1,6 +1,6 @@
-# MotionLab: guide for therapists and researchers
+# MuVi Rehab: guide for therapists and researchers
 
-This guide covers the admin area of MotionLab v0.1: managing patients, weekly goals, reviewing sessions and progress, handling safety alerts, and using demo data.
+This guide covers the admin area of MuVi Rehab v0.1: managing patients, weekly goals, reviewing sessions and progress, handling safety alerts, and using demo data.
 
 Log in with the admin account from `server/.env` (`ADMIN_EMAIL` and `ADMIN_PASSWORD`). You land on the **Overview**.
 
@@ -77,7 +77,7 @@ The cool-down questionnaire flags a session for review when:
 
 > These thresholds are provisional and must be confirmed with the supervisor. They are in one place in the code, `server/app/services/safety.py`.
 
-For **Pain** or **Something new or unusual**, the patient's summary shows a fixed notice: stop practising for today, tell the therapist, and call emergency services for signs of stroke. MotionLab gives no other medical advice.
+For **Pain** or **Something new or unusual**, the patient's summary shows a fixed notice: stop practising for today, tell the therapist, and call emergency services for signs of stroke. MuVi Rehab gives no other medical advice.
 
 **To review an alert:**
 

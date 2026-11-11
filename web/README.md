@@ -1,4 +1,4 @@
-# MotionLab web
+# MuVi Rehab web
 
 React + TypeScript front end. Run every command below from `web/`. The dev server runs on port 5173 and proxies `/api` to the server on port 8000.
 

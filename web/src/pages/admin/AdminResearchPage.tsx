@@ -21,7 +21,7 @@ export function AdminResearchPage() {
         <div>
           <ExportButton
             path="/admin/export/trials.csv"
-            filename="motionlab-trials.csv"
+            filename="muvi-rehab-trials.csv"
             labelKey="research.exportTrials"
           />
         </div>

@@ -1,8 +1,6 @@
 import type { TranslationKey } from "./index";
 
 export const bn: Record<TranslationKey, string> = {
-  "app.name": "MotionLab",
-
   "common.close": "বন্ধ করুন",
   "common.loading": "লোড হচ্ছে",
   "common.comingSoon": "এই পাতাটি শীঘ্রই আসছে।",
@@ -420,7 +418,7 @@ export const bn: Record<TranslationKey, string> = {
   "login.submit": "লগইন",
   "login.error.invalid": "ইমেইল বা পাসওয়ার্ড সঠিক নয়।",
   "login.error.generic": "লগইন করা যায়নি। আবার চেষ্টা করুন।",
-  "login.noAccount": "MotionLab-এ নতুন?",
+  "login.noAccount": "{name}-এ নতুন?",
 
   "signup.title": "আপনার অ্যাকাউন্ট তৈরি করুন",
   "signup.action": "সাইন আপ",
@@ -844,8 +842,7 @@ export const bn: Record<TranslationKey, string> = {
   "resume.startOverError": "নতুন সেশন শুরু করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
   "warmup.resumeFrom": "আপনি {name} থেকে চালিয়ে যাবেন।",
   "warmup.resumeButton": "ওয়ার্ম-আপ চালিয়ে যান",
-  "apiError.network":
-    "MotionLab-এর সঙ্গে যোগাযোগ করা যাচ্ছে না। অনুগ্রহ করে ইন্টারনেট সংযোগ দেখুন।",
+  "apiError.network": "এই মুহূর্তে সংযোগ করা যাচ্ছে না। অনুগ্রহ করে ইন্টারনেট সংযোগ দেখুন।",
   "apiError.timeout": "সার্ভার উত্তর দিতে অনেক সময় নিয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
   "apiError.signedOut": "আপনি সাইন আউট হয়ে গেছেন। অনুগ্রহ করে আবার লগ ইন করুন।",
   "apiError.forbidden": "এটি দেখার অনুমতি আপনার নেই।",
@@ -1197,4 +1194,12 @@ export const bn: Record<TranslationKey, string> = {
   "adminLevels.column.updated": "শেষ হালনাগাদ",
   "adminLevels.levelValue": "১০-এর মধ্যে {n}",
   "adminLevels.empty": "এখনো কোনো অভিযোজিত ধাপ নেই: অভিযোজিত পদ্ধতিতে প্রথম খেলার পরে দেখা যাবে।",
+  "adminSystem.project": "প্রকল্প",
+  "adminSystem.version": "সংস্করণ",
+  "adminSystem.research": "গবেষণার শিরোনাম",
+  "adminSystem.institution": "প্রতিষ্ঠান",
+  "adminSystem.collaborator": "সহযোগী",
+  "adminSystem.name": "নাম",
+  "adminSystem.department": "বিভাগ",
+  "adminSystem.country": "দেশ",
 };

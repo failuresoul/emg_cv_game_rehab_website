@@ -4,10 +4,12 @@ import { Eye, EyeOff } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { Link, type Location, Navigate, useLocation } from "react-router";
 
+import { LogoMark } from "@/components/brand/LogoMark";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { project } from "@/config/project";
 import { useAuth } from "@/features/auth/AuthContext";
 import { AuthLoading, HOME_PATH } from "@/features/auth/guards";
 import { t } from "@/i18n";
@@ -47,6 +49,10 @@ export function LoginPage() {
 
   return (
     <Card className="mx-auto max-w-md">
+      <div className="mb-4 flex flex-col items-center gap-2 text-center">
+        <LogoMark size={64} />
+        <p className="text-primary text-2xl font-bold">{project.name}</p>
+      </div>
       <PageHeader title={t("page.public.login.title")} />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Input
@@ -85,7 +91,7 @@ export function LoginPage() {
         </Button>
       </form>
       <p className="mt-6 text-center">
-        {t("login.noAccount")}{" "}
+        {t("login.noAccount", { name: project.name })}{" "}
         <Link to="/signup" className="text-primary font-semibold underline">
           {t("signup.action")}
         </Link>
