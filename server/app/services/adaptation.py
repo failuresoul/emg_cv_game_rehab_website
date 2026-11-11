@@ -5,7 +5,7 @@ The engine's reasons go to the admin and the research data only; the patient see
 to 10 and, sometimes, a gentle cue.
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlmodel import Session, col, select
 
@@ -51,10 +51,10 @@ def _record(trial: dict[str, object] | LastTrial) -> TrialRecord:
     )
 
 
-def active_minutes(session: Session, run: GameRun) -> float:
+def active_minutes(session: Session, run: GameRun, now: datetime | None = None) -> float:
     """Minutes of game play in the run's session so far: every run's time, this one's up to now."""
     runs = session.exec(select(GameRun).where(GameRun.session_id == run.session_id)).all()
-    now = utc_now()
+    now = now or utc_now()
     total = timedelta()
     for item in runs:
         end = item.ended_at if item.ended_at is not None else (now if item.id == run.id else None)
@@ -75,10 +75,20 @@ def _response(log: AdaptationLog) -> EngineNextResponse:
 
 
 def next_step(
-    session: Session, profile: PatientProfile, run: GameRun, last_trial: LastTrial | None
+    session: Session,
+    profile: PatientProfile,
+    run: GameRun,
+    last_trial: LastTrial | None,
+    now: datetime | None = None,
+    replay: bool = False,
 ) -> EngineNextResponse:
-    """The next trial's settings. Reporting the same trial again returns the same answer."""
-    if run.status != "active":
+    """The next trial's settings. Reporting the same trial again returns the same answer.
+
+    `now` and `replay` are for replaying saved trials (the demo data): the time the trial ended,
+    and allowing a run that is no longer active. A replay flushes rather than commits; the caller
+    commits.
+    """
+    if run.status != "active" and not replay:
         raise RunEndedError
     assert run.id is not None
     trial_no = last_trial.trial_no if last_trial else 0
@@ -119,7 +129,7 @@ def next_step(
             after=after,
             history=history,
             max_difficulty=loaded.context.max_difficulty,
-            active_minutes=active_minutes(session, run),
+            active_minutes=active_minutes(session, run, now),
             trials_since_rest=trial_no - rests[-1] if rests else None,
             finish_soon_minutes=settings.SESSION_FINISH_SOON_MIN,
             finish_minutes=settings.SESSION_FINISH_MIN,
@@ -127,7 +137,12 @@ def next_step(
     )
     params, _ = loaded.engine.next_params(checked.state, loaded.context)
     engine_store.save(
-        session, loaded, checked.state, run.session_id, trials=1 if last_trial else 0
+        session,
+        loaded,
+        checked.state,
+        run.session_id,
+        trials=1 if last_trial else 0,
+        commit=not replay,
     )
     log = AdaptationLog(
         game_run_id=run.id,
@@ -142,6 +157,9 @@ def next_step(
         trial=last_trial.model_dump() if last_trial else None,
     )
     session.add(log)
-    session.commit()
-    session.refresh(log)
+    if replay:
+        session.flush()
+    else:
+        session.commit()
+        session.refresh(log)
     return _response(log)

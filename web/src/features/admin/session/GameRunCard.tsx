@@ -19,6 +19,7 @@ import {
 } from "@/types/api";
 
 import { FruitStrip } from "./FruitStrip";
+import { AdaptationPanel } from "./AdaptationPanel";
 import { FingerHitChart, InBandChart, OpennessChart } from "./HandCharts";
 import { PathTracePlot, RangeChart } from "./MovementCharts";
 import { PickPlaceMap } from "./PickPlaceMap";
@@ -210,6 +211,7 @@ export function GameRunCard({
           {run.game_id === "paint_wall" && <RangeChart run={run} />}
           {run.game_id === "grip_hold" && <InBandChart run={run} />}
           <MovementChart run={run} />
+          <AdaptationPanel logs={run.adaptation ?? []} />
         </>
       )}
     </Card>

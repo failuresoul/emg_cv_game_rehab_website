@@ -7,7 +7,7 @@ from app.models import PatientProfile, User
 from app.models import Session as SessionRecord
 from app.schemas.game import MetricsRecomputeRead
 from app.schemas.game_setting import AdminGameRead, GameSettingUpdate
-from app.schemas.metrics import PatientMetrics
+from app.schemas.metrics import GameLevel, PatientLevels, PatientMetrics
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
 from app.schemas.session import (
     AdminCalibrationRead,
@@ -21,6 +21,7 @@ from app.schemas.warmup import AdminWarmupHistory, ExerciseId
 from app.services import (
     exports,
     game_settings,
+    levels,
     games,
     patients,
     progress,
@@ -107,6 +108,26 @@ def get_patient_metrics(patient_id: int, session: SessionDep) -> PatientMetrics:
     profile, _ = _get_patient_or_404(session, patient_id)
     assert profile.id is not None
     return progress.patient_metrics(session, profile.id)
+
+
+@router.get("/patients/{patient_id}/levels")
+def get_patient_levels(patient_id: int, session: SessionDep) -> PatientLevels:
+    """The patient's engine mode and current difficulty level in each game played with it."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    return PatientLevels(
+        engine_mode=profile.engine_mode,  # type: ignore[arg-type]
+        games=[
+            GameLevel(
+                game_id=row.game_id,
+                engine=row.engine,
+                level=levels.level_of_state(row.state),
+                d={key: float(value) for key, value in (row.state.get("d") or {}).items()},
+                trials_seen=row.trials_seen,
+                updated_at=row.updated_at,
+            )
+            for row in levels.patient_engine_states(session, profile)
+        ],
+    )
 
 
 @router.get("/patients/{patient_id}/calibrations")

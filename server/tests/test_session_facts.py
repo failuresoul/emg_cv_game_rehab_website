@@ -200,8 +200,13 @@ def test_facts_shape(client: TestClient, patient_headers: Headers, session: Sess
     assert facts["duration_min"] == 30
     assert facts["baseline_available"] is True
     assert facts["games"] == {
-        "reach_activate": {"trials": 9, "success_rate": pytest.approx(6 / 9)},
-        "bloom": {"trials": 2, "success_rate": 0.5},
+        "reach_activate": {
+            "trials": 9,
+            "success_rate": pytest.approx(6 / 9),
+            "level_start": None,
+            "level_end": None,
+        },
+        "bloom": {"trials": 2, "success_rate": 0.5, "level_start": None, "level_end": None},
     }
     assert facts["directions"] == {"weak": [90], "strong": [0]}
     assert facts["flags"]["compensation_rate"] == pytest.approx(2 / 11)

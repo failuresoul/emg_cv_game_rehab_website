@@ -147,6 +147,11 @@ function GameCard({ game }: { game: SessionReportGame }) {
         <Icon size={28} aria-hidden className="text-primary shrink-0" />
         {t(definition.nameKey)}
       </h3>
+      {game.level_end != null && game.level_start != null && (
+        <p className="font-semibold">
+          {t("game.results.level", { end: game.level_end, start: game.level_start })}
+        </p>
+      )}
       <dl className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-4">
           <dt className="text-muted">{t("gameResults.column.score")}</dt>

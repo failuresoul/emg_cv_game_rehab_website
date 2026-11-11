@@ -366,8 +366,30 @@ class GameRunRead(BaseModel):
     summary: GameSummary | None
 
 
+class AdaptationLogRead(BaseModel):
+    """One decision of the difficulty engine and its safety layer (admin only)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    #: The trial the decision came after; 0 is the start of the run.
+    trial_no: int
+    engine: str
+    state_before: dict[str, Any]
+    state_after: dict[str, Any]
+    params: dict[str, Any]
+    decision: str
+    safety_override: str | None
+    cue: str | None
+    trial: dict[str, Any] | None
+    #: The difficulty as the patient's level (1-10), after the decision.
+    level: int
+    created_at: UtcDatetime
+
+
 class GameRunDetail(GameRunRead):
     trials: list[TrialRead]
+    #: The difficulty engine's decisions for the run, in trial order (admin only).
+    adaptation: list[AdaptationLogRead] = Field(default_factory=list)
 
 
 class LastSessionGame(BaseModel):

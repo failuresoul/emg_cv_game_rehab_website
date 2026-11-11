@@ -100,8 +100,10 @@ def save(
     state: EngineData,
     session_id: int | None,
     trials: int = 0,
+    commit: bool = True,
 ) -> EngineState:
-    """Stores the state (with the session it was used in) and counts the trials learned from."""
+    """Stores the state (with the session it was used in) and counts the trials learned from.
+    With commit=False it is only flushed, for a caller saving many steps at once."""
     row = loaded.row
     data = state.to_json()
     data[SESSION_KEY] = session_id if session_id is not None else row.state.get(SESSION_KEY)
@@ -109,7 +111,10 @@ def save(
     row.trials_seen += trials
     row.updated_at = utc_now()
     session.add(row)
-    session.commit()
-    session.refresh(row)
+    if commit:
+        session.commit()
+        session.refresh(row)
+    else:
+        session.flush()
     loaded.state = state
     return row

@@ -23,6 +23,7 @@ from app.schemas.metrics import (
     FactsSelfReport,
     SessionFacts,
 )
+from app.services import levels
 from app.services.metrics_catalog import get_metric
 from app.services.progress import (
     BASELINE_SESSIONS,
@@ -112,15 +113,27 @@ def choose_metrics(facts: Sequence[FactsMetric]) -> list[FactsMetric]:
     return [*changed, *unchanged][:MAX_FACT_METRICS]
 
 
-def _games(runs: Sequence[GameRun], trials: dict[int, list[Trial]]) -> dict[str, FactsGame]:
+def _games(
+    session: Session, runs: Sequence[GameRun], trials: dict[int, list[Trial]]
+) -> dict[str, FactsGame]:
     played: dict[str, list[Trial]] = defaultdict(list)
+    run_levels = levels.run_levels(session, [run.id for run in runs if run.id is not None])
+    starts: dict[str, int] = {}
+    ends: dict[str, int] = {}
     for run in runs:
         assert run.id is not None
         played[run.game_id].extend(trials.get(run.id, []))
+        found = run_levels.get(run.id)
+        if found:
+            # The first run of the game sets the start; the last one the end.
+            starts.setdefault(run.game_id, found.start)
+            ends[run.game_id] = found.end
     return {
         game_id: FactsGame(
             trials=len(found),
             success_rate=success_rate(trial.outcome for trial in found),
+            level_start=starts.get(game_id),
+            level_end=ends.get(game_id),
         )
         for game_id, found in played.items()
         if found
@@ -206,7 +219,7 @@ def build_facts(session: Session, record: SessionRecord) -> SessionFacts:
         affected_side=profile.affected_side,  # type: ignore[arg-type]
         duration_min=None if seconds is None else round(seconds / 60, 1),
         baseline_available=completed_before >= BASELINE_SESSIONS,
-        games=_games(runs, trials),
+        games=_games(session, runs, trials),
         metrics=_metrics(session, record, history),
         directions=directions(reach),
         flags=FactsFlags(

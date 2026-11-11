@@ -104,6 +104,9 @@ class SessionReportGame(BaseModel):
     #: More figures beside the headline, for the games that have them, in the order shown.
     extra_measures: list[GameMeasure] = Field(default_factory=list)
     previous: GameComparison | None
+    #: The difficulty level (1-10) the run started and ended at; None without adaptive settings.
+    level_start: int | None = None
+    level_end: int | None = None
 
 
 class WarmupComparison(WarmupSummary):

@@ -79,6 +79,10 @@ class FactsGame(BaseModel):
     #: Trials played, leaving out those the patient stopped.
     trials: int
     success_rate: float | None
+    #: The difficulty level (1-10) the game started and ended at in this session; None
+    #: without adaptive settings (engine L0, or a session before Day 12).
+    level_start: int | None = None
+    level_end: int | None = None
 
 
 class FactsMetric(BaseModel):
@@ -143,3 +147,21 @@ class SessionFacts(BaseModel):
     next_session: None = None
     #: The session raised a pain or new-symptoms flag, so feedback must show the safety notice.
     safety_notice_present: bool
+
+
+class GameLevel(BaseModel):
+    """A patient's stored difficulty in one game, for the admin."""
+
+    game_id: str
+    engine: str
+    #: 1-10, from the mean difficulty.
+    level: int
+    #: Each component's difficulty, 0 (easiest) to 1 (hardest).
+    d: dict[str, float]
+    trials_seen: int
+    updated_at: UtcDatetime
+
+
+class PatientLevels(BaseModel):
+    engine_mode: Literal["L0", "L1", "L2"]
+    games: list[GameLevel]

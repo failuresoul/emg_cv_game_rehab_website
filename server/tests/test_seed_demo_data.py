@@ -9,7 +9,9 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, col, func, select
 
 from app.models import (
+    AdaptationLog,
     Calibration,
+    EngineState,
     GameRun,
     PatientProfile,
     SessionFeedback,
@@ -22,6 +24,7 @@ from app.schemas.game import GameSummary, TrialCreate
 from app.schemas.session import DIRECTIONS_DEG, CalibrationCreate
 from app.schemas.session_feedback import SessionFeedbackCreate
 from app.schemas.warmup import WarmupResultCreate
+from app.services.levels import run_levels
 from app.services.users import authenticate
 from scripts import seed_demo_data as demo
 
@@ -438,6 +441,69 @@ def test_salma_has_exactly_one_unreviewed_pain_alert(session: Session) -> None:
     assert feedback.pain_0_10 == 5
 
 
+def session_levels(session: Session, profile: PatientProfile) -> list[float]:
+    """The mean level reached over the games of each session, oldest first."""
+    records = session.exec(
+        select(SessionRecord)
+        .where(SessionRecord.patient_id == profile.id)
+        .order_by(col(SessionRecord.started_at))
+    ).all()
+    means = []
+    for record in records:
+        runs = session.exec(select(GameRun).where(GameRun.session_id == record.id)).all()
+        levels = run_levels(session, [run.id for run in runs if run.id is not None])
+        assert len(levels) == len(runs)
+        means.append(sum(level.end for level in levels.values()) / len(levels))
+    return means
+
+
+def overrides_of(session: Session, profile: PatientProfile) -> list[str]:
+    runs = session.exec(
+        select(GameRun.id)
+        .join(SessionRecord, col(GameRun.session_id) == col(SessionRecord.id))
+        .where(SessionRecord.patient_id == profile.id)
+    ).all()
+    logs = session.exec(
+        select(AdaptationLog).where(col(AdaptationLog.game_run_id).in_(list(runs)))
+    ).all()
+    return [log.safety_override for log in logs if log.safety_override]
+
+
+def test_engine_decisions_follow_every_demo_trial(session: Session) -> None:
+    demo.seed_demo_data(session, now=NOW)
+
+    profiles = {profile.affected_side: profile for profile in demo_profiles(session)}
+    for profile in profiles.values():
+        assert profile.engine_mode == "L1"
+        states = session.exec(
+            select(EngineState).where(EngineState.patient_id == profile.id)
+        ).all()
+        assert sorted(state.game_id for state in states) == sorted(demo.GAMES)
+        assert all(state.engine == "L1" and state.trials_seen > 0 for state in states)
+    # A decision at the start of each run and after each of its trials.
+    for run in session.exec(select(GameRun)).all():
+        assert run.engine == "L1"
+        trial_nos = session.exec(
+            select(Trial.trial_no).where(Trial.game_run_id == run.id).order_by(col(Trial.trial_no))
+        ).all()
+        logged = session.exec(
+            select(AdaptationLog.trial_no)
+            .where(AdaptationLog.game_run_id == run.id)
+            .order_by(col(AdaptationLog.trial_no))
+        ).all()
+        assert list(logged) == [0, *trial_nos]
+
+    # Rahim's levels climb over his later sessions.
+    rahim = session_levels(session, profiles["left"])
+    assert rahim[-1] > max(rahim[1:4])
+    assert rahim[-1] > rahim[-3]
+    # Salma tires and compensates, and the safety rules step in.
+    salma = overrides_of(session, profiles["right"])
+    assert any(override.startswith("Compensation") for override in salma)
+    assert any("Signs of tiring" in override for override in salma)
+    assert session_levels(session, profiles["right"])[-1] < rahim[-1]
+
+
 def _snapshot(session: Session) -> list[Any]:
     calibrations = session.exec(select(Calibration).order_by(Calibration.created_at)).all()
     trials = session.exec(select(Trial).order_by(Trial.created_at, Trial.trial_no)).all()
@@ -473,7 +539,15 @@ def test_clear_removes_every_demo_row_and_keeps_real_patients(
     assert session.exec(select(User).where(col(User.email).startswith("demo."))).all() == []
     assert count(session, SessionRecord) == 1
     assert session.exec(select(SessionRecord)).one().id == real_session
-    for model in (Calibration, WarmupResult, GameRun, Trial, SessionFeedback):
+    for model in (
+        Calibration,
+        WarmupResult,
+        GameRun,
+        Trial,
+        SessionFeedback,
+        AdaptationLog,
+        EngineState,
+    ):
         assert count(session, model) == 0
     assert authenticate(session, "patient@example.com", PATIENT_PASSWORD) is not None
     assert demo.clear_demo_data(session) == 0

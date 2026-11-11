@@ -16,6 +16,7 @@ import type {
   GameSettingUpdate,
   Patient,
   PatientCreate,
+  PatientLevels,
   PatientMetrics,
   PatientProgress,
   PatientUpdate,
@@ -205,5 +206,13 @@ export function useAdminPatientMetrics(id: number) {
   return useQuery({
     queryKey: [ADMIN_KEY, "patient", id, "metrics"],
     queryFn: async () => (await api.get<PatientMetrics>(`/admin/patients/${id}/metrics`)).data,
+  });
+}
+
+/** The patient's engine mode and current difficulty level in each game. */
+export function useAdminPatientLevels(id: number) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "patient", id, "levels"],
+    queryFn: async () => (await api.get<PatientLevels>(`/admin/patients/${id}/levels`)).data,
   });
 }

@@ -8,8 +8,10 @@ Run from server/ with the virtual environment active:
 Only patients marked is_demo are ever removed. The data comes from a fixed random seed, so it is
 the same every time; only the dates follow today's date and the passwords are new on every run.
 
-Each session also gets the server's trial measures and its catalogue measures (SessionMetric),
-as real sessions do when their games and the session end.
+Each session also gets the difficulty engine's decisions (EngineState, AdaptationLog), replayed
+from its trials, the server's trial measures and its catalogue measures (SessionMetric), as real
+sessions do while playing and when they end. Demo Salma tires late in Reach and squeeze in two
+sessions, so her decisions show the safety layer stepping in.
 
 Demo Rahim (left side affected) improves steadily. Demo Salma (right side affected) improves more
 slowly and has one unreviewed pain alert. Every session plays the three reaching games and the
@@ -37,6 +39,8 @@ from app.models import (
     Calibration,
     GameRun,
     PatientProfile,
+    AdaptationLog,
+    EngineState,
     SessionFeedback,
     SessionMetric,
     Trial,
@@ -46,12 +50,14 @@ from app.models import (
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
 from app.schemas.common import Side
-from app.schemas.game import GameSummary, TrialCreate
+from app.schemas.game import GameSummary, TrialCompensation, TrialCreate
 from app.schemas.patient import PatientCreate
 from app.schemas.session import DIRECTIONS_DEG, CalibrationCreate
 from app.schemas.session_feedback import SessionFeedbackCreate
 from app.schemas.warmup import ExerciseId, WarmupResultCreate
-from app.services import safety, session_metrics, trial_metrics
+from app.engine.trial_summary import last_trial
+from app.schemas.common import as_utc
+from app.services import adaptation, safety, session_metrics, trial_metrics
 from app.services.patients import create_patient
 
 SEED = 20261110
@@ -104,6 +110,9 @@ class DemoPatient:
     improvement: float
     #: The session index with a pain score of 5, which raises an unreviewed alert.
     pain_session: int | None = None
+    #: Session indices where the patient tires late in Reach and squeeze: the last trials are
+    #: missed with the trunk leaning, which the difficulty engine's safety layer answers.
+    tiring_sessions: tuple[int, ...] = ()
 
 
 DEMO_PATIENTS = (
@@ -127,6 +136,7 @@ DEMO_PATIENTS = (
         days_ago=(13, 10, 8, 5, 3, 1),
         improvement=0.4,
         pain_session=3,
+        tiring_sessions=(2, 4),
     ),
 )
 
@@ -1443,6 +1453,7 @@ def clear_demo_data(session: Session) -> int:
         session.exec(select(GameRun.id).where(col(GameRun.session_id).in_(session_ids))).all()
     )
     # Children first, so no row is ever left pointing at a deleted one.
+    _delete(session, delete(AdaptationLog).where(col(AdaptationLog.game_run_id).in_(run_ids)))
     _delete(session, delete(Trial).where(col(Trial.game_run_id).in_(run_ids)))
     _delete(session, delete(GameRun).where(col(GameRun.session_id).in_(session_ids)))
     _delete(session, delete(WarmupResult).where(col(WarmupResult.session_id).in_(session_ids)))
@@ -1452,6 +1463,7 @@ def clear_demo_data(session: Session) -> int:
     )
     _delete(session, delete(SessionMetric).where(col(SessionMetric.session_id).in_(session_ids)))
     _delete(session, delete(SessionRecord).where(col(SessionRecord.id).in_(session_ids)))
+    _delete(session, delete(EngineState).where(col(EngineState.patient_id).in_(profile_ids)))
     user_ids = [profile.user_id for profile in profiles]
     _delete(session, delete(PatientProfile).where(col(PatientProfile.id).in_(profile_ids)))
     _delete(session, delete(User).where(col(User.id).in_(user_ids)))
@@ -1502,6 +1514,8 @@ def _add_session(
         trials = make_game_trials(
             rng, game_id, calibration.reach_radii_sw, progress, demo.improvement
         )
+        if game_id == "reach_activate" and index in demo.tiring_sessions:
+            trials = tire(trials)
         summary = summarise_trials(game_id, trials)
         clock += timedelta(minutes=1)
         run_start = clock
@@ -1509,7 +1523,7 @@ def _add_session(
         run = GameRun(
             session_id=record.id,
             game_id=game_id,
-            engine="L0",
+            engine=profile.engine_mode,
             input_source="cv_grip",
             params_initial={"seed": rng.randrange(1, 2**31)},
             started_at=run_start,
@@ -1589,14 +1603,76 @@ def seed_demo_data(
     return logins
 
 
+#: The trials at the end of a tiring Reach and squeeze run, from the last.
+TIRING_TRIALS = 6
+
+
+def tire(trials: list[TrialCreate]) -> list[TrialCreate]:
+    """The last trials of a run as a tiring patient's: two compensated successes, then misses
+    with the trunk leaning forward."""
+    leaning = {"flagged": True, "type": "lean", "max_values": {"trunk_lean_deg": 14.0}}
+    changed = list(trials)
+    for position in range(len(trials) - TIRING_TRIALS, len(trials)):
+        trial = trials[position]
+        late = position >= len(trials) - TIRING_TRIALS + 2
+        update: dict[str, Any] = {"compensation": TrialCompensation.model_validate(leaning)}
+        if late:
+            update |= {
+                "outcome": "reach_fail",
+                "timings": trial.timings.model_copy(
+                    update={"enter": None, "dwell_done": None, "activation_start": None,
+                            "activation_done": None}
+                ),
+                "metrics": trial.metrics.model_copy(
+                    update={"movement_ms": None, "activation_latency_ms": None,
+                            "activation_peak": None}
+                ),
+            }
+        changed[position] = trial.model_copy(update=update)
+    return changed
+
+
+def replay_adaptation(session: Session, profile: PatientProfile, record: SessionRecord) -> None:
+    """The difficulty engine's decisions for the session's runs, from their trials in order,
+    as they would have been made while playing: EngineState and AdaptationLog rows."""
+    assert record.id is not None
+    runs = session.exec(
+        select(GameRun).where(GameRun.session_id == record.id).order_by(col(GameRun.id))
+    ).all()
+    for run in runs:
+        assert run.id is not None
+        trials = session.exec(
+            select(Trial).where(Trial.game_run_id == run.id).order_by(col(Trial.trial_no))
+        ).all()
+        adaptation.next_step(session, profile, run, None, now=as_utc(run.started_at), replay=True)
+        # Read every field now: each decision commits, which expires the rows.
+        saved_trials = [
+            TrialCreate.model_validate({name: getattr(trial, name) for name in TrialCreate.model_fields})
+            for trial in trials
+        ]
+        started = as_utc(run.started_at)
+        game_id = run.game_id
+        for saved in saved_trials:
+            clock = started + timedelta(milliseconds=saved.timings.end or 0)
+            adaptation.next_step(
+                session, profile, run, last_trial(game_id, saved), now=clock, replay=True
+            )
+
+
 def compute_demo_metrics(session: Session, profile: PatientProfile) -> None:
-    """The server's trial measures and each session's catalogue measures, as a real session's
-    are when its games and the session end."""
-    statement = select(SessionRecord.id).where(SessionRecord.patient_id == profile.id)
-    for session_id in session.exec(statement).all():
-        assert session_id is not None
-        trial_metrics.recompute(session, session_id)
-        session_metrics.compute_session_metrics(session, session_id)
+    """The difficulty engine's decisions, the server's trial measures and each session's
+    catalogue measures, as a real session's are while playing and when it ends."""
+    statement = (
+        select(SessionRecord)
+        .where(SessionRecord.patient_id == profile.id)
+        .order_by(col(SessionRecord.started_at))
+    )
+    for record in session.exec(statement).all():
+        assert record.id is not None
+        replay_adaptation(session, profile, record)
+        session.commit()
+        trial_metrics.recompute(session, record.id)
+        session_metrics.compute_session_metrics(session, record.id)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

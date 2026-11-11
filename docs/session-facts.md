@@ -19,7 +19,7 @@ alone.
 | `affected_side` | `"left"` \| `"right"` | The affected side |
 | `duration_min` | number \| null | Start to end, in minutes; `null` while the session is open or for one abandoned without an end |
 | `baseline_available` | boolean | At least two completed sessions came before this one, so changes can be judged |
-| `games` | object | For each game played: `{ "trials": n, "success_rate": share or null }`, leaving out stopped trials |
+| `games` | object | For each game played: `{ "trials": n, "success_rate": share or null, "level_start": 1–10 or null, "level_end": 1–10 or null }`, leaving out stopped trials. `level_start` is the difficulty level the game began at in this session (its first play) and `level_end` the level it reached (its last play); both are null when the game ran with fixed settings. Shown to the patient as "Level reached: 6 (started at 5)" |
 | `metrics` | array (at most 8) | This session's measures against the patient's baseline; see below |
 | `directions` | object | `{ "weak": [deg], "strong": [deg] }`: Reach and squeeze directions (0 outward, 45 up and out, 90 up, …) with a success rate below 0.5 (weak) or above 0.85 (strong) in this session |
 | `flags.compensation_rate` | number \| null | Share of trials with compensation flagged (trunk, lean, shoulder hike or upper arm); `null` without trials |
@@ -59,10 +59,10 @@ Each item is one measure of the [metrics catalogue](../shared/metrics-catalog.js
   "duration_min": 31.5,
   "baseline_available": true,
   "games": {
-    "reach_activate": { "trials": 20, "success_rate": 0.85 },
-    "balloon_pop": { "trials": 20, "success_rate": 0.75 },
-    "bloom": { "trials": 15, "success_rate": 0.8 },
-    "pick_place": { "trials": 12, "success_rate": 0.67 }
+    "reach_activate": { "trials": 20, "success_rate": 0.85, "level_start": 5, "level_end": 6 },
+    "balloon_pop": { "trials": 20, "success_rate": 0.75, "level_start": 4, "level_end": 4 },
+    "bloom": { "trials": 15, "success_rate": 0.8, "level_start": 3, "level_end": 4 },
+    "pick_place": { "trials": 12, "success_rate": 0.67, "level_start": 5, "level_end": 5 }
   },
   "metrics": [
     {

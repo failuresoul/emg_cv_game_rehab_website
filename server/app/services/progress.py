@@ -35,7 +35,7 @@ from app.schemas.progress import (
     SessionReportGame,
     WarmupComparison,
 )
-from app.services import session_feedback
+from app.services import levels, session_feedback
 from app.services.game_measures import extra_measures, main_measure
 from app.services.metrics_catalog import load_catalog
 from app.services.sessions import duration_seconds, get_last_session_record, list_calibrations
@@ -384,10 +384,12 @@ def get_session_report(session: Session, record: SessionRecord) -> SessionReport
             elapsed = as_utc(run.ended_at) - as_utc(run.started_at)
             active_ms += max(elapsed.total_seconds(), 0) * 1000
 
+    run_levels = levels.run_levels(session, [run.id for run in runs if run.id is not None])
     games: list[SessionReportGame] = []
     for run in runs:
         assert run.id is not None
         summary = _game_summary(run)
+        found = run_levels.get(run.id)
         games.append(
             SessionReportGame(
                 run_id=run.id,
@@ -402,6 +404,8 @@ def get_session_report(session: Session, record: SessionRecord) -> SessionReport
                 main_measure=main_measure(run.game_id, summary),
                 extra_measures=extra_measures(run.game_id, summary),
                 previous=_previous_run(session, record, run.game_id),
+                level_start=found.start if found else None,
+                level_end=found.end if found else None,
             )
         )
 

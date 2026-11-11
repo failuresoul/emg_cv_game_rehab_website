@@ -110,6 +110,8 @@ interface ResultsProps {
   onContinue: () => void;
   /** "Next game" while more games are queued, "Continue" otherwise. */
   continueKey: TranslationKey;
+  /** The level the game started and ended at, when the difficulty adapts. */
+  levels: { start: number; end: number } | null;
 }
 
 function Results({
@@ -119,6 +121,7 @@ function Results({
   onRetrySave,
   onContinue,
   continueKey,
+  levels,
 }: ResultsProps) {
   const measures = allMeasures(definition.id, result.summary);
   const saveKey = SAVE_KEYS[saveStatus];
@@ -127,6 +130,11 @@ function Results({
       <Card className="flex w-full max-w-lg flex-col gap-5" role="dialog" aria-modal="true">
         <h2 className="text-2xl font-bold">{t("game.results.title")}</h2>
         <p className="text-muted">{t(definition.nameKey)}</p>
+        {levels && (
+          <p className="text-lg font-semibold">
+            {t("game.results.level", { end: levels.end, start: levels.start })}
+          </p>
+        )}
         <dl
           className={
             measures.length > 1
@@ -292,6 +300,7 @@ const GamePlay = memo(function GamePlay({
     });
   }, [seed, warmupAtStart, definition, engineMode]);
   const [level, setLevel] = useState<number | null>(null);
+  const [startLevel, setStartLevel] = useState<number | null>(null);
   const [banner, setBanner] = useState<TranslationKey | null>(null);
 
   useEffect(() => {
@@ -463,6 +472,7 @@ const GamePlay = memo(function GamePlay({
         ? provider.subscribe((event) => {
             if (event.type === "level") {
               setLevel(event.level);
+              setStartLevel((current) => current ?? event.level);
               const key = levelMessages.message(event.previous, event.level, performance.now());
               if (key) {
                 setFeedback({
@@ -718,6 +728,7 @@ const GamePlay = memo(function GamePlay({
           }
           onContinue={onContinue}
           continueKey={continueKey}
+          levels={startLevel !== null && level !== null ? { start: startLevel, end: level } : null}
         />
       )}
     </div>

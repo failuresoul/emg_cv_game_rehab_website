@@ -591,6 +591,47 @@ export interface TrialRead extends TrialCreate {
 
 export interface GameRunDetail extends GameRun {
   trials: TrialRead[];
+  /** The difficulty engine's decisions, in trial order (admin only). */
+  adaptation?: AdaptationLogRow[];
+}
+
+/** The difficulty engine's state: one difficulty (0–1) per component, and its bookkeeping. */
+export interface EngineStateJson {
+  d?: Record<string, number>;
+  streak?: number;
+  turn?: number;
+}
+
+/** One decision of the difficulty engine and its safety layer. */
+export interface AdaptationLogRow {
+  /** The trial the decision came after; 0 is the start of the run. */
+  trial_no: number;
+  engine: string;
+  state_before: EngineStateJson;
+  state_after: EngineStateJson;
+  params: Record<string, number>;
+  decision: string;
+  safety_override: string | null;
+  cue: EngineCue | null;
+  trial: EngineLastTrial | null;
+  /** 1–10, after the decision. */
+  level: number;
+  created_at: string;
+}
+
+/** A patient's current difficulty in one game, for the admin. */
+export interface GameLevel {
+  game_id: GameId;
+  engine: string;
+  level: number;
+  d: Record<string, number>;
+  trials_seen: number;
+  updated_at: string;
+}
+
+export interface PatientLevels {
+  engine_mode: EngineMode;
+  games: GameLevel[];
 }
 
 /** Everything recorded in one session, for the admin session page. */
@@ -733,6 +774,9 @@ export interface SessionReportGame {
   /** More figures beside the headline, the same ones extraMeasures() words. */
   extra_measures?: GameMeasure[];
   previous: GameComparison | null;
+  /** The level (1–10) the game started and ended at; null without adaptive settings. */
+  level_start?: number | null;
+  level_end?: number | null;
 }
 
 /** One figure of a game run, named so the app can word it. */
