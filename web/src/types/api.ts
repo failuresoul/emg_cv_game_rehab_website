@@ -35,7 +35,36 @@ export interface PatientProfile {
   weekly_goal: number;
   /** A demo patient with synthetic data, from server/scripts/seed_demo_data.py. */
   is_demo: boolean;
+  /** Which parameter engine sets the games' difficulty. Older servers leave it out: L0. */
+  engine_mode?: EngineMode;
   created_at: string;
+}
+
+/** L0 fixed settings; L1 the staircase; L2 (Day 13) the model-based engine. */
+export type EngineMode = "L0" | "L1" | "L2";
+
+export type EngineCue = "posture" | "encourage" | "rest" | "finish_soon" | "finish";
+
+/** The summary of the last trial the engine learns from. */
+export interface EngineLastTrial {
+  trial_no: number;
+  outcome: TrialOutcome;
+  failure_type: "reach_fail" | "activation_fail" | "miss" | null;
+  compensated: boolean;
+  movement_ms: number | null;
+  completion_ms: number | null;
+  activation_peak: number | null;
+}
+
+export interface EngineNextResponse {
+  params: Record<string, number>;
+  /** 1–10, from the mean difficulty. */
+  level: number;
+  cue: EngineCue | null;
+  /** For the admin and research only; never shown to patients. */
+  decision: string;
+  safety_override: string | null;
+  engine: string;
 }
 
 export interface Me extends User {

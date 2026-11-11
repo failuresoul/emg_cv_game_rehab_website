@@ -1,10 +1,13 @@
 import { Pause, Play } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 
+import { cueAction, LevelMessages } from "@/ai/engineCues";
 import { FixedProvider } from "@/ai/paramsProvider";
+import { RemoteProvider } from "@/ai/remoteProvider";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useAuth } from "@/features/auth/AuthContext";
 import { useSession } from "@/features/session/SessionContext";
 import { SessionExitButton } from "@/features/session/SessionExitButton";
 import { sessionStops } from "@/features/session/sessionStop";
@@ -34,6 +37,7 @@ import { gameAudio } from "./audio";
 import { COUNTDOWN_FROM, GameRuntime, type PauseReason, type RuntimeStage } from "./gameRuntime";
 import { createPlayArea, type PlayArea } from "./playArea";
 import { GAMES } from "./registry";
+import { RestOverlay } from "./RestOverlay";
 import { createRng, newSeed } from "./rng";
 import { drawSkeletonLayer, type SkeletonLayerInput } from "./skeletonLayer";
 import { type SaveStatus, TrialLogger } from "./trialLogger";
@@ -45,6 +49,7 @@ import type {
   GameInstance,
   GameResult,
   GameTracking,
+  ParamSpec,
 } from "./types";
 
 const BACKGROUND = "#0B1416";
@@ -72,7 +77,15 @@ const PAUSE_KEYS: Record<PauseReason, TranslationKey> = {
   manual: "game.paused.manual",
   hand: "game.paused.hand",
   hidden: "game.paused.hidden",
+  rest: "game.rest.title",
 };
+
+/** The settings the server's engine may change: those with a range and a harder direction. */
+function adaptableNames(params: readonly ParamSpec[]): string[] {
+  return params
+    .filter((spec) => spec.component !== "fixed" && spec.min < spec.max && spec.harder !== null)
+    .map((spec) => spec.name);
+}
 
 interface Hud {
   trial: number;
@@ -260,16 +273,26 @@ const GamePlay = memo(function GamePlay({
   // This session's warm-up, as it was when the game began.
   const { warmupResults } = useSession();
   const [warmupAtStart] = useState(warmupResults);
-  const provider = useMemo(
-    () =>
-      new FixedProvider({
-        // This game's settings, with the defaults the admin chose for it.
-        specsFor: (id) => (id === definition.id ? definition.params : GAMES[id].params),
-        seed,
-        defaultsFor: (id) => GAMES[id].personalDefaults?.(warmupAtStart) ?? {},
-      }),
-    [seed, warmupAtStart, definition],
-  );
+  // The patient's engine as the game began: L0 fixed settings, L1 or L2 from the server.
+  const { user } = useAuth();
+  const [engineMode] = useState(() => user?.patient_profile?.engine_mode ?? "L0");
+  const provider = useMemo(() => {
+    const options = {
+      // This game's settings, with the defaults the admin chose for it.
+      specsFor: (id: typeof definition.id) =>
+        id === definition.id ? definition.params : GAMES[id].params,
+      seed,
+      defaultsFor: (id: typeof definition.id) => GAMES[id].personalDefaults?.(warmupAtStart) ?? {},
+    };
+    if (engineMode === "L0") return new FixedProvider(options);
+    return new RemoteProvider({
+      ...options,
+      engine: engineMode,
+      adaptableFor: (id) => adaptableNames(options.specsFor(id)),
+    });
+  }, [seed, warmupAtStart, definition, engineMode]);
+  const [level, setLevel] = useState<number | null>(null);
+  const [banner, setBanner] = useState<TranslationKey | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -380,7 +403,13 @@ const GamePlay = memo(function GamePlay({
         engine: provider.engine,
         next: (trialNo?: number) => provider.nextParams(definition.id, logger.history, trialNo),
       },
-      logger,
+      logger: {
+        log: (trial) => {
+          logger.log(trial);
+          // The engine learns from each trial as it ends.
+          if (provider instanceof RemoteProvider) provider.report(definition.id, trial);
+        },
+      },
       compensation: monitor,
       emit: (item) => setFeedback({ ...item, id: ++feedbackId }),
     };
@@ -397,7 +426,12 @@ const GamePlay = memo(function GamePlay({
         // Not before: StrictMode mounts twice in development, and that must not create a run.
         started = true;
         setStage("playing");
-        void logger.start();
+        void logger.start().then(() => {
+          const runId = logger.gameRunId;
+          if (provider instanceof RemoteProvider && runId !== null) {
+            void provider.start(runId, definition.id);
+          }
+        });
       },
       onPause: (reason) => {
         setStage("paused");
@@ -421,6 +455,36 @@ const GamePlay = memo(function GamePlay({
       },
     });
     runtimeRef.current = runtime;
+
+    // The engine's level and the safety layer's cues. Patients never see how they are chosen.
+    const levelMessages = new LevelMessages();
+    const unsubscribeEngine =
+      provider instanceof RemoteProvider
+        ? provider.subscribe((event) => {
+            if (event.type === "level") {
+              setLevel(event.level);
+              const key = levelMessages.message(event.previous, event.level, performance.now());
+              if (key) {
+                setFeedback({
+                  key,
+                  tone: event.level > (event.previous ?? 0) ? "positive" : "gentle",
+                  id: ++feedbackId,
+                });
+              }
+              return;
+            }
+            const action = cueAction(event.cue);
+            if (action.kind === "message") {
+              setFeedback({ key: action.key, tone: action.tone, id: ++feedbackId });
+            } else if (action.kind === "banner") {
+              setBanner(action.key);
+            } else if (action.kind === "rest") {
+              runtime.pause("rest", performance.now());
+            } else {
+              runtime.complete();
+            }
+          })
+        : () => {};
 
     // requestAnimationFrame stops in a hidden tab, so the loop alone would never see it.
     const onVisibility = () => {
@@ -525,6 +589,7 @@ const GamePlay = memo(function GamePlay({
         void logger.end({ status: "aborted", score: summary.score, summary: summary.summary });
       }
       unsubscribeLogger();
+      unsubscribeEngine();
       game.destroy();
       runtimeRef.current = null;
     };
@@ -547,6 +612,7 @@ const GamePlay = memo(function GamePlay({
           {t("game.hud.trial", { n: hud.trial, total: hud.trialsPlanned })}
         </p>
         <p className="tabular-nums">{t("game.hud.score", { value: hud.score })}</p>
+        {level !== null && <p className="tabular-nums">{t("game.hud.level", { n: level })}</p>}
         {hud.items.map((item) => (
           <p key={item.key} className="tabular-nums">
             {t(item.key, item.params)}
@@ -600,7 +666,20 @@ const GamePlay = memo(function GamePlay({
         </div>
       )}
 
-      {stage === "paused" && pauseReason && (
+      {banner && stage !== "finished" && (
+        <p
+          role="status"
+          className="bg-primary absolute top-20 left-1/2 -translate-x-1/2 rounded-full px-5 py-2 font-semibold"
+        >
+          {t(banner)}
+        </p>
+      )}
+
+      {stage === "paused" && pauseReason === "rest" && (
+        <RestOverlay onContinue={() => runtimeRef.current?.resume(performance.now())} />
+      )}
+
+      {stage === "paused" && pauseReason && pauseReason !== "rest" && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60 p-4">
           <Card className="flex w-full max-w-lg flex-col gap-4" role="dialog" aria-modal="true">
             <h2 className="text-2xl font-bold">{t("game.paused.title")}</h2>

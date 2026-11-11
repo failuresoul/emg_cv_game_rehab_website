@@ -1,4 +1,4 @@
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -87,6 +87,8 @@ class PatientProfileRead(BaseModel):
     weekly_goal: int
     #: A demo patient with synthetic data, from scripts/seed_demo_data.py.
     is_demo: bool = False
+    #: Which parameter engine sets the games' difficulty: L0 fixed, L1 staircase, L2 (Day 13).
+    engine_mode: Literal["L0", "L1", "L2"] = "L1"
     created_at: UtcDatetime
 
 

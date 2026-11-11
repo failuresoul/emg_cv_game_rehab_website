@@ -7,7 +7,8 @@ export const COUNTDOWN_STEP_MS = 1000;
 export const RESUME_DELAY_MS = 1000;
 
 export type RuntimeStage = "countdown" | "playing" | "paused" | "finished";
-export type PauseReason = "manual" | "hand" | "hidden";
+/** "rest": a short rest the game suggested; like "manual", only the patient ends it. */
+export type PauseReason = "manual" | "hand" | "hidden" | "rest";
 
 export interface FrameConditions {
   /** False once the hand has been missing for 500 ms (see TrackingState.handPresent). */
@@ -127,6 +128,11 @@ export class GameRuntime {
     this.finish(false);
   }
 
+  /** Ends the game as finished, with what was played: for example after a long session. */
+  complete(): void {
+    this.finish(true);
+  }
+
   private runCountdown(wallMs: number): void {
     this.countdownStart ??= wallMs;
     const elapsed = wallMs - this.countdownStart;
@@ -147,7 +153,7 @@ export class GameRuntime {
   }
 
   private checkAutoResume(wallMs: number, { handPresent, hidden }: FrameConditions): void {
-    if (this.reason === "manual") return;
+    if (this.reason === "manual" || this.reason === "rest") return;
     if (hidden || !handPresent) {
       this.okSince = null;
       return;
