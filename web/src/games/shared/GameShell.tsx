@@ -28,7 +28,7 @@ import { VisionStatusCard } from "@/vision/VisionStatusCard";
 import { CompensationMonitor } from "@/warmup/compensation";
 import { COMPENSATION_CONFIG } from "@/warmup/compensationConfig";
 
-import { extraMeasure, mainMeasure, type MainMeasure } from "@/features/games/results";
+import { allMeasures } from "@/features/games/results";
 
 import { gameAudio } from "./audio";
 import { COUNTDOWN_FROM, GameRuntime, type PauseReason, type RuntimeStage } from "./gameRuntime";
@@ -107,10 +107,7 @@ function Results({
   onContinue,
   continueKey,
 }: ResultsProps) {
-  const measures = [
-    mainMeasure(definition.id, result.summary),
-    extraMeasure(definition.id, result.summary),
-  ].filter((item): item is MainMeasure => item !== null);
+  const measures = allMeasures(definition.id, result.summary);
   const saveKey = SAVE_KEYS[saveStatus];
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-black/60 p-4">

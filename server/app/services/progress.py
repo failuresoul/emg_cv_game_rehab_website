@@ -3,7 +3,8 @@
 Days are the patient's local days: the browser sends its offset from UTC in minutes.
 """
 
-from collections import Counter
+from collections import Counter, defaultdict
+from dataclasses import dataclass
 from collections.abc import Iterable, Sequence
 from datetime import date, datetime, timedelta
 
@@ -26,7 +27,7 @@ from app.schemas.progress import (
     WarmupComparison,
 )
 from app.services import session_feedback
-from app.services.game_measures import extra_measure, main_measure
+from app.services.game_measures import extra_measures, main_measure
 from app.services.sessions import duration_seconds, get_last_session_record, list_calibrations
 from app.services.warmup_summary import summaries_for_sessions, summarise
 
@@ -123,13 +124,29 @@ def game_success_rates(session: Session, session_ids: Sequence[int]) -> dict[int
     }
 
 
-HAND_GAMES = ("bloom", "finger_piano")
+#: Games whose trials give per-session figures for the progress series.
+FIGURE_GAMES = ("bloom", "finger_piano", "path_trace", "paint_wall")
+#: The trial metric averaged for each game's figure (Finger piano adds up notes instead).
+MEAN_METRICS = {
+    "bloom": "peak_openness",
+    "path_trace": "sparc",
+    "paint_wall": "achieved_range_deg",
+}
 
 
-def hand_game_figures(
-    session: Session, session_ids: Sequence[int]
-) -> dict[int, tuple[float | None, float | None]]:
-    """For each session with a hand game: Bloom's average peak openness and Finger piano's hit rate.
+@dataclass(frozen=True)
+class SessionFigures:
+    """A session's figures from the hand and movement-quality games; None without the game."""
+
+    bloom_peak_openness: float | None = None
+    piano_hit_rate: float | None = None
+    path_sparc: float | None = None
+    elbow_range_deg: float | None = None
+
+
+def session_figures(session: Session, session_ids: Sequence[int]) -> dict[int, SessionFigures]:
+    """For each session: Bloom's mean peak openness, Finger piano's hit rate (notes played over
+    notes asked), Path trace's mean SPARC and Paint the wall's mean elbow range.
 
     Trials the patient stopped are left out. A session without one of the games has None for it.
     """
@@ -140,30 +157,40 @@ def hand_game_figures(
         .join(GameRun, col(Trial.game_run_id) == col(GameRun.id))
         .where(
             col(GameRun.session_id).in_(session_ids),
-            col(GameRun.game_id).in_(HAND_GAMES),
+            col(GameRun.game_id).in_(FIGURE_GAMES),
             Trial.outcome != "aborted",
         )
     )
-    peaks: dict[int, list[float]] = {}
+    values: dict[tuple[int, str], list[float]] = defaultdict(list)
     notes: dict[int, list[int]] = {}
     for session_id, game_id, metrics in session.exec(statement).all():
-        values = metrics or {}
-        if game_id == "bloom":
-            peak = values.get("peak_openness")
-            if isinstance(peak, int | float):
-                peaks.setdefault(session_id, []).append(float(peak))
-        else:
-            hits, total = values.get("hits"), values.get("notes_total")
+        found = metrics or {}
+        if game_id == "finger_piano":
+            hits, total = found.get("hits"), found.get("notes_total")
             if isinstance(hits, int) and isinstance(total, int) and total > 0:
                 tally = notes.setdefault(session_id, [0, 0])
                 tally[0] += hits
                 tally[1] += total
+            continue
+        value = found.get(MEAN_METRICS[game_id])
+        if isinstance(value, int | float) and not isinstance(value, bool):
+            values[(session_id, game_id)].append(float(value))
+
+    def mean(session_id: int, game_id: str) -> float | None:
+        found = values.get((session_id, game_id))
+        return sum(found) / len(found) if found else None
+
+    sessions = {session_id for session_id, _ in values} | set(notes)
     return {
-        session_id: (
-            sum(peaks[session_id]) / len(peaks[session_id]) if session_id in peaks else None,
-            notes[session_id][0] / notes[session_id][1] if session_id in notes else None,
+        session_id: SessionFigures(
+            bloom_peak_openness=mean(session_id, "bloom"),
+            piano_hit_rate=(
+                notes[session_id][0] / notes[session_id][1] if session_id in notes else None
+            ),
+            path_sparc=mean(session_id, "path_trace"),
+            elbow_range_deg=mean(session_id, "paint_wall"),
         )
-        for session_id in set(peaks) | set(notes)
+        for session_id in sessions
     }
 
 
@@ -199,12 +226,12 @@ def get_progress(
     areas = _hull_areas(session, ids)
     warmups = summaries_for_sessions(session, ids)
     rates = game_success_rates(session, ids)
-    hands = hand_game_figures(session, ids)
+    figures = session_figures(session, ids)
     series: list[ProgressPoint] = []
     for record in completed:
         assert record.id is not None
         warmup = warmups.get(record.id)
-        openness, hit_rate = hands.get(record.id, (None, None))
+        found = figures.get(record.id, SessionFigures())
         series.append(
             ProgressPoint(
                 session_id=record.id,
@@ -214,8 +241,10 @@ def get_progress(
                 warmup_total=warmup.exercises_total if warmup else 0,
                 game_success_rate=rates.get(record.id),
                 total_reps=warmup.total_reps if warmup else 0,
-                bloom_peak_openness=openness,
-                piano_hit_rate=hit_rate,
+                bloom_peak_openness=found.bloom_peak_openness,
+                piano_hit_rate=found.piano_hit_rate,
+                path_sparc=found.path_sparc,
+                elbow_range_deg=found.elbow_range_deg,
             )
         )
 
@@ -347,7 +376,7 @@ def get_session_report(session: Session, record: SessionRecord) -> SessionReport
                 success_rate=summary.success_rate if summary else None,
                 summary=summary,
                 main_measure=main_measure(run.game_id, summary),
-                extra_measure=extra_measure(run.game_id, summary),
+                extra_measures=extra_measures(run.game_id, summary),
                 previous=_previous_run(session, record, run.game_id),
             )
         )

@@ -68,6 +68,27 @@ describe("trial table columns", () => {
     ]);
   });
 
+  it("shows the tracing measures for Path trace and the elbow measures for Paint the wall", () => {
+    expect(keys("path_trace")).toEqual([
+      "adminSession.column.shape",
+      "adminSession.column.inCorridor",
+      "adminSession.column.trackingError",
+      "adminSession.column.lag",
+      "adminSession.column.sparc",
+      "adminSession.column.outcome",
+      "adminSession.column.compensated",
+    ]);
+    expect(keys("paint_wall")).toEqual([
+      "adminSession.column.elbowRange",
+      "adminSession.column.sweeps",
+      "adminSession.column.meanSweep",
+      "adminSession.column.angularSparc",
+      "adminSession.column.upperArm",
+      "adminSession.column.outcome",
+      "adminSession.column.compensated",
+    ]);
+  });
+
   it("names compensation in words", () => {
     const trial = (flagged: boolean, type: string | null) =>
       ({ compensation: { flagged, type, max_values: {} } }) as unknown as TrialRead;

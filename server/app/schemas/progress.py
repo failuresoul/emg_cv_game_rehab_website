@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.common import UtcDatetime
 from app.schemas.game import GameId, GameRunStatus, GameSummary
@@ -32,6 +32,10 @@ class ProgressPoint(BaseModel):
     bloom_peak_openness: float | None = None
     #: Finger piano: notes played over notes asked (0-1), or None without Finger piano.
     piano_hit_rate: float | None = None
+    #: Path trace: the mean SPARC of its traces (0 or less; closer to 0 is smoother).
+    path_sparc: float | None = None
+    #: Paint the wall: the mean elbow range reached per stripe, in degrees.
+    elbow_range_deg: float | None = None
 
 
 class ReachSnapshot(BaseModel):
@@ -64,9 +68,10 @@ class GameMeasure(BaseModel):
 
     #: For example "flowers_grown", "note_hit_rate" or "best_finger".
     name: str
-    #: A share from 0 to 1, a count, milliseconds or a finger's name; None when not recorded.
+    #: A share from 0 to 1, a percentage, a count, milliseconds, degrees, a SPARC value (0 or
+    #: less) or a finger's name; None when not recorded.
     value: float | str | None
-    unit: Literal["ms", "share", "count", "finger"]
+    unit: Literal["ms", "share", "percent", "count", "deg", "sparc", "finger"]
 
 
 class GameComparison(BaseModel):
@@ -90,8 +95,8 @@ class SessionReportGame(BaseModel):
     summary: GameSummary | None
     #: The game's headline figure, the same one the web app shows.
     main_measure: GameMeasure | None = None
-    #: A second figure, for the hand games: best openness, or the finger played best.
-    extra_measure: GameMeasure | None = None
+    #: More figures beside the headline, for the games that have them, in the order shown.
+    extra_measures: list[GameMeasure] = Field(default_factory=list)
     previous: GameComparison | None
 
 

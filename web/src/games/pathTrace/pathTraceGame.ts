@@ -1,3 +1,8 @@
+import {
+  DETAIL_BEST_SPARC,
+  DETAIL_MEAN_IN_CORRIDOR,
+  DETAIL_TOTAL_STARS,
+} from "@/features/games/results";
 import { CompensationTally } from "@/games/shared/compensationTally";
 import { Encourager } from "@/games/shared/encourage";
 import { summariseTrials } from "@/games/shared/metrics";
@@ -39,8 +44,6 @@ const TRAIL_LIFE_MS = 1200;
 /** The ladybird is this wide, in SW, and looks this far ahead along the path to face its way. */
 const LADYBIRD_SW = 0.13;
 const HEADING_LOOKAHEAD_SW = 0.03;
-/** Summary detail: the mean share of time inside the corridor over the traces. */
-export const DETAIL_MEAN_IN_CORRIDOR = "mean_in_corridor_pct";
 
 interface ActiveTrace {
   no: number;
@@ -269,6 +272,9 @@ export function createPathTraceGame(context: GameContext): GameInstance {
       const traced = records
         .map((record) => record.metrics.time_in_corridor_pct)
         .filter((value): value is number => typeof value === "number");
+      const smoothness = records
+        .map((record) => record.metrics.sparc)
+        .filter((value): value is number => typeof value === "number");
       return {
         score,
         trialsDone: records.length,
@@ -282,6 +288,9 @@ export function createPathTraceGame(context: GameContext): GameInstance {
                     (traced.reduce((total, value) => total + value, 0) / traced.length) * 10,
                   ) / 10
                 : null,
+            [DETAIL_TOTAL_STARS]: starsTotal,
+            // SPARC is 0 or less: the best (smoothest) is the one closest to 0.
+            [DETAIL_BEST_SPARC]: smoothness.length > 0 ? Math.max(...smoothness) : null,
           },
         },
       };

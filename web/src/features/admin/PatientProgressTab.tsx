@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -8,7 +10,7 @@ import { t, type TranslationKey } from "@/i18n";
 import { formatDate, formatDifference, formatNumber } from "@/lib/format";
 import type { AdminCalibration, Patient, PatientProgress } from "@/types/api";
 
-import { handProgress } from "./handProgress";
+import { handProgress, movementQualityProgress } from "./handProgress";
 import { useAdminPatientProgress, usePatientCalibrations } from "./hooks";
 import { PatientWarmupSection } from "./PatientWarmupSection";
 
@@ -71,26 +73,80 @@ export function PatientProgressTab({ patient }: { patient: Patient }) {
         <h2 className="mb-4 text-xl font-bold">{t("adminWarmup.title")}</h2>
         <PatientWarmupSection patientId={patient.id} />
       </section>
-      <HandGamesProgress patientId={patient.id} />
+      <GameProgress patientId={patient.id} />
     </div>
   );
 }
 
 const asPercent = (value: number) => t("measure.percent", { value });
 
-/** Bloom's peak openness and Finger piano's hit rate, one point per session. */
-function HandGamesProgress({ patientId }: { patientId: number }) {
-  const progress = useAdminPatientProgress(patientId);
+const asSparc = (value: number) => t("measure.number", { value });
+const asDegrees = (value: number) => t("measure.degrees", { value });
 
-  return (
-    <section aria-labelledby="hand-games-progress" className="flex flex-col gap-4">
-      <h2 id="hand-games-progress" className="text-xl font-bold">
-        {t("adminProgress.handTitle")}
-      </h2>
+/**
+ * The game figures per session, from one fetch of the patient's progress: the hand games
+ * (Bloom's peak openness, Finger piano's hit rate) and movement quality (Path trace's
+ * smoothness, Paint the wall's elbow range).
+ */
+function GameProgress({ patientId }: { patientId: number }) {
+  const progress = useAdminPatientProgress(patientId);
+  const body = (charts: (series: PatientProgress["series"]) => ReactNode) => (
+    <>
       {progress.isPending && <Skeleton className="h-64" />}
       {progress.isError && <QueryError onRetry={() => void progress.refetch()} />}
-      {progress.isSuccess && <HandGamesCharts series={progress.data.series} />}
-    </section>
+      {progress.isSuccess && charts(progress.data.series)}
+    </>
+  );
+
+  return (
+    <>
+      <section aria-labelledby="hand-games-progress" className="flex flex-col gap-4">
+        <h2 id="hand-games-progress" className="text-xl font-bold">
+          {t("adminProgress.handTitle")}
+        </h2>
+        {body((series) => (
+          <HandGamesCharts series={series} />
+        ))}
+      </section>
+      <section aria-labelledby="movement-quality-progress" className="flex flex-col gap-4">
+        <h2 id="movement-quality-progress" className="text-xl font-bold">
+          {t("adminProgress.qualityTitle")}
+        </h2>
+        {body((series) => (
+          <MovementQualityCharts series={series} />
+        ))}
+      </section>
+    </>
+  );
+}
+
+function MovementQualityCharts({ series }: { series: PatientProgress["series"] }) {
+  const { sparc, elbowRange } = movementQualityProgress(series, formatDate);
+  if (sparc.length === 0 && elbowRange.length === 0) {
+    return <EmptyState title={t("adminProgress.qualityEmpty")} />;
+  }
+  return (
+    <div className="grid gap-6 2xl:grid-cols-2">
+      <div>
+        <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.sparcChartTitle")}</h3>
+        <ProgressChart
+          points={sparc}
+          seriesName={t("adminProgress.sparcSeries")}
+          emptyTitle={t("adminProgress.qualityEmpty")}
+          formatValue={asSparc}
+        />
+      </div>
+      <div>
+        <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.rangeChartTitle")}</h3>
+        <ProgressChart
+          points={elbowRange}
+          seriesName={t("adminProgress.rangeSeries")}
+          emptyTitle={t("adminProgress.qualityEmpty")}
+          formatValue={asDegrees}
+          allowDecimals={false}
+        />
+      </div>
+    </div>
   );
 }
 

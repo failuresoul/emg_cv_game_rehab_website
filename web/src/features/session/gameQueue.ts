@@ -9,14 +9,15 @@ export interface GameQueue {
 }
 
 /**
- * Today's games when the plan opens, in this order: reaching, raising the arm, opening the hand
- * and finger control, about 16 minutes. Other games are listed after them, unticked.
+ * Today's games when the plan opens, until the planner (Day 13) chooses them, in this order:
+ * reaching, raising the arm, opening the hand and smooth control, about 16 minutes. Other games
+ * are listed after them, unticked.
  */
 export const DEFAULT_PLAN: readonly GameId[] = [
   "reach_activate",
   "balloon_pop",
   "bloom",
-  "finger_piano",
+  "path_trace",
 ];
 
 export interface PlanRow {

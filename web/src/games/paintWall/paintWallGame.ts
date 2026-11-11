@@ -1,3 +1,4 @@
+import { DETAIL_BEST_RANGE_DEG, DETAIL_MEAN_RANGE_DEG } from "@/features/games/results";
 import { CompensationTally } from "@/games/shared/compensationTally";
 import { Encourager } from "@/games/shared/encourage";
 import { summariseTrials } from "@/games/shared/metrics";
@@ -38,8 +39,6 @@ import {
 const BRUSH_SMOOTHING = 0.35;
 /** The upper-arm reminder shows at most this often. */
 const UPPER_ARM_REMINDER_MS = 6000;
-/** Summary detail: the mean elbow range used per stripe, in degrees. */
-export const DETAIL_MEAN_RANGE_DEG = "mean_range_deg";
 
 interface ActiveStripe {
   no: number;
@@ -242,6 +241,7 @@ export function createPaintWallGame(context: GameContext): GameInstance {
                     (ranges.reduce((total, value) => total + value, 0) / ranges.length) * 10,
                   ) / 10
                 : null,
+            [DETAIL_BEST_RANGE_DEG]: ranges.length > 0 ? Math.max(...ranges) : null,
           },
         },
       };

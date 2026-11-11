@@ -19,6 +19,7 @@ import {
 
 import { FruitStrip } from "./FruitStrip";
 import { FingerHitChart, OpennessChart } from "./HandCharts";
+import { PathTracePlot, RangeChart } from "./MovementCharts";
 import { RunTargetMap } from "./RunTargetMap";
 import { columnsFor } from "./trialColumns";
 
@@ -195,6 +196,10 @@ export function GameRunCard({
           </div>
           {run.game_id === "bloom" && <OpennessChart run={run} />}
           {run.game_id === "finger_piano" && <FingerHitChart run={run} />}
+          {run.game_id === "path_trace" && (
+            <PathTracePlot run={run} affectedSide={affectedSide ?? "right"} />
+          )}
+          {run.game_id === "paint_wall" && <RangeChart run={run} />}
           <MovementChart run={run} />
         </>
       )}

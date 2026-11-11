@@ -975,7 +975,9 @@ Role: `patient`. Only **completed** sessions count.
       "game_success_rate": 0.8,
       "total_reps": 64,
       "bloom_peak_openness": 0.81,
-      "piano_hit_rate": 0.75
+      "piano_hit_rate": 0.75,
+      "path_sparc": -1.72,
+      "elbow_range_deg": 68.4
     }
   ],
   "last_session_date": "2026-11-10T10:00:00Z",
@@ -985,7 +987,7 @@ Role: `patient`. Only **completed** sessions count.
 ```
 
 - `streak_days`: consecutive local days with a completed session, counting back from today. A day without one *yet* today does not break the streak: it then runs up to yesterday.
-- `series`: one point per completed session, oldest first. `hull_area_sw2` is `null` without a calibration. `warmup_goals_reached` counts exercises whose goal was reached, out of `warmup_total` (skipped ones included). `game_success_rate` is successful trials over all trials of every game, leaving out `aborted` trials, or `null` without trials. `total_reps` is warm-up repetitions done in full. `bloom_peak_openness` is the mean of each Bloom trial's `peak_openness` and `piano_hit_rate` is hits over notes of every Finger piano melody, both leaving out `aborted` trials, each `null` without that game.
+- `series`: one point per completed session, oldest first. `hull_area_sw2` is `null` without a calibration. `warmup_goals_reached` counts exercises whose goal was reached, out of `warmup_total` (skipped ones included). `game_success_rate` is successful trials over all trials of every game, leaving out `aborted` trials, or `null` without trials. `total_reps` is warm-up repetitions done in full. `bloom_peak_openness` is the mean of each Bloom trial's `peak_openness` and `piano_hit_rate` is hits over notes of every Finger piano melody, both leaving out `aborted` trials, each `null` without that game. Likewise `path_sparc` is the mean `sparc` of the Path trace trials (0 or less; closer to 0 is smoother) and `elbow_range_deg` the mean `achieved_range_deg` of the Paint the wall stripes.
 - `last_session_date`: when the latest session of any status started, or `null`.
 - `first_reach` and `latest_reach`: the oldest and newest calibrations, each `{ session_id, date, reach_radii_sw, hull_sw, hull_area_sw2, valid }`, or `null`.
 
@@ -1004,7 +1006,7 @@ Role: `patient`, own session only. Errors: `404` for a missing or another patien
 | `active_seconds` | Warm-up exercise time (skipped exercises left out) plus the time of each finished game |
 | `warmup` | The warm-up summary (`exercises_done`, `exercises_total`, `total_reps`, `goals_reached`, `mean_compensation_rate`), or `null` |
 | `previous_warmup` | The same for the most recent earlier session with a warm-up, plus its `session_id`, or `null` |
-| `games` | Finished runs in the order played: `run_id`, `game_id`, `status`, `score`, `trials_done`, `trials_planned`, `successes`, `success_rate`, `summary`, `main_measure`, `extra_measure`, and `previous` — the patient's last finished run of the same game in an earlier session (`session_id`, `score`, `success_rate`, `summary`), or `null` |
+| `games` | Finished runs in the order played: `run_id`, `game_id`, `status`, `score`, `trials_done`, `trials_planned`, `successes`, `success_rate`, `summary`, `main_measure`, `extra_measures`, and `previous` — the patient's last finished run of the same game in an earlier session (`session_id`, `score`, `success_rate`, `summary`), or `null` |
 | `reach` | This session's calibration, as in `latest_reach` above, or `null` |
 | `previous_reach` | The most recent calibration from an earlier session, or `null` |
 | `feedback` | The cool-down questionnaire, or `null` |
@@ -1012,15 +1014,19 @@ Role: `patient`, own session only. Errors: `404` for a missing or another patien
 
 "Earlier" means a session of the same patient that started before this one, whatever its status. The web app decides "better / same / lower" from these figures.
 
-`main_measure` and `extra_measure` are the figures the web app shows for each game, each `{ "name": …, "value": …, "unit": "ms" | "share" | "count" | "finger" }` (`value` is `null` when not recorded), or `null` for a run without a summary. `extra_measure` is `null` except for the hand games.
+`main_measure` is the headline figure the web app shows for each game, and `extra_measures` the figures shown beside it, in order. Each is `{ "name": …, "value": …, "unit": "ms" | "share" | "percent" | "count" | "deg" | "sparc" | "finger" }`, with `value` `null` when not recorded. A run without a summary has `main_measure: null` and no extra measures; games without extra figures have an empty list.
 
-| Game | `main_measure` | `extra_measure` |
+| Game | `main_measure` | `extra_measures` |
 | --- | --- | --- |
 | `reach_activate` | `mean_reach_ms` (ms) | — |
 | `balloon_pop` | `highest_balloon_frac` (share) | — |
 | `fruit_catch` | `widest_catch_frac` (share) | — |
 | `bloom` | `flowers_grown` (count of successes) | `best_openness` (share) |
 | `finger_piano` | `note_hit_rate` (share) | `best_finger` (finger) |
+| `path_trace` | `stars` (count) | `mean_in_corridor_pct` (percent), `best_sparc` (sparc) |
+| `paint_wall` | `stripes_finished` (count of successes) | `best_range_deg` (deg) |
+
+They read the run summary's `details`: `path_trace` sends `total_stars`, `mean_in_corridor_pct` and `best_sparc` (the trace closest to 0); `paint_wall` sends `mean_range_deg` and `best_range_deg`.
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

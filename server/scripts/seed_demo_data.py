@@ -54,15 +54,26 @@ SEED = 20261110
 TRIALS_PER_GAME = 20
 REACH_GAMES = ("reach_activate", "balloon_pop", "fruit_catch")
 HAND_GAMES = ("bloom", "finger_piano")
-GAMES = REACH_GAMES + HAND_GAMES
-GameName = Literal["reach_activate", "balloon_pop", "fruit_catch", "bloom", "finger_piano"]
-#: Trials in one run of each game, as in the games: 15 flowers and 12 melodies.
+MOVEMENT_GAMES = ("path_trace", "paint_wall")
+GAMES = REACH_GAMES + HAND_GAMES + MOVEMENT_GAMES
+GameName = Literal[
+    "reach_activate",
+    "balloon_pop",
+    "fruit_catch",
+    "bloom",
+    "finger_piano",
+    "path_trace",
+    "paint_wall",
+]
+#: Trials in one run of each game, as in the games: 15 flowers, 12 melodies, 10 traces, 8 stripes.
 TRIAL_COUNTS: dict[str, int] = {
     "reach_activate": TRIALS_PER_GAME,
     "balloon_pop": TRIALS_PER_GAME,
     "fruit_catch": TRIALS_PER_GAME,
     "bloom": 15,
     "finger_piano": 12,
+    "path_trace": 10,
+    "paint_wall": 8,
 }
 # The hand rests low and close to the body before each reach, in the body frame.
 REST_POINT = (0.15, -0.85)
@@ -446,6 +457,14 @@ class GameSkill:
     note_hit: float
     #: Finger piano: the usual |touch - arrival| of a note played, in ms.
     timing_error_ms: float
+    #: Path trace: the usual share of a trace inside the corridor, in %.
+    in_corridor_pct: float
+    #: Path trace: the usual smoothness of the fingertip (SPARC, closer to 0 is smoother).
+    trace_sparc: float
+    #: Paint the wall: the usual elbow range reached in a stripe, in degrees.
+    elbow_range_deg: float
+    #: Paint the wall: the usual smoothness of the elbow (SPARC of its angular speed).
+    elbow_sparc: float
 
 
 def skill_at(progress: float, improvement: float) -> GameSkill:
@@ -460,6 +479,10 @@ def skill_at(progress: float, improvement: float) -> GameSkill:
         open_ms=lerp(2800, 1300, gain),
         note_hit=lerp(0.62, 0.9, gain),
         timing_error_ms=lerp(330, 170, gain),
+        in_corridor_pct=lerp(68, 92, gain),
+        trace_sparc=lerp(-2.3, -1.55, gain),
+        elbow_range_deg=lerp(54, 82, gain),
+        elbow_sparc=lerp(-2.6, -1.8, gain),
     )
 
 
@@ -815,12 +838,173 @@ def make_piano_trial(
     )
 
 
+# Movement-quality games.
+
+PATH_SHAPES = ("line", "arc", "s_curve", "circle_part")
+PATH_POINTS = 60
+GUIDE_SPEED_SW_S = 0.25
+CORRIDOR_WIDTH_SW = 0.4
+START_HOLD_MS = 500
+
+
+def path_points(shape: str, outward: bool) -> list[tuple[float, float]]:
+    """One of the four path shapes, about 1 SW long, across the middle of a typical reach."""
+    points: list[tuple[float, float]] = []
+    for index in range(PATH_POINTS):
+        share = index / (PATH_POINTS - 1)
+        if shape == "line":
+            x, y = -0.5 + share, -0.15 + 0.3 * share
+        elif shape == "arc":
+            angle = math.radians(210 - 240 * share)
+            x, y = 0.55 * math.cos(angle), 0.55 * math.sin(angle) - 0.2
+        elif shape == "s_curve":
+            x, y = -0.5 + share, 0.25 * math.sin(2 * math.pi * share)
+        else:
+            angle = 1.5 * math.pi * share
+            x, y = 0.4 * math.cos(angle), 0.4 * math.sin(angle)
+        # Centred at the middle of the reach: out and a little up from the shoulder.
+        points.append((round(0.55 + x, 4), round(0.25 + y, 4)))
+    if (points[-1][0] >= points[0][0]) != outward:
+        points.reverse()
+    return points
+
+
+def _stars(in_corridor_pct: float) -> int:
+    return 3 if in_corridor_pct >= 90 else 2 if in_corridor_pct >= 70 else 1
+
+
+def make_path_trial(
+    rng: random.Random, trial_no: int, radii: Sequence[float], skill: GameSkill
+) -> TrialCreate:
+    """One trace: the shapes in turn, each both ways, as the game's provider chooses them."""
+    del radii  # The path is placed inside a typical reach.
+    position = trial_no - 1
+    shape_index = position % len(PATH_SHAPES)
+    direction = 1 if (position + position // len(PATH_SHAPES)) % 2 == 0 else -1
+    path = path_points(PATH_SHAPES[shape_index], direction == 1)
+    length = sum(math.dist(path[i - 1], path[i]) for i in range(1, len(path)))
+    trace_ms = length / GUIDE_SPEED_SW_S * 1000
+    in_corridor = round(clamp(skill.in_corridor_pct + rng.uniform(-12, 8), 20, 100), 1)
+    # The fingertip wanders off the path more when it spends less time in the corridor.
+    wobble = 0.03 + 0.25 * (1 - in_corridor / 100)
+    enter = round(rng.uniform(800, 1800))
+    trace_start = enter + START_HOLD_MS
+    trajectory: list[tuple[float, float, float]] = []
+    steps = int(trace_ms / (1000 / 30))
+    for step in range(steps + 1):
+        share = step / max(steps, 1)
+        x, y = path[min(len(path) - 1, round(share * (len(path) - 1)))]
+        drift = wobble * math.sin(2 * math.pi * 1.3 * share * trace_ms / 1000 + rng.uniform(0, 0.3))
+        trajectory.append(
+            (round(trace_start + share * trace_ms, 1), round(x, 4), round(y + drift, 4))
+        )
+    success = in_corridor >= 70
+    return TrialCreate.model_validate(
+        {
+            "trial_no": trial_no,
+            "params": {
+                "shape_index": shape_index,
+                "path_length_frac": 0.6,
+                "guide_speed_sw_s": GUIDE_SPEED_SW_S,
+                "corridor_width_sw": CORRIDOR_WIDTH_SW,
+                "ring_frac": 0.7,
+                "direction": direction,
+                "start_hold_ms": START_HOLD_MS,
+                "rest_ms": 2000,
+            },
+            "target": {"kind": "path", "shape": PATH_SHAPES[shape_index], "points": path},
+            "outcome": "success" if success else "miss",
+            "timings": {
+                "spawn": 0,
+                "enter": enter,
+                "dwell_done": trace_start,
+                "end": round(trace_start + trace_ms),
+            },
+            "metrics": {
+                "peak_speed_sw_s": round(GUIDE_SPEED_SW_S * rng.uniform(1.4, 2.2), 4),
+                "mean_tracking_error_sw": round(0.04 + wobble * rng.uniform(0.6, 1.0), 4),
+                "mean_path_error_sw": round(wobble * rng.uniform(0.5, 0.75), 4),
+                "time_in_corridor_pct": in_corridor,
+                "lag_ms": round(rng.uniform(150, 450) * (1.6 - in_corridor / 100)),
+                "coverage_pct": round(clamp(in_corridor + rng.uniform(0, 8), 0, 100), 1),
+                "sparc": round(min(-1.0, skill.trace_sparc + rng.uniform(-0.25, 0.2)), 4),
+            },
+            "compensation": _compensation(rng, skill),
+            "trajectory": trajectory,
+        }
+    )
+
+
+WALL_TARGET_FRAC = 0.75
+WALL_SWEEPS_NEEDED = 3
+WALL_TIME_LIMIT_MS = 30000
+#: The default elbow range: 70° bent (top of the wall) to 150° straight (bottom).
+WALL_BENT_DEG = 70
+WALL_STRAIGHT_DEG = 150
+UPPER_ARM_LIMIT_DEG = 20
+
+
+def make_wall_trial(
+    rng: random.Random, trial_no: int, radii: Sequence[float], skill: GameSkill
+) -> TrialCreate:
+    """One stripe: elbow sweeps, full when they reach the target height (60° of the range)."""
+    del radii  # The elbow moves the brush; no reaching.
+    target_deg = WALL_TARGET_FRAC * (WALL_STRAIGHT_DEG - WALL_BENT_DEG)
+    achieved = round(clamp(skill.elbow_range_deg + rng.uniform(-9, 6), 20, 120), 1)
+    straight = round(rng.uniform(146, 156), 1)
+    reaches_target = achieved >= target_deg
+    full = WALL_SWEEPS_NEEDED if reaches_target and rng.random() < skill.success + 0.05 else 0
+    if reaches_target and full == 0:
+        full = rng.randint(1, WALL_SWEEPS_NEEDED - 1)
+    partial = rng.randint(0, 1) if full == WALL_SWEEPS_NEEDED else rng.randint(1, 4)
+    sweep_ms = lerp(2700, 1900, skill.success) * rng.uniform(0.85, 1.15)
+    success = full >= WALL_SWEEPS_NEEDED
+    end = round((full + partial) * sweep_ms + 1500) if success else WALL_TIME_LIMIT_MS
+    moved = rng.random() < skill.compensation / 2
+    upper_arm = round(rng.uniform(21, 30) if moved else rng.uniform(3, 14), 1)
+    compensation: dict[str, Any] = {
+        "flagged": moved,
+        "type": "upper_arm" if moved else None,
+        "max_values": {"upper_arm_motion_deg": upper_arm},
+    }
+    return TrialCreate.model_validate(
+        {
+            "trial_no": trial_no,
+            "params": {
+                "required_range_frac": WALL_TARGET_FRAC,
+                "sweeps_needed": WALL_SWEEPS_NEEDED,
+                "time_limit_ms": WALL_TIME_LIMIT_MS,
+                "elbow_bent_deg": WALL_BENT_DEG,
+                "elbow_straight_deg": WALL_STRAIGHT_DEG,
+                "rest_ms": 2000,
+            },
+            "target": {"kind": "stripe", "index": trial_no - 1, "target_frac": WALL_TARGET_FRAC},
+            "outcome": "success" if success else "miss",
+            "timings": {"spawn": 0, "end": end},
+            "metrics": {
+                "achieved_range_deg": achieved,
+                "max_bend_deg": round(straight - achieved, 1),
+                "max_straight_deg": straight,
+                "full_sweeps": full,
+                "partial_sweeps": partial,
+                "mean_sweep_ms": round(sweep_ms) if full > 0 else None,
+                "angular_sparc": round(min(-1.0, skill.elbow_sparc + rng.uniform(-0.3, 0.25)), 4),
+                "upper_arm_motion_deg": upper_arm,
+            },
+            "compensation": compensation,
+            "trajectory": trajectory(rng, (0.35, -0.65), (0.3, -0.25), end),
+        }
+    )
+
+
 TRIAL_MAKERS = {
     "reach_activate": make_reach_trial,
     "balloon_pop": make_balloon_trial,
     "fruit_catch": make_fruit_trial,
     "bloom": make_bloom_trial,
     "finger_piano": make_piano_trial,
+    "path_trace": make_path_trial,
+    "paint_wall": make_wall_trial,
 }
 #: The summary detail each reaching game fills in, as in web/src/features/games/results.ts.
 SUMMARY_DETAILS = {
@@ -829,6 +1013,8 @@ SUMMARY_DETAILS = {
     "fruit_catch": "widest_catch_frac",
     "bloom": None,
     "finger_piano": None,
+    "path_trace": None,
+    "paint_wall": None,
 }
 
 
@@ -887,6 +1073,29 @@ def _hand_details(game_id: GameName, trials: Sequence[TrialCreate]) -> dict[str,
     }
 
 
+def _movement_details(game_id: GameName, trials: Sequence[TrialCreate]) -> dict[str, Any]:
+    """The summary details the movement-quality games fill in, as the web app's games do."""
+    played = [trial for trial in trials if trial.outcome != "aborted"]
+
+    def values(name: str) -> list[float]:
+        found = [getattr(trial.metrics, name) for trial in played]
+        return [value for value in found if isinstance(value, int | float)]
+
+    if game_id == "path_trace":
+        corridor = values("time_in_corridor_pct")
+        smoothness = values("sparc")
+        return {
+            "mean_in_corridor_pct": round(sum(corridor) / len(corridor), 1) if corridor else None,
+            "total_stars": sum(_stars(value) for value in corridor),
+            "best_sparc": max(smoothness) if smoothness else None,
+        }
+    ranges = values("achieved_range_deg")
+    return {
+        "mean_range_deg": round(sum(ranges) / len(ranges), 1) if ranges else None,
+        "best_range_deg": max(ranges) if ranges else None,
+    }
+
+
 def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSummary:
     successes = [trial for trial in trials if trial.outcome == "success"]
     movement = [
@@ -897,7 +1106,13 @@ def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSu
         for trial in successes
         if trial.metrics.path_efficiency is not None
     ]
-    details: dict[str, Any] = _hand_details(game_id, trials) if game_id in HAND_GAMES else {}
+    details: dict[str, Any] = (
+        _hand_details(game_id, trials)
+        if game_id in HAND_GAMES
+        else _movement_details(game_id, trials)
+        if game_id in MOVEMENT_GAMES
+        else {}
+    )
     detail = SUMMARY_DETAILS[game_id]
     if detail is not None:
         fracs = [
@@ -917,10 +1132,20 @@ def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSu
 
 
 def game_score(trials: Sequence[TrialCreate], game_id: GameName = "reach_activate") -> float:
-    """As in the games: Finger piano scores 25 a note and 50 a melody played well; the others
-    100 per success plus a bonus for a quick reach (or, for Bloom, a quick opening)."""
+    """As in the games: Finger piano scores 25 a note and 50 a melody played well; Path trace
+    the % of time in the corridor and 50 for a success; Paint the wall 30 a full sweep, 10 a
+    partial one and 50 a finished stripe; the others 100 per success plus a bonus for a quick
+    reach (or, for Bloom, a quick opening)."""
     score = 0
     for trial in trials:
+        success_bonus = 50 if trial.outcome == "success" else 0
+        if game_id == "path_trace":
+            score += round(trial.metrics.time_in_corridor_pct or 0) + success_bonus
+            continue
+        if game_id == "paint_wall":
+            full = trial.metrics.full_sweeps or 0
+            score += 30 * full + 10 * (trial.metrics.partial_sweeps or 0) + success_bonus
+            continue
         if game_id == "finger_piano":
             score += 25 * (trial.metrics.hits or 0) + (50 if trial.outcome == "success" else 0)
             continue

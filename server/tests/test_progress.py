@@ -268,6 +268,8 @@ def test_progress_series_figures(
         "total_reps": 15,
         "bloom_peak_openness": None,
         "piano_hit_rate": None,
+        "path_sparc": None,
+        "elbow_range_deg": None,
     }
     assert body["series"][1] == {
         "session_id": second.id,
@@ -279,7 +281,65 @@ def test_progress_series_figures(
         "total_reps": 0,
         "bloom_peak_openness": None,
         "piano_hit_rate": None,
+        "path_sparc": None,
+        "elbow_range_deg": None,
     }
+
+
+def test_progress_movement_quality_figures(
+    client: TestClient, patient_headers: Headers, session: Session
+) -> None:
+    patient = profile(session)
+    record = add_session(session, patient, noon(1))
+    add_run(
+        session,
+        record,
+        ["success", "miss", "aborted"],
+        game_id="path_trace",
+        metrics=[{"sparc": -1.5}, {"sparc": -2.1}, {"sparc": -4.0}],
+    )
+    add_run(
+        session,
+        record,
+        ["success", "miss"],
+        game_id="paint_wall",
+        metrics=[{"achieved_range_deg": 80.0}, {"achieved_range_deg": 60.0}],
+    )
+
+    [point] = client.get("/api/patient/progress", headers=patient_headers).json()["series"]
+
+    # The stopped trace is left out: (-1.5 - 2.1) / 2.
+    assert point["path_sparc"] == pytest.approx(-1.8)
+    assert point["elbow_range_deg"] == pytest.approx(70.0)
+    assert point["bloom_peak_openness"] is None
+
+
+def test_summary_includes_path_trace_and_paint_wall(
+    client: TestClient, patient_headers: Headers, session: Session
+) -> None:
+    patient = profile(session)
+    record = add_session(session, patient, noon(0))
+    add_run(
+        session,
+        record,
+        ["success", "miss"],
+        game_id="path_trace",
+        details={"total_stars": 4, "mean_in_corridor_pct": 74.5, "best_sparc": -1.6},
+    )
+    add_run(session, record, ["success"], game_id="paint_wall", details={"best_range_deg": 81.0})
+
+    body = client.get(f"/api/sessions/{record.id}/summary", headers=patient_headers).json()
+
+    trace, wall = body["games"]
+    assert trace["success_rate"] == 0.5
+    assert trace["main_measure"] == {"name": "stars", "value": 4, "unit": "count"}
+    assert [measure["name"] for measure in trace["extra_measures"]] == [
+        "mean_in_corridor_pct",
+        "best_sparc",
+    ]
+    assert trace["extra_measures"][1]["value"] == -1.6
+    assert wall["main_measure"] == {"name": "stripes_finished", "value": 1, "unit": "count"}
+    assert wall["extra_measures"] == [{"name": "best_range_deg", "value": 81.0, "unit": "deg"}]
 
 
 def test_progress_hand_game_figures(
@@ -537,16 +597,16 @@ def test_summary_includes_the_hand_games_with_their_measures(
 
     reach, bloom, piano = body["games"]
     assert reach["main_measure"] == {"name": "mean_reach_ms", "value": None, "unit": "ms"}
-    assert reach["extra_measure"] is None
+    assert reach["extra_measures"] == []
     assert bloom["game_id"] == "bloom"
     assert bloom["score"] == 20
     assert bloom["success_rate"] == pytest.approx(2 / 3)
     assert bloom["main_measure"] == {"name": "flowers_grown", "value": 2, "unit": "count"}
-    assert bloom["extra_measure"] == {"name": "best_openness", "value": 0.82, "unit": "share"}
+    assert bloom["extra_measures"] == [{"name": "best_openness", "value": 0.82, "unit": "share"}]
     assert piano["game_id"] == "finger_piano"
     assert piano["success_rate"] == 0.5
     assert piano["main_measure"] == {"name": "note_hit_rate", "value": 0.75, "unit": "share"}
-    assert piano["extra_measure"] == {"name": "best_finger", "value": "ring", "unit": "finger"}
+    assert piano["extra_measures"] == [{"name": "best_finger", "value": "ring", "unit": "finger"}]
 
 
 def test_summary_of_a_first_empty_session(client: TestClient, patient_headers: Headers) -> None:

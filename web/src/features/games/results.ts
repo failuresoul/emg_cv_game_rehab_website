@@ -19,6 +19,11 @@ export const DETAIL_MEAN_TIME_TO_OPEN = "mean_time_to_open_ms";
 export const DETAIL_NOTE_HIT_RATE = "note_hit_rate";
 export const DETAIL_BEST_OPENNESS = "best_openness";
 export const DETAIL_BEST_FINGER = "best_finger";
+export const DETAIL_TOTAL_STARS = "total_stars";
+export const DETAIL_MEAN_IN_CORRIDOR = "mean_in_corridor_pct";
+export const DETAIL_BEST_SPARC = "best_sparc";
+export const DETAIL_MEAN_RANGE_DEG = "mean_range_deg";
+export const DETAIL_BEST_RANGE_DEG = "best_range_deg";
 
 /** Runs the patient finished or stopped; a run left open has no result yet. */
 export function finishedRuns<T extends Pick<GameRun, "status">>(runs: readonly T[]): T[] {
@@ -87,6 +92,19 @@ export function mainMeasure(gameId: GameId, summary: GameSummary | null): MainMe
       value: share === null ? null : { key: "measure.ofNotes", params: { value: share } },
     };
   }
+  if (gameId === "path_trace") {
+    const stars = detail(summary, DETAIL_TOTAL_STARS);
+    return {
+      labelKey: "measure.stars",
+      value: stars === null ? null : { key: "measure.count", params: { value: stars } },
+    };
+  }
+  if (gameId === "paint_wall") {
+    return {
+      labelKey: "measure.stripesFinished",
+      value: summary ? { key: "measure.count", params: { value: summary.successes } } : null,
+    };
+  }
   if (gameId === "bloom") {
     return {
       labelKey: "measure.flowersGrown",
@@ -101,26 +119,66 @@ export function mainMeasure(gameId: GameId, summary: GameSummary | null): MainMe
 }
 
 /**
- * A second figure for the hand games, shown beside the headline: the best openness for Bloom and
- * the finger played best for Finger piano. Null for games without one.
+ * More figures shown beside the headline, for the games that have them: the best openness for
+ * Bloom; the finger played best for Finger piano; the average time in the corridor and the best
+ * smoothness for Path trace; the best elbow range for Paint the wall. Empty for other games.
  */
-export function extraMeasure(gameId: GameId, summary: GameSummary | null): MainMeasure | null {
+export function extraMeasures(gameId: GameId, summary: GameSummary | null): MainMeasure[] {
   if (gameId === "bloom") {
     const share = percent(detail(summary, DETAIL_BEST_OPENNESS));
-    return {
-      labelKey: "measure.bestOpenness",
-      value: share === null ? null : { key: "measure.percent", params: { value: share } },
-    };
+    return [
+      {
+        labelKey: "measure.bestOpenness",
+        value: share === null ? null : { key: "measure.percent", params: { value: share } },
+      },
+    ];
   }
   if (gameId === "finger_piano") {
     const best = summary?.details?.[DETAIL_BEST_FINGER];
     const finger = isFinger(best) ? best : null;
-    return {
-      labelKey: "measure.bestFinger",
-      value: finger ? { key: FINGER_LABEL_KEYS[finger], params: {} } : null,
-    };
+    return [
+      {
+        labelKey: "measure.bestFinger",
+        value: finger ? { key: FINGER_LABEL_KEYS[finger], params: {} } : null,
+      },
+    ];
   }
-  return null;
+  if (gameId === "path_trace") {
+    const inCorridor = detail(summary, DETAIL_MEAN_IN_CORRIDOR);
+    const smoothness = detail(summary, DETAIL_BEST_SPARC);
+    return [
+      {
+        labelKey: "measure.meanInCorridor",
+        value:
+          inCorridor === null
+            ? null
+            : { key: "measure.percent", params: { value: Math.round(inCorridor) } },
+      },
+      {
+        labelKey: "measure.bestSmoothness",
+        value:
+          smoothness === null
+            ? null
+            : { key: "measure.number", params: { value: Math.round(smoothness * 100) / 100 } },
+      },
+    ];
+  }
+  if (gameId === "paint_wall") {
+    const range = detail(summary, DETAIL_BEST_RANGE_DEG);
+    return [
+      {
+        labelKey: "measure.bestElbowRange",
+        value:
+          range === null ? null : { key: "measure.degrees", params: { value: Math.round(range) } },
+      },
+    ];
+  }
+  return [];
+}
+
+/** The headline and every extra figure of a game, in the order they are shown. */
+export function allMeasures(gameId: GameId, summary: GameSummary | null): MainMeasure[] {
+  return [mainMeasure(gameId, summary), ...extraMeasures(gameId, summary)];
 }
 
 export const FINGER_LABEL_KEYS: Record<FingerName, TranslationKey> = {
@@ -273,6 +331,39 @@ export function opennessSeries(
         trialNo: trial.trial_no,
         peak: percent(trial.metrics.peak_openness),
         demand: typeof demand === "number" && Number.isFinite(demand) ? percent(demand) : null,
+      };
+    });
+}
+
+export interface RangePoint {
+  trialNo: number;
+  /** The elbow range reached in the stripe, in degrees; null if not measured. */
+  range: number | null;
+  /** The range the stripe asked for: its share of the patient's elbow range, in degrees. */
+  target: number | null;
+}
+
+/** Paint the wall's elbow range per stripe, with the range each one asked for, in trial order. */
+export function rangeSeries(
+  trials: readonly Pick<TrialRead, "trial_no" | "outcome" | "metrics" | "params">[],
+): RangePoint[] {
+  return [...trials]
+    .filter((trial) => trial.outcome !== "aborted")
+    .sort((a, b) => a.trial_no - b.trial_no)
+    .map((trial) => {
+      const {
+        required_range_frac: share,
+        elbow_bent_deg: bent,
+        elbow_straight_deg: straight,
+      } = trial.params;
+      const usable = [share, bent, straight].every(
+        (value) => typeof value === "number" && Number.isFinite(value),
+      );
+      const range = trial.metrics.achieved_range_deg;
+      return {
+        trialNo: trial.trial_no,
+        range: typeof range === "number" ? Math.round(range * 10) / 10 : null,
+        target: usable ? Math.round(share * (straight - bent) * 10) / 10 : null,
       };
     });
 }

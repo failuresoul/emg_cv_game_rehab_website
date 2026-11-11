@@ -108,23 +108,23 @@ describe("keeping the queue across a refresh", () => {
 describe("defaultPlanRows", () => {
   const ready = GAME_IDS.filter((id) => GAMES[id].implemented);
 
-  it("ticks Reach & Activate, Balloon Pop, Bloom and Finger Piano, in that order", () => {
+  it("ticks Reach & Activate, Balloon Pop, Bloom and Path Trace, in that order", () => {
     const rows = defaultPlanRows(ready);
     expect(rows.filter((row) => row.selected).map((row) => row.id)).toEqual([
       "reach_activate",
       "balloon_pop",
       "bloom",
-      "finger_piano",
+      "path_trace",
     ]);
     expect(rows.slice(0, 4).every((row) => row.selected)).toBe(true);
   });
 
-  it("lists Fruit Catch after them, unticked", () => {
+  it("lists the other games after them, unticked", () => {
     const rows = defaultPlanRows(ready);
-    expect(rows.find((row) => row.id === "fruit_catch")).toEqual({
-      id: "fruit_catch",
-      selected: false,
-    });
+    for (const id of ["fruit_catch", "finger_piano", "paint_wall"] as const) {
+      expect(rows.find((row) => row.id === id)).toEqual({ id, selected: false });
+    }
+    expect(rows.slice(4).every((row) => !row.selected)).toBe(true);
     expect(rows.map((row) => row.id).sort()).toEqual([...ready].sort());
   });
 

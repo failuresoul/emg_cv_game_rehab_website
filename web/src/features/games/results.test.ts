@@ -10,7 +10,12 @@ import {
   DETAIL_BEST_OPENNESS,
   DETAIL_NOTE_HIT_RATE,
   DETAIL_WIDEST_CATCH,
-  extraMeasure,
+  allMeasures,
+  DETAIL_BEST_RANGE_DEG,
+  DETAIL_BEST_SPARC,
+  DETAIL_MEAN_IN_CORRIDOR,
+  DETAIL_TOTAL_STARS,
+  extraMeasures,
   fingerHitRates,
   fingerTallies,
   finishedRuns,
@@ -19,6 +24,7 @@ import {
   meanReachSeconds,
   movementSeries,
   percent,
+  rangeSeries,
   targetMarkers,
   totalScore,
 } from "./results";
@@ -181,12 +187,14 @@ describe("mainMeasure", () => {
       labelKey: "measure.flowersGrown",
       value: { key: "measure.count", params: { value: 11 } },
     });
-    expect(extraMeasure("bloom", withDetails)).toEqual({
-      labelKey: "measure.bestOpenness",
-      value: { key: "measure.percent", params: { value: 87 } },
-    });
+    expect(extraMeasures("bloom", withDetails)).toEqual([
+      {
+        labelKey: "measure.bestOpenness",
+        value: { key: "measure.percent", params: { value: 87 } },
+      },
+    ]);
     expect(mainMeasure("bloom", null).value).toBeNull();
-    expect(extraMeasure("bloom", summary)?.value).toBeNull();
+    expect(extraMeasures("bloom", summary)[0].value).toBeNull();
   });
 
   it("is the hit rate for Finger piano, with the best finger beside it", () => {
@@ -198,17 +206,58 @@ describe("mainMeasure", () => {
       labelKey: "measure.hitRate",
       value: { key: "measure.ofNotes", params: { value: 80 } },
     });
-    expect(extraMeasure("finger_piano", withDetails)).toEqual({
-      labelKey: "measure.bestFinger",
-      value: { key: "warmup.sequence.ring", params: {} },
-    });
+    expect(extraMeasures("finger_piano", withDetails)).toEqual([
+      { labelKey: "measure.bestFinger", value: { key: "warmup.sequence.ring", params: {} } },
+    ]);
     const unknown = { ...summary!, details: { [DETAIL_BEST_FINGER]: "thumb" } };
-    expect(extraMeasure("finger_piano", unknown)?.value).toBeNull();
+    expect(extraMeasures("finger_piano", unknown)[0].value).toBeNull();
   });
 
-  it("has no second figure for the reaching games", () => {
-    expect(extraMeasure("reach_activate", summary)).toBeNull();
-    expect(extraMeasure("balloon_pop", summary)).toBeNull();
+  it("is the stars for Path trace, with time in the corridor and best smoothness beside them", () => {
+    const withDetails = {
+      ...summary!,
+      details: {
+        [DETAIL_TOTAL_STARS]: 22,
+        [DETAIL_MEAN_IN_CORRIDOR]: 81.46,
+        [DETAIL_BEST_SPARC]: -1.4567,
+      },
+    };
+    expect(allMeasures("path_trace", withDetails)).toEqual([
+      { labelKey: "measure.stars", value: { key: "measure.count", params: { value: 22 } } },
+      {
+        labelKey: "measure.meanInCorridor",
+        value: { key: "measure.percent", params: { value: 81 } },
+      },
+      {
+        labelKey: "measure.bestSmoothness",
+        value: { key: "measure.number", params: { value: -1.46 } },
+      },
+    ]);
+    expect(allMeasures("path_trace", summary).map((measure) => measure.value)).toEqual([
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it("is the stripes finished for Paint the wall, with the best elbow range beside them", () => {
+    const withDetails = { ...summary!, successes: 6, details: { [DETAIL_BEST_RANGE_DEG]: 78.6 } };
+    expect(allMeasures("paint_wall", withDetails)).toEqual([
+      {
+        labelKey: "measure.stripesFinished",
+        value: { key: "measure.count", params: { value: 6 } },
+      },
+      {
+        labelKey: "measure.bestElbowRange",
+        value: { key: "measure.degrees", params: { value: 79 } },
+      },
+    ]);
+  });
+
+  it("has no extra figures for the reaching games", () => {
+    expect(extraMeasures("reach_activate", summary)).toEqual([]);
+    expect(extraMeasures("balloon_pop", summary)).toEqual([]);
+    expect(allMeasures("fruit_catch", summary)).toHaveLength(1);
   });
 
   it("has no value when there is nothing to show yet", () => {
@@ -314,6 +363,36 @@ describe("opennessSeries", () => {
       { trialNo: 1, peak: 81, demand: 70 },
       { trialNo: 2, peak: 55, demand: 75 },
       { trialNo: 4, peak: null, demand: null },
+    ]);
+  });
+});
+
+describe("rangeSeries", () => {
+  it("gives each stripe's elbow range and the range it asked for, in stripe order", () => {
+    const trial = (
+      trialNo: number,
+      outcome: TrialRead["outcome"],
+      range: number | null,
+      params: Record<string, number>,
+    ) =>
+      ({
+        trial_no: trialNo,
+        outcome,
+        metrics: { achieved_range_deg: range },
+        params,
+      }) as unknown as TrialRead;
+    const personal = { required_range_frac: 0.75, elbow_bent_deg: 70, elbow_straight_deg: 150 };
+    expect(
+      rangeSeries([
+        trial(2, "miss", 48.24, { ...personal, required_range_frac: 0.8 }),
+        trial(1, "success", 66.66, personal),
+        trial(3, "aborted", 10, personal),
+        trial(4, "miss", null, {}),
+      ]),
+    ).toEqual([
+      { trialNo: 1, range: 66.7, target: 60 },
+      { trialNo: 2, range: 48.2, target: 64 },
+      { trialNo: 4, range: null, target: null },
     ]);
   });
 });

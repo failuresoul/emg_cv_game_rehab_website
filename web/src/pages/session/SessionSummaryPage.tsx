@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { extraMeasure, mainMeasure, type MainMeasure, percent } from "@/features/games/results";
+import { allMeasures, percent } from "@/features/games/results";
 import { useSessionReport } from "@/features/progress/hooks";
 import { type Comparison, compare } from "@/features/progress/progress";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
@@ -137,10 +137,7 @@ function Figures({ report }: { report: SessionReport }) {
 function GameCard({ game }: { game: SessionReportGame }) {
   const definition = GAMES[game.game_id];
   const Icon = definition.icon;
-  const measures = [
-    mainMeasure(game.game_id, game.summary),
-    extraMeasure(game.game_id, game.summary),
-  ].filter((item): item is MainMeasure => item !== null);
+  const measures = allMeasures(game.game_id, game.summary);
   const rate = percent(game.success_rate);
   const notRecorded = t("sessions.notRecorded");
 

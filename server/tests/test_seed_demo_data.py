@@ -208,6 +208,66 @@ def test_hand_game_trials_are_valid(game_id: demo.GameName) -> None:
         assert 0 < summary.details["note_hit_rate"] <= 1  # type: ignore[operator]
 
 
+@pytest.mark.parametrize("game_id", demo.MOVEMENT_GAMES)
+def test_movement_game_trials_are_valid(game_id: demo.GameName) -> None:
+    trials = demo.make_game_trials(random.Random(5), game_id, demo.BASE_RADII, 0.5, 1.0)
+
+    assert [trial.trial_no for trial in trials] == list(
+        range(1, demo.TRIAL_COUNTS[game_id] + 1)
+    )
+    for trial in trials:
+        revalidate(trial)
+        assert trial.target is not None and trial.target.x_sw is None
+        metrics = trial.metrics
+        if game_id == "path_trace":
+            assert trial.target.kind == "path"
+            assert trial.target.shape in demo.PATH_SHAPES
+            assert 2 <= len(trial.target.points or []) <= 200
+            assert len(trial.trajectory) > 30
+            assert metrics.sparc is not None and metrics.sparc <= 0
+            assert metrics.time_in_corridor_pct is not None
+            assert (trial.outcome == "success") == (metrics.time_in_corridor_pct >= 70)
+        else:
+            assert trial.target.kind == "stripe"
+            assert trial.target.index == trial.trial_no - 1
+            assert metrics.achieved_range_deg is not None
+            assert metrics.max_straight_deg is not None and metrics.max_bend_deg is not None
+            assert metrics.max_straight_deg - metrics.max_bend_deg == pytest.approx(
+                metrics.achieved_range_deg, abs=0.11
+            )
+            assert (trial.outcome == "success") == (metrics.full_sweeps == 3)
+            assert trial.compensation.flagged == (trial.compensation.type == "upper_arm")
+    summary = demo.summarise_trials(game_id, trials)
+    revalidate(summary)
+    if game_id == "path_trace":
+        stars = summary.details["total_stars"]
+        assert isinstance(stars, int | float) and 10 <= stars <= 30
+        assert summary.details["best_sparc"] == max(t.metrics.sparc for t in trials)  # type: ignore[type-var]
+    else:
+        assert summary.details["best_range_deg"] == max(
+            t.metrics.achieved_range_deg for t in trials  # type: ignore[type-var]
+        )
+
+
+def test_movement_quality_improves_over_the_sessions() -> None:
+    def summary(game_id: demo.GameName, progress: float) -> GameSummary:
+        trials = [
+            trial
+            for seed in range(10)
+            for trial in demo.make_game_trials(
+                random.Random(seed), game_id, demo.BASE_RADII, progress, 1.0
+            )
+        ]
+        return demo.summarise_trials(game_id, trials)
+
+    first, last = summary("path_trace", 0), summary("path_trace", 1)
+    assert last.details["best_sparc"] > first.details["best_sparc"]  # type: ignore[operator]
+    assert last.details["mean_in_corridor_pct"] > first.details["mean_in_corridor_pct"] + 15  # type: ignore[operator]
+    first, last = summary("paint_wall", 0), summary("paint_wall", 1)
+    assert last.details["mean_range_deg"] > first.details["mean_range_deg"] + 20  # type: ignore[operator]
+    assert last.success_rate > first.success_rate + 0.5
+
+
 def test_hand_games_improve_over_the_sessions() -> None:
     def summary(game_id: demo.GameName, progress: float) -> GameSummary:
         trials = [
@@ -297,9 +357,9 @@ def test_seed_creates_two_demo_patients_with_full_sessions(session: Session) -> 
             assert record.current_step == "summary"
     assert count(session, Calibration) == 14
     assert count(session, WarmupResult) == 14 * 6
-    assert count(session, GameRun) == 14 * 5
-    # 20 trials for each reaching game, 15 flowers and 12 melodies.
-    assert count(session, Trial) == 14 * (3 * 20 + 15 + 12)
+    assert count(session, GameRun) == 14 * 7
+    # 20 trials for each reaching game, 15 flowers, 12 melodies, 10 traces and 8 stripes.
+    assert count(session, Trial) == 14 * (3 * 20 + 15 + 12 + 10 + 8)
     assert count(session, SessionFeedback) == 14
 
 
@@ -433,13 +493,23 @@ def test_dashboards_read_the_demo_data(
     assert all(game["previous"] is not None for game in body["games"])
     bloom = body["games"][3]
     assert bloom["main_measure"]["name"] == "flowers_grown"
-    assert bloom["extra_measure"]["value"] is not None
+    assert bloom["extra_measures"][0]["value"] is not None
     piano = body["games"][4]
     assert piano["main_measure"]["name"] == "note_hit_rate"
-    assert piano["extra_measure"]["value"] in demo.FINGERS
-    # The admin progress tab's hand-game series.
+    assert piano["extra_measures"][0]["value"] in demo.FINGERS
+    trace, wall = body["games"][5], body["games"][6]
+    assert trace["main_measure"]["name"] == "stars"
+    assert [measure["name"] for measure in trace["extra_measures"]] == [
+        "mean_in_corridor_pct",
+        "best_sparc",
+    ]
+    assert wall["main_measure"]["name"] == "stripes_finished"
+    assert wall["extra_measures"][0]["value"] is not None
+    # The admin progress tab's hand-game and movement-quality series.
     assert all(point["bloom_peak_openness"] is not None for point in series)
     assert series[-1]["piano_hit_rate"] > series[0]["piano_hit_rate"]
+    assert series[-1]["path_sparc"] > series[0]["path_sparc"]  # Closer to 0: smoother.
+    assert series[-1]["elbow_range_deg"] > series[0]["elbow_range_deg"]
     assert body["previous_reach"] is not None
 
     patients = client.get("/api/admin/patients", headers=admin_headers).json()

@@ -1,7 +1,7 @@
 import pytest
 
 from app.schemas.game import GameSummary
-from app.services.game_measures import extra_measure, main_measure
+from app.services.game_measures import extra_measures, main_measure
 
 
 def summary(**details: float | str | bool | None) -> GameSummary:
@@ -22,6 +22,8 @@ def summary(**details: float | str | bool | None) -> GameSummary:
         ("fruit_catch", {"widest_catch_frac": 0.7}, ("widest_catch_frac", 0.7, "share")),
         ("bloom", {}, ("flowers_grown", 3, "count")),
         ("finger_piano", {"note_hit_rate": 0.6}, ("note_hit_rate", 0.6, "share")),
+        ("path_trace", {"total_stars": 21}, ("stars", 21, "count")),
+        ("paint_wall", {}, ("stripes_finished", 3, "count")),
     ],
 )
 def test_main_measure_of_every_game(
@@ -32,21 +34,28 @@ def test_main_measure_of_every_game(
     assert (measure.name, measure.value, measure.unit) == expected
 
 
-def test_extra_measures_of_the_hand_games() -> None:
-    bloom = extra_measure("bloom", summary(best_openness=0.9))
-    assert bloom is not None and (bloom.name, bloom.value) == ("best_openness", 0.9)
-    piano = extra_measure("finger_piano", summary(best_finger="middle"))
-    assert piano is not None and (piano.name, piano.value) == ("best_finger", "middle")
-    assert extra_measure("reach_activate", summary()) is None
+def test_extra_measures_of_the_games_that_have_them() -> None:
+    def named(game_id: str, **details: float | str) -> list[tuple[str, object, str]]:
+        return [(m.name, m.value, m.unit) for m in extra_measures(game_id, summary(**details))]
+
+    assert named("bloom", best_openness=0.9) == [("best_openness", 0.9, "share")]
+    assert named("finger_piano", best_finger="middle") == [("best_finger", "middle", "finger")]
+    assert named("path_trace", mean_in_corridor_pct=82.5, best_sparc=-1.42) == [
+        ("mean_in_corridor_pct", 82.5, "percent"),
+        ("best_sparc", -1.42, "sparc"),
+    ]
+    assert named("paint_wall", best_range_deg=78.5) == [("best_range_deg", 78.5, "deg")]
+    assert extra_measures("reach_activate", summary()) == []
 
 
 def test_measures_without_a_summary_or_usable_values() -> None:
     assert main_measure("bloom", None) is None
-    assert extra_measure("bloom", None) is None
+    assert extra_measures("bloom", None) == []
     missing = main_measure("balloon_pop", summary())
     assert missing is not None and missing.value is None
     # True/false is not a figure, and only real fingers count.
     flag = main_measure("finger_piano", summary(note_hit_rate=True))
     assert flag is not None and flag.value is None
-    thumb = extra_measure("finger_piano", summary(best_finger="thumb"))
-    assert thumb is not None and thumb.value is None
+    [thumb] = extra_measures("finger_piano", summary(best_finger="thumb"))
+    assert thumb.value is None
+    assert [m.value for m in extra_measures("path_trace", summary())] == [None, None]

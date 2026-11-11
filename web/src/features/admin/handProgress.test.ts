@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ProgressPoint } from "@/types/api";
 
-import { handProgress } from "./handProgress";
+import { handProgress, movementQualityProgress } from "./handProgress";
 
 const point = (date: string, changes: Partial<ProgressPoint> = {}): ProgressPoint => ({
   session_id: 1,
@@ -38,5 +38,23 @@ describe("handProgress", () => {
 
   it("is empty without hand games", () => {
     expect(handProgress([point("2026-11-01")], String)).toEqual({ openness: [], hitRate: [] });
+  });
+});
+
+describe("movementQualityProgress", () => {
+  it("gives Path trace's smoothness and Paint the wall's elbow range per session", () => {
+    const result = movementQualityProgress(
+      [
+        point("2026-11-01", { path_sparc: -2.1234, elbow_range_deg: 58.6 }),
+        point("2026-11-03"),
+        point("2026-11-05", { path_sparc: -1.756 }),
+      ],
+      (iso) => iso.slice(5),
+    );
+    expect(result.sparc).toEqual([
+      { label: "11-01", value: -2.12 },
+      { label: "11-05", value: -1.76 },
+    ]);
+    expect(result.elbowRange).toEqual([{ label: "11-01", value: 59 }]);
   });
 });

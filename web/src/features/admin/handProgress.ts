@@ -28,3 +28,36 @@ export function handProgress(
     hitRate: points((point) => point.piano_hit_rate),
   };
 }
+
+export interface MovementQualityProgress {
+  /** Path trace's mean SPARC per session, to two decimals (≤ 0; closer to 0 is smoother). */
+  sparc: ChartPoint[];
+  /** Paint the wall's mean elbow range per session, in whole degrees. */
+  elbowRange: ChartPoint[];
+}
+
+/** The movement-quality figures per session, oldest first; sessions without a game left out. */
+export function movementQualityProgress(
+  series: readonly ProgressPoint[],
+  formatDate: (iso: string) => string,
+): MovementQualityProgress {
+  const points = (
+    pick: (point: ProgressPoint) => number | null | undefined,
+    places: number,
+  ): ChartPoint[] =>
+    series.flatMap((point) => {
+      const value = pick(point);
+      return value === null || value === undefined
+        ? []
+        : [
+            {
+              label: formatDate(point.date),
+              value: Math.round(value * 10 ** places) / 10 ** places,
+            },
+          ];
+    });
+  return {
+    sparc: points((point) => point.path_sparc, 2),
+    elbowRange: points((point) => point.elbow_range_deg, 0),
+  };
+}

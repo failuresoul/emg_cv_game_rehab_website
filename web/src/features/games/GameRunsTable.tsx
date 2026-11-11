@@ -7,7 +7,7 @@ import { formatNumber } from "@/lib/format";
 import type { GameRun } from "@/types/api";
 
 import { FingerHitBars } from "./FingerHitBars";
-import { extraMeasure, fingerHitRates, mainMeasure, type MainMeasure, percent } from "./results";
+import { allMeasures, fingerHitRates, mainMeasure, percent } from "./results";
 
 const COLUMNS: TranslationKey[] = [
   "gameResults.column.game",
@@ -77,10 +77,7 @@ export function GameRunsTable({ runs }: { runs: readonly GameRun[] }) {
 export function GameRunSection({ run }: { run: GameRun }) {
   const game = GAMES[run.game_id];
   const Icon = game.icon;
-  const measures = [
-    mainMeasure(run.game_id, run.summary),
-    extraMeasure(run.game_id, run.summary),
-  ].filter((item): item is MainMeasure => item !== null);
+  const measures = allMeasures(run.game_id, run.summary);
   const notRecorded = t("sessions.notRecorded");
   return (
     <section aria-labelledby={`run-${run.id}`} className="flex flex-col gap-3">

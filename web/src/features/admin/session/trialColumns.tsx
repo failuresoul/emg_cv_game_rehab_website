@@ -124,6 +124,90 @@ const FINGER_SHORT_KEYS: Record<string, TranslationKey> = {
   little: "warmup.sequence.little",
 };
 
+export const SHAPE_KEYS: Record<string, TranslationKey> = {
+  line: "shape.line",
+  arc: "shape.arc",
+  s_curve: "shape.s_curve",
+  circle_part: "shape.circle_part",
+};
+
+const percentOf100 = (value: number | null | undefined) =>
+  value === null || value === undefined
+    ? dash
+    : t("patient.lastSession.percent", { value: Math.round(value) });
+const degrees = (value: number | null | undefined) =>
+  value === null || value === undefined
+    ? dash
+    : t("adminSession.degrees", { value: Math.round(value) });
+
+const pathTraceColumns: readonly TrialColumn[] = [
+  {
+    key: "adminSession.column.shape",
+    cell: (trial) => {
+      const shape = trial.target?.shape;
+      return shape ? (SHAPE_KEYS[shape] ? t(SHAPE_KEYS[shape]) : shape) : dash;
+    },
+  },
+  {
+    key: "adminSession.column.inCorridor",
+    cell: (trial) => percentOf100(trial.metrics.time_in_corridor_pct),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.trackingError",
+    cell: (trial) => decimal(trial.metrics.mean_tracking_error_sw, 3),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.lag",
+    cell: (trial) => whole(trial.metrics.lag_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.sparc",
+    cell: (trial) => decimal(trial.metrics.sparc),
+    numeric: true,
+  },
+  outcome,
+  compensated,
+];
+
+const paintWallColumns: readonly TrialColumn[] = [
+  {
+    key: "adminSession.column.elbowRange",
+    cell: (trial) => degrees(trial.metrics.achieved_range_deg),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.sweeps",
+    cell: (trial) =>
+      trial.metrics.full_sweeps == null
+        ? dash
+        : t("adminSession.sweepsValue", {
+            full: trial.metrics.full_sweeps,
+            partial: trial.metrics.partial_sweeps ?? 0,
+          }),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.meanSweep",
+    cell: (trial) => whole(trial.metrics.mean_sweep_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.angularSparc",
+    cell: (trial) => decimal(trial.metrics.angular_sparc),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.upperArm",
+    cell: (trial) => degrees(trial.metrics.upper_arm_motion_deg),
+    numeric: true,
+  },
+  outcome,
+  compensated,
+];
+
 const fingerPianoColumns: readonly TrialColumn[] = [
   {
     key: "adminSession.column.melody",
@@ -226,6 +310,8 @@ export const TRIAL_COLUMNS: Partial<Record<GameId, readonly TrialColumn[]>> = {
   ],
   bloom: bloomColumns,
   finger_piano: fingerPianoColumns,
+  path_trace: pathTraceColumns,
+  paint_wall: paintWallColumns,
 };
 
 /** Games without their own list show the reaching columns. */

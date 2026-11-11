@@ -586,6 +586,10 @@ export interface ProgressPoint {
   bloom_peak_openness?: number | null;
   /** Finger piano: notes played over notes asked, 0–1; null without Finger piano. */
   piano_hit_rate?: number | null;
+  /** Path trace: the mean SPARC of its traces (≤ 0; closer to 0 is smoother). */
+  path_sparc?: number | null;
+  /** Paint the wall: the mean elbow range reached per stripe, in degrees. */
+  elbow_range_deg?: number | null;
 }
 
 export interface ReachSnapshot {
@@ -630,8 +634,8 @@ export interface SessionReportGame {
   summary: GameSummary | null;
   /** The game's headline figure, the same one mainMeasure() words. */
   main_measure?: GameMeasure | null;
-  /** A second figure for the hand games, the same one extraMeasure() words. */
-  extra_measure?: GameMeasure | null;
+  /** More figures beside the headline, the same ones extraMeasures() words. */
+  extra_measures?: GameMeasure[];
   previous: GameComparison | null;
 }
 
@@ -639,7 +643,7 @@ export interface SessionReportGame {
 export interface GameMeasure {
   name: string;
   value: number | string | null;
-  unit: "ms" | "share" | "count" | "finger";
+  unit: "ms" | "share" | "percent" | "count" | "deg" | "sparc" | "finger";
 }
 
 /** Everything the end-of-session summary shows, with figures from earlier sessions. */

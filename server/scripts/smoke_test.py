@@ -570,13 +570,15 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             bloom["main_measure"] == {"name": "flowers_grown", "value": 3, "unit": "count"},
             f"Bloom's main measure is {bloom['main_measure']}",
         )
-        require(bloom["extra_measure"]["value"] == 0.85, "Bloom's best openness is wrong")
+        require(bloom["extra_measures"][0]["value"] == 0.85, "Bloom's best openness is wrong")
         require(piano["success_rate"] == 1.0, "Finger piano's success rate is wrong")
         require(
             piano["main_measure"] == {"name": "note_hit_rate", "value": 0.75, "unit": "share"},
             f"Finger piano's main measure is {piano['main_measure']}",
         )
-        require(piano["extra_measure"]["value"] == "index", "Finger piano's best finger is wrong")
+        require(
+            piano["extra_measures"][0]["value"] == "index", "Finger piano's best finger is wrong"
+        )
         require(body["warmup"]["goals_reached"] == 6, "the summary's warm-up goals are wrong")
         require(body["reach"]["hull_area_sw2"] == 2.0, "the summary's reach is wrong")
         require(body["feedback"]["pain_0_10"] == 5, "the summary has no questionnaire")
