@@ -124,14 +124,18 @@ def game_success_rates(session: Session, session_ids: Sequence[int]) -> dict[int
     }
 
 
-#: Games whose trials give per-session figures for the progress series.
-FIGURE_GAMES = ("bloom", "finger_piano", "path_trace", "paint_wall")
-#: The trial metric averaged for each game's figure (Finger piano adds up notes instead).
-MEAN_METRICS = {
-    "bloom": "peak_openness",
-    "path_trace": "sparc",
-    "paint_wall": "achieved_range_deg",
+#: Each per-session figure of the progress series: the game, and the trial metric averaged over
+#: its trials (Finger piano adds up notes instead). A trial without the metric is left out.
+MEAN_FIGURES: dict[str, tuple[str, str]] = {
+    "bloom_peak_openness": ("bloom", "peak_openness"),
+    "path_sparc": ("path_trace", "sparc"),
+    "elbow_range_deg": ("paint_wall", "achieved_range_deg"),
+    "pick_transport_ms": ("pick_place", "transport_ms"),
+    "grip_steadiness": ("grip_hold", "steadiness"),
+    "grip_relaxation_ms": ("grip_hold", "relaxation_ms"),
 }
+#: Games whose trials give per-session figures for the progress series.
+FIGURE_GAMES = tuple(sorted({"finger_piano", *(game for game, _ in MEAN_FIGURES.values())}))
 
 
 @dataclass(frozen=True)
@@ -142,11 +146,15 @@ class SessionFigures:
     piano_hit_rate: float | None = None
     path_sparc: float | None = None
     elbow_range_deg: float | None = None
+    pick_transport_ms: float | None = None
+    grip_steadiness: float | None = None
+    grip_relaxation_ms: float | None = None
 
 
 def session_figures(session: Session, session_ids: Sequence[int]) -> dict[int, SessionFigures]:
     """For each session: Bloom's mean peak openness, Finger piano's hit rate (notes played over
-    notes asked), Path trace's mean SPARC and Paint the wall's mean elbow range.
+    notes asked), Path trace's mean SPARC, Paint the wall's mean elbow range, Pick and place's mean
+    carry time, and Grip and hold's mean steadiness and relaxation time.
 
     Trials the patient stopped are left out. A session without one of the games has None for it.
     """
@@ -163,6 +171,7 @@ def session_figures(session: Session, session_ids: Sequence[int]) -> dict[int, S
     )
     values: dict[tuple[int, str], list[float]] = defaultdict(list)
     notes: dict[int, list[int]] = {}
+    sessions: set[int] = set()
     for session_id, game_id, metrics in session.exec(statement).all():
         found = metrics or {}
         if game_id == "finger_piano":
@@ -171,24 +180,26 @@ def session_figures(session: Session, session_ids: Sequence[int]) -> dict[int, S
                 tally = notes.setdefault(session_id, [0, 0])
                 tally[0] += hits
                 tally[1] += total
+                sessions.add(session_id)
             continue
-        value = found.get(MEAN_METRICS[game_id])
-        if isinstance(value, int | float) and not isinstance(value, bool):
-            values[(session_id, game_id)].append(float(value))
+        for figure, (figure_game, metric) in MEAN_FIGURES.items():
+            value = found.get(metric)
+            if figure_game != game_id or isinstance(value, bool):
+                continue
+            if isinstance(value, int | float):
+                values[(session_id, figure)].append(float(value))
+                sessions.add(session_id)
 
-    def mean(session_id: int, game_id: str) -> float | None:
-        found = values.get((session_id, game_id))
+    def mean(session_id: int, figure: str) -> float | None:
+        found = values.get((session_id, figure))
         return sum(found) / len(found) if found else None
 
-    sessions = {session_id for session_id, _ in values} | set(notes)
     return {
         session_id: SessionFigures(
-            bloom_peak_openness=mean(session_id, "bloom"),
             piano_hit_rate=(
                 notes[session_id][0] / notes[session_id][1] if session_id in notes else None
             ),
-            path_sparc=mean(session_id, "path_trace"),
-            elbow_range_deg=mean(session_id, "paint_wall"),
+            **{figure: mean(session_id, figure) for figure in MEAN_FIGURES},
         )
         for session_id in sessions
     }
@@ -245,6 +256,9 @@ def get_progress(
                 piano_hit_rate=found.piano_hit_rate,
                 path_sparc=found.path_sparc,
                 elbow_range_deg=found.elbow_range_deg,
+                pick_transport_ms=found.pick_transport_ms,
+                grip_steadiness=found.grip_steadiness,
+                grip_relaxation_ms=found.grip_relaxation_ms,
             )
         )
 

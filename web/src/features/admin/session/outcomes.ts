@@ -37,6 +37,14 @@ const GAME_OUTCOME_KEYS: Partial<Record<GameId, Partial<Record<TrialOutcome, Tra
   fruit_catch: { success: "outcome.caught", miss: "outcome.notCaught" },
   bloom: { success: "outcome.bloomed", miss: "outcome.notBloomed" },
   finger_piano: { success: "outcome.melodyPlayed", miss: "outcome.melodyPartly" },
+  path_trace: {
+    success: "outcome.followedWell",
+    miss: "outcome.followedPartly",
+    reach_fail: "outcome.notStarted",
+  },
+  paint_wall: { success: "outcome.stripeFinished", miss: "outcome.stripePartly" },
+  pick_place: { success: "outcome.placed", miss: "outcome.notPlaced" },
+  grip_hold: { success: "outcome.heldAndRelaxed", miss: "outcome.notCompleted" },
 };
 
 export function outcomeLabelKey(gameId: GameId, outcome: TrialOutcome): TranslationKey {

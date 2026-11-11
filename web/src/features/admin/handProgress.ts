@@ -6,6 +6,34 @@ export interface HandProgress {
   openness: ChartPoint[];
   /** Finger piano's hit rate per session, as a percentage. */
   hitRate: ChartPoint[];
+  /**
+   * Grip and hold's steadiness per session: the wobble of the grip level in the zone, in
+   * percentage points to one decimal (smaller is steadier).
+   */
+  steadiness: ChartPoint[];
+  /** Grip and hold's time to relax per session, in seconds to one decimal. */
+  relaxation: ChartPoint[];
+}
+
+/** One chart point per session that has the figure, rounded to `places` after scaling. */
+function chartPoints(
+  series: readonly ProgressPoint[],
+  formatDate: (iso: string) => string,
+  pick: (point: ProgressPoint) => number | null | undefined,
+  scale: number,
+  places: number,
+): ChartPoint[] {
+  return series.flatMap((point) => {
+    const value = pick(point);
+    return value === null || value === undefined
+      ? []
+      : [
+          {
+            label: formatDate(point.date),
+            value: Math.round(value * scale * 10 ** places) / 10 ** places,
+          },
+        ];
+  });
 }
 
 /**
@@ -16,16 +44,16 @@ export function handProgress(
   series: readonly ProgressPoint[],
   formatDate: (iso: string) => string,
 ): HandProgress {
-  const points = (pick: (point: ProgressPoint) => number | null | undefined): ChartPoint[] =>
-    series.flatMap((point) => {
-      const share = pick(point);
-      return share === null || share === undefined
-        ? []
-        : [{ label: formatDate(point.date), value: Math.round(share * 100) }];
-    });
+  const points = (
+    pick: (point: ProgressPoint) => number | null | undefined,
+    scale: number,
+    places: number,
+  ) => chartPoints(series, formatDate, pick, scale, places);
   return {
-    openness: points((point) => point.bloom_peak_openness),
-    hitRate: points((point) => point.piano_hit_rate),
+    openness: points((point) => point.bloom_peak_openness, 100, 0),
+    hitRate: points((point) => point.piano_hit_rate, 100, 0),
+    steadiness: points((point) => point.grip_steadiness, 100, 1),
+    relaxation: points((point) => point.grip_relaxation_ms, 1 / 1000, 1),
   };
 }
 
@@ -34,6 +62,8 @@ export interface MovementQualityProgress {
   sparc: ChartPoint[];
   /** Paint the wall's mean elbow range per session, in whole degrees. */
   elbowRange: ChartPoint[];
+  /** Pick and place's mean carry time per session, in seconds to one decimal. */
+  transport: ChartPoint[];
 }
 
 /** The movement-quality figures per session, oldest first; sessions without a game left out. */
@@ -41,23 +71,9 @@ export function movementQualityProgress(
   series: readonly ProgressPoint[],
   formatDate: (iso: string) => string,
 ): MovementQualityProgress {
-  const points = (
-    pick: (point: ProgressPoint) => number | null | undefined,
-    places: number,
-  ): ChartPoint[] =>
-    series.flatMap((point) => {
-      const value = pick(point);
-      return value === null || value === undefined
-        ? []
-        : [
-            {
-              label: formatDate(point.date),
-              value: Math.round(value * 10 ** places) / 10 ** places,
-            },
-          ];
-    });
   return {
-    sparc: points((point) => point.path_sparc, 2),
-    elbowRange: points((point) => point.elbow_range_deg, 0),
+    sparc: chartPoints(series, formatDate, (point) => point.path_sparc, 1, 2),
+    elbowRange: chartPoints(series, formatDate, (point) => point.elbow_range_deg, 1, 0),
+    transport: chartPoints(series, formatDate, (point) => point.pick_transport_ms, 1 / 1000, 1),
   };
 }

@@ -11,7 +11,12 @@ import {
   YAxis,
 } from "recharts";
 
-import { FINGER_LABEL_KEYS, fingerTallies, opennessSeries } from "@/features/games/results";
+import {
+  FINGER_LABEL_KEYS,
+  fingerTallies,
+  inBandSeries,
+  opennessSeries,
+} from "@/features/games/results";
 import { t } from "@/i18n";
 import type { GameRunDetail } from "@/types/api";
 
@@ -143,6 +148,58 @@ export function FingerHitChart({ run }: { run: GameRunDetail }) {
               }}
             />
             <Bar dataKey="rate" fill={PRIMARY} radius={[4, 4, 0, 0]} maxBarSize={48} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </figure>
+  );
+}
+
+/** Grip and hold: the share of each hold spent inside the green zone. */
+export function InBandChart({ run }: { run: GameRunDetail }) {
+  const data = inBandSeries(run.trials);
+  if (!data.some((point) => point.inBand !== null)) return null;
+  return (
+    <figure>
+      <figcaption className="mb-2 font-semibold">{t("adminSession.inBandChart")}</figcaption>
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            accessibilityLayer
+            margin={{ top: 8, right: 12, bottom: 8, left: 0 }}
+          >
+            <CartesianGrid vertical={false} stroke={MUTED} strokeOpacity={0.2} />
+            <XAxis
+              dataKey="trialNo"
+              tick={{ fill: MUTED, fontSize: AXIS_FONT_SIZE }}
+              tickLine={false}
+              tickMargin={8}
+            />
+            <YAxis
+              width={56}
+              unit="%"
+              domain={[0, 100]}
+              ticks={PERCENT_TICKS}
+              tick={{ fill: MUTED, fontSize: AXIS_FONT_SIZE }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip
+              cursor={{ fill: MUTED, fillOpacity: 0.1 }}
+              labelFormatter={(trialNo) => t("adminSession.chartTrial", { n: String(trialNo) })}
+              formatter={(value) => [
+                t("patient.lastSession.percent", { value: Math.round(Number(value)) }),
+                t("adminSession.series.inBand"),
+              ]}
+            />
+            <Bar
+              dataKey="inBand"
+              fill={PRIMARY}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={36}
+              isAnimationActive={false}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

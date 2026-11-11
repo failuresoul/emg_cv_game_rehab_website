@@ -8,7 +8,7 @@ from sqlmodel import Session
 from app.models import GameSetting
 from app.services import game_specs
 from app.services.game_specs import GameSpecsUnavailableError, get_spec, load_specs
-from tests.conftest import Headers
+from conftest import Headers
 
 ALL_GAMES = [
     "reach_activate",

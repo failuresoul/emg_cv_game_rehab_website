@@ -270,6 +270,9 @@ def test_progress_series_figures(
         "piano_hit_rate": None,
         "path_sparc": None,
         "elbow_range_deg": None,
+        "pick_transport_ms": None,
+        "grip_steadiness": None,
+        "grip_relaxation_ms": None,
     }
     assert body["series"][1] == {
         "session_id": second.id,
@@ -283,6 +286,9 @@ def test_progress_series_figures(
         "piano_hit_rate": None,
         "path_sparc": None,
         "elbow_range_deg": None,
+        "pick_transport_ms": None,
+        "grip_steadiness": None,
+        "grip_relaxation_ms": None,
     }
 
 
@@ -312,6 +318,78 @@ def test_progress_movement_quality_figures(
     assert point["path_sparc"] == pytest.approx(-1.8)
     assert point["elbow_range_deg"] == pytest.approx(70.0)
     assert point["bloom_peak_openness"] is None
+
+
+def test_progress_pick_place_and_grip_hold_figures(
+    client: TestClient, patient_headers: Headers, session: Session
+) -> None:
+    patient = profile(session)
+    record = add_session(session, patient, noon(1))
+    add_run(
+        session,
+        record,
+        ["success", "success", "miss", "aborted"],
+        game_id="pick_place",
+        # A miss has no carry time; the stopped trial is left out.
+        metrics=[
+            {"transport_ms": 2000},
+            {"transport_ms": 3000},
+            {"transport_ms": None},
+            {"transport_ms": 9000},
+        ],
+    )
+    add_run(
+        session,
+        record,
+        ["success", "miss"],
+        game_id="grip_hold",
+        metrics=[
+            {"steadiness": 0.04, "relaxation_ms": 800},
+            {"steadiness": 0.08, "relaxation_ms": None},
+        ],
+    )
+
+    [point] = client.get("/api/patient/progress", headers=patient_headers).json()["series"]
+
+    assert point["pick_transport_ms"] == pytest.approx(2500)
+    assert point["grip_steadiness"] == pytest.approx(0.06)
+    assert point["grip_relaxation_ms"] == pytest.approx(800)
+    assert point["path_sparc"] is None
+
+
+def test_summary_includes_pick_place_and_grip_hold(
+    client: TestClient, patient_headers: Headers, session: Session
+) -> None:
+    patient = profile(session)
+    record = add_session(session, patient, noon(0))
+    add_run(
+        session,
+        record,
+        ["success", "success", "miss"],
+        game_id="pick_place",
+        details={"total_drops": 2, "mean_transport_ms": 2450},
+    )
+    add_run(
+        session,
+        record,
+        ["success"],
+        game_id="grip_hold",
+        details={"best_steadiness": 0.031, "mean_relaxation_ms": 720},
+    )
+
+    body = client.get(f"/api/sessions/{record.id}/summary", headers=patient_headers).json()
+
+    pick, grip = body["games"]
+    assert pick["main_measure"] == {"name": "objects_placed", "value": 2, "unit": "count"}
+    assert pick["extra_measures"] == [
+        {"name": "total_drops", "value": 2, "unit": "count"},
+        {"name": "mean_transport_ms", "value": 2450, "unit": "ms"},
+    ]
+    assert grip["main_measure"] == {"name": "holds_completed", "value": 1, "unit": "count"}
+    assert grip["extra_measures"] == [
+        {"name": "best_steadiness", "value": 0.031, "unit": "share"},
+        {"name": "mean_relaxation_ms", "value": 720, "unit": "ms"},
+    ]
 
 
 def test_summary_includes_path_trace_and_paint_wall(

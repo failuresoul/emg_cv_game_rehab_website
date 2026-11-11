@@ -7,9 +7,12 @@ Start the server first, then run from server/ with the virtual environment activ
 The default base_url is http://localhost:8000. The admin login comes from server/.env. Each run
 adds one test patient with one session (a calibration, six warm-up results and one
 run each of reach_activate, balloon_pop and fruit_catch with 20 trials, one run each of bloom,
-finger_piano, path_trace and paint_wall with 4 trials whose targets have no place, and a
-cool-down questionnaire with pain 5) to the database. Its pain alert is marked reviewed, and the patient is
-deactivated at the end.
+finger_piano, path_trace, paint_wall, pick_place and grip_hold with 4 trials whose targets have
+no place, and a cool-down questionnaire with pain 5) to the database. Its pain alert is marked
+reviewed, and the patient is deactivated at the end.
+
+It also turns Bloom off and changes a Grip and hold default in the game library, checks that the
+patient's game settings follow, and then puts both games' settings back as they were.
 The exit code is 0 if every step passes and 1 otherwise.
 """
 
@@ -355,14 +358,123 @@ def movement_summary(game_id: str, trials: list[dict[str, Any]]) -> dict[str, An
     }
 
 
+# Pick and place and Grip and hold: a target with no place, carrying positions or a band.
+FUNCTION_GAME_IDS = ("pick_place", "grip_hold")
+UNPLACED_GAME_IDS = UNPLACED_GAME_IDS + FUNCTION_GAME_IDS
+PICK_PLACE_PARAMS: dict[str, float] = {
+    "object_radius_sw": 0.35,
+    "pick_distance_frac": 0.6,
+    "place_distance_frac": 0.7,
+    "box_size_sw": 0.7,
+    "carry_angle_deg": 90,
+    "time_limit_ms": 15000,
+    "carry_direction": 0,
+    "rest_ms": 1500,
+}
+PICK_PLACE_TARGET: dict[str, Any] = {
+    "kind": "pick_place",
+    "pick": [-0.4, 0.6],
+    "place": [0.6, 0.6],
+    "object_radius_sw": 0.35,
+    "box_size_sw": 0.7,
+}
+#: Per object: carry time (None: not placed in time) and drops.
+CARRIES = [(2000, 0), (2400, 1), (2600, 0), (None, 2)]
+GRIP_HOLD_PARAMS: dict[str, float] = {
+    "band_center": 0.5,
+    "band_width": 0.3,
+    "hold_ms": 3000,
+    "time_limit_ms": 15000,
+    "relax_below": 0.15,
+    "relax_within_ms": 3000,
+    "rest_ms": 2000,
+}
+#: Per hold: steadiness, relaxation time and the phase that ran out (the fourth never relaxed).
+HOLDS = [(0.04, 700, None), (0.03, 900, None), (0.05, 800, None), (0.06, None, "relax")]
+
+
+def pick_trial(trial_no: int) -> dict[str, Any]:
+    """An object carried outward to the box; the fourth runs out of time after two drops."""
+    transport, drops = CARRIES[trial_no - 1]
+    placed = transport is not None
+    return {
+        "trial_no": trial_no,
+        "params": PICK_PLACE_PARAMS,
+        "target": PICK_PLACE_TARGET,
+        "outcome": "success" if placed else "miss",
+        "timings": {"spawn": 0, "enter": 1200, "dwell_done": 1700, "end": 6000 if placed else 15000},
+        "metrics": {
+            "reach_ms": 1200,
+            "grasp_latency_ms": 500,
+            "transport_ms": transport,
+            "transport_path_efficiency": 0.86 if placed else None,
+            "drops": drops,
+            "release_error_sw": 0.12 if placed else None,
+            "sparc": -1.6 if placed else None,
+            "peak_speed_sw_s": 0.7 if placed else None,
+        },
+        "compensation": {"flagged": False, "type": None, "max_values": {}},
+        "trajectory": [[0, 0.1, -0.8], [1200, -0.4, 0.6], [4000, 0.6, 0.6]],
+    }
+
+
+def grip_trial(trial_no: int) -> dict[str, Any]:
+    """A hold in the band, then relaxing; the fourth does not relax in time."""
+    steadiness, relaxation, failed = HOLDS[trial_no - 1]
+    return {
+        "trial_no": trial_no,
+        "params": GRIP_HOLD_PARAMS,
+        "target": {"kind": "grip_band", "center": 0.5, "width": 0.3},
+        "outcome": "success" if failed is None else "miss",
+        "timings": {"spawn": 0, "activation_start": 800, "activation_done": 4200, "end": 5000},
+        "metrics": {
+            "time_to_band_ms": 800,
+            "time_in_band_pct": 80.0,
+            "longest_continuous_hold_ms": 2500,
+            "overshoot_count": 1,
+            "max_overshoot": 0.05,
+            "steadiness": steadiness,
+            "relaxation_ms": relaxation,
+            "input_source": "keyboard",
+            "failed_phase": failed,
+        },
+        "compensation": {"flagged": False, "type": None, "max_values": {}},
+        "trajectory": [],
+    }
+
+
+def function_summary(game_id: str, trials: list[dict[str, Any]]) -> dict[str, Any]:
+    """The summary Pick and place and Grip and hold send, with the details their measures read."""
+    successes = sum(1 for trial in trials if trial["outcome"] == "success")
+    if game_id == "pick_place":
+        details: dict[str, Any] = {"mean_transport_ms": 2333, "total_drops": 3}
+    else:
+        details = {
+            "mean_in_band_pct": 80.0,
+            "best_hold_ms": 2500,
+            "best_steadiness": 0.03,
+            "mean_relaxation_ms": 800,
+        }
+    return {
+        "successes": successes,
+        "success_rate": successes / len(trials),
+        "compensated_trials": 0,
+        "details": details,
+    }
+
+
 #: How the smoke test plays each game whose targets have no place: settings, trials, summary.
 UNPLACED_GAMES: dict[str, tuple[dict[str, float], Callable[[int], dict[str, Any]], Any]] = {
     "bloom": (BLOOM_PARAMS, bloom_trial, hand_summary),
     "finger_piano": (PIANO_PARAMS, piano_trial, hand_summary),
     "path_trace": (PATH_TRACE_PARAMS, path_trial, movement_summary),
     "paint_wall": (PAINT_WALL_PARAMS, wall_trial, movement_summary),
+    "pick_place": (PICK_PLACE_PARAMS, pick_trial, function_summary),
+    "grip_hold": (GRIP_HOLD_PARAMS, grip_trial, function_summary),
 }
 ALL_GAME_IDS = GAME_IDS + UNPLACED_GAME_IDS
+#: The games whose library settings the smoke test changes, then puts back.
+SETTING_GAMES = ("bloom", "grip_hold")
 
 
 def straight_path(to: tuple[float, float]) -> list[list[float]]:
@@ -641,6 +753,66 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(body["status"] == "completed", f"the {game_id} run is not completed")
         require(body["summary"]["details"] == summary["details"], "summary details differ")
 
+    def admin_changes_game_settings() -> None:
+        """Turns Bloom off and gives Grip and hold a 5 s hold and 10 turns, keeping what was
+        there before so it can be put back."""
+        games = expect(client.get("/api/admin/games", headers=bearer("admin")), 200)
+        require(len(games) == 9, f"expected 9 games in the library, got {len(games)}")
+        state["saved_settings"] = {
+            game["spec"]["id"]: game for game in games if game["spec"]["id"] in SETTING_GAMES
+        }
+        bloom = {"enabled": False, "default_params": {}, "trials_default": None, "notes": None}
+        body = expect(
+            client.put("/api/admin/games/bloom", json=bloom, headers=bearer("admin")), 200
+        )
+        require(body["enabled"] is False, "Bloom is still enabled")
+        grip = {
+            "enabled": True,
+            "default_params": {"hold_ms": 5000},
+            "trials_default": 10,
+            "notes": "Smoke test",
+        }
+        body = expect(
+            client.put("/api/admin/games/grip_hold", json=grip, headers=bearer("admin")), 200
+        )
+        require(body["effective_params"]["hold_ms"] == 5000, "the hold time was not saved")
+        out_of_range = {**grip, "default_params": {"hold_ms": 9000}}
+        expect(
+            client.put("/api/admin/games/grip_hold", json=out_of_range, headers=bearer("admin")),
+            422,
+        )
+
+    def patient_settings_follow() -> None:
+        games = expect(client.get("/api/games/settings", headers=bearer("patient")), 200)
+        ids = [game["game_id"] for game in games]
+        require("bloom" not in ids, "the patient still sees Bloom")
+        require(len(ids) == 8, f"expected 8 games for the patient, got {ids}")
+        grip = next(game for game in games if game["game_id"] == "grip_hold")
+        require(grip["params"]["hold_ms"] == 5000, f"Grip and hold's hold is {grip['params']}")
+        require(grip["trials"] == 10, f"Grip and hold has {grip['trials']} turns")
+
+    def admin_restores_game_settings() -> None:
+        for game_id, saved in state["saved_settings"].items():
+            if saved["updated_at"] is None:
+                url = f"/api/admin/games/{game_id}/reset"
+                expect(client.post(url, headers=bearer("admin")), 200)
+                continue
+            setting = {
+                key: saved[key] for key in ("enabled", "default_params", "trials_default", "notes")
+            }
+            url = f"/api/admin/games/{game_id}"
+            expect(client.put(url, json=setting, headers=bearer("admin")), 200)
+        games = expect(client.get("/api/admin/games", headers=bearer("admin")), 200)
+        for game in games:
+            saved = state["saved_settings"].get(game["spec"]["id"])
+            if saved is not None:
+                require(
+                    game["enabled"] == saved["enabled"]
+                    and game["default_params"] == saved["default_params"]
+                    and game["trials_default"] == saved["trials_default"],
+                    f"{game['spec']['id']}'s settings were not put back",
+                )
+
     def dashboard_last_games() -> None:
         body = expect(client.get("/api/patient/dashboard", headers=bearer("patient")), 200)
         games = body["last_session"]["games"]
@@ -708,6 +880,26 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             wall["extra_measures"] == [{"name": "best_range_deg", "value": 74.0, "unit": "deg"}],
             f"Paint the wall's extra measures are {wall['extra_measures']}",
         )
+        pick, grip = body["games"][7], body["games"][8]
+        require(pick["success_rate"] == 0.75, "Pick and place's success rate is wrong")
+        require(
+            pick["main_measure"] == {"name": "objects_placed", "value": 3, "unit": "count"},
+            f"Pick and place's main measure is {pick['main_measure']}",
+        )
+        require(
+            [(m["name"], m["value"]) for m in pick["extra_measures"]]
+            == [("total_drops", 3), ("mean_transport_ms", 2333)],
+            f"Pick and place's extra measures are {pick['extra_measures']}",
+        )
+        require(
+            grip["main_measure"] == {"name": "holds_completed", "value": 3, "unit": "count"},
+            f"Grip and hold's main measure is {grip['main_measure']}",
+        )
+        require(
+            [(m["name"], m["value"]) for m in grip["extra_measures"]]
+            == [("best_steadiness", 0.03), ("mean_relaxation_ms", 800)],
+            f"Grip and hold's extra measures are {grip['extra_measures']}",
+        )
         require(body["warmup"]["goals_reached"] == 6, "the summary's warm-up goals are wrong")
         require(body["reach"]["hull_area_sw2"] == 2.0, "the summary's reach is wrong")
         require(body["feedback"]["pain_0_10"] == 5, "the summary has no questionnaire")
@@ -721,10 +913,23 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         point = series[0]
         require(point["session_id"] == state["session_id"], "progress shows another session")
         require(point["warmup_goals_reached"] == 6, "progress warm-up goals are wrong")
-        # Every fourth reaching trial, flower, trace and stripe is not a success; every melody
-        # is: 45 + 3 + 4 + 3 + 3 = 58 of 76.
+        # Every fourth reaching trial, flower, trace, stripe, object and hold is not a success;
+        # every melody is: 45 + 3 + 4 + 3 + 3 + 3 + 3 = 64 of 84.
         rate = point["game_success_rate"]
-        require(rate is not None and abs(rate - 58 / 76) < 1e-9, f"success rate is {rate}")
+        require(rate is not None and abs(rate - 64 / 84) < 1e-9, f"success rate is {rate}")
+        # Pick and place: carries of 2000, 2400 and 2600 ms. Grip and hold: steadiness 0.04,
+        # 0.03, 0.05 and 0.06, and relaxing in 700, 900 and 800 ms.
+        transport = point["pick_transport_ms"]
+        require(
+            transport is not None and abs(transport - 7000 / 3) < 1e-6,
+            f"Pick and place's carry time is {transport}",
+        )
+        steadiness = point["grip_steadiness"]
+        require(
+            steadiness is not None and abs(steadiness - 0.045) < 1e-9,
+            f"Grip and hold's steadiness is {steadiness}",
+        )
+        require(point["grip_relaxation_ms"] == 800, "Grip and hold's relaxation time is wrong")
         # Path trace: SPARC -1.7, -1.5, -1.6 and -2.4. Paint the wall: 70, 74, 72 and 50 degrees.
         smoothness = point["path_sparc"]
         require(
@@ -808,7 +1013,7 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(body["calibration"] is not None, "calibration is missing")
         require(len(body["warmup_results"]) == 6, "a warm-up result is missing")
         all_runs = body["games"]
-        require(len(all_runs) == 7, f"expected 7 game runs, got {len(all_runs)}")
+        require(len(all_runs) == 9, f"expected 9 game runs, got {len(all_runs)}")
         require(
             [run["game_id"] for run in all_runs] == list(ALL_GAME_IDS), "the runs are out of order"
         )
@@ -863,6 +1068,30 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         )
         require(wall["trials"][3]["metrics"]["full_sweeps"] == 1, "the last stripe's sweeps differ")
 
+        pick, grip = all_runs[7], all_runs[8]
+        require(len(pick["trials"]) == HAND_TRIALS, "a Pick and place trial is missing")
+        require(
+            pick["trials"][0]["target"] == PICK_PLACE_TARGET,
+            f"the pick and place target is {pick['trials'][0]['target']}",
+        )
+        late = pick["trials"][3]
+        require(late["outcome"] == "miss", "the last object is not a miss")
+        require(late["metrics"]["drops"] == 2, "the last object's drops differ")
+        require(late["metrics"]["transport_ms"] is None, "a missed object has a carry time")
+        require(len(grip["trials"]) == HAND_TRIALS, "a Grip and hold trial is missing")
+        require(
+            grip["trials"][0]["target"] == {"kind": "grip_band", "center": 0.5, "width": 0.3},
+            f"the grip band target is {grip['trials'][0]['target']}",
+        )
+        require(
+            all(trial["metrics"]["input_source"] == "keyboard" for trial in grip["trials"]),
+            "a hold's input source is missing",
+        )
+        require(
+            grip["trials"][3]["metrics"]["failed_phase"] == "relax",
+            "the last hold's failed phase is not relax",
+        )
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -881,6 +1110,9 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Patient reads the session's warm-up", read_session_warmup),
         ("Patient reads warm-up history", read_warmup_history),
         ("Dashboard shows the last warm-up", dashboard_last_warmup),
+        ("Admin turns Bloom off and changes a Grip and hold default", admin_changes_game_settings),
+        ("Patient's game settings follow the admin's", patient_settings_follow),
+        ("Admin puts both games' settings back", admin_restores_game_settings),
         *[
             step
             for game_id in GAME_IDS
@@ -898,7 +1130,7 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
             )
             for game_id in UNPLACED_GAME_IDS
         ],
-        ("Dashboard shows the last session's seven games", dashboard_last_games),
+        ("Dashboard shows the last session's nine games", dashboard_last_games),
         ("Patient sends the cool-down with pain 5 and gets the pain flag", cooldown_with_pain),
         ("Patient ends the session", end_session),
         ("Patient reads the session summary", session_summary),

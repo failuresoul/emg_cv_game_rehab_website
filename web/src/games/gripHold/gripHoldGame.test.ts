@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { FixedProvider } from "@/ai/paramsProvider";
-import { DETAIL_BEST_HOLD_MS, DETAIL_MEAN_IN_BAND_PCT } from "@/features/games/results";
+import {
+  DETAIL_BEST_HOLD_MS,
+  DETAIL_BEST_STEADINESS,
+  DETAIL_MEAN_IN_BAND_PCT,
+  DETAIL_MEAN_RELAXATION_MS,
+} from "@/features/games/results";
 import { gameAudio } from "@/games/shared/audio";
 import { defaultParams, GAMES } from "@/games/shared/registry";
 import { createRng } from "@/games/shared/rng";
@@ -121,6 +126,8 @@ describe("grip_hold game", () => {
     expect(result.summary.successes).toBe(1);
     expect(result.summary.details?.[DETAIL_MEAN_IN_BAND_PCT]).toBeCloseTo(75, 0);
     expect(result.summary.details?.[DETAIL_BEST_HOLD_MS]).toBeCloseTo(3000, -2);
+    expect(result.summary.details?.[DETAIL_BEST_STEADINESS]).toBe(0);
+    expect(result.summary.details?.[DETAIL_MEAN_RELAXATION_MS]).toBeCloseTo(600, -2);
   });
 
   it("misses calmly when the hand does not relax, saving the phase", () => {

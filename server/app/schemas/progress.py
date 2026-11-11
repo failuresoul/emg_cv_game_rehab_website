@@ -36,6 +36,12 @@ class ProgressPoint(BaseModel):
     path_sparc: float | None = None
     #: Paint the wall: the mean elbow range reached per stripe, in degrees.
     elbow_range_deg: float | None = None
+    #: Pick and place: the mean carry time of the objects placed, in ms.
+    pick_transport_ms: float | None = None
+    #: Grip and hold: the mean steadiness (standard deviation of the level in the band, 0-1;
+    #: smaller is steadier) and the mean time to relax after the holds, in ms.
+    grip_steadiness: float | None = None
+    grip_relaxation_ms: float | None = None
 
 
 class ReachSnapshot(BaseModel):

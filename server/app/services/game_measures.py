@@ -18,6 +18,10 @@ DETAIL_TOTAL_STARS = "total_stars"
 DETAIL_MEAN_IN_CORRIDOR = "mean_in_corridor_pct"
 DETAIL_BEST_SPARC = "best_sparc"
 DETAIL_BEST_RANGE_DEG = "best_range_deg"
+DETAIL_TOTAL_DROPS = "total_drops"
+DETAIL_MEAN_TRANSPORT_MS = "mean_transport_ms"
+DETAIL_BEST_STEADINESS = "best_steadiness"
+DETAIL_MEAN_RELAXATION_MS = "mean_relaxation_ms"
 FINGERS = ("index", "middle", "ring", "little")
 
 
@@ -55,6 +59,10 @@ def main_measure(game_id: str, summary: GameSummary | None) -> GameMeasure | Non
         )
     if game_id == "paint_wall":
         return GameMeasure(name="stripes_finished", value=float(summary.successes), unit="count")
+    if game_id == "pick_place":
+        return GameMeasure(name="objects_placed", value=float(summary.successes), unit="count")
+    if game_id == "grip_hold":
+        return GameMeasure(name="holds_completed", value=float(summary.successes), unit="count")
     return GameMeasure(name="mean_reach_ms", value=summary.mean_movement_ms, unit="ms")
 
 
@@ -89,5 +97,24 @@ def extra_measures(game_id: str, summary: GameSummary | None) -> list[GameMeasur
             GameMeasure(
                 name="best_range_deg", value=_number(summary, DETAIL_BEST_RANGE_DEG), unit="deg"
             )
+        ]
+    if game_id == "pick_place":
+        return [
+            GameMeasure(name="total_drops", value=_number(summary, DETAIL_TOTAL_DROPS), unit="count"),
+            GameMeasure(
+                name="mean_transport_ms", value=_number(summary, DETAIL_MEAN_TRANSPORT_MS), unit="ms"
+            ),
+        ]
+    if game_id == "grip_hold":
+        return [
+            # The standard deviation of the grip level (0-1) in the band: smaller is steadier.
+            GameMeasure(
+                name="best_steadiness", value=_number(summary, DETAIL_BEST_STEADINESS), unit="share"
+            ),
+            GameMeasure(
+                name="mean_relaxation_ms",
+                value=_number(summary, DETAIL_MEAN_RELAXATION_MS),
+                unit="ms",
+            ),
         ]
     return []

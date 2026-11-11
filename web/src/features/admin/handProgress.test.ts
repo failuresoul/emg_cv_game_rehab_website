@@ -37,7 +37,27 @@ describe("handProgress", () => {
   });
 
   it("is empty without hand games", () => {
-    expect(handProgress([point("2026-11-01")], String)).toEqual({ openness: [], hitRate: [] });
+    expect(handProgress([point("2026-11-01")], String)).toEqual({
+      openness: [],
+      hitRate: [],
+      steadiness: [],
+      relaxation: [],
+    });
+  });
+
+  it("gives Grip and hold's wobble in percentage points and its time to relax in seconds", () => {
+    const result = handProgress(
+      [
+        point("2026-11-01", { grip_steadiness: 0.0437, grip_relaxation_ms: 1260 }),
+        point("2026-11-03", { grip_steadiness: 0.031, grip_relaxation_ms: null }),
+      ],
+      (iso) => iso.slice(5),
+    );
+    expect(result.steadiness).toEqual([
+      { label: "11-01", value: 4.4 },
+      { label: "11-03", value: 3.1 },
+    ]);
+    expect(result.relaxation).toEqual([{ label: "11-01", value: 1.3 }]);
   });
 });
 
@@ -56,5 +76,14 @@ describe("movementQualityProgress", () => {
       { label: "11-05", value: -1.76 },
     ]);
     expect(result.elbowRange).toEqual([{ label: "11-01", value: 59 }]);
+    expect(result.transport).toEqual([]);
+  });
+
+  it("gives Pick and place's carry time per session in seconds", () => {
+    const result = movementQualityProgress(
+      [point("2026-11-01", { pick_transport_ms: 2349 }), point("2026-11-02")],
+      (iso) => iso.slice(5),
+    );
+    expect(result.transport).toEqual([{ label: "11-01", value: 2.3 }]);
   });
 });

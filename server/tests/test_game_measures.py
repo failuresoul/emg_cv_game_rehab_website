@@ -24,6 +24,8 @@ def summary(**details: float | str | bool | None) -> GameSummary:
         ("finger_piano", {"note_hit_rate": 0.6}, ("note_hit_rate", 0.6, "share")),
         ("path_trace", {"total_stars": 21}, ("stars", 21, "count")),
         ("paint_wall", {}, ("stripes_finished", 3, "count")),
+        ("pick_place", {}, ("objects_placed", 3, "count")),
+        ("grip_hold", {}, ("holds_completed", 3, "count")),
     ],
 )
 def test_main_measure_of_every_game(
@@ -45,6 +47,14 @@ def test_extra_measures_of_the_games_that_have_them() -> None:
         ("best_sparc", -1.42, "sparc"),
     ]
     assert named("paint_wall", best_range_deg=78.5) == [("best_range_deg", 78.5, "deg")]
+    assert named("pick_place", total_drops=4, mean_transport_ms=2310) == [
+        ("total_drops", 4, "count"),
+        ("mean_transport_ms", 2310, "ms"),
+    ]
+    assert named("grip_hold", best_steadiness=0.028, mean_relaxation_ms=650) == [
+        ("best_steadiness", 0.028, "share"),
+        ("mean_relaxation_ms", 650, "ms"),
+    ]
     assert extra_measures("reach_activate", summary()) == []
 
 

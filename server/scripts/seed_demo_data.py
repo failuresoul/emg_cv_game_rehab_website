@@ -55,7 +55,8 @@ TRIALS_PER_GAME = 20
 REACH_GAMES = ("reach_activate", "balloon_pop", "fruit_catch")
 HAND_GAMES = ("bloom", "finger_piano")
 MOVEMENT_GAMES = ("path_trace", "paint_wall")
-GAMES = REACH_GAMES + HAND_GAMES + MOVEMENT_GAMES
+FUNCTION_GAMES = ("pick_place", "grip_hold")
+GAMES = REACH_GAMES + HAND_GAMES + MOVEMENT_GAMES + FUNCTION_GAMES
 GameName = Literal[
     "reach_activate",
     "balloon_pop",
@@ -64,8 +65,11 @@ GameName = Literal[
     "finger_piano",
     "path_trace",
     "paint_wall",
+    "pick_place",
+    "grip_hold",
 ]
-#: Trials in one run of each game, as in the games: 15 flowers, 12 melodies, 10 traces, 8 stripes.
+#: Trials in one run of each game, as in the games: 15 flowers, 12 melodies, 10 traces, 8 stripes,
+#: 12 objects and 8 holds.
 TRIAL_COUNTS: dict[str, int] = {
     "reach_activate": TRIALS_PER_GAME,
     "balloon_pop": TRIALS_PER_GAME,
@@ -74,6 +78,8 @@ TRIAL_COUNTS: dict[str, int] = {
     "finger_piano": 12,
     "path_trace": 10,
     "paint_wall": 8,
+    "pick_place": 12,
+    "grip_hold": 8,
 }
 # The hand rests low and close to the body before each reach, in the body frame.
 REST_POINT = (0.15, -0.85)
@@ -465,6 +471,14 @@ class GameSkill:
     elbow_range_deg: float
     #: Paint the wall: the usual smoothness of the elbow (SPARC of its angular speed).
     elbow_sparc: float
+    #: Pick and place: the usual carry time, in ms, and the chance of letting go too early.
+    transport_ms: float
+    drop_chance: float
+    #: Grip and hold: the usual share of the hold inside the band (%), the wobble of the level in
+    #: the band (standard deviation, 0-1) and the time to relax, in ms.
+    in_band_pct: float
+    grip_sd: float
+    relax_ms: float
 
 
 def skill_at(progress: float, improvement: float) -> GameSkill:
@@ -483,6 +497,11 @@ def skill_at(progress: float, improvement: float) -> GameSkill:
         trace_sparc=lerp(-2.3, -1.55, gain),
         elbow_range_deg=lerp(54, 82, gain),
         elbow_sparc=lerp(-2.6, -1.8, gain),
+        transport_ms=lerp(4200, 2300, gain),
+        drop_chance=lerp(0.4, 0.1, gain),
+        in_band_pct=lerp(58, 86, gain),
+        grip_sd=lerp(0.075, 0.03, gain),
+        relax_ms=lerp(1600, 650, gain),
     )
 
 
@@ -997,6 +1016,161 @@ def make_wall_trial(
     )
 
 
+#: Pick and place's defaults, as in web/src/games/pickPlace/params.ts.
+PICK_PLACE_PARAMS: dict[str, float] = {
+    "object_radius_sw": 0.35,
+    "pick_distance_frac": 0.6,
+    "place_distance_frac": 0.7,
+    "box_size_sw": 0.7,
+    "carry_angle_deg": 90,
+    "time_limit_ms": 15000,
+    "rest_ms": 1500,
+}
+#: Each carry's pick and place directions at the default 90°: outward, inward, up and down.
+CARRY_DIRECTIONS = ((135, 45), (45, 135), (315, 45), (45, 315))
+
+
+def reach_toward(radii: Sequence[float], degrees: float) -> float:
+    """The reach in any direction, between the two nearest of the eight measured ones."""
+    deg = degrees % 360
+    lower = int(deg // 45) % 8
+    share = (deg - lower * 45) / 45
+    return radii[lower] + (radii[(lower + 1) % 8] - radii[lower]) * share
+
+
+def point_toward(radii: Sequence[float], degrees: float, frac: float) -> tuple[float, float]:
+    distance = frac * reach_toward(radii, degrees)
+    radians = math.radians(degrees)
+    return (round(distance * math.cos(radians), 4), round(distance * math.sin(radians), 4))
+
+
+def make_pick_trial(
+    rng: random.Random, trial_no: int, radii: Sequence[float], skill: GameSkill
+) -> TrialCreate:
+    """One object: reach to it, pinch, carry it to the box and let go; drops go back to the start."""
+    pick_deg, place_deg = CARRY_DIRECTIONS[(trial_no - 1) % len(CARRY_DIRECTIONS)]
+    pick = point_toward(radii, pick_deg, PICK_PLACE_PARAMS["pick_distance_frac"])
+    place = point_toward(radii, place_deg, PICK_PLACE_PARAMS["place_distance_frac"])
+    limit = PICK_PLACE_PARAMS["time_limit_ms"]
+    reach = round(lerp(1400, 2600, 1 - skill.success) * rng.uniform(0.8, 1.2))
+    grasp = round(rng.uniform(300, 900))
+    drops = sum(1 for _ in range(3) if rng.random() < skill.drop_chance)
+    transport = round(skill.transport_ms * rng.uniform(0.8, 1.25))
+    # Each drop costs a carry part of the way and a new reach and grasp.
+    spent = reach + grasp + drops * (transport * 0.6 + grasp + 500) + transport
+    success = spent < limit and rng.random() < skill.success + 0.05
+    metrics: dict[str, Any] = {
+        "reach_ms": reach,
+        "grasp_latency_ms": grasp,
+        "drops": drops,
+    }
+    if success:
+        distance = math.dist(pick, place)
+        efficiency = clamp(skill.efficiency + rng.uniform(-0.08, 0.06), 0.4, 1)
+        metrics |= {
+            "transport_ms": transport,
+            "transport_path_efficiency": round(efficiency, 4),
+            "release_error_sw": round(rng.uniform(0.03, 0.3), 4),
+            "sparc": round(min(-1.0, skill.trace_sparc + rng.uniform(-0.3, 0.25)), 4),
+            "peak_speed_sw_s": round(1.9 * distance / (transport / 1000), 4),
+        }
+    end = round(spent) if success else limit
+    return TrialCreate.model_validate(
+        {
+            "trial_no": trial_no,
+            "params": {
+                **PICK_PLACE_PARAMS,
+                "carry_direction": (trial_no - 1) % len(CARRY_DIRECTIONS),
+            },
+            "target": {
+                "kind": "pick_place",
+                "pick": list(pick),
+                "place": list(place),
+                "object_radius_sw": PICK_PLACE_PARAMS["object_radius_sw"],
+                "box_size_sw": PICK_PLACE_PARAMS["box_size_sw"],
+            },
+            "outcome": "success" if success else "miss",
+            "timings": {"spawn": 0, "enter": reach, "dwell_done": reach + grasp, "end": end},
+            "metrics": metrics,
+            "compensation": _compensation(rng, skill),
+            "trajectory": trajectory(rng, REST_POINT, pick, reach)
+            + [
+                (round(reach + grasp + t), x, y)
+                for t, x, y in trajectory(rng, pick, place, end - reach - grasp)
+            ],
+        }
+    )
+
+
+#: Grip and hold's defaults, as in web/src/games/gripHold/params.ts.
+GRIP_HOLD_PARAMS: dict[str, float] = {
+    "band_center": 0.5,
+    "band_width": 0.3,
+    "hold_ms": 3000,
+    "time_limit_ms": 15000,
+    "relax_below": 0.15,
+    "relax_within_ms": 3000,
+    "rest_ms": 2000,
+}
+
+
+def make_grip_trial(
+    rng: random.Random, trial_no: int, radii: Sequence[float], skill: GameSkill
+) -> TrialCreate:
+    """One hold: keep the grip level in the band for the hold time, then relax."""
+    del radii  # The hand only has to be visible.
+    hold = GRIP_HOLD_PARAMS["hold_ms"]
+    limit = GRIP_HOLD_PARAMS["time_limit_ms"]
+    in_band = clamp(skill.in_band_pct + rng.uniform(-12, 8), 15, 98)
+    to_band = round(rng.uniform(500, 1800))
+    active = to_band + hold / (in_band / 100)
+    held = active < limit and rng.random() < skill.success + 0.05
+    relax = round(skill.relax_ms * rng.uniform(0.7, 1.4))
+    relaxed = held and relax < GRIP_HOLD_PARAMS["relax_within_ms"] and rng.random() < 0.95
+    if not held:
+        active = limit
+    overshoots = rng.randint(0, 2) if in_band > 75 else rng.randint(1, 5)
+    metrics: dict[str, Any] = {
+        "time_to_band_ms": to_band,
+        "time_in_band_pct": round(100 * (hold if held else limit * in_band / 160) / active, 1),
+        "longest_continuous_hold_ms": round(min(hold, hold * in_band / 100 * rng.uniform(0.7, 1.1))),
+        "overshoot_count": overshoots,
+        "max_overshoot": round(rng.uniform(0.03, 0.2), 3) if overshoots else None,
+        "steadiness": round(skill.grip_sd * rng.uniform(0.75, 1.3), 4),
+        "relaxation_ms": relax if relaxed else None,
+        "input_source": "cv_grip",
+        "failed_phase": None if relaxed else ("relax" if held else "hold"),
+    }
+    hold_done = round(active) if held else None
+    if relaxed:
+        end = round(active) + relax
+    elif held:
+        end = round(active) + GRIP_HOLD_PARAMS["relax_within_ms"]
+    else:
+        end = limit
+    return TrialCreate.model_validate(
+        {
+            "trial_no": trial_no,
+            "params": GRIP_HOLD_PARAMS,
+            "target": {
+                "kind": "grip_band",
+                "center": GRIP_HOLD_PARAMS["band_center"],
+                "width": GRIP_HOLD_PARAMS["band_width"],
+            },
+            "outcome": "success" if relaxed else "miss",
+            "timings": {
+                "spawn": 0,
+                "activation_start": to_band,
+                "activation_done": hold_done,
+                "end": end,
+            },
+            "metrics": metrics,
+            "compensation": _trunk_only(rng, skill),
+            "trajectory": [],
+        }
+    )
+
+
 TRIAL_MAKERS = {
     "reach_activate": make_reach_trial,
     "balloon_pop": make_balloon_trial,
@@ -1005,6 +1179,8 @@ TRIAL_MAKERS = {
     "finger_piano": make_piano_trial,
     "path_trace": make_path_trial,
     "paint_wall": make_wall_trial,
+    "pick_place": make_pick_trial,
+    "grip_hold": make_grip_trial,
 }
 #: The summary detail each reaching game fills in, as in web/src/features/games/results.ts.
 SUMMARY_DETAILS = {
@@ -1015,6 +1191,8 @@ SUMMARY_DETAILS = {
     "finger_piano": None,
     "path_trace": None,
     "paint_wall": None,
+    "pick_place": None,
+    "grip_hold": None,
 }
 
 
@@ -1096,6 +1274,33 @@ def _movement_details(game_id: GameName, trials: Sequence[TrialCreate]) -> dict[
     }
 
 
+def _function_details(game_id: GameName, trials: Sequence[TrialCreate]) -> dict[str, Any]:
+    """The summary details Pick and place and Grip and hold fill in, as the web app's games do."""
+    played = [trial for trial in trials if trial.outcome != "aborted"]
+
+    def values(name: str, only_successes: bool = False) -> list[float]:
+        chosen = [t for t in played if t.outcome == "success"] if only_successes else played
+        found = [getattr(trial.metrics, name) for trial in chosen]
+        return [value for value in found if isinstance(value, int | float)]
+
+    def mean(found: list[float], places: int = 0) -> float | None:
+        return round(sum(found) / len(found), places) if found else None
+
+    if game_id == "pick_place":
+        return {
+            "mean_transport_ms": mean(values("transport_ms")),
+            "total_drops": sum(int(value) for value in values("drops")),
+        }
+    steadiness = values("steadiness", only_successes=True)
+    longest = values("longest_continuous_hold_ms")
+    return {
+        "mean_in_band_pct": mean(values("time_in_band_pct"), 1),
+        "best_hold_ms": max(longest) if longest else None,
+        "best_steadiness": min(steadiness) if steadiness else None,
+        "mean_relaxation_ms": mean(values("relaxation_ms", only_successes=True)),
+    }
+
+
 def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSummary:
     successes = [trial for trial in trials if trial.outcome == "success"]
     movement = [
@@ -1111,6 +1316,8 @@ def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSu
         if game_id in HAND_GAMES
         else _movement_details(game_id, trials)
         if game_id in MOVEMENT_GAMES
+        else _function_details(game_id, trials)
+        if game_id in FUNCTION_GAMES
         else {}
     )
     detail = SUMMARY_DETAILS[game_id]
@@ -1134,8 +1341,10 @@ def summarise_trials(game_id: GameName, trials: Sequence[TrialCreate]) -> GameSu
 def game_score(trials: Sequence[TrialCreate], game_id: GameName = "reach_activate") -> float:
     """As in the games: Finger piano scores 25 a note and 50 a melody played well; Path trace
     the % of time in the corridor and 50 for a success; Paint the wall 30 a full sweep, 10 a
-    partial one and 50 a finished stripe; the others 100 per success plus a bonus for a quick
-    reach (or, for Bloom, a quick opening)."""
+    partial one and 50 a finished stripe; Pick and place 100 an object placed plus up to 50 for
+    a quick carry, 10 less a drop (never below 100); Grip and hold 100 a hold plus up to 50 for
+    time in the band; the others 100 per success plus a bonus for a quick reach (or, for Bloom,
+    a quick opening)."""
     score = 0
     for trial in trials:
         success_bonus = 50 if trial.outcome == "success" else 0
@@ -1150,6 +1359,14 @@ def game_score(trials: Sequence[TrialCreate], game_id: GameName = "reach_activat
             score += 25 * (trial.metrics.hits or 0) + (50 if trial.outcome == "success" else 0)
             continue
         if trial.outcome != "success":
+            continue
+        if game_id == "pick_place":
+            placed_share = clamp((trial.timings.end or 15000) / 15000, 0, 1)
+            bonus = round(50 * (1 - placed_share)) - 10 * (trial.metrics.drops or 0)
+            score += 100 + max(0, bonus)
+            continue
+        if game_id == "grip_hold":
+            score += 100 + round(50 * clamp((trial.metrics.time_in_band_pct or 0) / 100, 0, 1))
             continue
         if game_id == "bloom":
             to_open = trial.metrics.time_to_open_ms or 8000

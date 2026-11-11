@@ -18,8 +18,9 @@ import {
 } from "@/types/api";
 
 import { FruitStrip } from "./FruitStrip";
-import { FingerHitChart, OpennessChart } from "./HandCharts";
+import { FingerHitChart, InBandChart, OpennessChart } from "./HandCharts";
 import { PathTracePlot, RangeChart } from "./MovementCharts";
+import { PickPlaceMap } from "./PickPlaceMap";
 import { RunTargetMap } from "./RunTargetMap";
 import { columnsFor } from "./trialColumns";
 
@@ -147,6 +148,8 @@ export function GameRunCard({
         <>
           {run.game_id === "fruit_catch" ? (
             <FruitStrip run={run} calibration={calibration} affectedSide={affectedSide} />
+          ) : run.game_id === "pick_place" ? (
+            <PickPlaceMap run={run} calibration={calibration} affectedSide={affectedSide} />
           ) : (
             // Hand games have no places to show.
             trials.some((trial) => isSpatialTarget(trial.target)) && (
@@ -200,6 +203,7 @@ export function GameRunCard({
             <PathTracePlot run={run} affectedSide={affectedSide ?? "right"} />
           )}
           {run.game_id === "paint_wall" && <RangeChart run={run} />}
+          {run.game_id === "grip_hold" && <InBandChart run={run} />}
           <MovementChart run={run} />
         </>
       )}

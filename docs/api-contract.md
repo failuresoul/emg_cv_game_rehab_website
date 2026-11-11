@@ -753,7 +753,7 @@ Request: an array of 1 to 50 trials. A trial whose `trial_no` was already saved 
 | --- | --- |
 | `trial_no` | 1–500, unique within the request |
 | `params` | That trial's settings, names and numbers only |
-| `target` | Optional. Either **placed** (reaching games): every one of `x_sw`, `y_sw`, `radius_sw` (above 0), `direction_deg` (0 up to 360), `distance_frac` (0–2) and `sector` (like `D3R2`: the direction index, 0 outward then 45° steps anticlockwise to 7, and the ring, R1 below 0.55 of the reach, R2 to 0.85, R3 beyond). Or **unplaced** (hand games): a `kind` (lower-case letters, digits and `_`, up to 30) and none of the placed fields, such as `{"kind": "bloom"}`. Either may add `kind`; `notes` (1–64 strings of 1–20 characters); `shape` (as `kind`); `points` (2–200 `[x_sw, y_sw]` pairs, such as a path to follow); `index` (a whole number 0–500, such as a stripe's place on the wall); and `target_frac` (0–1). Some but not all placed fields, or neither a place nor a `kind`, is `422`. Fields left out are not saved and not returned |
+| `target` | Optional. Either **placed** (reaching games): every one of `x_sw`, `y_sw`, `radius_sw` (above 0), `direction_deg` (0 up to 360), `distance_frac` (0–2) and `sector` (like `D3R2`: the direction index, 0 outward then 45° steps anticlockwise to 7, and the ring, R1 below 0.55 of the reach, R2 to 0.85, R3 beyond). Or **unplaced** (hand games): a `kind` (lower-case letters, digits and `_`, up to 30) and none of the placed fields, such as `{"kind": "bloom"}`. Either may add `kind`; `notes` (1–64 strings of 1–20 characters); `shape` (as `kind`); `points` (2–200 `[x_sw, y_sw]` pairs, such as a path to follow); `index` (a whole number 0–500, such as a stripe's place on the wall); `target_frac` (0–1); `pick` and `place` (`[x_sw, y_sw]` pairs, such as where an object starts and where its box is); `object_radius_sw` and `box_size_sw` (above 0, at most 5); and `center` and `width` (0–1, such as a band of grip levels). Some but not all placed fields, or neither a place nor a `kind`, is `422`. Fields left out are not saved and not returned |
 | `timings` | Milliseconds from spawn, each 0 or more, or `null` if never reached. `activation_start` is when the successful squeeze began |
 | `metrics` | Each 0 or more, or `null`; `path_efficiency` and `activation_peak` are 0–1. Reach measures use the raw fingertip from move onset to entering the target; move onset is the first point faster than 0.15 SW/s. Some games add optional metrics, listed below |
 | `compensation.max_values` | Up to 20 named numbers |
@@ -774,7 +774,7 @@ Optional metrics for particular games (leave them out, or send `null`):
 | `time_to_close_ms` | `bloom` | 0 or more: closing phase start to the start of the grip hold that collected the seed |
 | `peak_grip` | `bloom` | 0–1: the highest grip in the closing phase |
 | `openness_rise_rate` | `bloom` | 0 or more: openness per second from the last low point to the start of the successful hold (or to the highest openness, for a bud that never bloomed) |
-| `failed_phase` | `bloom` | `open` or `close`: which phase ran out of time; `null` for a success |
+| `failed_phase` | `bloom`, `grip_hold` | `open` or `close` (Bloom), `hold` or `relax` (Grip and hold): which phase ran out of time; `null` for a success |
 | `notes_total`, `hits`, `wrong_finger`, `missed` | `finger_piano` | Whole numbers 0–64. Each note ends as one of a hit, a wrong finger (only wrong fingers touched in its window) or missed (no touch), so `hits + wrong_finger + missed` must equal `notes_total` |
 | `hit_rate` | `finger_piano` | 0–1: `hits / notes_total` |
 | `mean_timing_error_ms` | `finger_piano` | 0 or more: the mean of \|touch − arrival\| over the hits |
@@ -791,6 +791,19 @@ Optional metrics for particular games (leave them out, or send `null`):
 | `mean_sweep_ms` | `paint_wall` | 0 or more: mean duration of the full sweeps |
 | `angular_sparc` | `paint_wall` | 0 or less: SPARC of the raw elbow angle's speed over the stripe |
 | `upper_arm_motion_deg` | `paint_wall` | 0–180: the most the upper arm moved from its start during a sweep |
+| `reach_ms` | `pick_place` | 0 or more: spawn to the pinch point first reaching the object |
+| `grasp_latency_ms` | `pick_place` | 0 or more: object first reached to the first grasp (a pinch started on it) |
+| `transport_ms` | `pick_place` | 0 or more: the last grasp to the release in the box; `null` for a miss |
+| `transport_path_efficiency` | `pick_place` | 0–1: straight distance over path length of the carry that succeeded |
+| `drops` | `pick_place` | Whole number 0–1000: times the object was let go outside the box (each goes back to its start) |
+| `release_error_sw` | `pick_place` | 0 or more: distance of the RAW pinch point from the box's centre at the release |
+| `time_to_band_ms` | `grip_hold` | 0 or more: spawn to the grip level first entering the band |
+| `time_in_band_pct` | `grip_hold` | 0–100: share of the holding phase inside the band |
+| `longest_continuous_hold_ms` | `grip_hold` | 0 or more: the longest stretch inside the band without leaving it |
+| `overshoot_count`, `max_overshoot` | `grip_hold` | Whole number 0–1000, and 0–1: times the level went above the band, and the most it went above |
+| `steadiness` | `grip_hold` | 0–1: standard deviation of the level while inside the band (smaller is steadier) |
+| `relaxation_ms` | `grip_hold` | 0 or more: the relax prompt to the level first falling below the relax level; `null` if it never did |
+| `input_source` | `grip_hold` | `cv_grip`, `keyboard` or `emg`: where the level came from in this trial |
 
 How each game fills the shared fields:
 
@@ -800,6 +813,8 @@ How each game fills the shared fields:
 - **`finger_piano`** (one trial is one melody): `target` is `{"kind": "sequence", "notes": ["index", "ring", …]}` and `trajectory` is empty. `params` carries the melody as `note_1` … `note_n` (0 index to 3 little) beside the settings. Only `spawn` and `end` timings are set. Outcomes are `success` (at least 75% of the notes hit) or `miss`.
 - **`path_trace`** (one trial is one trace): `target` is `{"kind": "path", "shape": "line" | "arc" | "s_curve" | "circle_part", "points": [[x, y], …]}` (at most 200 points, in SW). `enter` is when the fingertip first entered the start circle and `dwell_done` when its 500 ms hold was done and the guide set off; `movement_ms` is `null` (the guide sets the pace). `trajectory` is the raw fingertip. Outcomes are `success` (at least 70% of the trace in the corridor), `miss`, or `reach_fail` when the start circle was not held within 15 s (then the tracing metrics are `null`).
 - **`paint_wall`** (one trial is one stripe): `target` is `{"kind": "stripe", "index": n, "target_frac": share}`, `index` being the stripe's place on the wall from 0 and `target_frac` the share of the patient's elbow range it asked for; `params` carries that range as `elbow_bent_deg` and `elbow_straight_deg`. Only `spawn` and `end` timings are set. Outcomes are `success` (the sweeps needed) or `miss` (the time limit, the paint kept). Moving the upper arm more than 20° during a sweep adds `upper_arm` to `compensation.type`, with `upper_arm_motion_deg` in `max_values`.
+- **`pick_place`** (one trial is one object): `target` is `{"kind": "pick_place", "pick": [x, y], "place": [x, y], "object_radius_sw": r, "box_size_sw": s}`, in SW. `enter` is when the pinch point first reached the object and `dwell_done` the first grasp. `trajectory` is the RAW pinch point (midway between thumb and index tips). Outcomes are `success` (let go inside the box) or `miss` (the time limit). The carry measures (`transport_ms`, `transport_path_efficiency`, `release_error_sw`, `sparc`, `peak_speed_sw_s`) are those of the carry that succeeded, and `null` for a miss.
+- **`grip_hold`** (one trial is one hold): `target` is `{"kind": "grip_band", "center": c, "width": w}`, the band of grip levels to hold. `activation_start` is when the level first entered the band and `activation_done` when the hold time was reached; `trajectory` is empty. Outcomes are `success` (the hold and then relaxing) or `miss`, with `failed_phase` `hold` or `relax`.
 
 Response `200`: the game run, with `trials_done` counting every trial saved.
 
@@ -1057,7 +1072,10 @@ Role: `patient`. Only **completed** sessions count.
       "bloom_peak_openness": 0.81,
       "piano_hit_rate": 0.75,
       "path_sparc": -1.72,
-      "elbow_range_deg": 68.4
+      "elbow_range_deg": 68.4,
+      "pick_transport_ms": 2450,
+      "grip_steadiness": 0.041,
+      "grip_relaxation_ms": 820
     }
   ],
   "last_session_date": "2026-11-10T10:00:00Z",
@@ -1067,7 +1085,7 @@ Role: `patient`. Only **completed** sessions count.
 ```
 
 - `streak_days`: consecutive local days with a completed session, counting back from today. A day without one *yet* today does not break the streak: it then runs up to yesterday.
-- `series`: one point per completed session, oldest first. `hull_area_sw2` is `null` without a calibration. `warmup_goals_reached` counts exercises whose goal was reached, out of `warmup_total` (skipped ones included). `game_success_rate` is successful trials over all trials of every game, leaving out `aborted` trials, or `null` without trials. `total_reps` is warm-up repetitions done in full. `bloom_peak_openness` is the mean of each Bloom trial's `peak_openness` and `piano_hit_rate` is hits over notes of every Finger piano melody, both leaving out `aborted` trials, each `null` without that game. Likewise `path_sparc` is the mean `sparc` of the Path trace trials (0 or less; closer to 0 is smoother) and `elbow_range_deg` the mean `achieved_range_deg` of the Paint the wall stripes.
+- `series`: one point per completed session, oldest first. `hull_area_sw2` is `null` without a calibration. `warmup_goals_reached` counts exercises whose goal was reached, out of `warmup_total` (skipped ones included). `game_success_rate` is successful trials over all trials of every game, leaving out `aborted` trials, or `null` without trials. `total_reps` is warm-up repetitions done in full. `bloom_peak_openness` is the mean of each Bloom trial's `peak_openness` and `piano_hit_rate` is hits over notes of every Finger piano melody, both leaving out `aborted` trials, each `null` without that game. Likewise `path_sparc` is the mean `sparc` of the Path trace trials (0 or less; closer to 0 is smoother), `elbow_range_deg` the mean `achieved_range_deg` of the Paint the wall stripes, `pick_transport_ms` the mean `transport_ms` of the Pick and place objects placed, and `grip_steadiness` and `grip_relaxation_ms` the mean `steadiness` and `relaxation_ms` of the Grip and hold trials that have them.
 - `last_session_date`: when the latest session of any status started, or `null`.
 - `first_reach` and `latest_reach`: the oldest and newest calibrations, each `{ session_id, date, reach_radii_sw, hull_sw, hull_area_sw2, valid }`, or `null`.
 
@@ -1105,8 +1123,10 @@ Role: `patient`, own session only. Errors: `404` for a missing or another patien
 | `finger_piano` | `note_hit_rate` (share) | `best_finger` (finger) |
 | `path_trace` | `stars` (count) | `mean_in_corridor_pct` (percent), `best_sparc` (sparc) |
 | `paint_wall` | `stripes_finished` (count of successes) | `best_range_deg` (deg) |
+| `pick_place` | `objects_placed` (count of successes) | `total_drops` (count), `mean_transport_ms` (ms) |
+| `grip_hold` | `holds_completed` (count of successes) | `best_steadiness` (share: the smallest standard deviation; smaller is steadier), `mean_relaxation_ms` (ms) |
 
-They read the run summary's `details`: `path_trace` sends `total_stars`, `mean_in_corridor_pct` and `best_sparc` (the trace closest to 0); `paint_wall` sends `mean_range_deg` and `best_range_deg`.
+They read the run summary's `details`: `path_trace` sends `total_stars`, `mean_in_corridor_pct` and `best_sparc` (the trace closest to 0); `paint_wall` sends `mean_range_deg` and `best_range_deg`; `pick_place` sends `mean_transport_ms` (over the objects placed) and `total_drops`; `grip_hold` sends `mean_in_band_pct`, `best_hold_ms`, and over the holds completed `best_steadiness` and `mean_relaxation_ms`.
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

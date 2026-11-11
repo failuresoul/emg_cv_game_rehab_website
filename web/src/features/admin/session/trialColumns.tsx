@@ -248,6 +248,92 @@ const fingerPianoColumns: readonly TrialColumn[] = [
   compensated,
 ];
 
+const SOURCE_KEYS: Record<string, TranslationKey> = {
+  cv_grip: "game.source.webcam",
+  keyboard: "game.source.keyboard",
+  emg: "game.source.emg",
+};
+
+const pickPlaceColumns: readonly TrialColumn[] = [
+  {
+    key: "adminSession.column.reachTime",
+    cell: (trial) => whole(trial.metrics.reach_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.graspLatency",
+    cell: (trial) => whole(trial.metrics.grasp_latency_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.transport",
+    cell: (trial) => whole(trial.metrics.transport_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.drops",
+    cell: (trial) => whole(trial.metrics.drops),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.releaseError",
+    cell: (trial) => decimal(trial.metrics.release_error_sw),
+    numeric: true,
+  },
+  outcome,
+  compensated,
+];
+
+const gripHoldColumns: readonly TrialColumn[] = [
+  {
+    key: "adminSession.column.timeToBand",
+    cell: (trial) => whole(trial.metrics.time_to_band_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.inBand",
+    cell: (trial) =>
+      trial.metrics.time_in_band_pct == null
+        ? dash
+        : t("patient.lastSession.percent", { value: Math.round(trial.metrics.time_in_band_pct) }),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.longestHold",
+    cell: (trial) => whole(trial.metrics.longest_continuous_hold_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.overshoots",
+    cell: (trial) => whole(trial.metrics.overshoot_count),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.steadiness",
+    cell: (trial) => decimal(trial.metrics.steadiness, 3),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.relaxation",
+    cell: (trial) => whole(trial.metrics.relaxation_ms),
+    numeric: true,
+  },
+  {
+    key: "adminSession.column.inputSource",
+    cell: (trial) => {
+      const source = trial.metrics.input_source;
+      return source ? t(SOURCE_KEYS[source] ?? "game.source.webcam") : dash;
+    },
+  },
+  outcome,
+  {
+    key: "adminSession.column.failedPhase",
+    cell: (trial) =>
+      trial.metrics.failed_phase ? t(FAILED_PHASE_KEYS[trial.metrics.failed_phase]) : dash,
+  },
+  compensated,
+];
+
 /** The trial table's columns, after the trial number, for each game. */
 export const TRIAL_COLUMNS: Partial<Record<GameId, readonly TrialColumn[]>> = {
   reach_activate: [
@@ -314,6 +400,8 @@ export const TRIAL_COLUMNS: Partial<Record<GameId, readonly TrialColumn[]>> = {
   finger_piano: fingerPianoColumns,
   path_trace: pathTraceColumns,
   paint_wall: paintWallColumns,
+  pick_place: pickPlaceColumns,
+  grip_hold: gripHoldColumns,
 };
 
 /** Games without their own list show the reaching columns. */

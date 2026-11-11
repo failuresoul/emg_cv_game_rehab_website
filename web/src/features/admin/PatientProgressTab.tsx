@@ -82,11 +82,14 @@ const asPercent = (value: number) => t("measure.percent", { value });
 
 const asSparc = (value: number) => t("measure.number", { value });
 const asDegrees = (value: number) => t("measure.degrees", { value });
+const asSeconds = (value: number) => t("game.results.seconds", { value });
+const asWobble = (value: number) => t("measure.wobble", { value });
 
 /**
  * The game figures per session, from one fetch of the patient's progress: the hand games
- * (Bloom's peak openness, Finger piano's hit rate) and movement quality (Path trace's
- * smoothness, Paint the wall's elbow range).
+ * (Bloom's peak openness, Finger piano's hit rate, Grip and hold's steadiness and time to relax)
+ * and movement quality (Path trace's smoothness, Paint the wall's elbow range, Pick and place's
+ * carry time).
  */
 function GameProgress({ patientId }: { patientId: number }) {
   const progress = useAdminPatientProgress(patientId);
@@ -121,8 +124,8 @@ function GameProgress({ patientId }: { patientId: number }) {
 }
 
 function MovementQualityCharts({ series }: { series: PatientProgress["series"] }) {
-  const { sparc, elbowRange } = movementQualityProgress(series, formatDate);
-  if (sparc.length === 0 && elbowRange.length === 0) {
+  const { sparc, elbowRange, transport } = movementQualityProgress(series, formatDate);
+  if (sparc.length === 0 && elbowRange.length === 0 && transport.length === 0) {
     return <EmptyState title={t("adminProgress.qualityEmpty")} />;
   }
   return (
@@ -146,13 +149,22 @@ function MovementQualityCharts({ series }: { series: PatientProgress["series"] }
           allowDecimals={false}
         />
       </div>
+      <div>
+        <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.transportChartTitle")}</h3>
+        <ProgressChart
+          points={transport}
+          seriesName={t("adminProgress.transportSeries")}
+          emptyTitle={t("adminProgress.qualityEmpty")}
+          formatValue={asSeconds}
+        />
+      </div>
     </div>
   );
 }
 
 function HandGamesCharts({ series }: { series: PatientProgress["series"] }) {
-  const { openness, hitRate } = handProgress(series, formatDate);
-  if (openness.length === 0 && hitRate.length === 0) {
+  const { openness, hitRate, steadiness, relaxation } = handProgress(series, formatDate);
+  if ([openness, hitRate, steadiness, relaxation].every((points) => points.length === 0)) {
     return <EmptyState title={t("adminProgress.handEmpty")} />;
   }
   return (
@@ -177,6 +189,24 @@ function HandGamesCharts({ series }: { series: PatientProgress["series"] }) {
           formatValue={asPercent}
           yDomain={[0, 100]}
           allowDecimals={false}
+        />
+      </div>
+      <div>
+        <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.steadinessChartTitle")}</h3>
+        <ProgressChart
+          points={steadiness}
+          seriesName={t("adminProgress.steadinessSeries")}
+          emptyTitle={t("adminProgress.handEmpty")}
+          formatValue={asWobble}
+        />
+      </div>
+      <div>
+        <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.relaxationChartTitle")}</h3>
+        <ProgressChart
+          points={relaxation}
+          seriesName={t("adminProgress.relaxationSeries")}
+          emptyTitle={t("adminProgress.handEmpty")}
+          formatValue={asSeconds}
         />
       </div>
     </div>

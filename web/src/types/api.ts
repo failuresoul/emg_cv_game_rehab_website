@@ -632,6 +632,12 @@ export interface ProgressPoint {
   path_sparc?: number | null;
   /** Paint the wall: the mean elbow range reached per stripe, in degrees. */
   elbow_range_deg?: number | null;
+  /** Pick and place: the mean carry time of the objects placed, in ms. */
+  pick_transport_ms?: number | null;
+  /** Grip and hold: the mean steadiness (standard deviation of the level, 0–1; smaller is steadier). */
+  grip_steadiness?: number | null;
+  /** Grip and hold: the mean time to relax after the holds, in ms. */
+  grip_relaxation_ms?: number | null;
 }
 
 export interface ReachSnapshot {

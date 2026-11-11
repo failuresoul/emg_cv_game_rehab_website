@@ -1,4 +1,9 @@
-import { DETAIL_BEST_HOLD_MS, DETAIL_MEAN_IN_BAND_PCT } from "@/features/games/results";
+import {
+  DETAIL_BEST_HOLD_MS,
+  DETAIL_BEST_STEADINESS,
+  DETAIL_MEAN_IN_BAND_PCT,
+  DETAIL_MEAN_RELAXATION_MS,
+} from "@/features/games/results";
 import { CompensationTally } from "@/games/shared/compensationTally";
 import { Encourager } from "@/games/shared/encourage";
 import { summariseTrials } from "@/games/shared/metrics";
@@ -173,6 +178,14 @@ export function createGripHoldGame(context: GameContext): GameInstance {
       const runs = records
         .map((record) => record.metrics.longest_continuous_hold_ms)
         .filter((value): value is number => typeof value === "number");
+      // Steadiness and relaxing count from the holds completed, so a short slip is not "steadiest".
+      const completed = records.filter((record) => record.outcome === "success");
+      const steadiness = completed
+        .map((record) => record.metrics.steadiness)
+        .filter((value): value is number => typeof value === "number");
+      const relaxing = completed
+        .map((record) => record.metrics.relaxation_ms)
+        .filter((value): value is number => typeof value === "number");
       return {
         score,
         trialsDone: records.length,
@@ -187,6 +200,12 @@ export function createGripHoldGame(context: GameContext): GameInstance {
                   ) / 10
                 : null,
             [DETAIL_BEST_HOLD_MS]: runs.length > 0 ? Math.max(...runs) : null,
+            // A smaller wobble is steadier.
+            [DETAIL_BEST_STEADINESS]: steadiness.length > 0 ? Math.min(...steadiness) : null,
+            [DETAIL_MEAN_RELAXATION_MS]:
+              relaxing.length > 0
+                ? Math.round(relaxing.reduce((total, value) => total + value, 0) / relaxing.length)
+                : null,
           },
         },
       };

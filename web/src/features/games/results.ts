@@ -28,6 +28,8 @@ export const DETAIL_MEAN_TRANSPORT_MS = "mean_transport_ms";
 export const DETAIL_TOTAL_DROPS = "total_drops";
 export const DETAIL_MEAN_IN_BAND_PCT = "mean_in_band_pct";
 export const DETAIL_BEST_HOLD_MS = "best_hold_ms";
+export const DETAIL_BEST_STEADINESS = "best_steadiness";
+export const DETAIL_MEAN_RELAXATION_MS = "mean_relaxation_ms";
 
 /** Runs the patient finished or stopped; a run left open has no result yet. */
 export function finishedRuns<T extends Pick<GameRun, "status">>(runs: readonly T[]): T[] {
@@ -49,6 +51,11 @@ export function totalScore(
 export function meanReachSeconds(run: Pick<GameRun, "summary">): number | null {
   const ms = run.summary?.mean_movement_ms;
   return ms === null || ms === undefined ? null : Math.round(ms / 100) / 10;
+}
+
+/** Milliseconds as seconds to one decimal, or null. */
+function seconds(ms: number | null): number | null {
+  return ms === null ? null : Math.round(ms / 100) / 10;
 }
 
 /** A share from 0 to 1 as a whole percentage. */
@@ -109,6 +116,18 @@ export function mainMeasure(gameId: GameId, summary: GameSummary | null): MainMe
       value: summary ? { key: "measure.count", params: { value: summary.successes } } : null,
     };
   }
+  if (gameId === "pick_place") {
+    return {
+      labelKey: "measure.objectsPlaced",
+      value: summary ? { key: "measure.count", params: { value: summary.successes } } : null,
+    };
+  }
+  if (gameId === "grip_hold") {
+    return {
+      labelKey: "measure.holdsCompleted",
+      value: summary ? { key: "measure.count", params: { value: summary.successes } } : null,
+    };
+  }
   if (gameId === "bloom") {
     return {
       labelKey: "measure.flowersGrown",
@@ -164,6 +183,39 @@ export function extraMeasures(gameId: GameId, summary: GameSummary | null): Main
           smoothness === null
             ? null
             : { key: "measure.number", params: { value: Math.round(smoothness * 100) / 100 } },
+      },
+    ];
+  }
+  if (gameId === "pick_place") {
+    const drops = detail(summary, DETAIL_TOTAL_DROPS);
+    const transport = seconds(detail(summary, DETAIL_MEAN_TRANSPORT_MS));
+    return [
+      {
+        labelKey: "measure.drops",
+        value: drops === null ? null : { key: "measure.count", params: { value: drops } },
+      },
+      {
+        labelKey: "measure.meanTransport",
+        value:
+          transport === null ? null : { key: "game.results.seconds", params: { value: transport } },
+      },
+    ];
+  }
+  if (gameId === "grip_hold") {
+    const steadiness = detail(summary, DETAIL_BEST_STEADINESS);
+    const relaxing = seconds(detail(summary, DETAIL_MEAN_RELAXATION_MS));
+    return [
+      {
+        labelKey: "measure.bestSteadiness",
+        value:
+          steadiness === null
+            ? null
+            : { key: "measure.wobble", params: { value: Math.round(steadiness * 1000) / 10 } },
+      },
+      {
+        labelKey: "measure.meanRelaxation",
+        value:
+          relaxing === null ? null : { key: "game.results.seconds", params: { value: relaxing } },
       },
     ];
   }
@@ -368,6 +420,58 @@ export function rangeSeries(
         trialNo: trial.trial_no,
         range: typeof range === "number" ? Math.round(range * 10) / 10 : null,
         target: usable ? Math.round(share * (straight - bent) * 10) / 10 : null,
+      };
+    });
+}
+
+export interface PickPlaceMarker {
+  key: string;
+  /** Where the object started and where the box was, in SW. */
+  pick: { x: number; y: number };
+  place: { x: number; y: number };
+  outcome: TrialOutcome;
+  compensated: boolean;
+}
+
+/** Pick and place: where each trial's object and box were, in trial order. */
+export function pickPlaceMarkers(run: Pick<GameRunDetail, "id" | "trials">): PickPlaceMarker[] {
+  return [...run.trials]
+    .sort((a, b) => a.trial_no - b.trial_no)
+    .flatMap((trial) => {
+      const { pick, place } = trial.target ?? {};
+      if (!pick || !place) return [];
+      return [
+        {
+          key: `${run.id}-${trial.trial_no}`,
+          pick: { x: pick[0], y: pick[1] },
+          place: { x: place[0], y: place[1] },
+          outcome: trial.outcome,
+          compensated: trial.compensation.flagged,
+        },
+      ];
+    });
+}
+
+export interface InBandPoint {
+  trialNo: number;
+  /** Share of the hold phase inside the band, 0-100; null if not measured. */
+  inBand: number | null;
+  outcome: TrialOutcome;
+}
+
+/** Grip and hold: the time in the band per hold, in trial order, without stopped holds. */
+export function inBandSeries(
+  trials: readonly Pick<TrialRead, "trial_no" | "outcome" | "metrics">[],
+): InBandPoint[] {
+  return [...trials]
+    .filter((trial) => trial.outcome !== "aborted")
+    .sort((a, b) => a.trial_no - b.trial_no)
+    .map((trial) => {
+      const value = trial.metrics.time_in_band_pct;
+      return {
+        trialNo: trial.trial_no,
+        inBand: typeof value === "number" ? Math.round(value * 10) / 10 : null,
+        outcome: trial.outcome,
       };
     });
 }

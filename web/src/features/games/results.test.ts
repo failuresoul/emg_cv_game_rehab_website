@@ -13,6 +13,10 @@ import {
   allMeasures,
   DETAIL_BEST_RANGE_DEG,
   DETAIL_BEST_SPARC,
+  DETAIL_BEST_STEADINESS,
+  DETAIL_MEAN_RELAXATION_MS,
+  DETAIL_MEAN_TRANSPORT_MS,
+  DETAIL_TOTAL_DROPS,
   DETAIL_MEAN_IN_CORRIDOR,
   DETAIL_TOTAL_STARS,
   extraMeasures,
@@ -20,6 +24,8 @@ import {
   fingerTallies,
   finishedRuns,
   mainMeasure,
+  inBandSeries,
+  pickPlaceMarkers,
   opennessSeries,
   meanReachSeconds,
   movementSeries,
@@ -254,6 +260,46 @@ describe("mainMeasure", () => {
     ]);
   });
 
+  it("is the objects placed for Pick and place, with the drops and average carry time", () => {
+    const withDetails = {
+      ...summary!,
+      successes: 10,
+      details: { [DETAIL_TOTAL_DROPS]: 3, [DETAIL_MEAN_TRANSPORT_MS]: 2349 },
+    };
+    expect(allMeasures("pick_place", withDetails)).toEqual([
+      { labelKey: "measure.objectsPlaced", value: { key: "measure.count", params: { value: 10 } } },
+      { labelKey: "measure.drops", value: { key: "measure.count", params: { value: 3 } } },
+      {
+        labelKey: "measure.meanTransport",
+        value: { key: "game.results.seconds", params: { value: 2.3 } },
+      },
+    ]);
+    expect(extraMeasures("pick_place", summary).map((measure) => measure.value)).toEqual([
+      null,
+      null,
+    ]);
+  });
+
+  it("is the holds completed for Grip and hold, with the steadiest hold and relax time", () => {
+    const withDetails = {
+      ...summary!,
+      successes: 7,
+      details: { [DETAIL_BEST_STEADINESS]: 0.0318, [DETAIL_MEAN_RELAXATION_MS]: 840 },
+    };
+    expect(allMeasures("grip_hold", withDetails)).toEqual([
+      { labelKey: "measure.holdsCompleted", value: { key: "measure.count", params: { value: 7 } } },
+      {
+        labelKey: "measure.bestSteadiness",
+        value: { key: "measure.wobble", params: { value: 3.2 } },
+      },
+      {
+        labelKey: "measure.meanRelaxation",
+        value: { key: "game.results.seconds", params: { value: 0.8 } },
+      },
+    ]);
+    expect(mainMeasure("grip_hold", null).value).toBeNull();
+  });
+
   it("has no extra figures for the reaching games", () => {
     expect(extraMeasures("reach_activate", summary)).toEqual([]);
     expect(extraMeasures("balloon_pop", summary)).toEqual([]);
@@ -393,6 +439,69 @@ describe("rangeSeries", () => {
       { trialNo: 1, range: 66.7, target: 60 },
       { trialNo: 2, range: 48.2, target: 64 },
       { trialNo: 4, range: null, target: null },
+    ]);
+  });
+});
+
+describe("pickPlaceMarkers", () => {
+  it("gives each trial's object and box positions, in trial order", () => {
+    const base = trial(1);
+    const target = { kind: "pick_place", pick: [0.2, 0.8], place: [1, 0.4] } as const;
+    const markers = pickPlaceMarkers({
+      id: 7,
+      trials: [
+        {
+          ...base,
+          trial_no: 2,
+          outcome: "miss",
+          target: { kind: "pick_place", pick: [0.3, 0.7], place: [0.9, -0.1] },
+        },
+        { ...base, trial_no: 1, target: { ...target, pick: [0.2, 0.8], place: [1, 0.4] } },
+        { ...base, trial_no: 3, target: { kind: "bloom" } },
+      ],
+    });
+    expect(markers).toEqual([
+      {
+        key: "7-1",
+        pick: { x: 0.2, y: 0.8 },
+        place: { x: 1, y: 0.4 },
+        outcome: "success",
+        compensated: base.compensation.flagged,
+      },
+      {
+        key: "7-2",
+        pick: { x: 0.3, y: 0.7 },
+        place: { x: 0.9, y: -0.1 },
+        outcome: "miss",
+        compensated: base.compensation.flagged,
+      },
+    ]);
+  });
+});
+
+describe("inBandSeries", () => {
+  it("gives the time in the band per hold, without stopped holds", () => {
+    const base = trial(1);
+    const series = inBandSeries([
+      {
+        ...base,
+        trial_no: 2,
+        outcome: "miss",
+        metrics: { ...base.metrics, time_in_band_pct: 41.26 },
+      },
+      { ...base, trial_no: 1, metrics: { ...base.metrics, time_in_band_pct: 88 } },
+      {
+        ...base,
+        trial_no: 3,
+        outcome: "aborted",
+        metrics: { ...base.metrics, time_in_band_pct: 5 },
+      },
+      { ...base, trial_no: 4, metrics: { ...base.metrics, time_in_band_pct: null } },
+    ]);
+    expect(series).toEqual([
+      { trialNo: 1, inBand: 88, outcome: "success" },
+      { trialNo: 2, inBand: 41.3, outcome: "miss" },
+      { trialNo: 4, inBand: null, outcome: "success" },
     ]);
   });
 });

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import { GAME_IDS } from "@/games/shared/registry";
 import type { TrialRead } from "@/types/api";
 
 import { stripX } from "./FruitStrip";
 import { outcomeLabelKey } from "./outcomes";
-import { columnsFor, compensationText } from "./trialColumns";
+import { columnsFor, compensationText, TRIAL_COLUMNS } from "./trialColumns";
 
 const RANGE = { min: -0.6, max: 1.3 };
 
@@ -40,8 +41,35 @@ describe("trial table columns", () => {
     expect(keys("fruit_catch")).not.toContain("adminSession.column.sector");
   });
 
-  it("falls back to the reaching columns for other games", () => {
-    expect(keys("grip_hold")).toEqual(keys("reach_activate"));
+  it("gives every game its own columns", () => {
+    for (const id of GAME_IDS) expect(TRIAL_COLUMNS[id]).toBeDefined();
+  });
+
+  it("shows the carrying measures for Pick and place", () => {
+    expect(keys("pick_place")).toEqual([
+      "adminSession.column.reachTime",
+      "adminSession.column.graspLatency",
+      "adminSession.column.transport",
+      "adminSession.column.drops",
+      "adminSession.column.releaseError",
+      "adminSession.column.outcome",
+      "adminSession.column.compensated",
+    ]);
+  });
+
+  it("shows the holding measures and the input for Grip and hold", () => {
+    expect(keys("grip_hold")).toEqual([
+      "adminSession.column.timeToBand",
+      "adminSession.column.inBand",
+      "adminSession.column.longestHold",
+      "adminSession.column.overshoots",
+      "adminSession.column.steadiness",
+      "adminSession.column.relaxation",
+      "adminSession.column.inputSource",
+      "adminSession.column.outcome",
+      "adminSession.column.failedPhase",
+      "adminSession.column.compensated",
+    ]);
   });
 
   it("shows the hand measures for Bloom", () => {
@@ -105,5 +133,19 @@ describe("outcome labels", () => {
     expect(outcomeLabelKey("fruit_catch", "success")).toBe("outcome.caught");
     expect(outcomeLabelKey("fruit_catch", "miss")).toBe("outcome.notCaught");
     expect(outcomeLabelKey("reach_activate", "reach_fail")).toBe("outcome.reachFail");
+  });
+});
+
+describe("outcome words of the newer games", () => {
+  it("names each game's outcomes in its own words", () => {
+    expect(outcomeLabelKey("pick_place", "success")).toBe("outcome.placed");
+    expect(outcomeLabelKey("pick_place", "miss")).toBe("outcome.notPlaced");
+    expect(outcomeLabelKey("grip_hold", "success")).toBe("outcome.heldAndRelaxed");
+    expect(outcomeLabelKey("grip_hold", "miss")).toBe("outcome.notCompleted");
+    // Day 9's games no longer say "Reached and squeezed".
+    expect(outcomeLabelKey("path_trace", "success")).toBe("outcome.followedWell");
+    expect(outcomeLabelKey("path_trace", "reach_fail")).toBe("outcome.notStarted");
+    expect(outcomeLabelKey("paint_wall", "miss")).toBe("outcome.stripePartly");
+    expect(outcomeLabelKey("pick_place", "aborted")).toBe("outcome.aborted");
   });
 });

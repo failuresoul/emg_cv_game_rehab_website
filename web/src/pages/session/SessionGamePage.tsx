@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,9 @@ import { applyGameSetting, settingFor, useGameSettings } from "@/features/games/
 import { GameShell } from "@/games/shared/GameShell";
 import { useSession, useSessionStep } from "@/features/session/SessionContext";
 import { GAMES, isGameId } from "@/games/shared/registry";
+import type { GameDefinition } from "@/games/shared/types";
 import { t } from "@/i18n";
+import type { PatientGameSetting } from "@/types/api";
 
 export function SessionGamePage() {
   useSessionStep("game");
@@ -43,18 +45,8 @@ export function SessionGamePage() {
 }
 
 /** One game of today's queue: its results screen leads to the next game, or the cool-down. */
-function QueuedGame({ definition }: { definition: (typeof GAMES)[keyof typeof GAMES] }) {
-  const navigate = useNavigate();
-  const { gameQueue, finishGame } = useSession();
+function QueuedGame({ definition }: { definition: GameDefinition }) {
   const settings = useGameSettings();
-  // The admin's defaults and trials. Without settings (the request failed), the game's own.
-  const configured = useMemo(
-    () => applyGameSetting(definition, settingFor(settings.data, definition.id)),
-    [definition, settings.data],
-  );
-  const queue = gameQueue?.games ?? [];
-  const position = queue.indexOf(definition.id);
-  const hasNext = position >= 0 && position < queue.length - 1;
   if (settings.isPending) {
     return (
       <div className="m-auto" role="status" aria-label={t("common.loading")}>
@@ -64,8 +56,31 @@ function QueuedGame({ definition }: { definition: (typeof GAMES)[keyof typeof GA
   }
   return (
     // A new key for each game, so moving between games starts afresh.
-    <GameShell
+    <ConfiguredGame
       key={definition.id}
+      definition={definition}
+      setting={settingFor(settings.data, definition.id)}
+    />
+  );
+}
+
+function ConfiguredGame({
+  definition,
+  setting,
+}: {
+  definition: GameDefinition;
+  setting: PatientGameSetting | undefined;
+}) {
+  const navigate = useNavigate();
+  const { gameQueue, finishGame } = useSession();
+  // The admin's defaults and trials as the game starts (the game's own if they could not be
+  // loaded). Kept for the whole game: settings refreshed mid-game must not restart it.
+  const [configured] = useState(() => applyGameSetting(definition, setting));
+  const queue = gameQueue?.games ?? [];
+  const position = queue.indexOf(definition.id);
+  const hasNext = position >= 0 && position < queue.length - 1;
+  return (
+    <GameShell
       definition={configured}
       continueKey={hasNext ? "game.nextGame" : "game.continue"}
       onContinue={() => {

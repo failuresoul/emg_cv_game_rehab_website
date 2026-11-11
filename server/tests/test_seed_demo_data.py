@@ -249,6 +249,63 @@ def test_movement_game_trials_are_valid(game_id: demo.GameName) -> None:
         )
 
 
+@pytest.mark.parametrize("game_id", demo.FUNCTION_GAMES)
+def test_pick_place_and_grip_hold_trials_are_valid(game_id: demo.GameName) -> None:
+    trials = demo.make_game_trials(random.Random(9), game_id, demo.BASE_RADII, 0.5, 1.0)
+
+    assert len(trials) == demo.TRIAL_COUNTS[game_id]
+    for trial in trials:
+        revalidate(trial)
+        assert trial.target is not None and trial.target.x_sw is None
+        metrics = trial.metrics
+        if game_id == "pick_place":
+            assert trial.target.kind == "pick_place"
+            assert trial.target.pick is not None and trial.target.place is not None
+            for point in (trial.target.pick, trial.target.place):
+                # Inside the reach in the point's own direction.
+                degrees = math.degrees(math.atan2(point[1], point[0]))
+                assert math.hypot(*point) <= demo.reach_toward(demo.BASE_RADII, degrees) + 1e-6
+            assert metrics.drops is not None and metrics.drops >= 0
+            assert (trial.outcome == "success") == (metrics.transport_ms is not None)
+            assert (trial.outcome == "success") == (metrics.release_error_sw is not None)
+            assert len(trial.trajectory) > 10
+        else:
+            assert trial.target.kind == "grip_band"
+            assert metrics.input_source == "cv_grip"
+            assert metrics.steadiness is not None and 0 < metrics.steadiness < 0.2
+            assert (trial.outcome == "success") == (metrics.failed_phase is None)
+            assert (trial.outcome == "success") == (metrics.relaxation_ms is not None)
+            assert trial.trajectory == []
+    summary = demo.summarise_trials(game_id, trials)
+    revalidate(summary)
+    if game_id == "pick_place":
+        assert summary.details["total_drops"] == sum(t.metrics.drops or 0 for t in trials)
+    else:
+        assert summary.details["best_steadiness"] is not None
+        assert summary.details["mean_relaxation_ms"] is not None
+    assert demo.game_score(trials, game_id) >= 100 * summary.successes
+
+
+def test_pick_place_and_grip_hold_improve_over_the_sessions() -> None:
+    def summary(game_id: demo.GameName, progress: float) -> GameSummary:
+        trials = [
+            trial
+            for seed in range(10)
+            for trial in demo.make_game_trials(
+                random.Random(seed), game_id, demo.BASE_RADII, progress, 1.0
+            )
+        ]
+        return demo.summarise_trials(game_id, trials)
+
+    first, last = summary("pick_place", 0), summary("pick_place", 1)
+    assert last.details["mean_transport_ms"] < first.details["mean_transport_ms"]  # type: ignore[operator]
+    assert last.details["total_drops"] < first.details["total_drops"]  # type: ignore[operator]
+    first, last = summary("grip_hold", 0), summary("grip_hold", 1)
+    assert last.details["best_steadiness"] < first.details["best_steadiness"]  # type: ignore[operator]
+    assert last.details["mean_in_band_pct"] > first.details["mean_in_band_pct"]  # type: ignore[operator]
+    assert last.success_rate > first.success_rate
+
+
 def test_movement_quality_improves_over_the_sessions() -> None:
     def summary(game_id: demo.GameName, progress: float) -> GameSummary:
         trials = [
@@ -357,9 +414,10 @@ def test_seed_creates_two_demo_patients_with_full_sessions(session: Session) -> 
             assert record.current_step == "summary"
     assert count(session, Calibration) == 14
     assert count(session, WarmupResult) == 14 * 6
-    assert count(session, GameRun) == 14 * 7
-    # 20 trials for each reaching game, 15 flowers, 12 melodies, 10 traces and 8 stripes.
-    assert count(session, Trial) == 14 * (3 * 20 + 15 + 12 + 10 + 8)
+    assert count(session, GameRun) == 14 * 9
+    # 20 trials for each reaching game, 15 flowers, 12 melodies, 10 traces, 8 stripes, 12
+    # objects and 8 holds.
+    assert count(session, Trial) == 14 * (3 * 20 + 15 + 12 + 10 + 8 + 12 + 8)
     assert count(session, SessionFeedback) == 14
 
 
@@ -505,11 +563,22 @@ def test_dashboards_read_the_demo_data(
     ]
     assert wall["main_measure"]["name"] == "stripes_finished"
     assert wall["extra_measures"][0]["value"] is not None
+    pick, grip = body["games"][7], body["games"][8]
+    assert pick["main_measure"]["name"] == "objects_placed"
+    assert [measure["name"] for measure in pick["extra_measures"]] == [
+        "total_drops",
+        "mean_transport_ms",
+    ]
+    assert grip["main_measure"]["name"] == "holds_completed"
+    assert grip["extra_measures"][0]["value"] is not None
     # The admin progress tab's hand-game and movement-quality series.
     assert all(point["bloom_peak_openness"] is not None for point in series)
     assert series[-1]["piano_hit_rate"] > series[0]["piano_hit_rate"]
     assert series[-1]["path_sparc"] > series[0]["path_sparc"]  # Closer to 0: smoother.
     assert series[-1]["elbow_range_deg"] > series[0]["elbow_range_deg"]
+    assert series[-1]["pick_transport_ms"] < series[0]["pick_transport_ms"]
+    assert series[-1]["grip_steadiness"] < series[0]["grip_steadiness"]  # Smaller: steadier.
+    assert series[-1]["grip_relaxation_ms"] < series[0]["grip_relaxation_ms"]
     assert body["previous_reach"] is not None
 
     patients = client.get("/api/admin/patients", headers=admin_headers).json()
