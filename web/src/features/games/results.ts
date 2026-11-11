@@ -24,6 +24,8 @@ export const DETAIL_MEAN_IN_CORRIDOR = "mean_in_corridor_pct";
 export const DETAIL_BEST_SPARC = "best_sparc";
 export const DETAIL_MEAN_RANGE_DEG = "mean_range_deg";
 export const DETAIL_BEST_RANGE_DEG = "best_range_deg";
+export const DETAIL_MEAN_TRANSPORT_MS = "mean_transport_ms";
+export const DETAIL_TOTAL_DROPS = "total_drops";
 
 /** Runs the patient finished or stopped; a run left open has no result yet. */
 export function finishedRuns<T extends Pick<GameRun, "status">>(runs: readonly T[]): T[] {

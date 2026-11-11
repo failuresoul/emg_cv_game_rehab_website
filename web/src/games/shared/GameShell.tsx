@@ -362,6 +362,14 @@ const GamePlay = memo(function GamePlay({
             listener({ ...event, t: runtimeRef.current?.toGameTime(event.t) ?? event.t }),
           ),
         setTouchThreshold: (threshold) => handRef.current.setTouchThreshold(threshold),
+        getPinch: () => {
+          const pinch = handRef.current.getPinch();
+          return { ...pinch, t: runtimeRef.current?.toGameTime(pinch.t) ?? pinch.t };
+        },
+        subscribePinch: (listener) =>
+          handRef.current.subscribePinch((event) =>
+            listener({ ...event, t: runtimeRef.current?.toGameTime(event.t) ?? event.t }),
+          ),
       },
       calibration,
       affectedSide,

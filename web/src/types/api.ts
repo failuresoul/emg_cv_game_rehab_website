@@ -317,6 +317,10 @@ export interface SpatialTrialTarget {
   points?: PointPair[];
   index?: number;
   target_frac?: number;
+  pick?: PointPair;
+  place?: PointPair;
+  object_radius_sw?: number;
+  box_size_sw?: number;
 }
 
 /**
@@ -335,6 +339,12 @@ export interface KindTrialTarget {
   index?: number;
   /** A target's height or size as a share, 0–1, such as a stripe's share of the elbow range. */
   target_frac?: number;
+  /** Carrying games: where the object is picked up and where it is put down, in SW. */
+  pick?: PointPair;
+  place?: PointPair;
+  /** Carrying games: the object's radius and the box's width, in SW. */
+  object_radius_sw?: number;
+  box_size_sw?: number;
   x_sw?: never;
   y_sw?: never;
   radius_sw?: never;
@@ -436,6 +446,18 @@ export interface TrialMetrics {
   angular_sparc?: number | null;
   /** Elbow games: the most the upper arm moved from its start during a sweep, in degrees. */
   upper_arm_motion_deg?: number | null;
+  /** Carrying games: spawn to the hand first reaching the object, in ms. */
+  reach_ms?: number | null;
+  /** Carrying games: object first reached to the first grasp, in ms. */
+  grasp_latency_ms?: number | null;
+  /** Carrying games: the last grasp to the release in the box, in ms. */
+  transport_ms?: number | null;
+  /** Carrying games: straight distance over path length of the carry that succeeded, 0–1. */
+  transport_path_efficiency?: number | null;
+  /** Carrying games: times the object was let go outside the box. */
+  drops?: number | null;
+  /** Carrying games: distance from the box's centre at the release, in SW. */
+  release_error_sw?: number | null;
 }
 
 export type FingerName = "index" | "middle" | "ring" | "little";

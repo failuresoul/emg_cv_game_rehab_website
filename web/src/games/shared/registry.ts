@@ -1,10 +1,11 @@
-import { Grab, Hand } from "lucide-react";
+import { Hand } from "lucide-react";
 
 import { balloonPop } from "@/games/balloonPop";
 import { bloom } from "@/games/bloom";
 import { fingerPiano } from "@/games/fingerPiano";
 import { paintWall } from "@/games/paintWall";
 import { pathTrace } from "@/games/pathTrace";
+import { pickPlace } from "@/games/pickPlace";
 import { fruitCatch } from "@/games/fruitCatch";
 import { reachActivate } from "@/games/reachActivate";
 import type { GameId } from "@/types/api";
@@ -44,36 +45,6 @@ const holdMs: ParamSpec = {
   unit: "ms",
   harder: "higher",
 };
-const distanceFrac: ParamSpec = {
-  name: "distance_frac",
-  labelKey: "param.distanceFrac",
-  min: 0.3,
-  max: 1.0,
-  step: 0.05,
-  default: 0.7,
-  unit: "share",
-  harder: "higher",
-};
-const targetRadiusSw: ParamSpec = {
-  name: "target_radius_sw",
-  labelKey: "param.targetRadiusSw",
-  min: 0.12,
-  max: 0.4,
-  step: 0.01,
-  default: 0.25,
-  unit: "sw",
-  harder: "lower",
-};
-const reachTimeoutMs: ParamSpec = {
-  name: "reach_timeout_ms",
-  labelKey: "param.reachTimeoutMs",
-  min: 3000,
-  max: 15000,
-  step: 500,
-  default: 8000,
-  unit: "ms",
-  harder: "lower",
-};
 const restMs: ParamSpec = {
   name: "rest_ms",
   labelKey: "param.restMs",
@@ -99,24 +70,7 @@ export const GAMES: Readonly<Record<GameId, GameDefinition>> = {
   finger_piano: fingerPiano,
   path_trace: pathTrace,
   paint_wall: paintWall,
-  pick_place: {
-    id: "pick_place",
-    nameKey: "game.pick_place.name",
-    descriptionKey: "game.pick_place.description",
-    movementKey: "game.pick_place.movement",
-    icon: Grab,
-    params: [
-      distanceFrac,
-      { ...targetRadiusSw, name: "object_radius_sw", labelKey: "param.objectRadiusSw" },
-      { ...targetRadiusSw, name: "place_radius_sw", labelKey: "param.placeRadiusSw", default: 0.3 },
-      demand,
-      reachTimeoutMs,
-    ],
-    trialsDefault: 12,
-    estimatedMinutes: 6,
-    create: notImplemented("pick_place"),
-    implemented: false,
-  },
+  pick_place: pickPlace,
   grip_hold: {
     id: "grip_hold",
     nameKey: "game.grip_hold.name",

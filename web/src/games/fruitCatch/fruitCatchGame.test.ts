@@ -5,6 +5,7 @@ import { createPlayArea } from "@/games/shared/playArea";
 import { GAMES } from "@/games/shared/registry";
 import { createRng } from "@/games/shared/rng";
 import type { GameContext, GameParams } from "@/games/shared/types";
+import { IDLE_PINCH } from "@/input/pinch";
 import type { TrialCreate } from "@/types/api";
 import type { Point } from "@/vision/geometry";
 import type { CompensationMonitor } from "@/warmup/compensation";
@@ -61,6 +62,8 @@ function setUp(trialsPlanned: number, overrides: GameParams = {}) {
       isTouchReady: () => true,
       subscribeTouch: () => () => {},
       setTouchThreshold: () => {},
+      getPinch: () => ({ ...IDLE_PINCH }),
+      subscribePinch: () => () => {},
     },
     calibration: null,
     affectedSide: "right",

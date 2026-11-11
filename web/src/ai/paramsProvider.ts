@@ -1,5 +1,6 @@
 import { generateMelody } from "@/games/fingerPiano/melody";
 import { activeFingers, MAX_SEQUENCE_LENGTH, melodyToParams } from "@/games/fingerPiano/params";
+import { CARRY_DIRECTIONS } from "@/games/pickPlace/params";
 import { createRng, type Rng } from "@/games/shared/rng";
 import { PATH_SHAPES } from "@/metrics/paths";
 import type { GameParams, ParamSpec, TrialHistoryEntry } from "@/games/shared/types";
@@ -56,6 +57,8 @@ export const FRUIT_TARGET_FRACS = [0.4, 0.7, 1.0] as const;
  *   inward) alternating, so each shape is traced both ways every eight trials.
  * - finger_piano: a melody as `note_1` … `note_n` (0 index to 3 little finger), from
  *   generateMelody: every active finger, mostly neighbouring steps, never three in a row.
+ * - pick_place: `carry_direction` (0 outward, 1 inward, 2 up, 3 down), all four in a shuffled
+ *   order every four trials.
  *
  * The same choice never comes twice in a row across two blocks.
  */
@@ -108,6 +111,8 @@ export class FixedProvider implements ParamsProvider {
       // Every shape in turn; each shape gets both directions over two rounds.
       params.shape_index = position % PATH_SHAPES.length;
       params.direction = (position + Math.floor(position / PATH_SHAPES.length)) % 2 === 0 ? 1 : -1;
+    } else if (gameId === "pick_place") {
+      params.carry_direction = this.choiceFor(gameId, position, CARRY_DIRECTIONS.length);
     } else if (gameId === "finger_piano") {
       const length = Math.min(MAX_SEQUENCE_LENGTH, Math.max(1, Math.round(params.sequence_length)));
       const melody = generateMelody(this.rng, activeFingers(params.finger_count), length);

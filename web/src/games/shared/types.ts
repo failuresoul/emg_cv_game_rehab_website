@@ -1,7 +1,13 @@
 import type { LucideIcon } from "lucide-react";
 
 import type { TranslationKey } from "@/i18n";
-import type { ActivationSourceId, Finger, FingerTouchListener } from "@/input";
+import type {
+  ActivationSourceId,
+  Finger,
+  FingerTouchListener,
+  PinchListener,
+  PinchState,
+} from "@/input";
 import type { Calibration, GameId, GameSummary, Side, TrialCreate } from "@/types/api";
 import type { Point } from "@/vision/geometry";
 import type { CompensationMonitor } from "@/warmup/compensation";
@@ -81,6 +87,13 @@ export interface GameHandInput {
   subscribeTouch(listener: FingerTouchListener): () => void;
   /** Changes the touch distance, in palm lengths, from the next camera frame. */
   setTouchThreshold(threshold: number): void;
+  /**
+   * The thumb-and-index pinch now: whether pinching, its strength, and its point in SW (RAW for
+   * saved data, smooth for drawing), with `t` in game time.
+   */
+  getPinch(): PinchState;
+  /** Each pinchStart and pinchEnd, with `t` in game time. Returns a function that unsubscribes. */
+  subscribePinch(listener: PinchListener): () => void;
 }
 
 export type FeedbackTone = "positive" | "neutral" | "gentle";

@@ -5,6 +5,7 @@ import { gameAudio } from "@/games/shared/audio";
 import { createRng } from "@/games/shared/rng";
 import type { GameContext, GameParams } from "@/games/shared/types";
 import type { Finger, FingerTouchListener } from "@/input/fingerTouch";
+import { IDLE_PINCH } from "@/input/pinch";
 import type { TrialCreate } from "@/types/api";
 import type { CompensationMonitor } from "@/warmup/compensation";
 
@@ -62,6 +63,8 @@ function setUp(params: GameParams = PARAMS) {
         return () => listeners.delete(listener);
       },
       setTouchThreshold,
+      getPinch: () => ({ ...IDLE_PINCH }),
+      subscribePinch: () => () => {},
     },
     calibration: null,
     affectedSide: "right",

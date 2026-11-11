@@ -4,6 +4,7 @@ import { gameAudio } from "@/games/shared/audio";
 import { defaultParams } from "@/games/shared/registry";
 import { createRng } from "@/games/shared/rng";
 import type { GameContext, GameFeedback, GameParams } from "@/games/shared/types";
+import { IDLE_PINCH } from "@/input/pinch";
 import type { TrialCreate } from "@/types/api";
 import type { CompensationMonitor } from "@/warmup/compensation";
 
@@ -54,6 +55,8 @@ function setUp(trialsPlanned = 1) {
       isTouchReady: () => true,
       subscribeTouch: () => () => {},
       setTouchThreshold: () => {},
+      getPinch: () => ({ ...IDLE_PINCH }),
+      subscribePinch: () => () => {},
     },
     calibration: null,
     affectedSide: "left",

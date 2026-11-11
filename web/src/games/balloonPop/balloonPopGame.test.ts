@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createPlayArea } from "@/games/shared/playArea";
 import { createRng } from "@/games/shared/rng";
 import type { GameContext, GameParams } from "@/games/shared/types";
+import { IDLE_PINCH } from "@/input/pinch";
 import type { TrialCreate } from "@/types/api";
 import type { Point } from "@/vision/geometry";
 import type { CompensationMonitor } from "@/warmup/compensation";
@@ -75,6 +76,8 @@ function setUp(params: GameParams = PARAMS) {
       isTouchReady: () => true,
       subscribeTouch: () => () => {},
       setTouchThreshold: () => {},
+      getPinch: () => ({ ...IDLE_PINCH }),
+      subscribePinch: () => () => {},
     },
     calibration: null,
     affectedSide: "left",

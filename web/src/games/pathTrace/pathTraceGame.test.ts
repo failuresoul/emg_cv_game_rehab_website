@@ -5,6 +5,7 @@ import { createPlayArea, defaultHull } from "@/games/shared/playArea";
 import { defaultParams } from "@/games/shared/registry";
 import { createRng } from "@/games/shared/rng";
 import type { GameContext, GameParams } from "@/games/shared/types";
+import { IDLE_PINCH } from "@/input/pinch";
 import { pathLength, pointAtDistance } from "@/metrics/paths";
 import type { TrialCreate } from "@/types/api";
 import type { Point } from "@/vision/geometry";
@@ -59,6 +60,8 @@ function setUp(cursor: (t: number) => Point | null) {
       isTouchReady: () => true,
       subscribeTouch: () => () => {},
       setTouchThreshold: () => {},
+      getPinch: () => ({ ...IDLE_PINCH }),
+      subscribePinch: () => () => {},
     },
     calibration: null,
     affectedSide: "right",

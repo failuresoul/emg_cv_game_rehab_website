@@ -682,6 +682,79 @@ def test_upload_invalid_stripe_trial_is_422(
     assert response.status_code == 422, response.text
 
 
+def carry_metrics(**changes: Any) -> dict[str, Any]:
+    metrics = {
+        "reach_ms": 1450,
+        "grasp_latency_ms": 620,
+        "transport_ms": 2380,
+        "transport_path_efficiency": 0.83,
+        "drops": 1,
+        "release_error_sw": 0.12,
+        "sparc": -1.65,
+        "peak_speed_sw_s": 0.71,
+    }
+    return {**metrics, **changes}
+
+
+PICK_PLACE_TARGET = {
+    "kind": "pick_place",
+    "pick": [0.42, 0.55],
+    "place": [0.81, -0.12],
+    "object_radius_sw": 0.35,
+    "box_size_sw": 0.7,
+}
+
+
+def test_upload_pick_place_trial(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="pick_place")
+    missed = carry_metrics(transport_ms=None, transport_path_efficiency=None, drops=3)
+    trials = [
+        trial_payload(1, target=PICK_PLACE_TARGET, metrics=carry_metrics()),
+        trial_payload(2, target=PICK_PLACE_TARGET, metrics=missed, outcome="miss"),
+    ]
+    response = upload(client, patient_headers, run_id, trials)
+    assert response.status_code == 200, response.text
+
+    detail = client.get(f"/api/admin/sessions/{session_id}", headers=admin_headers).json()
+    first, second = detail["games"][0]["trials"]
+    assert first["target"] == PICK_PLACE_TARGET
+    assert first["metrics"]["grasp_latency_ms"] == 620
+    assert first["metrics"]["transport_path_efficiency"] == 0.83
+    assert first["metrics"]["release_error_sw"] == 0.12
+    assert second["metrics"]["drops"] == 3
+    assert second["metrics"]["transport_ms"] is None
+
+
+@pytest.mark.parametrize(
+    ("target", "metrics"),
+    [
+        pytest.param({**PICK_PLACE_TARGET, "pick": [0.4]}, {}, id="pick-not-a-pair"),
+        pytest.param({**PICK_PLACE_TARGET, "place": [0, 0, 0]}, {}, id="place-three-values"),
+        pytest.param({**PICK_PLACE_TARGET, "object_radius_sw": 0}, {}, id="zero-radius"),
+        pytest.param({**PICK_PLACE_TARGET, "box_size_sw": -0.7}, {}, id="negative-box"),
+        pytest.param(PICK_PLACE_TARGET, {"drops": -1}, id="negative-drops"),
+        pytest.param(PICK_PLACE_TARGET, {"drops": 1.5}, id="fractional-drops"),
+        pytest.param(PICK_PLACE_TARGET, {"transport_path_efficiency": 1.2}, id="efficiency-over-1"),
+        pytest.param(PICK_PLACE_TARGET, {"release_error_sw": -0.1}, id="negative-error"),
+        pytest.param(PICK_PLACE_TARGET, {"grasp_latency_ms": -5}, id="negative-latency"),
+    ],
+)
+def test_upload_invalid_pick_place_trial_is_422(
+    client: TestClient,
+    patient_headers: Headers,
+    target: dict[str, Any],
+    metrics: dict[str, Any],
+) -> None:
+    session_id = start_session(client, patient_headers)
+    run_id = start_run(client, patient_headers, session_id, game_id="pick_place")
+    trial = trial_payload(target=target, metrics=carry_metrics(**metrics))
+    response = upload(client, patient_headers, run_id, [trial])
+    assert response.status_code == 422, response.text
+
+
 def test_upload_rejects_not_a_number(client: TestClient, patient_headers: Headers) -> None:
     session_id = start_session(client, patient_headers)
     run_id = start_run(client, patient_headers, session_id)

@@ -58,6 +58,9 @@ class GameRunStart(BaseModel):
 SPATIAL_TARGET_FIELDS = ("x_sw", "y_sw", "radius_sw", "direction_deg", "distance_frac", "sector")
 TargetKind = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,29}$")]
 TargetNote = Annotated[str, Field(min_length=1, max_length=20)]
+#: [x_sw, y_sw]: a point in the body frame.
+PointSw = tuple[float, float]
+PositiveSw = Annotated[float, Field(gt=0, le=5)]
 
 
 class TrialTarget(BaseModel):
@@ -95,6 +98,12 @@ class TrialTarget(BaseModel):
     index: Annotated[int, Field(ge=0, le=MAX_TRIALS_PER_RUN, strict=True)] | None = None
     #: A target's height or size as a share, such as a stripe's share of the elbow range.
     target_frac: Share | None = None
+    #: Carrying games: where the object is picked up and where it is put down, in SW.
+    pick: PointSw | None = None
+    place: PointSw | None = None
+    #: Carrying games: the object's radius and the box's width, in SW.
+    object_radius_sw: PositiveSw | None = None
+    box_size_sw: PositiveSw | None = None
 
     @model_validator(mode="after")
     def _spatial_or_kind(self) -> "TrialTarget":
@@ -211,6 +220,18 @@ class TrialMetrics(BaseModel):
     angular_sparc: Annotated[float, Field(le=0)] | None = None
     #: Elbow games: the most the upper arm moved from its start during a sweep, in degrees.
     upper_arm_motion_deg: Degrees | None = None
+    #: Carrying games: spawn to the hand first reaching the object, in ms.
+    reach_ms: NonNegative | None = None
+    #: Carrying games: object first reached to the first grasp, in ms.
+    grasp_latency_ms: NonNegative | None = None
+    #: Carrying games: the last grasp to the release in the box, in ms.
+    transport_ms: NonNegative | None = None
+    #: Carrying games: straight distance over path length of the carry that succeeded, 0-1.
+    transport_path_efficiency: Share | None = None
+    #: Carrying games: times the object was let go outside the box.
+    drops: Annotated[int, Field(ge=0, le=1000, strict=True)] | None = None
+    #: Carrying games: distance from the box's centre at the release, in SW.
+    release_error_sw: NonNegative | None = None
     #: Sequence games: notes in the melody, and how each ended. hits + wrong_finger + missed is
     #: notes_total.
     notes_total: Count | None = None
