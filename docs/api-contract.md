@@ -1209,7 +1209,7 @@ They read the run summary's `details`: `path_trace` sends `total_stars`, `mean_i
 
 ## Adaptive difficulty
 
-From Day 12 each game's difficulty can adapt to the patient (see [docs/ai-engine.md](ai-engine.md)). A patient's `engine_mode` (`L0` fixed settings, `L1` staircase, `L2` model-based from Day 13, `L1` by default) is on the profile in `GET /api/auth/me` (`patient_profile.engine_mode`) and is copied to each new game run's `engine`, whatever the web app sends. A patient's maximum difficulty per game (`max_difficulty`, 0–1, 1 when unset) is stored on the profile; neither has an admin route yet.
+From Day 12 each game's difficulty can adapt to the patient (see [docs/ai-engine.md](ai-engine.md)). A patient's `engine_mode` (`L0` fixed settings, `L1` staircase, `L2` Bayesian and workspace-aware, `L1` by default) is on the profile in `GET /api/auth/me` (`patient_profile.engine_mode`) and is copied to each new game run's `engine`, whatever the web app sends. A patient's maximum difficulty per game (`max_difficulty`, 0–1, 1 when unset) is stored on the profile; neither has an admin route yet.
 
 ### POST /api/engine/next
 
@@ -1230,7 +1230,7 @@ Role: `patient`, own active run only. The next trial's settings. The web app cal
 }
 ```
 
-`trial_no` is 1–500; `outcome` as in a trial; `failure_type` (`reach_fail`, `activation_fail`, `miss` or `null`) says which kind of difficulty a failure points at, the outcome when left out; `completion_ms` is for games without a movement time; `activation_peak` is 0–1. Unknown fields are refused.
+`trial_no` is 1–500; `outcome` as in a trial; `direction_deg` (0–360), `distance_frac` (0–2) and `side` (`out` or `across`, Fruit catch) say where the target was, so L2 credits the sector played (optional); `failure_type` (`reach_fail`, `activation_fail`, `miss` or `null`) says which kind of difficulty a failure points at, the outcome when left out; `completion_ms` is for games without a movement time; `activation_peak` is 0–1. Unknown fields are refused.
 
 Response `200`:
 
@@ -1253,6 +1253,7 @@ Response `200`:
 | `decision` | The engine's reason in plain words, with its numbers (admin and research only) |
 | `safety_override` | What the safety rules changed or blocked, `; `-separated, or `null` |
 | `engine` | `L0`, `L1` or `L2` |
+| `direction_deg`, `distance_frac`, `sector`, `side` | Where the next target goes, when the engine chooses it (L2 in Reach and squeeze, Balloon pop, Fruit catch, Pick and place and Path trace); `sector` is like `D2R3` (or `out-R2`); all `null` otherwise |
 
 Every call writes one decision log row (the run and `trial_no`, 0 for the start). Reporting the same trial again returns the stored answer and writes nothing. For `L0` the settings are always the admin's defaults and the level never moves; the cues still come.
 
@@ -1282,7 +1283,7 @@ Role: `admin`. The patient's engine mode and current difficulty in each game pla
 
 ### The decision log in the admin session detail
 
-`GET /api/admin/sessions/{id}` gives each run an `adaptation` list, in `trial_no` order: `trial_no` (0 for the start), `engine`, `state_before`, `state_after` (`{d, streak, turn}`), `params`, `decision`, `safety_override`, `cue`, `trial` (the `last_trial` sent, or `null` at the start), `level` (after the decision) and `created_at`. Runs with fixed settings that never called the engine have an empty list.
+`GET /api/admin/sessions/{id}` gives each run an `adaptation` list, in `trial_no` order: `trial_no` (0 for the start), `engine`, `state_before`, `state_after` (`{d, streak, turn}`), `params`, `decision`, `safety_override`, `cue`, `trial` (the `last_trial` sent, or `null` at the start), `details` (L2: the sampled values, the chosen sector and levels, and the target; `null` for L0 and L1), `level` (after the decision) and `created_at`. Runs with fixed settings that never called the engine have an empty list.
 
 ## Reserved for the LLM feedback module (teammate, server/app/feedback/)
 

@@ -32,4 +32,6 @@ class AdaptationLog(SQLModel, table=True):
     cue: str | None = None
     #: The trial's outcome as the browser reported it, which the safety rules look back on.
     trial: dict[str, Any] | None = Field(default=None, sa_type=JSON)
+    #: What else the engine reported: L2's sampled values, its choices and the target.
+    details: dict[str, Any] | None = Field(default=None, sa_type=JSON)
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))

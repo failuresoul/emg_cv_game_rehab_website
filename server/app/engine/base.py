@@ -5,7 +5,8 @@ decision explaining what changed and why. Saving the state is the caller's job
 (app/services/engine_store.py).
 """
 
-from dataclasses import dataclass, field
+from collections.abc import Mapping
+from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
 
 from app.services.game_specs import GameSpec
@@ -21,11 +22,20 @@ class EngineContext:
     settings: dict[str, float]
     #: The highest difficulty (0-1) the patient may reach in this game.
     max_difficulty: float = 1.0
+    #: The latest calibration's reach radius per direction (8, in SW), when there is one.
+    calibration: tuple[float, ...] | None = None
+    #: The latest warm-up per exercise: {"completion": full/target reps, "compensation_rate"}.
+    warmup: Mapping[str, Mapping[str, float]] | None = None
 
 
 @dataclass(frozen=True)
 class TrialResult:
     outcome: str  # "success" | "reach_fail" | "activation_fail" | "miss" | "aborted"
+    compensated: bool = False
+    #: Where the target was, when the browser says (L2 credits the sector played).
+    direction_deg: float | None = None
+    distance_frac: float | None = None
+    side: str | None = None
 
     @property
     def success(self) -> bool:
@@ -39,6 +49,19 @@ class Decision:
     reason: str
     #: Each component that moved: (before, after).
     changes: dict[str, tuple[float, float]] = field(default_factory=dict)
+    #: Anything else worth logging, such as L2's sampled values and choices.
+    details: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class Target:
+    """Where the next target goes, for engines that choose it (L2): a direction (or a side, for
+    Fruit catch), a distance as a fraction of the reach, and the sector's name."""
+
+    direction_deg: float | None
+    side: str | None
+    distance_frac: float
+    sector: str
 
 
 @dataclass(frozen=True)
@@ -50,9 +73,18 @@ class EngineData:
     streak: int = 0
     #: Which component takes the next step up when several have the same headroom.
     turn: int = 0
+    #: An engine's own beliefs and choices (L2), kept with the state.
+    extra: dict[str, Any] = field(default_factory=dict)
 
     def to_json(self) -> dict[str, Any]:
-        return {"d": dict(self.d), "streak": self.streak, "turn": self.turn}
+        data: dict[str, Any] = {"d": dict(self.d), "streak": self.streak, "turn": self.turn}
+        if self.extra:
+            data["extra"] = self.extra
+        return data
+
+    def with_d(self, d: dict[str, float]) -> "EngineData":
+        """The same state with other difficulties; the engine's own data is kept."""
+        return replace(self, d=d)
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "EngineData":
@@ -61,7 +93,20 @@ class EngineData:
             d={str(key): float(value) for key, value in raw.items()},
             streak=int(data.get("streak", 0)),
             turn=int(data.get("turn", 0)),
+            extra=dict(data.get("extra") or {}),
         )
+
+
+WARM_RESTART = 0.05
+
+
+def warm_restart(state: EngineData) -> EngineData:
+    """Every d eased by 0.05 (not below 0), and the success streak started again."""
+    return replace(
+        state,
+        d={component: round(max(0.0, d - WARM_RESTART), 4) for component, d in state.d.items()},
+        streak=0,
+    )
 
 
 class Engine(Protocol):
@@ -85,4 +130,12 @@ class Engine(Protocol):
         self, state: EngineData, trial: TrialResult, context: EngineContext
     ) -> tuple[EngineData, Decision]:
         """The state after a trial's outcome."""
+        ...
+
+    def new_session(self, state: EngineData, context: EngineContext) -> EngineData:
+        """The stored state at the first use in a new session (L1: the warm restart)."""
+        ...
+
+    def target(self, state: EngineData, context: EngineContext) -> Target | None:
+        """Where the next target goes, if the engine chooses it (L2); else None."""
         ...

@@ -20,6 +20,7 @@ from app.engine.difficulty import (
 )
 from app.engine.l0_fixed import FixedEngine
 from app.engine.l1_staircase import STEP_DOWN, STEP_UP, StaircaseEngine
+from app.engine.l2_bayes import BayesEngine
 from app.models import EngineState, GameSetting, PatientProfile
 from app.services import engine_store
 from app.services.engine_store import WARM_RESTART, warm_restart
@@ -247,8 +248,9 @@ def test_l0_always_gives_the_admin_defaults() -> None:
 def test_engine_modes() -> None:
     assert get_engine("L0").name == "L0"
     assert get_engine("L1").name == "L1"
-    assert get_engine("L2").name == "L2"  # Behaves like L1 until Day 13.
-    assert isinstance(get_engine("L2"), StaircaseEngine)
+    assert get_engine("L2").name == "L2"
+    assert isinstance(get_engine("L2"), BayesEngine)
+    assert isinstance(get_engine("L1"), StaircaseEngine)
     assert get_engine("other").name == "L1"
 
 

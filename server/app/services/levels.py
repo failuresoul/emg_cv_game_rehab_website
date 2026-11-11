@@ -60,6 +60,7 @@ def to_read(log: AdaptationLog) -> AdaptationLogRead:
         safety_override=log.safety_override,
         cue=log.cue,
         trial=log.trial,
+        details=log.details,
         level=level_of_state(log.state_after),
         created_at=log.created_at,
     )

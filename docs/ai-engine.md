@@ -56,6 +56,8 @@ Every engine implements one interface (`server/app/engine/base.py`):
 | --- | --- |
 | `name` | `L0`, `L1` or `L2`, stored with the state and every decision |
 | `adapts` | Whether the settings ever change |
+| `new_session(state, context)` | The stored state at the first use in a new session: L1's warm restart, L2's forgetting |
+| `target(state, context)` | Where the next target goes (L2, spatial games), or none |
 | `initial(context)` | The state that reproduces the admin's defaults, capped at the patient's maximum |
 | `update(state, trial, context)` | The state after a trial's outcome, with the reason |
 | `next_params(state, context)` | Every setting for the next trial, within the spec bounds and the maximum |
@@ -100,20 +102,50 @@ The browser works out each trial's failure type from the game's own outcome (`we
 
 **Warm restart.** The first time a game is played in a new session, every d is eased by 0.05 (not below 0), so a day never starts at the very edge of what the patient managed last time. It happens once per session per game: a second run of the same game in the same session carries on where the first ended (`test_engine_review.py::test_the_warm_restart_happens_once_per_session_and_game`).
 
-### L2: how it plugs in (Day 13)
+### L2: Bayesian, workspace-aware (`server/app/engine/l2_bayes.py`)
 
-L2 is selected today but behaves like L1, with its own name and stored state. A model-based L2 only has to implement the interface above:
+L2 keeps beliefs about the chance of success and chooses the next trial by Thompson sampling. It implements the same interface as L0 and L1. The safety layer runs after it unchanged, and every decision is logged the same way, with its samples in the log's `details`.
 
-- **`initial`:** the same starting point.
-- **`update`:** a model update from the trial, for example a per-component estimate of the patient's ability and its uncertainty.
-- **`next_params`:** chooses d from that model, for example the d with a predicted success near the target rate.
+**Workspace sectors.** These apply to spatial games whose targets have a direction:
+- Reach and squeeze, Pick and place and Path trace use all 8 directions.
+- Balloon pop uses only the upward directions (45°, 90° and 135°).
+- Fruit catch uses its two sides, "out" and "across".
 
-The state is a JSON object, so the model's own fields can be stored beside `d`. Nothing else changes:
+Each direction (or side) has rings of the target's distance fraction:
 
-- the safety layer still runs after it;
-- every decision is still logged in the same form;
-- the mapping still keeps every setting within bounds;
-- an L2 patient's levels and decision log appear on the same admin pages.
+| Ring | Distance fraction | Prior Beta(α, β) |
+| --- | --- | --- |
+| R1 | 0.40–0.55 | (4, 1) |
+| R2 | 0.55–0.85 | (3, 2) |
+| R3 | 0.85–1.00 | (2, 2) |
+| R4 (stretch) | 1.00–1.10, where the game allows it | (1, 3) |
+
+R4 opens in a direction once that direction's R3 has a posterior mean above 0.8 from at least 5 trials. The priors are nudged by the patient's latest calibration (a direction under 75% of the median reach: R2–R4 0.1 less likely) and warm-up (forward-reach completion moves R3–R4 by up to ±0.1; a compensation rate of 0.3 or more takes 0.05 off).
+
+**Levels.** Every other component (and every component of a game without directions) has 6 levels, d = 0, 0.2, …, 1, each with its own Beta:
+- The priors fall from easy to hard, centred on about 0.7 success at the admin's default level.
+- The warm-up's hand opening and closing moves the activation priors by up to ±0.1.
+- After each update, a pool-adjacent-violators pass keeps the means monotone: an easier level is never less likely than a harder one.
+
+**Updates.**
+- A success adds 1 to α of the sector and of every level used.
+- An activation failure counts only against the activation level, and a miss against the speed level (else the sector). Neither touches the spatial beliefs.
+- A reach failure counts against the sector. In games with a precision level it may have been too far *or* too small or brief to hold, so its 1 is shared between the sector's β and the precision level's, in proportion to how likely each was to fail.
+- The trial reports where its target was (`direction_deg`, `distance_frac`, `side`), so L2 credits the sector actually played; without them it credits its own choice.
+
+**Choosing.**
+- The trial aims at p* = 0.70. A trial succeeds only when every chosen part does, and each belief is about its own part, so each of the k parts aims at 0.70^(1/k) (0.89 for Reach and squeeze's sector and two levels).
+- **Sector:** draw θ from every allowed sector and take the best score −|θ − aim| + 0.05 × min(2, trials since last chosen / 10) × the sector's posterior mean. Weighting the coverage bonus by the mean means it favours sectors the patient can plausibly do; unweighted, simulation showed it kept pulling patients to far sectors they almost always failed.
+  - No sector is chosen more than twice in a row.
+  - In a direction with 2 of the last 3 trials compensated, the ring of those trials and every farther ring (never R1) are left out.
+  - The distance is a random setting value inside the sector.
+- **Levels:** for each component, the level whose draw is closest to the aim.
+- The choice becomes the state's d, so the safety layer checks it as for any engine. If it eases the spatial d, the target's distance and ring follow.
+- Random draws are seeded by the engine's seed and the number of choices made, so the same state always gives the same choice.
+
+**Between sessions** the beliefs forget 30%: α ← prior + 0.7 (α − prior), and the same for β.
+
+**A simulation study tool** (`server/app/engine/sim/`) drives simulated patients through the same code path as the API, with measures for challenge error, time in the 60–80% zone, convergence, compensation, workspace coverage and learning gain.
 
 ## The safety layer
 

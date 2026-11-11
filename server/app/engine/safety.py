@@ -174,5 +174,5 @@ def apply_safety(data: SafetyInput) -> SafetyResult:
     elif data.active_minutes > data.finish_soon_minutes:
         result.cues.append("finish_soon")
 
-    result.state = EngineData(d=d, streak=data.after.streak, turn=data.after.turn)
+    result.state = data.after.with_d(d)
     return result

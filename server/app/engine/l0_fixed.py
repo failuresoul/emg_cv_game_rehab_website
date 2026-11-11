@@ -1,6 +1,6 @@
 """L0: always the admin's defaults. Nothing adapts."""
 
-from app.engine.base import Decision, EngineContext, EngineData, TrialResult
+from app.engine.base import Decision, EngineContext, EngineData, Target, TrialResult
 from app.engine.difficulty import initial_state, params_for
 
 
@@ -23,3 +23,9 @@ class FixedEngine:
     ) -> tuple[EngineData, Decision]:
         reason = f"Fixed settings: nothing changes after a {trial.outcome}."
         return state, Decision(self.name, reason)
+
+    def new_session(self, state: EngineData, context: EngineContext) -> EngineData:
+        return state
+
+    def target(self, state: EngineData, context: EngineContext) -> Target | None:
+        return None

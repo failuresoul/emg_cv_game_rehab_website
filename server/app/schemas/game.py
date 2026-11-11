@@ -381,6 +381,8 @@ class AdaptationLogRead(BaseModel):
     safety_override: str | None
     cue: str | None
     trial: dict[str, Any] | None
+    #: L2's sampled values, choices and target; None for L0 and L1.
+    details: dict[str, Any] | None = None
     #: The difficulty as the patient's level (1-10), after the decision.
     level: int
     created_at: UtcDatetime

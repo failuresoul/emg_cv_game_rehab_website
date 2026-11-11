@@ -7,7 +7,9 @@ the next settings and the level. Each session starts from
 storage differs: an in-memory dictionary instead of EngineState and AdaptationLog rows.
 
 As in the web app:
-- directional games take the eight directions in shuffled cycles;
+- directional games take the eight directions in shuffled cycles, unless the engine chooses the
+  target (L2), which the simulated patient then follows;
+- each trial reports where its target was, as the browser does;
 - a "rest" cue pauses the patient (half the session's tiredness wears off);
 - a "finish" cue ends the session.
 
@@ -30,7 +32,7 @@ from app.engine.sim.patient import (
     SimPatient,
 )
 from app.schemas.engine import LastTrial
-from app.services.adaptation import PastStep, Step, decide
+from app.services.adaptation import PastStep, Step, decide, trial_json
 from app.services.engine_store import starting_state
 from app.services.game_specs import GameSpec, get_spec
 
@@ -102,8 +104,17 @@ class MemoryStore:
         self._states[(patient, game_id)] = state
 
 
-def _last_trial(trial_no: int, attempt: Attempt) -> LastTrial:
+def _last_trial(
+    trial_no: int,
+    attempt: Attempt,
+    direction_deg: float | None = None,
+    distance_frac: float | None = None,
+    side: str | None = None,
+) -> LastTrial:
     return LastTrial(
+        direction_deg=direction_deg,
+        distance_frac=distance_frac,
+        side=side,  # type: ignore[arg-type]
         trial_no=trial_no,
         outcome=attempt.outcome,  # type: ignore[arg-type]
         failure_type=attempt.failure_type,  # type: ignore[arg-type]
@@ -171,14 +182,36 @@ def simulate(
             past.append(PastStep(0, None, step.cue))
             directions: list[int] = []
             for trial_no in range(1, trials_per_session + 1):
-                if directional and not directions:
-                    directions = list(range(DIRECTION_COUNT))
-                    order.shuffle(directions)
-                direction = directions.pop() if directional else None
+                target = step.target
+                side: str | None = None
+                if target is not None:
+                    # The engine chose where the target goes (L2).
+                    side = target.side
+                    direction = (
+                        round(target.direction_deg / 45) % DIRECTION_COUNT
+                        if target.direction_deg is not None
+                        else None
+                    )
+                else:
+                    if directional and not directions:
+                        directions = list(range(DIRECTION_COUNT))
+                        order.shuffle(directions)
+                    direction = directions.pop() if directional else None
                 params = dict(step.params)
                 level = step.level
                 attempt = patient.attempt(game, params, direction)
-                last = _last_trial(trial_no, attempt)
+                # Where the target was, as the web app reports it.
+                last = _last_trial(
+                    trial_no,
+                    attempt,
+                    direction_deg=45.0 * direction if direction is not None else None,
+                    distance_frac=(
+                        target.distance_frac
+                        if target is not None
+                        else (attempt.demands.get("spatial") if direction is not None else None)
+                    ),
+                    side=side,
+                )
                 before = step.state
                 step = decide(
                     engine,
@@ -189,7 +222,7 @@ def simulate(
                     active_minutes=trial_no * SECONDS_PER_TRIAL / 60,
                 )
                 record(step, trial_no, before)
-                summary = last.model_dump()
+                summary = trial_json(last)
                 past.append(PastStep(trial_no, summary, step.cue))
                 result.trials.append(
                     SimTrial(

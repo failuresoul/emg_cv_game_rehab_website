@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
 from app.core.config import settings
-from app.engine.base import Decision, Engine, EngineContext, EngineData, TrialResult
+from app.engine.base import Decision, Engine, EngineContext, EngineData, Target, TrialResult
 from app.engine.difficulty import level_of
 from app.engine.safety import Cue, SafetyInput, TrialRecord, apply_safety
 from app.models import AdaptationLog, GameRun, PatientProfile
@@ -38,6 +38,19 @@ def describe(decision: Decision) -> str:
         for component, (before, after) in decision.changes.items()
     )
     return f"{decision.reason.rstrip('.')} ({moves})."
+
+
+#: Fields of LastTrial left out of the stored summary when the browser does not send them.
+_OPTIONAL_LOCATION = ("direction_deg", "distance_frac", "side")
+
+
+def trial_json(trial: LastTrial) -> dict[str, Any]:
+    """The trial summary as stored in the decision log: where the target was only when known."""
+    data = trial.model_dump()
+    for key in _OPTIONAL_LOCATION:
+        if data.get(key) is None:
+            data.pop(key, None)
+    return data
 
 
 def _record(trial: dict[str, object] | LastTrial) -> TrialRecord:
@@ -75,6 +88,10 @@ class Step:
     safety_override: str | None
     cue: Cue | None
     level: int
+    #: Where the next target goes (L2, spatial games); else None.
+    target: Target | None = None
+    #: The engine's extra report (L2: samples and choices), with the target; None if empty.
+    details: dict[str, Any] | None = None
 
 
 def decide(
@@ -98,7 +115,14 @@ def decide(
         outcome = last_trial.failure_type or last_trial.outcome
         if last_trial.outcome in ("success", "aborted"):
             outcome = last_trial.outcome
-        after, decision = engine.update(before, TrialResult(outcome), context)
+        result = TrialResult(
+            outcome,
+            compensated=last_trial.compensated,
+            direction_deg=last_trial.direction_deg,
+            distance_frac=last_trial.distance_frac,
+            side=last_trial.side,
+        )
+        after, decision = engine.update(before, result, context)
         history = [_record(step.trial) for step in past if step.trial is not None]
         history.append(_record(last_trial))
         history = [trial for trial in history if trial.outcome != "aborted"]
@@ -125,6 +149,16 @@ def decide(
         checked.state = before
         checked.overrides = []
     params, _ = engine.next_params(checked.state, context)
+    # After the safety rules: a target follows any easing of the spatial difficulty.
+    target = engine.target(checked.state, context)
+    details = dict(decision.details)
+    if target is not None:
+        details["target"] = {
+            "direction_deg": target.direction_deg,
+            "side": target.side,
+            "distance_frac": target.distance_frac,
+            "sector": target.sector,
+        }
     return Step(
         state=checked.state,
         params=params,
@@ -132,6 +166,8 @@ def decide(
         safety_override=checked.safety_override,
         cue=checked.cue,
         level=level_of(checked.state.d),
+        target=target,
+        details=details or None,
     )
 
 
@@ -155,7 +191,12 @@ def _existing(session: Session, run_id: int, trial_no: int) -> AdaptationLog | N
 
 
 def _response(log: AdaptationLog) -> EngineNextResponse:
+    target = (log.details or {}).get("target") or {}
     return EngineNextResponse(
+        direction_deg=target.get("direction_deg"),
+        distance_frac=target.get("distance_frac"),
+        sector=target.get("sector"),
+        side=target.get("side"),
         params={key: float(value) for key, value in log.params.items()},
         level=level_of(EngineData.from_json(log.state_after).d),
         cue=log.cue,  # type: ignore[arg-type]
@@ -223,7 +264,8 @@ def next_step(
         decision=step.decision,
         safety_override=step.safety_override,
         cue=step.cue,
-        trial=last_trial.model_dump() if last_trial else None,
+        trial=trial_json(last_trial) if last_trial else None,
+        details=step.details,
     )
     session.add(log)
     if replay:

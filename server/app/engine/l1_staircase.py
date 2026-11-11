@@ -21,7 +21,14 @@ Which component moves:
 - A trial the patient stopped (aborted) changes nothing.
 """
 
-from app.engine.base import Decision, EngineContext, EngineData, TrialResult
+from app.engine.base import (
+    Decision,
+    EngineContext,
+    EngineData,
+    Target,
+    TrialResult,
+    warm_restart,
+)
 from app.engine.difficulty import clamp01, components_of, initial_state, params_for
 
 STEP_UP = 0.06
@@ -50,6 +57,13 @@ class StaircaseEngine:
         cap = clamp01(context.max_difficulty)
         state = initial_state(context.game, context.settings)
         return EngineData(d={component: min(d, cap) for component, d in state.items()})
+
+    def new_session(self, state: EngineData, context: EngineContext) -> EngineData:
+        """The warm restart: every d 0.05 easier."""
+        return warm_restart(state)
+
+    def target(self, state: EngineData, context: EngineContext) -> Target | None:
+        return None
 
     def next_params(
         self, state: EngineData, context: EngineContext
