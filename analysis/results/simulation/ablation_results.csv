@@ -1,0 +1,121 @@
+study,game,profile,engine,patient,sessions,trials,success_rate,challenge_error,time_in_zone,trials_to_converge,converged_share,compensation_rate,coverage,learning_gain,mean_level
+ablation,reach_activate,moderate,L2 (p*=0.7),0,10,400,0.55,0.176774,0.448387,26,0.5,0.085,6.6,0.00633604,2.6075
+ablation,reach_activate,moderate,L2 (p*=0.7),1,10,400,0.51,0.21,0.390323,nan,0.2,0.1325,6.4,0.0126138,2.145
+ablation,reach_activate,moderate,L2 (p*=0.7),2,10,400,0.4825,0.199355,0.322581,nan,0.1,0.0975,6.7,0.0142216,2.4075
+ablation,reach_activate,moderate,L2 (p*=0.7),3,10,400,0.485,0.215484,0.335484,nan,0.4,0.1075,6.2,0.0126957,2.5675
+ablation,reach_activate,moderate,L2 (p*=0.7),4,10,400,0.42,0.281613,0.190323,nan,0.2,0.1325,6.7,0.00748051,2.2475
+ablation,reach_activate,moderate,L2 (p*=0.7),5,10,400,0.4425,0.255484,0.251613,nan,0.2,0.0875,7,0.0084148,2.06
+ablation,reach_activate,moderate,L2 (p*=0.7),6,10,400,0.4525,0.255806,0.254839,nan,0.1,0.14,5.6,0.00847712,2.39
+ablation,reach_activate,moderate,L2 (p*=0.7),7,10,400,0.475,0.232903,0.3,nan,0.2,0.1225,6.7,0.0105196,2.09
+ablation,reach_activate,moderate,L2 (p*=0.7),8,10,400,0.48,0.225806,0.303226,nan,0.4,0.0925,7,0.00745025,2.175
+ablation,reach_activate,moderate,L2 (p*=0.7),9,10,400,0.4625,0.236452,0.3,nan,0.2,0.1375,6.6,0.0110263,2.13
+ablation,reach_activate,moderate,L2 (p*=0.7),10,10,400,0.5225,0.202903,0.425806,nan,0.4,0.1,6.7,0.00504216,2.3225
+ablation,reach_activate,moderate,L2 (p*=0.7),11,10,400,0.4925,0.221935,0.316129,nan,0.2,0.085,6.5,0.00951447,2.165
+ablation,reach_activate,moderate,L2 (p*=0.7),12,10,400,0.3725,0.315161,0.106452,nan,0,0.1325,6.2,0.0137601,2.4425
+ablation,reach_activate,moderate,L2 (p*=0.7),13,10,400,0.465,0.243871,0.264516,nan,0.3,0.115,6,0.0116189,2.125
+ablation,reach_activate,moderate,L2 (p*=0.7),14,10,400,0.5075,0.196774,0.377419,nan,0.5,0.08,7.2,0.0115108,2.1775
+ablation,reach_activate,moderate,L2 (p*=0.7),15,10,400,0.555,0.19871,0.467742,nan,0.5,0.0775,6.6,0.0128656,2.0525
+ablation,reach_activate,moderate,L2 (p*=0.7),16,10,400,0.5425,0.174516,0.477419,nan,0.6,0.09,6.5,0.0136148,2.285
+ablation,reach_activate,moderate,L2 (p*=0.7),17,10,400,0.5175,0.202581,0.429032,nan,0.4,0.115,7,0.00627525,2.12
+ablation,reach_activate,moderate,L2 (p*=0.7),18,10,400,0.4425,0.25,0.206452,nan,0.2,0.1,6.4,0.00840857,2.3575
+ablation,reach_activate,moderate,L2 (p*=0.7),19,10,400,0.47,0.236774,0.267742,nan,0.3,0.12,6.6,0.0138147,2.1225
+ablation,reach_activate,moderate,L2 without safety layer,0,10,400,0.51,0.212903,0.390323,nan,0.3,0.095,6.3,0.0048107,2.61
+ablation,reach_activate,moderate,L2 without safety layer,1,10,400,0.445,0.255484,0.264516,nan,0.2,0.135,6.4,0.0128661,2.3275
+ablation,reach_activate,moderate,L2 without safety layer,2,10,400,0.45,0.251613,0.3,nan,0,0.11,6.7,0.0122429,2.235
+ablation,reach_activate,moderate,L2 without safety layer,3,10,400,0.445,0.276129,0.235484,nan,0.1,0.1325,6.3,0.0107257,2.6725
+ablation,reach_activate,moderate,L2 without safety layer,4,10,400,0.4175,0.292581,0.187097,nan,0.1,0.1225,6.2,0.00738701,2.28
+ablation,reach_activate,moderate,L2 without safety layer,5,10,400,0.4575,0.233548,0.33871,nan,0.5,0.12,6.6,0.0156275,2.25
+ablation,reach_activate,moderate,L2 without safety layer,6,10,400,0.4325,0.289032,0.267742,nan,0.4,0.135,6.5,0.00961827,2.185
+ablation,reach_activate,moderate,L2 without safety layer,7,10,400,0.415,0.290968,0.219355,nan,0.3,0.1225,6.2,0.00986208,2.175
+ablation,reach_activate,moderate,L2 without safety layer,8,10,400,0.5075,0.221613,0.351613,nan,0.2,0.125,6.7,0.0100716,2.395
+ablation,reach_activate,moderate,L2 without safety layer,9,10,400,0.425,0.267419,0.245161,nan,0.3,0.1225,6.2,0.010257,2.3075
+ablation,reach_activate,moderate,L2 without safety layer,10,10,400,0.46,0.25,0.283871,nan,0.3,0.1175,6.1,0.0044941,2.765
+ablation,reach_activate,moderate,L2 without safety layer,11,10,400,0.49,0.232581,0.309677,nan,0.4,0.0975,7,0.0096334,2.1425
+ablation,reach_activate,moderate,L2 without safety layer,12,10,400,0.3375,0.347419,0.0580645,nan,0,0.1575,6.1,0.0141175,2.49
+ablation,reach_activate,moderate,L2 without safety layer,13,10,400,0.41,0.295484,0.235484,nan,0,0.1,7.2,0.0164139,2.325
+ablation,reach_activate,moderate,L2 without safety layer,14,10,400,0.495,0.216452,0.329032,nan,0.2,0.095,6.3,0.0141799,2.35
+ablation,reach_activate,moderate,L2 without safety layer,15,10,400,0.495,0.220968,0.387097,nan,0.3,0.085,6.2,0.0124219,2.0125
+ablation,reach_activate,moderate,L2 without safety layer,16,10,400,0.4675,0.240323,0.325806,nan,0.1,0.1025,6.4,0.00979311,2.5075
+ablation,reach_activate,moderate,L2 without safety layer,17,10,400,0.525,0.206129,0.403226,nan,0.4,0.105,6.9,0.00470644,2.1525
+ablation,reach_activate,moderate,L2 without safety layer,18,10,400,0.425,0.288065,0.2,nan,0.1,0.12,6.5,0.0111113,2.515
+ablation,reach_activate,moderate,L2 without safety layer,19,10,400,0.38,0.316774,0.122581,nan,0,0.125,6.6,0.0159878,2.4675
+ablation,reach_activate,moderate,L2 without sectors,0,10,400,0.415,0.283226,0.145161,nan,0,0.075,7.3,0.00762672,3.08
+ablation,reach_activate,moderate,L2 without sectors,1,10,400,0.4225,0.268065,0.212903,nan,0.1,0.095,7.9,0.0257322,2.8525
+ablation,reach_activate,moderate,L2 without sectors,2,10,400,0.3625,0.322258,0.132258,nan,0.1,0.1025,7.6,0.0149636,2.905
+ablation,reach_activate,moderate,L2 without sectors,3,10,400,0.3425,0.369355,0.0354839,nan,0,0.1525,7.2,0.0102879,2.9775
+ablation,reach_activate,moderate,L2 without sectors,4,10,400,0.3625,0.339032,0.0741935,nan,0.1,0.115,6.9,0.0108467,2.87
+ablation,reach_activate,moderate,L2 without sectors,5,10,400,0.3425,0.355484,0.0870968,nan,0,0.1175,7.6,0.0194342,2.835
+ablation,reach_activate,moderate,L2 without sectors,6,10,400,0.325,0.373548,0.0129032,nan,0,0.1025,7,0.0122266,2.995
+ablation,reach_activate,moderate,L2 without sectors,7,10,400,0.35,0.350645,0.0548387,nan,0,0.13,7,0.0167655,2.83
+ablation,reach_activate,moderate,L2 without sectors,8,10,400,0.3825,0.333871,0.0870968,nan,0,0.09,7.2,0.00965773,3.02
+ablation,reach_activate,moderate,L2 without sectors,9,10,400,0.4075,0.289032,0.174194,nan,0.2,0.105,7.7,0.016924,2.8425
+ablation,reach_activate,moderate,L2 without sectors,10,10,400,0.4025,0.292258,0.112903,nan,0,0.1125,7.1,0.00844013,3.01
+ablation,reach_activate,moderate,L2 without sectors,11,10,400,0.3775,0.323871,0.112903,nan,0.1,0.0925,7.3,0.012012,2.865
+ablation,reach_activate,moderate,L2 without sectors,12,10,400,0.31,0.399355,0.0322581,nan,0,0.125,7.5,0.0139388,2.9225
+ablation,reach_activate,moderate,L2 without sectors,13,10,400,0.4025,0.294839,0.13871,nan,0.1,0.1175,7.3,0.0230533,2.9075
+ablation,reach_activate,moderate,L2 without sectors,14,10,400,0.425,0.285161,0.170968,nan,0.2,0.105,7.6,0.0161818,3.02
+ablation,reach_activate,moderate,L2 without sectors,15,10,400,0.415,0.288387,0.112903,nan,0,0.0725,7.7,0.0224038,2.71
+ablation,reach_activate,moderate,L2 without sectors,16,10,400,0.435,0.256129,0.229032,nan,0.1,0.0675,7.3,0.0226913,3.1275
+ablation,reach_activate,moderate,L2 without sectors,17,10,400,0.3675,0.320645,0.145161,nan,0.1,0.1225,7.3,0.0112955,3.0275
+ablation,reach_activate,moderate,L2 without sectors,18,10,400,0.3675,0.323871,0.0806452,nan,0,0.1075,7.2,0.0142645,2.9525
+ablation,reach_activate,moderate,L2 without sectors,19,10,400,0.2975,0.405161,0.0225806,nan,0,0.1375,6.9,0.0113312,2.865
+ablation,reach_activate,moderate,L2 without coverage term,0,10,400,0.5675,0.154194,0.541935,nan,0.4,0.0925,5.4,0.00422403,2.4425
+ablation,reach_activate,moderate,L2 without coverage term,1,10,400,0.5275,0.198387,0.396774,nan,0.4,0.085,5.7,0.0151366,2.235
+ablation,reach_activate,moderate,L2 without coverage term,2,10,400,0.485,0.209355,0.33871,nan,0.1,0.095,5.7,0.0128612,2.2375
+ablation,reach_activate,moderate,L2 without coverage term,3,10,400,0.535,0.163548,0.464516,nan,0.5,0.0975,5.8,0.00985009,2.5125
+ablation,reach_activate,moderate,L2 without coverage term,4,10,400,0.4625,0.260323,0.248387,nan,0.3,0.085,5.7,0.00598441,2.1125
+ablation,reach_activate,moderate,L2 without coverage term,5,10,400,0.54,0.182581,0.474194,nan,0.5,0.09,6.2,0.014225,1.9875
+ablation,reach_activate,moderate,L2 without coverage term,6,10,400,0.4725,0.244516,0.23871,nan,0.2,0.08,5.4,0.00733597,2.2325
+ablation,reach_activate,moderate,L2 without coverage term,7,10,400,0.5,0.204839,0.367742,nan,0,0.085,5.2,0.00788967,1.91
+ablation,reach_activate,moderate,L2 without coverage term,8,10,400,0.5475,0.175806,0.483871,nan,0.6,0.065,5.7,0.00869196,2.2175
+ablation,reach_activate,moderate,L2 without coverage term,9,10,400,0.495,0.217097,0.380645,nan,0.4,0.075,5.4,0.0105134,2.0875
+ablation,reach_activate,moderate,L2 without coverage term,10,10,400,0.5275,0.182258,0.441935,nan,0.3,0.08,5.8,0.00569983,2.15
+ablation,reach_activate,moderate,L2 without coverage term,11,10,400,0.485,0.227419,0.370968,nan,0.2,0.0975,6.1,0.00856302,1.9825
+ablation,reach_activate,moderate,L2 without coverage term,12,10,400,0.42,0.29,0.177419,nan,0.2,0.11,5.9,0.0112582,2.175
+ablation,reach_activate,moderate,L2 without coverage term,13,10,400,0.5375,0.161613,0.509677,nan,0.8,0.0625,6.1,0.0123566,2.07
+ablation,reach_activate,moderate,L2 without coverage term,14,10,400,0.56,0.163548,0.522581,nan,0.5,0.08,5.8,0.00967572,2.02
+ablation,reach_activate,moderate,L2 without coverage term,15,10,400,0.55,0.176129,0.525806,nan,0.7,0.0725,6.6,0.0168583,2.1025
+ablation,reach_activate,moderate,L2 without coverage term,16,10,400,0.5225,0.181935,0.43871,nan,0.6,0.09,5.8,0.00979311,2.265
+ablation,reach_activate,moderate,L2 without coverage term,17,10,400,0.515,0.193548,0.406452,nan,0.4,0.085,5.4,0.00355598,2.3075
+ablation,reach_activate,moderate,L2 without coverage term,18,10,400,0.51,0.204516,0.393548,nan,0.3,0.0775,5.9,0.00945964,2.16
+ablation,reach_activate,moderate,L2 without coverage term,19,10,400,0.49,0.229355,0.370968,nan,0.2,0.11,5.6,0.0110207,2.095
+ablation,reach_activate,moderate,L2 p*=0.6,0,10,400,0.54,0.17,0.480645,28,0.3,0.1125,7.5,0.00633604,2.59
+ablation,reach_activate,moderate,L2 p*=0.6,1,10,400,0.475,0.232903,0.245161,nan,0.2,0.125,6.9,0.0153889,2.375
+ablation,reach_activate,moderate,L2 p*=0.6,2,10,400,0.485,0.225161,0.312903,nan,0.1,0.095,6.7,0.0129849,2.4625
+ablation,reach_activate,moderate,L2 p*=0.6,3,10,400,0.4725,0.239677,0.251613,nan,0.1,0.135,6.2,0.0118201,2.3725
+ablation,reach_activate,moderate,L2 p*=0.6,4,10,400,0.4325,0.263226,0.125806,nan,0,0.1225,7.1,0.00785454,2.295
+ablation,reach_activate,moderate,L2 p*=0.6,5,10,400,0.4325,0.262903,0.23871,nan,0.2,0.1325,6.7,0.010218,2.06
+ablation,reach_activate,moderate,L2 p*=0.6,6,10,400,0.425,0.274194,0.164516,nan,0.1,0.105,6.7,0.00766202,2.39
+ablation,reach_activate,moderate,L2 p*=0.6,7,10,400,0.4375,0.268065,0.174194,nan,0.1,0.1275,6.5,0.0121632,2.335
+ablation,reach_activate,moderate,L2 p*=0.6,8,10,400,0.5,0.203871,0.393548,nan,0.3,0.11,7,0.00882993,2.4325
+ablation,reach_activate,moderate,L2 p*=0.6,9,10,400,0.4325,0.266774,0.141935,nan,0,0.1425,6.2,0.0128212,2.4
+ablation,reach_activate,moderate,L2 p*=0.6,10,10,400,0.4925,0.204516,0.348387,nan,0.3,0.1075,6.8,0.00756324,2.4025
+ablation,reach_activate,moderate,L2 p*=0.6,11,10,400,0.485,0.220968,0.354839,nan,0.2,0.1325,6.6,0.00868195,2.1775
+ablation,reach_activate,moderate,L2 p*=0.6,12,10,400,0.3675,0.331935,0.0580645,nan,0,0.1475,6.4,0.011973,2.52
+ablation,reach_activate,moderate,L2 p*=0.6,13,10,400,0.41,0.281935,0.229032,nan,0,0.1125,6.6,0.0130943,2.4825
+ablation,reach_activate,moderate,L2 p*=0.6,14,10,400,0.485,0.241935,0.293548,nan,0.2,0.12,7.3,0.0126785,2.2725
+ablation,reach_activate,moderate,L2 p*=0.6,15,10,400,0.4925,0.219355,0.383871,nan,0.4,0.09,7.4,0.0168583,2.175
+ablation,reach_activate,moderate,L2 p*=0.6,16,10,400,0.455,0.23871,0.23871,nan,0.4,0.1075,7,0.0133759,2.505
+ablation,reach_activate,moderate,L2 p*=0.6,17,10,400,0.4775,0.21871,0.329032,nan,0.2,0.085,7.5,0.00721654,2.495
+ablation,reach_activate,moderate,L2 p*=0.6,18,10,400,0.425,0.282903,0.13871,nan,0.1,0.1375,6.9,0.0100602,2.53
+ablation,reach_activate,moderate,L2 p*=0.6,19,10,400,0.4025,0.300323,0.1,11,0.1,0.16,6.6,0.0119521,2.4375
+ablation,reach_activate,moderate,L2 p*=0.8,0,10,400,0.5575,0.163226,0.512903,nan,0.6,0.085,6.3,0.00410669,2.3125
+ablation,reach_activate,moderate,L2 p*=0.8,1,10,400,0.5575,0.175806,0.512903,nan,0.6,0.085,6.1,0.0100911,1.8525
+ablation,reach_activate,moderate,L2 p*=0.8,2,10,400,0.5025,0.200968,0.4,nan,0.5,0.095,5.9,0.00766728,2.1075
+ablation,reach_activate,moderate,L2 p*=0.8,3,10,400,0.5325,0.184839,0.451613,nan,0.5,0.12,6.1,0.0122579,2.3275
+ablation,reach_activate,moderate,L2 p*=0.8,4,10,400,0.5225,0.195161,0.387097,nan,0.2,0.09,5.2,0.00495584,1.9325
+ablation,reach_activate,moderate,L2 p*=0.8,5,10,400,0.4525,0.249032,0.280645,nan,0.2,0.105,6.6,0.010819,2.05
+ablation,reach_activate,moderate,L2 p*=0.8,6,10,400,0.485,0.224839,0.264516,nan,0.1,0.0925,5.8,0.00749899,2.395
+ablation,reach_activate,moderate,L2 p*=0.8,7,10,400,0.4675,0.251935,0.209677,nan,0,0.1175,5.7,0.00673909,2.0075
+ablation,reach_activate,moderate,L2 p*=0.8,8,10,400,0.5825,0.149032,0.574194,nan,0.4,0.085,6.5,0.00869196,2.0625
+ablation,reach_activate,moderate,L2 p*=0.8,9,10,400,0.475,0.236129,0.290323,nan,0.3,0.09,5.3,0.0141034,2.21
+ablation,reach_activate,moderate,L2 p*=0.8,10,10,400,0.5575,0.17,0.43871,nan,0.3,0.0625,5.8,0.00537099,2.1175
+ablation,reach_activate,moderate,L2 p*=0.8,11,10,400,0.52,0.191613,0.409677,nan,0.5,0.075,6,0.00701692,2.1025
+ablation,reach_activate,moderate,L2 p*=0.8,12,10,400,0.3975,0.297097,0.13871,nan,0,0.1175,5.7,0.0109008,2.4175
+ablation,reach_activate,moderate,L2 p*=0.8,13,10,400,0.48,0.226129,0.287097,nan,0.3,0.0925,6.6,0.0130943,2.15
+ablation,reach_activate,moderate,L2 p*=0.8,14,10,400,0.575,0.157097,0.503226,nan,0.5,0.1025,6.7,0.0120112,2.135
+ablation,reach_activate,moderate,L2 p*=0.8,15,10,400,0.5325,0.179677,0.448387,nan,0.4,0.07,6.2,0.0119783,1.9775
+ablation,reach_activate,moderate,L2 p*=0.8,16,10,400,0.5725,0.146452,0.53871,nan,0.7,0.095,6.7,0.011704,2.125
+ablation,reach_activate,moderate,L2 p*=0.8,17,10,400,0.5275,0.199032,0.419355,nan,0.4,0.09,6.6,0.00543855,2.24
+ablation,reach_activate,moderate,L2 p*=0.8,18,10,400,0.5125,0.218387,0.387097,nan,0.4,0.0825,6.3,0.010811,2.1725
+ablation,reach_activate,moderate,L2 p*=0.8,19,10,400,0.475,0.236774,0.312903,nan,0.4,0.1025,5.1,0.00946853,2.2725

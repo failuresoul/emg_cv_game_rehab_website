@@ -16,7 +16,7 @@ from sqlmodel import Session, col, select
 from app.core.config import settings
 from app.engine.base import Decision, Engine, EngineContext, EngineData, Target, TrialResult
 from app.engine.difficulty import level_of
-from app.engine.safety import Cue, SafetyInput, TrialRecord, apply_safety
+from app.engine.safety import Cue, SafetyInput, SafetyResult, TrialRecord, apply_safety
 from app.models import AdaptationLog, GameRun, PatientProfile
 from app.models.user import utc_now
 from app.schemas.common import as_utc
@@ -103,10 +103,12 @@ def decide(
     active_minutes: float = 0.0,
     finish_soon_minutes: float | None = None,
     finish_minutes: float | None = None,
+    safety: bool = True,
 ) -> Step:
     """The engine learns from the last trial, the safety rules check its proposal, and the next
     trial's settings follow. Pure: the API (next_step) and the simulator (app.engine.sim) both
-    use it, so they share one code path."""
+    use it, so they share one code path. safety=False is only for ablation studies in the
+    simulator: the API always applies the safety rules."""
     trial_no = last_trial.trial_no if last_trial else 0
     if last_trial is None:
         after, decision = before, Decision(engine.name, "Start of the game.")
@@ -128,22 +130,27 @@ def decide(
         history = [trial for trial in history if trial.outcome != "aborted"]
 
     rests = [step.trial_no for step in past if step.cue == "rest"]
-    checked = apply_safety(
-        SafetyInput(
-            before=before,
-            after=after,
-            history=history,
-            max_difficulty=context.max_difficulty,
-            active_minutes=active_minutes,
-            trials_since_rest=trial_no - rests[-1] if rests else None,
-            finish_soon_minutes=(
-                settings.SESSION_FINISH_SOON_MIN
-                if finish_soon_minutes is None
-                else finish_soon_minutes
-            ),
-            finish_minutes=settings.SESSION_FINISH_MIN if finish_minutes is None else finish_minutes,
+    if not safety:
+        checked = SafetyResult(state=after)
+    else:
+        checked = apply_safety(
+            SafetyInput(
+                before=before,
+                after=after,
+                history=history,
+                max_difficulty=context.max_difficulty,
+                active_minutes=active_minutes,
+                trials_since_rest=trial_no - rests[-1] if rests else None,
+                finish_soon_minutes=(
+                    settings.SESSION_FINISH_SOON_MIN
+                    if finish_soon_minutes is None
+                    else finish_soon_minutes
+                ),
+                finish_minutes=(
+                    settings.SESSION_FINISH_MIN if finish_minutes is None else finish_minutes
+                ),
+            )
         )
-    )
     if not engine.adapts:
         # Fixed settings: the cues still help the patient, but nothing is eased.
         checked.state = before

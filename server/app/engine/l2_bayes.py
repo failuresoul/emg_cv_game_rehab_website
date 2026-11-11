@@ -164,8 +164,10 @@ def _ring_grid(low: float, high: float, step_size: float, ring: int) -> tuple[fl
     return tuple(values)
 
 
-def spatial_spec(game: GameSpec) -> ParamSpec | None:
-    """The game's target-placing setting, if it has workspace sectors."""
+def spatial_spec(game: GameSpec, workspace: bool = True) -> ParamSpec | None:
+    """The game's target-placing setting, if it has workspace sectors (and they are used)."""
+    if not workspace:
+        return None
     name = SPATIAL_PARAM.get(game.id)
     spec = game.param(name) if name else None
     if spec is None or game.id not in LANES or spec.component != "spatial":
@@ -173,8 +175,8 @@ def spatial_spec(game: GameSpec) -> ParamSpec | None:
     return spec
 
 
-def sectors_of(game: GameSpec) -> dict[str, Sector]:
-    spec = spatial_spec(game)
+def sectors_of(game: GameSpec, workspace: bool = True) -> dict[str, Sector]:
+    spec = spatial_spec(game, workspace)
     if spec is None:
         return {}
     return _sector_table(game.id, spec.min, spec.max, spec.step)
@@ -193,9 +195,9 @@ def _sector_table(game_id: str, low: float, high: float, step_size: float) -> di
     return table
 
 
-def level_components(game: GameSpec) -> list[str]:
+def level_components(game: GameSpec, workspace: bool = True) -> list[str]:
     """The components chosen by level: all but spatial in a game with sectors."""
-    has_sectors = spatial_spec(game) is not None
+    has_sectors = spatial_spec(game, workspace) is not None
     return [c for c in components_of(game) if not (has_sectors and c == "spatial")]
 
 
@@ -240,7 +242,9 @@ def _shifted(prior: tuple[float, float], shift: float) -> list[float]:
     return _with_mean(prior, min(0.95, max(0.05, beta_mean(prior) + shift)))
 
 
-def _sector_priors(game: GameSpec, context: EngineContext) -> dict[str, list[float]]:
+def _sector_priors(
+    game: GameSpec, context: EngineContext, workspace: bool = True
+) -> dict[str, list[float]]:
     """Ring priors, nudged by:
     - the calibration: a direction whose reach is under 75% of the median gets its rings R2-R4
       0.1 less likely;
@@ -255,7 +259,7 @@ def _sector_priors(game: GameSpec, context: EngineContext) -> dict[str, list[flo
         if float(reach.get("compensation_rate", 0.0)) >= 0.3:
             far_shift -= SEED_SHIFT / 2
     priors: dict[str, list[float]] = {}
-    for name, sector in sectors_of(game).items():
+    for name, sector in sectors_of(game, workspace).items():
         shift = far_shift if sector.ring >= 3 else 0.0
         index = sector.lane.index
         if (
@@ -271,7 +275,9 @@ def _sector_priors(game: GameSpec, context: EngineContext) -> dict[str, list[flo
     return priors
 
 
-def _level_priors(game: GameSpec, context: EngineContext) -> dict[str, list[list[float]]]:
+def _level_priors(
+    game: GameSpec, context: EngineContext, workspace: bool = True, p_star: float = P_STAR
+) -> dict[str, list[list[float]]]:
     """Per component: about 0.7 success at the admin's default level, 0.12 less per level
     harder and 0.12 more per level easier. The warm-up's hand opening and closing moves the
     activation priors by up to +/-0.1."""
@@ -279,13 +285,13 @@ def _level_priors(game: GameSpec, context: EngineContext) -> dict[str, list[list
     hand = (context.warmup or {}).get("hand_open_close")
     activation_shift = SEED_SHIFT * (2 * float(hand.get("completion", 0.5)) - 1) if hand else 0.0
     priors: dict[str, list[list[float]]] = {}
-    for component in level_components(game):
+    for component in level_components(game, workspace):
         centre = level_index(start.get(component, 0.5))
         shift = activation_shift if component == "activation" else 0.0
         priors[component] = [
             _with_mean(
                 (LEVEL_PRIOR_STRENGTH * 0.5, LEVEL_PRIOR_STRENGTH * 0.5),
-                min(0.95, max(0.1, P_STAR + LEVEL_PRIOR_STEP * (centre - i) + shift)),
+                min(0.95, max(0.1, p_star + LEVEL_PRIOR_STEP * (centre - i) + shift)),
             )
             for i in range(LEVEL_COUNT)
         ]
@@ -296,15 +302,28 @@ class BayesEngine:
     name = "L2"
     adapts = True
 
-    def __init__(self, seed: int = 0) -> None:
+    def __init__(
+        self,
+        seed: int = 0,
+        p_star: float = P_STAR,
+        w_cov: float = W_COV,
+        workspace: bool = True,
+        feasible_coverage: bool = FEASIBLE_COVERAGE,
+    ) -> None:
+        """The defaults are the engine the app uses; the others are for ablation studies:
+        another target success, no coverage term, or one global spatial belief (no sectors)."""
         self.seed = seed
+        self.p_star = p_star
+        self.w_cov = w_cov
+        self.workspace = workspace
+        self.feasible_coverage = feasible_coverage
 
     # The interface
 
     def initial(self, context: EngineContext) -> EngineData:
         game = context.game
-        sector_priors = _sector_priors(game, context)
-        level_priors = _level_priors(game, context)
+        sector_priors = _sector_priors(game, context, self.workspace)
+        level_priors = _level_priors(game, context, self.workspace, self.p_star)
         extra: dict[str, Any] = {
             "seed": self.seed,
             "n": 0,
@@ -354,7 +373,7 @@ class BayesEngine:
         game = context.game
         extra = copy.deepcopy(state.extra)
         extra["t"] = int(extra.get("t", 0)) + 1
-        table = sectors_of(game)
+        table = sectors_of(game, self.workspace)
         played = self._sector_played(state, trial, context, table)
         updates: list[str] = []
         details: dict[str, Any] = {"outcome": trial.outcome}
@@ -421,9 +440,9 @@ class BayesEngine:
         return params, Decision(self.name, "Settings for the chosen sector and levels.")
 
     def target(self, state: EngineData, context: EngineContext) -> Target | None:
-        spec = spatial_spec(context.game)
+        spec = spatial_spec(context.game, self.workspace)
         sector_name = (state.extra.get("next") or {}).get("sector")
-        table = sectors_of(context.game)
+        table = sectors_of(context.game, self.workspace)
         if spec is None or sector_name not in table or "spatial" not in state.d:
             return None
         lane = table[sector_name].lane
@@ -441,11 +460,11 @@ class BayesEngine:
     def allowed_sectors(self, extra: dict[str, Any], context: EngineContext) -> list[str]:
         """The sectors the next target may use, in a stable order."""
         game = context.game
-        spec = spatial_spec(game)
+        spec = spatial_spec(game, self.workspace)
         if spec is None:
             return []
         cap = clamp01(context.max_difficulty)
-        table = sectors_of(game)
+        table = sectors_of(game, self.workspace)
         blocked = _blocked(extra, table)
         allowed: list[str] = []
         for name, sector in table.items():
@@ -478,11 +497,11 @@ class BayesEngine:
         parts: list[str] = []
         details: dict[str, Any] = {}
 
-        spec = spatial_spec(game)
-        aim = component_target(game)
+        spec = spatial_spec(game, self.workspace)
+        aim = component_target(game, self.p_star, self.workspace)
         details["aim"] = round(aim, 3)
         if spec is not None:
-            table = sectors_of(game)
+            table = sectors_of(game, self.workspace)
             allowed = self.allowed_sectors(extra, context)
             t = int(extra.get("t", 0))
             samples: dict[str, float] = {}
@@ -491,8 +510,8 @@ class BayesEngine:
                 theta = rng.betavariate(*extra["sectors"][name])
                 samples[name] = round(theta, 3)
                 away = (t - int(extra["visits"].get(name, 0))) / 10
-                bonus = W_COV * min(COVERAGE_CAP, max(0.0, away))
-                if FEASIBLE_COVERAGE:
+                bonus = self.w_cov * min(COVERAGE_CAP, max(0.0, away))
+                if self.feasible_coverage:
                     # Coverage for sectors the patient can plausibly do, not hopeless ones.
                     bonus *= beta_mean(extra["sectors"][name])
                 score = -abs(theta - aim) + bonus
@@ -547,7 +566,7 @@ class BayesEngine:
     ) -> str | None:
         """The sector the trial was in: from where the browser says the target was, else the
         engine's own choice at the distance actually given (after the safety rules)."""
-        spec = spatial_spec(context.game)
+        spec = spatial_spec(context.game, self.workspace)
         if spec is None:
             return None
         lanes = LANES[context.game.id]
@@ -571,15 +590,17 @@ class BayesEngine:
         return name if name in table else None
 
 
-def component_target(game: GameSpec) -> float:
+def component_target(game: GameSpec, p_star: float = P_STAR, workspace: bool = True) -> float:
     """What each choice aims at so that the whole trial succeeds about P_STAR of the time.
 
     A trial succeeds only when every chosen part does (the sector and each level), and each
     belief is about its own part given the others succeed (a failure counts only against the
     part it points at). With k independent parts each aiming at P_STAR^(1/k), the trial aims at
     P_STAR: 0.70 for one part, 0.84 for two, 0.89 for three."""
-    parts = len(level_components(game)) + (1 if spatial_spec(game) is not None else 0)
-    return P_STAR ** (1 / max(1, parts))
+    parts = len(level_components(game, workspace)) + (
+        1 if spatial_spec(game, workspace) is not None else 0
+    )
+    return p_star ** (1 / max(1, parts))
 
 
 def _forget(prior: float, value: float) -> float:

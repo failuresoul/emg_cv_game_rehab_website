@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.engine import get_engine
-from app.engine.base import EngineContext, EngineData
+from app.engine.base import Engine, EngineContext, EngineData
 from app.engine.sim.patient import (
     DIRECTION_COUNT,
     DIRECTIONAL_GAMES,
@@ -141,14 +141,20 @@ def simulate(
     game_id: str = "reach_activate",
     seed: int = 0,
     max_difficulty: float = 1.0,
+    engine: Engine | None = None,
+    safety: bool = True,
+    label: str | None = None,
 ) -> SimResult:
     """`n_patients` patients of a profile, each playing `sessions` sessions of one game with
-    `trials_per_session` trials, with the engine of `engine_mode` ("L0", "L1" or "L2")."""
+    `trials_per_session` trials, with the engine of `engine_mode` ("L0", "L1" or "L2").
+
+    For ablation studies: `engine` replaces the engine of `engine_mode` (for example an L2 with
+    other options), `safety=False` leaves out the safety layer, and `label` names the result."""
     game = _game(game_id)
-    engine = get_engine(engine_mode)
+    engine = engine if engine is not None else get_engine(engine_mode)
     context = EngineContext(game=game, settings=game.defaults, max_difficulty=max_difficulty)
     profile_name = profile if isinstance(profile, str) else profile.name
-    result = SimResult(engine=engine.name, profile=profile_name, game_id=game.id)
+    result = SimResult(engine=label or engine.name, profile=profile_name, game_id=game.id)
     store = MemoryStore()
     directional = game.id in DIRECTIONAL_GAMES
 
@@ -177,7 +183,7 @@ def simulate(
                     )
                 )
 
-            step = decide(engine, context, state, None, past)
+            step = decide(engine, context, state, None, past, safety=safety)
             record(step, 0, state)
             past.append(PastStep(0, None, step.cue))
             directions: list[int] = []
@@ -220,6 +226,7 @@ def simulate(
                     last,
                     past,
                     active_minutes=trial_no * SECONDS_PER_TRIAL / 60,
+                    safety=safety,
                 )
                 record(step, trial_no, before)
                 summary = trial_json(last)

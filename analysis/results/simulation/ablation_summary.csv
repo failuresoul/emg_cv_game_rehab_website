@@ -1,0 +1,55 @@
+game,profile,engine,measure,n,mean,sd,ci_low,ci_high
+reach_activate,moderate,L2 (p*=0.7),success_rate,20,0.482375,0.045164,0.461238,0.503512
+reach_activate,moderate,L2 (p*=0.7),challenge_error,20,0.226645,0.0346471,0.21043,0.24286
+reach_activate,moderate,L2 (p*=0.7),time_in_zone,20,0.321774,0.098873,0.2755,0.368048
+reach_activate,moderate,L2 (p*=0.7),trials_to_converge,1,26,nan,nan,nan
+reach_activate,moderate,L2 (p*=0.7),converged_share,20,0.295,0.160509,0.219879,0.370121
+reach_activate,moderate,L2 (p*=0.7),compensation_rate,20,0.1075,0.0206952,0.0978144,0.117186
+reach_activate,moderate,L2 (p*=0.7),coverage,20,6.56,0.371908,6.38594,6.73406
+reach_activate,moderate,L2 (p*=0.7),learning_gain,20,0.010283,0.00289138,0.00892984,0.0116362
+reach_activate,moderate,L2 (p*=0.7),mean_level,20,2.2495,0.165614,2.17199,2.32701
+reach_activate,moderate,L2 without safety layer,success_rate,20,0.4495,0.0468382,0.427579,0.471421
+reach_activate,moderate,L2 without safety layer,challenge_error,20,0.260274,0.0384793,0.242265,0.278283
+reach_activate,moderate,L2 without safety layer,time_in_zone,20,0.272742,0.0889877,0.231094,0.314389
+reach_activate,moderate,L2 without safety layer,trials_to_converge,0,nan,nan,nan,nan
+reach_activate,moderate,L2 without safety layer,converged_share,20,0.21,0.155259,0.137337,0.282663
+reach_activate,moderate,L2 without safety layer,compensation_rate,20,0.11625,0.0175,0.10806,0.12444
+reach_activate,moderate,L2 without safety layer,coverage,20,6.47,0.307964,6.32587,6.61413
+reach_activate,moderate,L2 without safety layer,learning_gain,20,0.0108164,0.00357723,0.00914222,0.0124906
+reach_activate,moderate,L2 without safety layer,mean_level,20,2.35825,0.193963,2.26747,2.44903
+reach_activate,moderate,L2 without sectors,success_rate,20,0.375625,0.0397846,0.357005,0.394245
+reach_activate,moderate,L2 without sectors,challenge_error,20,0.32371,0.0423457,0.303891,0.343528
+reach_activate,moderate,L2 without sectors,time_in_zone,20,0.10871,0.061251,0.0800433,0.137376
+reach_activate,moderate,L2 without sectors,trials_to_converge,0,nan,nan,nan,nan
+reach_activate,moderate,L2 without sectors,converged_share,20,0.055,0.0686333,0.0228786,0.0871214
+reach_activate,moderate,L2 without sectors,compensation_rate,20,0.10725,0.0216111,0.0971357,0.117364
+reach_activate,moderate,L2 without sectors,coverage,20,7.33,0.284882,7.19667,7.46333
+reach_activate,moderate,L2 without sectors,learning_gain,20,0.0150039,0.00529523,0.0125256,0.0174821
+reach_activate,moderate,L2 without sectors,mean_level,20,2.93075,0.101285,2.88335,2.97815
+reach_activate,moderate,L2 without coverage term,success_rate,20,0.5125,0.0366348,0.495354,0.529646
+reach_activate,moderate,L2 without coverage term,challenge_error,20,0.201048,0.0356214,0.184377,0.21772
+reach_activate,moderate,L2 without coverage term,time_in_zone,20,0.404677,0.0994837,0.358118,0.451237
+reach_activate,moderate,L2 without coverage term,trials_to_converge,0,nan,nan,nan,nan
+reach_activate,moderate,L2 without coverage term,converged_share,20,0.38,0.204167,0.284447,0.475553
+reach_activate,moderate,L2 without coverage term,compensation_rate,20,0.08575,0.0126725,0.0798191,0.0916809
+reach_activate,moderate,L2 without coverage term,coverage,20,5.76,0.328313,5.60634,5.91366
+reach_activate,moderate,L2 without coverage term,learning_gain,20,0.00974768,0.00349375,0.00811255,0.0113828
+reach_activate,moderate,L2 without coverage term,mean_level,20,2.16513,0.149269,2.09526,2.23499
+reach_activate,moderate,L2 p*=0.6,success_rate,20,0.45625,0.0410431,0.437041,0.475459
+reach_activate,moderate,L2 p*=0.6,challenge_error,20,0.247403,0.0379154,0.229658,0.265148
+reach_activate,moderate,L2 p*=0.6,time_in_zone,20,0.250161,0.111708,0.19788,0.302442
+reach_activate,moderate,L2 p*=0.6,trials_to_converge,2,19.5,12.0208,-88.5027,127.503
+reach_activate,moderate,L2 p*=0.6,converged_share,20,0.165,0.126803,0.105654,0.224346
+reach_activate,moderate,L2 p*=0.6,compensation_rate,20,0.120375,0.0195891,0.111207,0.129543
+reach_activate,moderate,L2 p*=0.6,coverage,20,6.83,0.389467,6.64772,7.01228
+reach_activate,moderate,L2 p*=0.6,learning_gain,20,0.0109767,0.00288414,0.00962683,0.0123265
+reach_activate,moderate,L2 p*=0.6,mean_level,20,2.3855,0.13478,2.32242,2.44858
+reach_activate,moderate,L2 p*=0.8,success_rate,20,0.51425,0.0476701,0.49194,0.53656
+reach_activate,moderate,L2 p*=0.8,challenge_error,20,0.202661,0.0394468,0.1842,0.221123
+reach_activate,moderate,L2 p*=0.8,time_in_zone,20,0.388387,0.116935,0.33366,0.443114
+reach_activate,moderate,L2 p*=0.8,trials_to_converge,0,nan,nan,nan,nan
+reach_activate,moderate,L2 p*=0.8,converged_share,20,0.365,0.192696,0.274816,0.455184
+reach_activate,moderate,L2 p*=0.8,compensation_rate,20,0.09275,0.0151723,0.0856492,0.0998508
+reach_activate,moderate,L2 p*=0.8,coverage,20,6.06,0.496726,5.82753,6.29247
+reach_activate,moderate,L2 p*=0.8,learning_gain,20,0.00923629,0.00297788,0.0078426,0.01063
+reach_activate,moderate,L2 p*=0.8,mean_level,20,2.14838,0.149764,2.07828,2.21847

@@ -1,0 +1,4 @@
+# Offline analysis (not needed by the running app). Install into the server's environment:
+#   server\.venv\Scripts\python.exe -m pip install -r analysis\requirements.txt
+-r ../server/requirements.txt
+matplotlib~=3.11.2
