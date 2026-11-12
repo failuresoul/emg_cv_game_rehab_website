@@ -9,6 +9,7 @@ services:
       DATABASE_URL: sqlite:////data/motionlab.db
       GAME_SPECS_PATH: /shared/game-specs.json
       METRICS_CATALOG_PATH: /shared/metrics-catalog.json
+      SAFETY_NOTICES_PATH: /shared/safety-notices.json
     volumes:
       - ./data:/data
       # The game settings exported by the web app (npm run export:specs).

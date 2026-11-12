@@ -1,0 +1,152 @@
+# The suggestions the feedback may make. The system, not the language model, decides which of
+# these apply to a session (rules.py); the model may only reword the approved guidance and the
+# tip in kb/en/<id>.md.
+#
+# Fields:
+#   id         the key; kb/en/<id>.md holds its tip
+#   group      safety | celebrate | general. Safety comes first, then celebrate, then general.
+#   priority   order within the list; lower comes first
+#   audience   who the suggestion is for (patient, therapist)
+#   trigger    the rule in words; the code is in rules.py under the same id
+#   threshold  the number the rule compares with, when it has one. To be confirmed with the
+#              supervisor.
+#   effort     true when the suggestion asks for more or harder practice. Left out when a red
+#              flag (pain, new symptoms, sharp decline) fires.
+#   guidance   approved English text, two or three short sentences. No medical claims,
+#              diagnoses, medicines or predictions of recovery.
+
+suggestions:
+  - id: REST_BREAKS
+    group: safety
+    priority: 10
+    audience: [patient, therapist]
+    trigger: The high-fatigue flag was raised, or self-reported fatigue is at least the threshold (0-10).
+    threshold: 6
+    effort: false
+    guidance: >-
+      You felt tired during or after this session. Take a short rest between games whenever you
+      need one. It is fine to stop early on a tiring day.
+
+  - id: POSTURE_TRUNK
+    group: safety
+    priority: 11
+    audience: [patient, therapist]
+    trigger: The share of trials with compensation flagged is at least the threshold.
+    threshold: 0.20
+    effort: false
+    guidance: >-
+      Your body sometimes leaned or turned to help your arm today. Try to sit tall with your back
+      against the chair. Reaching a little less far with good posture is fine.
+
+  - id: SHOULDER_RELAX
+    group: safety
+    priority: 12
+    audience: [patient, therapist]
+    trigger: The share of trials whose compensation included a shoulder hike is at least the threshold.
+    threshold: 0.15
+    effort: false
+    guidance: >-
+      Your shoulder often lifted towards your ear during the games. Let your shoulder drop and
+      relax before each movement. A smaller, relaxed movement is better than a big, tense one.
+
+  - id: CELEBRATE_PROGRESS
+    group: celebrate
+    priority: 20
+    audience: [patient, therapist]
+    trigger: At least one measure has mdc_status "improved".
+    effort: false
+    guidance: >-
+      Some of your results today were better than your usual level. Your regular practice is
+      showing. Well done.
+
+  - id: FIRST_SESSIONS
+    group: general
+    priority: 30
+    audience: [patient]
+    trigger: baseline_available is false.
+    effort: false
+    guidance: >-
+      These are your first sessions, so there is not enough history yet to compare. Each session
+      helps the app learn your usual level. Comparisons will appear after a few more sessions.
+
+  - id: STEADY_EFFORT
+    group: general
+    priority: 31
+    audience: [patient]
+    trigger: No measure improved or got worse, and at least one could be compared (no_detectable_change).
+    effort: false
+    guidance: >-
+      Your results today were about the same as usual. Steady days are a normal part of practice.
+      Keeping a regular routine is what counts.
+
+  - id: STEADY_HOLD
+    group: general
+    priority: 40
+    audience: [patient, therapist]
+    trigger: Grip steadiness (H3) got worse, or the Grip and hold game's success rate is below the threshold.
+    threshold: 0.5
+    effort: true
+    guidance: >-
+      Holding a squeeze steady was harder today. Try a gentle, even grip rather than a strong one.
+      Breathe normally while you hold.
+
+  - id: RELAX_AFTER_SQUEEZE
+    group: general
+    priority: 41
+    audience: [patient, therapist]
+    trigger: Relaxation time (H4) got worse.
+    effort: false
+    guidance: >-
+      Letting go after a squeeze took longer than usual today. After each squeeze, take a moment
+      to let your hand open and relax. There is no need to rush.
+
+  - id: PRACTICE_DIRECTION
+    group: general
+    priority: 42
+    audience: [patient, therapist]
+    trigger: directions.weak is not empty.
+    effort: true
+    guidance: >-
+      Some reaching directions were harder today. The next sessions will include a little more
+      practice in those directions. Move slowly and only as far as is comfortable.
+
+  - id: SETUP_LIGHTING
+    group: general
+    priority: 50
+    audience: [patient]
+    trigger: The hand was not tracked for at least the threshold share of the movement time (percent).
+    threshold: 5
+    effort: false
+    guidance: >-
+      The camera sometimes lost sight of your hand. Make sure the room is well lit and your hand
+      stays in view. Sitting a little further from the camera can help.
+
+  - id: LEVEL_UP
+    group: general
+    priority: 60
+    audience: [patient]
+    trigger: Of the games with levels, more than half ended at a higher level than they started.
+    effort: true
+    guidance: >-
+      Most of the games moved up a level today. The games adjust to how you are doing. Take your
+      time with the new level.
+
+  - id: ROUTINE
+    group: general
+    priority: 70
+    audience: [patient, therapist]
+    trigger: sessions_this_week is below planned_this_week.
+    effort: true
+    guidance: >-
+      You have done fewer sessions this week than planned. Short, regular sessions are easier to
+      keep up than long ones. Choosing a set time each day can help.
+
+  - id: NEXT_FOCUS
+    group: general
+    priority: 90
+    audience: [patient, therapist]
+    trigger: Always, when next_session is known. Always kept in the list, in the last place.
+    effort: false
+    guidance: >-
+      Your next session has a planned focus. The games are chosen to practise it. Go at a pace
+      that feels comfortable.

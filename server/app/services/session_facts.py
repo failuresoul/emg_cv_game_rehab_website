@@ -47,6 +47,7 @@ SELF_REPORT_METRICS = frozenset({"P1", "P2", "P3"})
 WEAK_BELOW = 0.5
 STRONG_ABOVE = 0.85
 SAFETY_FLAGS = frozenset({"pain", "new_symptoms"})
+SAFETY_FLAG_ORDER = ("pain", "new_symptoms", "high_fatigue")
 
 
 def _patient_sessions(session: Session, patient_id: int) -> list[SessionRecord]:
@@ -243,6 +244,10 @@ def build_facts(session: Session, record: SessionRecord) -> SessionFacts:
             ),
             fatigue_flag="high_fatigue" in flags,
             hand_loss_pct=hand_loss_pct(moving),
+            shoulder_compensation_rate=flagged_rate(
+                "shoulder" in str((trial.compensation or {}).get("type") or "") for trial in every
+            ),
+            safety_flags=[flag for flag in SAFETY_FLAG_ORDER if flag in flags],
         ),
         self_report=(
             FactsSelfReport(

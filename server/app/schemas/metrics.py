@@ -3,6 +3,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.common import Language, Side, UtcDatetime
+from app.schemas.session_feedback import SafetyFlag
 
 BetterWhen = Literal["higher", "lower", "closer_to_zero"]
 #: How the latest value compares with the baseline, judged against the measure's MDC.
@@ -112,6 +113,11 @@ class FactsFlags(BaseModel):
     fatigue_flag: bool
     #: Share of the movement trials' time the hand was not tracked (gaps over 200 ms), 0-100.
     hand_loss_pct: float | None
+    #: Share of trials whose compensation included a shoulder hike; None without trials.
+    shoulder_compensation_rate: float | None = None
+    #: The questionnaire's safety flags for this session, as codes (pain, new_symptoms,
+    #: high_fatigue). Read by the feedback rules; never passed to the language model.
+    safety_flags: list[SafetyFlag] = []
 
 
 class FactsSelfReport(BaseModel):

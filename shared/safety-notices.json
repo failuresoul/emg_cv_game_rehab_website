@@ -1,0 +1,20 @@
+{
+  "_comment": "Fixed, approved safety notices: the one source of this wording. The server reads it (server/app/feedback/rules.py); a web test checks that the app's i18n strings named in web_key match it. Never written by the language model.",
+  "notices": {
+    "stop": {
+      "web_key": "summary.stopNotice",
+      "en": "Please stop practising for today and tell your therapist how you feel. If you notice sudden weakness, numbness, face drooping or difficulty speaking, call emergency services immediately.",
+      "bn": "অনুগ্রহ করে আজকের মতো অনুশীলন বন্ধ করুন এবং আপনি কেমন বোধ করছেন তা আপনার থেরাপিস্টকে জানান। যদি হঠাৎ দুর্বলতা, অসাড়তা, মুখ বেঁকে যাওয়া বা কথা বলতে অসুবিধা লক্ষ করেন, তাহলে অবিলম্বে জরুরি সেবায় ফোন করুন।"
+    },
+    "sharp_decline": {
+      "web_key": null,
+      "en": "Several of your measures were lower today than usual. This can happen on a tiring day, but please mention it to your therapist so they can check your programme with you.",
+      "bn": "আজ আপনার কয়েকটি পরিমাপ স্বাভাবিকের চেয়ে কম ছিল। ক্লান্তির দিনে এমন হতে পারে, তবে অনুগ্রহ করে আপনার থেরাপিস্টকে জানান, যাতে তিনি আপনার সঙ্গে আপনার অনুশীলনের পরিকল্পনাটি দেখে নিতে পারেন।"
+    }
+  },
+  "red_flags": {
+    "pain": "stop",
+    "new_symptoms": "stop",
+    "sharp_decline": "sharp_decline"
+  }
+}

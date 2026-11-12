@@ -155,7 +155,7 @@ def reach_trials(session: Session, record: SessionRecord) -> None:
         trial.target = {"direction_deg": degrees}
         # 30 Hz with one 400 ms gap, and one trial flagged.
         trial.trajectory = [[t, 0.1, 0.1] for t in [0, 33, 66, 466, 500]]
-        trial.compensation = {"flagged": degrees == 45}
+        trial.compensation = {"flagged": degrees == 45, "type": "trunk+shoulder" if degrees == 45 else None}
         session.add(trial)
     session.commit()
 
@@ -213,6 +213,8 @@ def test_facts_shape(client: TestClient, patient_headers: Headers, session: Sess
     assert facts["flags"]["fatigue_flag"] is False
     # One 400 ms gap in each 500 ms reach trial.
     assert facts["flags"]["hand_loss_pct"] == 80
+    assert facts["flags"]["safety_flags"] == ["pain"]
+    assert facts["flags"]["shoulder_compensation_rate"] == pytest.approx(2 / 11)
     assert facts["self_report"] == {"pain_0_10": 5, "fatigue_0_10": 4, "enjoyment_1_5": 5}
     assert facts["adherence"]["planned_this_week"] == 5
     assert 1 <= facts["adherence"]["sessions_this_week"] <= 3
@@ -279,6 +281,8 @@ def test_facts_of_a_first_session_with_nothing_yet(
         "compensation_rate": None,
         "fatigue_flag": False,
         "hand_loss_pct": None,
+        "shoulder_compensation_rate": None,
+        "safety_flags": [],
     }
     assert facts["self_report"] is None
     assert facts["safety_notice_present"] is False

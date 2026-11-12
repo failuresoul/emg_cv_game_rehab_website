@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     GAME_SPECS_PATH: str = ""
     # The measures MotionLab reports. Empty: shared/metrics-catalog.json in the repository.
     METRICS_CATALOG_PATH: str = ""
+    # The fixed safety notices. Empty: shared/safety-notices.json in the repository.
+    SAFETY_NOTICES_PATH: str = ""
     # Minutes of active game play after which the games suggest finishing soon, then finishing.
     SESSION_FINISH_SOON_MIN: float = 25.0
     SESSION_FINISH_MIN: float = 35.0
@@ -48,6 +50,12 @@ class Settings(BaseSettings):
         if self.METRICS_CATALOG_PATH:
             return Path(self.METRICS_CATALOG_PATH)
         return SERVER_DIR.parent / "shared" / "metrics-catalog.json"
+
+    @property
+    def safety_notices_path(self) -> Path:
+        if self.SAFETY_NOTICES_PATH:
+            return Path(self.SAFETY_NOTICES_PATH)
+        return SERVER_DIR.parent / "shared" / "safety-notices.json"
 
     @property
     def llm_candidates(self) -> list[str]:
