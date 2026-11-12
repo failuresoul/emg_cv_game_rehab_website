@@ -1,0 +1,7162 @@
+{
+ "seed": 20261113,
+ "note": "Synthetic facts (docs/session-facts.md) for analysis/llm/run_eval.py. No patient data.",
+ "cases": [
+  {
+   "id": "improving_01",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1001,
+    "patient_code": "T001",
+    "session_no": 4,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 33.4,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 14,
+      "success_rate": 0.71,
+      "level_start": 3,
+      "level_end": 4
+     },
+     "reach_activate": {
+      "trials": 24,
+      "success_rate": 0.59,
+      "level_start": 3,
+      "level_end": 3
+     },
+     "grip_hold": {
+      "trials": 10,
+      "success_rate": 0.71,
+      "level_start": 5,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 112,
+      "baseline": 105,
+      "unit": "deg",
+      "change_mdc": 2.43,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.61,
+      "baseline": 0.52,
+      "unit": "share",
+      "change_mdc": 1.28,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.59,
+      "baseline": 0.49,
+      "unit": "palm_ratio",
+      "change_mdc": 1.01,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.55,
+      "baseline": 2.3,
+      "unit": "sw2",
+      "change_mdc": 0.05,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 50,
+      "baseline": 43,
+      "unit": "deg",
+      "change_mdc": 0.82,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.48,
+      "baseline": 0.51,
+      "unit": "share",
+      "change_mdc": 0.52,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 10,
+      "baseline": 9,
+      "unit": "count",
+      "change_mdc": -0.48,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.15,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.1,
+     "shoulder_compensation_rate": 0.07,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 3,
+     "enjoyment_1_5": 3
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "elbow"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "finger_piano",
+      "bloom",
+      "fruit_catch",
+      "pick_place"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_02",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1002,
+    "patient_code": "T002",
+    "session_no": 19,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 27.1,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 13,
+      "success_rate": 0.84,
+      "level_start": 6,
+      "level_end": 7
+     },
+     "bloom": {
+      "trials": 10,
+      "success_rate": 0.41,
+      "level_start": 3,
+      "level_end": 3
+     },
+     "finger_piano": {
+      "trials": 13,
+      "success_rate": 0.47,
+      "level_start": 8,
+      "level_end": 9
+     },
+     "fruit_catch": {
+      "trials": 10,
+      "success_rate": 0.58,
+      "level_start": 4,
+      "level_end": 5
+     }
+    },
+    "metrics": [
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 146,
+      "baseline": 124,
+      "unit": "deg",
+      "change_mdc": 2.81,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.7,
+      "baseline": 0.6,
+      "unit": "share",
+      "change_mdc": 2.69,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 1661,
+      "baseline": 1979,
+      "unit": "ms",
+      "change_mdc": 1.27,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -2.54,
+      "baseline": -2.13,
+      "unit": "sparc",
+      "change_mdc": -0.59,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.51,
+      "baseline": 0.47,
+      "unit": "share",
+      "change_mdc": -0.17,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      225
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.05,
+     "fatigue_flag": false,
+     "hand_loss_pct": 0.3,
+     "shoulder_compensation_rate": 0.09,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder",
+      "fingers"
+     ],
+     "focus_directions": [
+      225.0
+     ],
+     "planned_games": [
+      "finger_piano",
+      "pick_place",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_03",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1003,
+    "patient_code": "T003",
+    "session_no": 21,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 19.6,
+    "baseline_available": true,
+    "games": {
+     "grip_hold": {
+      "trials": 12,
+      "success_rate": 0.79,
+      "level_start": 7,
+      "level_end": 8
+     },
+     "fruit_catch": {
+      "trials": 8,
+      "success_rate": 0.77,
+      "level_start": 3,
+      "level_end": 4
+     }
+    },
+    "metrics": [
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.55,
+      "baseline": 0.45,
+      "unit": "arm_ratio",
+      "change_mdc": 2.08,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.53,
+      "baseline": 0.59,
+      "unit": "share",
+      "change_mdc": 1.15,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.82,
+      "baseline": 0.75,
+      "unit": "share",
+      "change_mdc": 1.05,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.06,
+      "baseline": 1.89,
+      "unit": "sw2",
+      "change_mdc": 1.01,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.89,
+      "baseline": -2.18,
+      "unit": "sparc",
+      "change_mdc": 0.12,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.89,
+      "baseline": 0.84,
+      "unit": "share",
+      "change_mdc": -0.78,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 4,
+      "baseline": 5,
+      "unit": "count",
+      "change_mdc": 0.82,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 129,
+      "baseline": 109,
+      "unit": "deg",
+      "change_mdc": 0.33,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      225,
+      270
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.23,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.2,
+     "shoulder_compensation_rate": 0.16,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 1,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "reach",
+      "fingers"
+     ],
+     "focus_directions": [
+      225.0
+     ],
+     "planned_games": [
+      "finger_piano",
+      "pick_place",
+      "bloom"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_04",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1004,
+    "patient_code": "T004",
+    "session_no": 8,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 25.3,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 9,
+      "success_rate": 0.81,
+      "level_start": 2,
+      "level_end": 3
+     },
+     "bloom": {
+      "trials": 15,
+      "success_rate": 0.89,
+      "level_start": 7,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1799,
+      "baseline": 2061,
+      "unit": "ms",
+      "change_mdc": 1.87,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G3",
+      "game_id": null,
+      "name": "Warm-up repetitions",
+      "value": 9,
+      "baseline": 8,
+      "unit": "count",
+      "change_mdc": 1.84,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 1.19,
+      "baseline": 1.06,
+      "unit": "sw2",
+      "change_mdc": 0.53,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 3,
+      "baseline": 3,
+      "unit": "count",
+      "change_mdc": -0.78,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 2140,
+      "baseline": 2291,
+      "unit": "ms",
+      "change_mdc": 0.89,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      90
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.13,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.3,
+     "shoulder_compensation_rate": 0.02,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 3
+    },
+    "adherence": {
+     "sessions_this_week": 4,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening",
+      "shoulder"
+     ],
+     "focus_directions": [
+      90.0
+     ],
+     "planned_games": [
+      "grip_hold",
+      "pick_place",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_05",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1005,
+    "patient_code": "T005",
+    "session_no": 18,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 21.5,
+    "baseline_available": true,
+    "games": {
+     "fruit_catch": {
+      "trials": 10,
+      "success_rate": 0.76,
+      "level_start": 5,
+      "level_end": 5
+     },
+     "pick_place": {
+      "trials": 12,
+      "success_rate": 0.88,
+      "level_start": 4,
+      "level_end": 4
+     }
+    },
+    "metrics": [
+     {
+      "id": "G3",
+      "game_id": null,
+      "name": "Warm-up repetitions",
+      "value": 3,
+      "baseline": 3,
+      "unit": "count",
+      "change_mdc": 2.94,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.41,
+      "baseline": 0.46,
+      "unit": "share",
+      "change_mdc": 2.23,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 11,
+      "baseline": 13,
+      "unit": "count",
+      "change_mdc": 2.03,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.56,
+      "baseline": 0.49,
+      "unit": "share",
+      "change_mdc": 1.28,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -2.1,
+      "baseline": -2.25,
+      "unit": "sparc",
+      "change_mdc": 0.52,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 71,
+      "baseline": 76,
+      "unit": "deg",
+      "change_mdc": -0.3,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 85,
+      "baseline": 77,
+      "unit": "deg",
+      "change_mdc": 0.25,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.26,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.7,
+     "shoulder_compensation_rate": 0.16,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "reach",
+      "shoulder"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "finger_piano",
+      "grip_hold",
+      "bloom"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_06",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1006,
+    "patient_code": "T006",
+    "session_no": 4,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 25.2,
+    "baseline_available": true,
+    "games": {
+     "pick_place": {
+      "trials": 12,
+      "success_rate": 0.86,
+      "level_start": 3,
+      "level_end": 4
+     },
+     "grip_hold": {
+      "trials": 8,
+      "success_rate": 0.41,
+      "level_start": 4,
+      "level_end": 4
+     },
+     "fruit_catch": {
+      "trials": 20,
+      "success_rate": 0.48,
+      "level_start": 4,
+      "level_end": 4
+     },
+     "reach_activate": {
+      "trials": 12,
+      "success_rate": 0.81,
+      "level_start": 3,
+      "level_end": 4
+     }
+    },
+    "metrics": [
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 1.33,
+      "baseline": 1.25,
+      "unit": "sw2",
+      "change_mdc": 2.07,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 149,
+      "baseline": 128,
+      "unit": "deg",
+      "change_mdc": 1.73,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1822,
+      "baseline": 2109,
+      "unit": "ms",
+      "change_mdc": 1.42,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 0.78,
+      "baseline": 0.84,
+      "unit": "sw_per_s",
+      "change_mdc": -0.69,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 2,
+      "baseline": 2,
+      "unit": "count",
+      "change_mdc": -0.66,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.79,
+      "baseline": 0.72,
+      "unit": "arm_ratio",
+      "change_mdc": 0.46,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.2,
+      "baseline": 0.23,
+      "unit": "share",
+      "change_mdc": -0.15,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.21,
+     "fatigue_flag": false,
+     "hand_loss_pct": 0.4,
+     "shoulder_compensation_rate": 0.19,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 2,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 3,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "reach"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "fruit_catch",
+      "bloom",
+      "finger_piano",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_07",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1007,
+    "patient_code": "T007",
+    "session_no": 26,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 28.3,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 23,
+      "success_rate": 0.9,
+      "level_start": 4,
+      "level_end": 4
+     },
+     "balloon_pop": {
+      "trials": 10,
+      "success_rate": 0.5,
+      "level_start": 6,
+      "level_end": 7
+     },
+     "reach_activate": {
+      "trials": 20,
+      "success_rate": 0.57,
+      "level_start": 2,
+      "level_end": 3
+     }
+    },
+    "metrics": [
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 13.33,
+      "baseline": 10.94,
+      "unit": "min",
+      "change_mdc": 2.61,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -2.63,
+      "baseline": -2.86,
+      "unit": "sparc",
+      "change_mdc": 2.48,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 842,
+      "baseline": 972,
+      "unit": "ms",
+      "change_mdc": 1.36,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 11,
+      "baseline": 12,
+      "unit": "count",
+      "change_mdc": 1.13,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.39,
+      "baseline": 0.35,
+      "unit": "share",
+      "change_mdc": 0.63,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 129,
+      "baseline": 112,
+      "unit": "deg",
+      "change_mdc": 0.57,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      135
+     ],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.2,
+     "fatigue_flag": false,
+     "hand_loss_pct": 1.4,
+     "shoulder_compensation_rate": 0.11,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "smoothness",
+      "reach"
+     ],
+     "focus_directions": [
+      135.0
+     ],
+     "planned_games": [
+      "balloon_pop",
+      "finger_piano",
+      "grip_hold"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_08",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1008,
+    "patient_code": "T008",
+    "session_no": 11,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 16.1,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 19,
+      "success_rate": 0.48,
+      "level_start": 4,
+      "level_end": 4
+     },
+     "bloom": {
+      "trials": 20,
+      "success_rate": 0.42,
+      "level_start": 3,
+      "level_end": 3
+     }
+    },
+    "metrics": [
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1114,
+      "baseline": 1301,
+      "unit": "ms",
+      "change_mdc": 2.93,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 16.79,
+      "baseline": 15.46,
+      "unit": "min",
+      "change_mdc": 2.9,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 94,
+      "baseline": 87,
+      "unit": "deg",
+      "change_mdc": 2.59,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.63,
+      "baseline": 0.59,
+      "unit": "arm_ratio",
+      "change_mdc": 1.32,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 4,
+      "baseline": 4,
+      "unit": "count",
+      "change_mdc": -0.58,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 115,
+      "baseline": 126,
+      "unit": "deg",
+      "change_mdc": -0.63,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      0,
+      315
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.02,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.6,
+     "shoulder_compensation_rate": 0.16,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 7,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "reach"
+     ],
+     "focus_directions": [
+      0.0
+     ],
+     "planned_games": [
+      "fruit_catch",
+      "pick_place",
+      "bloom"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_09",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1009,
+    "patient_code": "T009",
+    "session_no": 26,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 24.9,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 9,
+      "success_rate": 0.95,
+      "level_start": 6,
+      "level_end": 6
+     },
+     "fruit_catch": {
+      "trials": 13,
+      "success_rate": 0.79,
+      "level_start": 3,
+      "level_end": 3
+     },
+     "pick_place": {
+      "trials": 10,
+      "success_rate": 0.83,
+      "level_start": 5,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 6,
+      "baseline": 5,
+      "unit": "count",
+      "change_mdc": 2.59,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.49,
+      "baseline": 0.57,
+      "unit": "share",
+      "change_mdc": 2.27,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.48,
+      "baseline": 0.42,
+      "unit": "palm_ratio",
+      "change_mdc": 1.78,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.08,
+      "baseline": 1.69,
+      "unit": "sw2",
+      "change_mdc": 1.28,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.77,
+      "baseline": -2.02,
+      "unit": "sparc",
+      "change_mdc": 0.68,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.96,
+      "baseline": 0.8,
+      "unit": "arm_ratio",
+      "change_mdc": 0.31,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      180
+     ],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.27,
+     "fatigue_flag": false,
+     "hand_loss_pct": 2.3,
+     "shoulder_compensation_rate": 0.18,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 3
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip",
+      "shoulder"
+     ],
+     "focus_directions": [
+      180.0
+     ],
+     "planned_games": [
+      "bloom",
+      "fruit_catch",
+      "reach_activate",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_10",
+   "category": "improving",
+   "split": "dev",
+   "facts": {
+    "session_id": 1010,
+    "patient_code": "T010",
+    "session_no": 30,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 34.7,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 14,
+      "success_rate": 0.54,
+      "level_start": 5,
+      "level_end": 5
+     },
+     "grip_hold": {
+      "trials": 12,
+      "success_rate": 0.91,
+      "level_start": 2,
+      "level_end": 3
+     },
+     "fruit_catch": {
+      "trials": 8,
+      "success_rate": 0.84,
+      "level_start": 7,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.25,
+      "baseline": 0.23,
+      "unit": "palm_ratio",
+      "change_mdc": 2.92,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 23.49,
+      "baseline": 20.18,
+      "unit": "min",
+      "change_mdc": 1.31,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.29,
+      "baseline": 0.24,
+      "unit": "share",
+      "change_mdc": 1.28,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.46,
+      "baseline": -1.58,
+      "unit": "sparc",
+      "change_mdc": 0.31,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 105,
+      "baseline": 114,
+      "unit": "deg",
+      "change_mdc": -0.76,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1890,
+      "baseline": 1583,
+      "unit": "ms",
+      "change_mdc": -0.59,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.41,
+      "baseline": 2.84,
+      "unit": "sw2",
+      "change_mdc": -0.06,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      225
+     ],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.16,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.0,
+     "shoulder_compensation_rate": 0.05,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 1,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 4,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip",
+      "shoulder"
+     ],
+     "focus_directions": [
+      225.0
+     ],
+     "planned_games": [
+      "pick_place",
+      "grip_hold",
+      "reach_activate"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_11",
+   "category": "improving",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1011,
+    "patient_code": "T011",
+    "session_no": 7,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 19.7,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 15,
+      "success_rate": 0.48,
+      "level_start": 3,
+      "level_end": 4
+     },
+     "balloon_pop": {
+      "trials": 15,
+      "success_rate": 0.92,
+      "level_start": 8,
+      "level_end": 9
+     },
+     "grip_hold": {
+      "trials": 25,
+      "success_rate": 0.46,
+      "level_start": 6,
+      "level_end": 6
+     },
+     "finger_piano": {
+      "trials": 11,
+      "success_rate": 0.66,
+      "level_start": 7,
+      "level_end": 8
+     }
+    },
+    "metrics": [
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 5,
+      "baseline": 4,
+      "unit": "count",
+      "change_mdc": 2.36,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.47,
+      "baseline": 0.44,
+      "unit": "arm_ratio",
+      "change_mdc": 2.23,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 1241,
+      "baseline": 1488,
+      "unit": "ms",
+      "change_mdc": 2.19,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 8,
+      "baseline": 9,
+      "unit": "count",
+      "change_mdc": 0.67,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1004,
+      "baseline": 856,
+      "unit": "ms",
+      "change_mdc": -0.16,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 1.3,
+      "baseline": 1.17,
+      "unit": "sw2",
+      "change_mdc": 0.16,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.13,
+     "fatigue_flag": false,
+     "hand_loss_pct": 0.2,
+     "shoulder_compensation_rate": 0.02,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 3,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "grip_hold",
+      "bloom",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_12",
+   "category": "improving",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1012,
+    "patient_code": "T012",
+    "session_no": 30,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 19.6,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 21,
+      "success_rate": 0.88,
+      "level_start": 7,
+      "level_end": 7
+     },
+     "finger_piano": {
+      "trials": 17,
+      "success_rate": 0.76,
+      "level_start": 5,
+      "level_end": 6
+     },
+     "reach_activate": {
+      "trials": 14,
+      "success_rate": 0.73,
+      "level_start": 8,
+      "level_end": 9
+     }
+    },
+    "metrics": [
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1074,
+      "baseline": 1209,
+      "unit": "ms",
+      "change_mdc": 2.79,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.35,
+      "baseline": 0.39,
+      "unit": "share",
+      "change_mdc": 2.26,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.49,
+      "baseline": 2.36,
+      "unit": "sw2",
+      "change_mdc": 1.46,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 1733,
+      "baseline": 1950,
+      "unit": "ms",
+      "change_mdc": 0.28,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.46,
+      "baseline": 0.54,
+      "unit": "share",
+      "change_mdc": -0.47,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 133,
+      "baseline": 149,
+      "unit": "deg",
+      "change_mdc": -0.39,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      90,
+      135
+     ],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.1,
+     "fatigue_flag": false,
+     "hand_loss_pct": 2.1,
+     "shoulder_compensation_rate": 0.19,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 2,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 3,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "smoothness"
+     ],
+     "focus_directions": [
+      90.0
+     ],
+     "planned_games": [
+      "grip_hold",
+      "bloom",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_13",
+   "category": "improving",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1013,
+    "patient_code": "T013",
+    "session_no": 7,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 25.4,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 14,
+      "success_rate": 0.5,
+      "level_start": 4,
+      "level_end": 5
+     },
+     "pick_place": {
+      "trials": 25,
+      "success_rate": 0.89,
+      "level_start": 8,
+      "level_end": 9
+     },
+     "reach_activate": {
+      "trials": 23,
+      "success_rate": 0.61,
+      "level_start": 6,
+      "level_end": 7
+     },
+     "grip_hold": {
+      "trials": 10,
+      "success_rate": 0.81,
+      "level_start": 6,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 0.41,
+      "baseline": 0.34,
+      "unit": "sw_per_s",
+      "change_mdc": 2.83,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -2.61,
+      "baseline": -2.76,
+      "unit": "sparc",
+      "change_mdc": 1.78,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 94,
+      "baseline": 109,
+      "unit": "deg",
+      "change_mdc": -0.55,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.42,
+      "baseline": 0.46,
+      "unit": "share",
+      "change_mdc": -0.21,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1415,
+      "baseline": 1175,
+      "unit": "ms",
+      "change_mdc": -0.82,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.34,
+      "baseline": 0.39,
+      "unit": "share",
+      "change_mdc": -0.03,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      135
+     ],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.19,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.6,
+     "shoulder_compensation_rate": 0.08,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 4,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "reach"
+     ],
+     "focus_directions": [
+      135.0
+     ],
+     "planned_games": [
+      "pick_place",
+      "bloom",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_14",
+   "category": "improving",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1014,
+    "patient_code": "T014",
+    "session_no": 25,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 25.4,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 16,
+      "success_rate": 0.93,
+      "level_start": 5,
+      "level_end": 6
+     },
+     "reach_activate": {
+      "trials": 17,
+      "success_rate": 0.56,
+      "level_start": 4,
+      "level_end": 4
+     },
+     "fruit_catch": {
+      "trials": 25,
+      "success_rate": 0.62,
+      "level_start": 4,
+      "level_end": 5
+     },
+     "balloon_pop": {
+      "trials": 8,
+      "success_rate": 0.77,
+      "level_start": 7,
+      "level_end": 8
+     }
+    },
+    "metrics": [
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 120,
+      "baseline": 108,
+      "unit": "deg",
+      "change_mdc": 2.55,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 1.48,
+      "baseline": 1.34,
+      "unit": "sw_per_s",
+      "change_mdc": 2.13,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 1209,
+      "baseline": 1427,
+      "unit": "ms",
+      "change_mdc": 1.96,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 11,
+      "baseline": 9,
+      "unit": "count",
+      "change_mdc": 1.69,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 997,
+      "baseline": 1092,
+      "unit": "ms",
+      "change_mdc": 0.71,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.86,
+      "baseline": 0.93,
+      "unit": "share",
+      "change_mdc": 0.6,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.19,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.0,
+     "shoulder_compensation_rate": 0.14,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 1,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers",
+      "hand_opening"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "balloon_pop",
+      "pick_place",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "improving_15",
+   "category": "improving",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1015,
+    "patient_code": "T015",
+    "session_no": 28,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 17.9,
+    "baseline_available": true,
+    "games": {
+     "grip_hold": {
+      "trials": 23,
+      "success_rate": 0.81,
+      "level_start": 3,
+      "level_end": 4
+     },
+     "pick_place": {
+      "trials": 21,
+      "success_rate": 0.93,
+      "level_start": 8,
+      "level_end": 9
+     }
+    },
+    "metrics": [
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.75,
+      "baseline": 0.66,
+      "unit": "share",
+      "change_mdc": 2.41,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 15.22,
+      "baseline": 13.21,
+      "unit": "min",
+      "change_mdc": 2.22,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.52,
+      "baseline": 0.47,
+      "unit": "share",
+      "change_mdc": 1.66,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1983,
+      "baseline": 2216,
+      "unit": "ms",
+      "change_mdc": 0.87,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 1.51,
+      "baseline": 1.61,
+      "unit": "sw_per_s",
+      "change_mdc": -0.76,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.05,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.2,
+     "shoulder_compensation_rate": 0.14,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 1,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 4,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder",
+      "smoothness"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "grip_hold",
+      "reach_activate",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_01",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1016,
+    "patient_code": "T016",
+    "session_no": 11,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 15.9,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 9,
+      "success_rate": 0.47,
+      "level_start": 7,
+      "level_end": 7
+     },
+     "fruit_catch": {
+      "trials": 17,
+      "success_rate": 0.61,
+      "level_start": 6,
+      "level_end": 5
+     },
+     "finger_piano": {
+      "trials": 9,
+      "success_rate": 0.72,
+      "level_start": 8,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.56,
+      "baseline": 0.46,
+      "unit": "share",
+      "change_mdc": -1.2,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1160,
+      "baseline": 957,
+      "unit": "ms",
+      "change_mdc": -1.09,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.41,
+      "baseline": 0.45,
+      "unit": "share",
+      "change_mdc": -0.56,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 1514,
+      "baseline": 1378,
+      "unit": "ms",
+      "change_mdc": -0.51,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      225
+     ],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.07,
+     "fatigue_flag": false,
+     "hand_loss_pct": 4.0,
+     "shoulder_compensation_rate": 0.04,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "smoothness"
+     ],
+     "focus_directions": [
+      225.0
+     ],
+     "planned_games": [
+      "pick_place",
+      "reach_activate",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_02",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1017,
+    "patient_code": "T017",
+    "session_no": 9,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 27.1,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 8,
+      "success_rate": 0.76,
+      "level_start": 6,
+      "level_end": 6
+     },
+     "fruit_catch": {
+      "trials": 15,
+      "success_rate": 0.66,
+      "level_start": 5,
+      "level_end": 4
+     },
+     "reach_activate": {
+      "trials": 20,
+      "success_rate": 0.45,
+      "level_start": 4,
+      "level_end": 3
+     },
+     "pick_place": {
+      "trials": 22,
+      "success_rate": 0.92,
+      "level_start": 3,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.36,
+      "baseline": 0.42,
+      "unit": "palm_ratio",
+      "change_mdc": -1.54,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.91,
+      "baseline": 0.82,
+      "unit": "share",
+      "change_mdc": -1.35,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 7,
+      "baseline": 6,
+      "unit": "count",
+      "change_mdc": -1.35,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.69,
+      "baseline": 0.75,
+      "unit": "share",
+      "change_mdc": -0.02,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.63,
+      "baseline": 0.55,
+      "unit": "share",
+      "change_mdc": 0.58,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 934,
+      "baseline": 1005,
+      "unit": "ms",
+      "change_mdc": 0.7,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      135,
+      270
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.14,
+     "fatigue_flag": false,
+     "hand_loss_pct": 0.9,
+     "shoulder_compensation_rate": 0.0,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 4,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip",
+      "hand_opening"
+     ],
+     "focus_directions": [
+      135.0
+     ],
+     "planned_games": [
+      "bloom",
+      "fruit_catch",
+      "pick_place",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_03",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1018,
+    "patient_code": "T018",
+    "session_no": 7,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 18.5,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 19,
+      "success_rate": 0.78,
+      "level_start": 5,
+      "level_end": 4
+     },
+     "finger_piano": {
+      "trials": 16,
+      "success_rate": 0.5,
+      "level_start": 5,
+      "level_end": 4
+     }
+    },
+    "metrics": [
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.27,
+      "baseline": 0.29,
+      "unit": "share",
+      "change_mdc": -1.47,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.7,
+      "baseline": -1.5,
+      "unit": "sparc",
+      "change_mdc": -1.41,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.37,
+      "baseline": 0.32,
+      "unit": "share",
+      "change_mdc": -0.25,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.05,
+      "baseline": 2.28,
+      "unit": "sw2",
+      "change_mdc": -0.41,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.68,
+      "baseline": 0.64,
+      "unit": "share",
+      "change_mdc": -0.58,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.49,
+      "baseline": 0.53,
+      "unit": "share",
+      "change_mdc": -0.34,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      45
+     ],
+     "strong": [
+      0,
+      90
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.1,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.9,
+     "shoulder_compensation_rate": 0.13,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 4,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 5,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers",
+      "elbow"
+     ],
+     "focus_directions": [
+      45.0
+     ],
+     "planned_games": [
+      "reach_activate",
+      "finger_piano",
+      "pick_place"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_04",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1019,
+    "patient_code": "T019",
+    "session_no": 28,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 29.8,
+    "baseline_available": true,
+    "games": {
+     "fruit_catch": {
+      "trials": 10,
+      "success_rate": 0.62,
+      "level_start": 3,
+      "level_end": 2
+     },
+     "pick_place": {
+      "trials": 21,
+      "success_rate": 0.88,
+      "level_start": 2,
+      "level_end": 1
+     }
+    },
+    "metrics": [
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.93,
+      "baseline": 0.83,
+      "unit": "share",
+      "change_mdc": -1.43,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.74,
+      "baseline": 0.83,
+      "unit": "share",
+      "change_mdc": -1.1,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 2093,
+      "baseline": 2302,
+      "unit": "ms",
+      "change_mdc": 0.62,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 1660,
+      "baseline": 1760,
+      "unit": "ms",
+      "change_mdc": 0.18,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.16,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.1,
+     "shoulder_compensation_rate": 0.15,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 7,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 5,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening",
+      "smoothness"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "bloom",
+      "fruit_catch",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_05",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1020,
+    "patient_code": "T020",
+    "session_no": 15,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 28.5,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 19,
+      "success_rate": 0.67,
+      "level_start": 2,
+      "level_end": 1
+     },
+     "grip_hold": {
+      "trials": 15,
+      "success_rate": 0.71,
+      "level_start": 3,
+      "level_end": 2
+     },
+     "finger_piano": {
+      "trials": 22,
+      "success_rate": 0.84,
+      "level_start": 4,
+      "level_end": 3
+     },
+     "pick_place": {
+      "trials": 8,
+      "success_rate": 0.57,
+      "level_start": 8,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 12,
+      "baseline": 11,
+      "unit": "count",
+      "change_mdc": -1.59,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 1044,
+      "baseline": 850,
+      "unit": "ms",
+      "change_mdc": -1.35,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 138,
+      "baseline": 159,
+      "unit": "deg",
+      "change_mdc": -1.13,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.21,
+      "baseline": 0.2,
+      "unit": "share",
+      "change_mdc": 0.26,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.68,
+      "baseline": 0.8,
+      "unit": "share",
+      "change_mdc": -0.72,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 2013,
+      "baseline": 2219,
+      "unit": "ms",
+      "change_mdc": 0.74,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 117,
+      "baseline": 132,
+      "unit": "deg",
+      "change_mdc": -0.24,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.29,
+     "fatigue_flag": false,
+     "hand_loss_pct": 3.9,
+     "shoulder_compensation_rate": 0.17,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder",
+      "fingers"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "pick_place",
+      "grip_hold",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_06",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1021,
+    "patient_code": "T021",
+    "session_no": 19,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 26.4,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 23,
+      "success_rate": 0.64,
+      "level_start": 4,
+      "level_end": 4
+     },
+     "finger_piano": {
+      "trials": 20,
+      "success_rate": 0.65,
+      "level_start": 3,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 23.72,
+      "baseline": 27.84,
+      "unit": "min",
+      "change_mdc": -1.19,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.46,
+      "baseline": 0.55,
+      "unit": "share",
+      "change_mdc": -1.11,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 2007,
+      "baseline": 1749,
+      "unit": "ms",
+      "change_mdc": -0.28,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 139,
+      "baseline": 127,
+      "unit": "deg",
+      "change_mdc": 0.26,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.06,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.4,
+     "shoulder_compensation_rate": 0.01,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 5,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "pick_place",
+      "reach_activate",
+      "fruit_catch",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_07",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1022,
+    "patient_code": "T022",
+    "session_no": 24,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 33.2,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 19,
+      "success_rate": 0.69,
+      "level_start": 8,
+      "level_end": 7
+     },
+     "pick_place": {
+      "trials": 22,
+      "success_rate": 0.76,
+      "level_start": 5,
+      "level_end": 4
+     },
+     "grip_hold": {
+      "trials": 25,
+      "success_rate": 0.51,
+      "level_start": 6,
+      "level_end": 5
+     },
+     "balloon_pop": {
+      "trials": 23,
+      "success_rate": 0.81,
+      "level_start": 3,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.86,
+      "baseline": -1.66,
+      "unit": "sparc",
+      "change_mdc": -1.78,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 88,
+      "baseline": 93,
+      "unit": "deg",
+      "change_mdc": -0.11,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.34,
+      "baseline": 0.39,
+      "unit": "share",
+      "change_mdc": 0.79,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.56,
+      "baseline": 0.59,
+      "unit": "share",
+      "change_mdc": -0.44,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.51,
+      "baseline": 2.8,
+      "unit": "sw2",
+      "change_mdc": -0.53,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      270
+     ],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.03,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.5,
+     "shoulder_compensation_rate": 0.04,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 8,
+     "enjoyment_1_5": 3
+    },
+    "adherence": {
+     "sessions_this_week": 3,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "elbow",
+      "hand_opening"
+     ],
+     "focus_directions": [
+      270.0
+     ],
+     "planned_games": [
+      "finger_piano",
+      "reach_activate",
+      "balloon_pop",
+      "bloom"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_08",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1023,
+    "patient_code": "T023",
+    "session_no": 29,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 28.1,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 8,
+      "success_rate": 0.4,
+      "level_start": 4,
+      "level_end": 3
+     },
+     "grip_hold": {
+      "trials": 15,
+      "success_rate": 0.84,
+      "level_start": 5,
+      "level_end": 4
+     },
+     "pick_place": {
+      "trials": 13,
+      "success_rate": 0.92,
+      "level_start": 7,
+      "level_end": 6
+     },
+     "fruit_catch": {
+      "trials": 16,
+      "success_rate": 0.92,
+      "level_start": 3,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.73,
+      "baseline": 0.8,
+      "unit": "share",
+      "change_mdc": -1.49,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 78,
+      "baseline": 92,
+      "unit": "deg",
+      "change_mdc": -1.31,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 1.14,
+      "baseline": 1.28,
+      "unit": "sw2",
+      "change_mdc": -1.05,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.42,
+      "baseline": 0.34,
+      "unit": "share",
+      "change_mdc": 0.63,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -2.59,
+      "baseline": -2.94,
+      "unit": "sparc",
+      "change_mdc": 0.76,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1471,
+      "baseline": 1704,
+      "unit": "ms",
+      "change_mdc": 0.51,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      225
+     ],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.26,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.0,
+     "shoulder_compensation_rate": 0.02,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 4,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "elbow",
+      "smoothness"
+     ],
+     "focus_directions": [
+      225.0
+     ],
+     "planned_games": [
+      "grip_hold",
+      "finger_piano",
+      "bloom"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_09",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1024,
+    "patient_code": "T024",
+    "session_no": 24,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 22.8,
+    "baseline_available": true,
+    "games": {
+     "fruit_catch": {
+      "trials": 20,
+      "success_rate": 0.67,
+      "level_start": 7,
+      "level_end": 6
+     },
+     "bloom": {
+      "trials": 17,
+      "success_rate": 0.93,
+      "level_start": 3,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 1.09,
+      "baseline": 1.27,
+      "unit": "sw2",
+      "change_mdc": -1.53,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 2006,
+      "baseline": 1608,
+      "unit": "ms",
+      "change_mdc": -1.25,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 74,
+      "baseline": 62,
+      "unit": "deg",
+      "change_mdc": 0.36,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 727,
+      "baseline": 766,
+      "unit": "ms",
+      "change_mdc": 0.49,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.27,
+      "baseline": 0.24,
+      "unit": "share",
+      "change_mdc": -0.5,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.13,
+     "fatigue_flag": false,
+     "hand_loss_pct": 0.6,
+     "shoulder_compensation_rate": 0.04,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 4,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "pick_place",
+      "fruit_catch",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_10",
+   "category": "declining",
+   "split": "dev",
+   "facts": {
+    "session_id": 1025,
+    "patient_code": "T025",
+    "session_no": 21,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 15.1,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 14,
+      "success_rate": 0.46,
+      "level_start": 4,
+      "level_end": 3
+     },
+     "fruit_catch": {
+      "trials": 12,
+      "success_rate": 0.4,
+      "level_start": 2,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.6,
+      "baseline": 0.67,
+      "unit": "share",
+      "change_mdc": -1.82,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 99,
+      "baseline": 113,
+      "unit": "deg",
+      "change_mdc": -1.78,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.59,
+      "baseline": 0.48,
+      "unit": "share",
+      "change_mdc": -0.24,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 11,
+      "baseline": 9,
+      "unit": "count",
+      "change_mdc": 0.06,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 65,
+      "baseline": 53,
+      "unit": "deg",
+      "change_mdc": 0.23,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.27,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.7,
+     "shoulder_compensation_rate": 0.19,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "pick_place",
+      "reach_activate",
+      "grip_hold",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_11",
+   "category": "declining",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1026,
+    "patient_code": "T026",
+    "session_no": 27,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 30.4,
+    "baseline_available": true,
+    "games": {
+     "fruit_catch": {
+      "trials": 13,
+      "success_rate": 0.95,
+      "level_start": 2,
+      "level_end": 2
+     },
+     "pick_place": {
+      "trials": 15,
+      "success_rate": 0.86,
+      "level_start": 8,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 85,
+      "baseline": 91,
+      "unit": "deg",
+      "change_mdc": -1.68,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 117,
+      "baseline": 139,
+      "unit": "deg",
+      "change_mdc": -1.11,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.88,
+      "baseline": -1.56,
+      "unit": "sparc",
+      "change_mdc": -0.17,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1906,
+      "baseline": 1634,
+      "unit": "ms",
+      "change_mdc": -0.72,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 4,
+      "baseline": 3,
+      "unit": "count",
+      "change_mdc": 0.89,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 147,
+      "baseline": 165,
+      "unit": "deg",
+      "change_mdc": -0.12,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.26,
+     "fatigue_flag": false,
+     "hand_loss_pct": 1.8,
+     "shoulder_compensation_rate": 0.13,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 5,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "bloom",
+      "pick_place",
+      "fruit_catch",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_12",
+   "category": "declining",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1027,
+    "patient_code": "T027",
+    "session_no": 23,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 30.4,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 14,
+      "success_rate": 0.51,
+      "level_start": 5,
+      "level_end": 5
+     },
+     "balloon_pop": {
+      "trials": 22,
+      "success_rate": 0.75,
+      "level_start": 4,
+      "level_end": 4
+     }
+    },
+    "metrics": [
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 136,
+      "baseline": 148,
+      "unit": "deg",
+      "change_mdc": -1.64,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.54,
+      "baseline": -1.32,
+      "unit": "sparc",
+      "change_mdc": -0.32,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 111,
+      "baseline": 103,
+      "unit": "deg",
+      "change_mdc": 0.83,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.09,
+     "fatigue_flag": false,
+     "hand_loss_pct": 2.7,
+     "shoulder_compensation_rate": 0.01,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 5,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "pick_place",
+      "reach_activate",
+      "fruit_catch",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_13",
+   "category": "declining",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1028,
+    "patient_code": "T028",
+    "session_no": 18,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 31.0,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 14,
+      "success_rate": 0.53,
+      "level_start": 4,
+      "level_end": 3
+     },
+     "grip_hold": {
+      "trials": 18,
+      "success_rate": 0.54,
+      "level_start": 7,
+      "level_end": 7
+     },
+     "balloon_pop": {
+      "trials": 16,
+      "success_rate": 0.9,
+      "level_start": 3,
+      "level_end": 3
+     },
+     "fruit_catch": {
+      "trials": 13,
+      "success_rate": 0.8,
+      "level_start": 5,
+      "level_end": 5
+     }
+    },
+    "metrics": [
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.43,
+      "baseline": 0.34,
+      "unit": "share",
+      "change_mdc": -1.89,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 2.0,
+      "baseline": 2.22,
+      "unit": "sw_per_s",
+      "change_mdc": -1.7,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.44,
+      "baseline": 0.41,
+      "unit": "palm_ratio",
+      "change_mdc": 0.64,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.66,
+      "baseline": 0.61,
+      "unit": "share",
+      "change_mdc": 0.36,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 1.4,
+      "baseline": 1.54,
+      "unit": "sw2",
+      "change_mdc": -0.68,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 2073,
+      "baseline": 2220,
+      "unit": "ms",
+      "change_mdc": 0.01,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      180,
+      315
+     ],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.12,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.0,
+     "shoulder_compensation_rate": 0.13,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 8,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder",
+      "elbow"
+     ],
+     "focus_directions": [
+      180.0
+     ],
+     "planned_games": [
+      "fruit_catch",
+      "reach_activate",
+      "pick_place",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_14",
+   "category": "declining",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1029,
+    "patient_code": "T029",
+    "session_no": 12,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 16.9,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 12,
+      "success_rate": 0.86,
+      "level_start": 6,
+      "level_end": 5
+     },
+     "finger_piano": {
+      "trials": 20,
+      "success_rate": 0.72,
+      "level_start": 7,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.42,
+      "baseline": 0.45,
+      "unit": "arm_ratio",
+      "change_mdc": -1.47,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "G3",
+      "game_id": null,
+      "name": "Warm-up repetitions",
+      "value": 6,
+      "baseline": 7,
+      "unit": "count",
+      "change_mdc": -0.42,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.76,
+      "baseline": 0.65,
+      "unit": "share",
+      "change_mdc": 0.68,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.26,
+      "baseline": 0.3,
+      "unit": "share",
+      "change_mdc": 0.61,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.23,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.4,
+     "shoulder_compensation_rate": 0.16,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 4,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 4,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "reach",
+      "fingers"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "fruit_catch",
+      "pick_place",
+      "bloom",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "declining_15",
+   "category": "declining",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1030,
+    "patient_code": "T030",
+    "session_no": 28,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 32.7,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 18,
+      "success_rate": 0.91,
+      "level_start": 2,
+      "level_end": 1
+     },
+     "balloon_pop": {
+      "trials": 15,
+      "success_rate": 0.51,
+      "level_start": 2,
+      "level_end": 1
+     },
+     "pick_place": {
+      "trials": 12,
+      "success_rate": 0.84,
+      "level_start": 2,
+      "level_end": 1
+     },
+     "finger_piano": {
+      "trials": 25,
+      "success_rate": 0.47,
+      "level_start": 7,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 7.11,
+      "baseline": 8.21,
+      "unit": "min",
+      "change_mdc": -1.21,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 79,
+      "baseline": 84,
+      "unit": "deg",
+      "change_mdc": -1.19,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.9,
+      "baseline": 1.08,
+      "unit": "share",
+      "change_mdc": -1.06,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 1205,
+      "baseline": 1350,
+      "unit": "ms",
+      "change_mdc": 0.27,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.34,
+      "baseline": 0.28,
+      "unit": "palm_ratio",
+      "change_mdc": 0.08,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.14,
+     "fatigue_flag": false,
+     "hand_loss_pct": 4.2,
+     "shoulder_compensation_rate": 0.12,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers",
+      "shoulder"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "grip_hold",
+      "reach_activate",
+      "pick_place",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_01",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1031,
+    "patient_code": "T031",
+    "session_no": 21,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 23.3,
+    "baseline_available": true,
+    "games": {
+     "pick_place": {
+      "trials": 24,
+      "success_rate": 0.64,
+      "level_start": 3,
+      "level_end": 2
+     },
+     "balloon_pop": {
+      "trials": 14,
+      "success_rate": 0.48,
+      "level_start": 6,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 1884,
+      "baseline": 1607,
+      "unit": "ms",
+      "change_mdc": -1.87,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.43,
+      "baseline": 0.5,
+      "unit": "share",
+      "change_mdc": 1.74,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 794,
+      "baseline": 650,
+      "unit": "ms",
+      "change_mdc": -1.17,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 11.87,
+      "baseline": 9.86,
+      "unit": "min",
+      "change_mdc": 0.6,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.29,
+      "baseline": 0.32,
+      "unit": "share",
+      "change_mdc": -0.23,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      315
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.14,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.7,
+     "shoulder_compensation_rate": 0.18,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 3,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 4,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip",
+      "reach"
+     ],
+     "focus_directions": [
+      315.0
+     ],
+     "planned_games": [
+      "balloon_pop",
+      "finger_piano",
+      "pick_place"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_02",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1032,
+    "patient_code": "T032",
+    "session_no": 27,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 20.5,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 21,
+      "success_rate": 0.75,
+      "level_start": 5,
+      "level_end": 4
+     },
+     "finger_piano": {
+      "trials": 12,
+      "success_rate": 0.57,
+      "level_start": 2,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.62,
+      "baseline": 0.58,
+      "unit": "palm_ratio",
+      "change_mdc": 2.48,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.57,
+      "baseline": 0.63,
+      "unit": "share",
+      "change_mdc": -1.87,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 9.86,
+      "baseline": 10.75,
+      "unit": "min",
+      "change_mdc": -0.56,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      0,
+      90
+     ],
+     "strong": [
+      45,
+      135
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.17,
+     "fatigue_flag": false,
+     "hand_loss_pct": 3.4,
+     "shoulder_compensation_rate": 0.01,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 3,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening"
+     ],
+     "focus_directions": [
+      0.0
+     ],
+     "planned_games": [
+      "finger_piano",
+      "bloom",
+      "grip_hold",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_03",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1033,
+    "patient_code": "T033",
+    "session_no": 27,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 34.4,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 12,
+      "success_rate": 0.92,
+      "level_start": 3,
+      "level_end": 3
+     },
+     "bloom": {
+      "trials": 18,
+      "success_rate": 0.57,
+      "level_start": 8,
+      "level_end": 7
+     },
+     "pick_place": {
+      "trials": 23,
+      "success_rate": 0.52,
+      "level_start": 4,
+      "level_end": 5
+     }
+    },
+    "metrics": [
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 7.44,
+      "baseline": 6.58,
+      "unit": "min",
+      "change_mdc": 2.66,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 102,
+      "baseline": 97,
+      "unit": "deg",
+      "change_mdc": 2.37,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.38,
+      "baseline": 0.43,
+      "unit": "palm_ratio",
+      "change_mdc": -1.5,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 80,
+      "baseline": 70,
+      "unit": "deg",
+      "change_mdc": 1.43,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.58,
+      "baseline": 0.63,
+      "unit": "share",
+      "change_mdc": 0.41,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 0.41,
+      "baseline": 0.46,
+      "unit": "sw_per_s",
+      "change_mdc": -0.78,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.2,
+     "fatigue_flag": false,
+     "hand_loss_pct": 1.7,
+     "shoulder_compensation_rate": 0.16,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 4,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 5,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "fruit_catch",
+      "pick_place",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_04",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1034,
+    "patient_code": "T034",
+    "session_no": 28,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 26.5,
+    "baseline_available": true,
+    "games": {
+     "pick_place": {
+      "trials": 25,
+      "success_rate": 0.87,
+      "level_start": 6,
+      "level_end": 6
+     },
+     "grip_hold": {
+      "trials": 21,
+      "success_rate": 0.46,
+      "level_start": 4,
+      "level_end": 4
+     },
+     "balloon_pop": {
+      "trials": 20,
+      "success_rate": 0.83,
+      "level_start": 3,
+      "level_end": 2
+     },
+     "reach_activate": {
+      "trials": 21,
+      "success_rate": 0.87,
+      "level_start": 8,
+      "level_end": 9
+     }
+    },
+    "metrics": [
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -3.0,
+      "baseline": -3.17,
+      "unit": "sparc",
+      "change_mdc": 2.12,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.41,
+      "baseline": 0.48,
+      "unit": "palm_ratio",
+      "change_mdc": -1.8,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.82,
+      "baseline": 0.68,
+      "unit": "share",
+      "change_mdc": 1.58,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.65,
+      "baseline": 0.76,
+      "unit": "share",
+      "change_mdc": -0.7,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      270
+     ],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.07,
+     "fatigue_flag": false,
+     "hand_loss_pct": 1.3,
+     "shoulder_compensation_rate": 0.02,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers",
+      "shoulder"
+     ],
+     "focus_directions": [
+      270.0
+     ],
+     "planned_games": [
+      "bloom",
+      "reach_activate",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_05",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1035,
+    "patient_code": "T035",
+    "session_no": 18,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 30.3,
+    "baseline_available": true,
+    "games": {
+     "fruit_catch": {
+      "trials": 13,
+      "success_rate": 0.61,
+      "level_start": 6,
+      "level_end": 5
+     },
+     "reach_activate": {
+      "trials": 17,
+      "success_rate": 0.55,
+      "level_start": 8,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "G3",
+      "game_id": null,
+      "name": "Warm-up repetitions",
+      "value": 9,
+      "baseline": 8,
+      "unit": "count",
+      "change_mdc": 2.94,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.86,
+      "baseline": 0.69,
+      "unit": "arm_ratio",
+      "change_mdc": 1.5,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 29.22,
+      "baseline": 34.29,
+      "unit": "min",
+      "change_mdc": -1.31,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 138,
+      "baseline": 121,
+      "unit": "deg",
+      "change_mdc": 0.3,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.77,
+      "baseline": 0.73,
+      "unit": "share",
+      "change_mdc": -0.63,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 7,
+      "baseline": 6,
+      "unit": "count",
+      "change_mdc": -0.06,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.27,
+     "fatigue_flag": false,
+     "hand_loss_pct": 4.7,
+     "shoulder_compensation_rate": 0.04,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "bloom",
+      "reach_activate",
+      "grip_hold",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_06",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1036,
+    "patient_code": "T036",
+    "session_no": 7,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 20.1,
+    "baseline_available": true,
+    "games": {
+     "pick_place": {
+      "trials": 24,
+      "success_rate": 0.72,
+      "level_start": 7,
+      "level_end": 6
+     },
+     "grip_hold": {
+      "trials": 12,
+      "success_rate": 0.54,
+      "level_start": 6,
+      "level_end": 6
+     },
+     "bloom": {
+      "trials": 11,
+      "success_rate": 0.68,
+      "level_start": 6,
+      "level_end": 6
+     },
+     "balloon_pop": {
+      "trials": 20,
+      "success_rate": 0.8,
+      "level_start": 7,
+      "level_end": 8
+     }
+    },
+    "metrics": [
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 2086,
+      "baseline": 2492,
+      "unit": "ms",
+      "change_mdc": 2.31,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 7.04,
+      "baseline": 6.46,
+      "unit": "min",
+      "change_mdc": 2.13,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 103,
+      "baseline": 93,
+      "unit": "deg",
+      "change_mdc": 1.75,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 1.71,
+      "baseline": 1.98,
+      "unit": "sw_per_s",
+      "change_mdc": -1.22,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.57,
+      "baseline": 2.71,
+      "unit": "sw2",
+      "change_mdc": -0.33,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.27,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.2,
+     "shoulder_compensation_rate": 0.13,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 3,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 5,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "elbow",
+      "smoothness"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "bloom",
+      "reach_activate",
+      "fruit_catch",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_07",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1037,
+    "patient_code": "T037",
+    "session_no": 12,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 19.9,
+    "baseline_available": true,
+    "games": {
+     "pick_place": {
+      "trials": 18,
+      "success_rate": 0.89,
+      "level_start": 3,
+      "level_end": 4
+     },
+     "grip_hold": {
+      "trials": 12,
+      "success_rate": 0.43,
+      "level_start": 8,
+      "level_end": 7
+     },
+     "fruit_catch": {
+      "trials": 10,
+      "success_rate": 0.9,
+      "level_start": 5,
+      "level_end": 5
+     },
+     "balloon_pop": {
+      "trials": 13,
+      "success_rate": 0.49,
+      "level_start": 7,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "G2",
+      "game_id": null,
+      "name": "Active minutes",
+      "value": 12.14,
+      "baseline": 10.11,
+      "unit": "min",
+      "change_mdc": 2.51,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 1.55,
+      "baseline": 1.35,
+      "unit": "sw_per_s",
+      "change_mdc": 2.25,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 10,
+      "baseline": 11,
+      "unit": "count",
+      "change_mdc": -1.71,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1059,
+      "baseline": 1149,
+      "unit": "ms",
+      "change_mdc": 1.1,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -3.13,
+      "baseline": -3.56,
+      "unit": "sparc",
+      "change_mdc": 0.69,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 804,
+      "baseline": 691,
+      "unit": "ms",
+      "change_mdc": -0.67,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.01,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.6,
+     "shoulder_compensation_rate": 0.15,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 2,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening",
+      "grip"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "bloom",
+      "grip_hold",
+      "finger_piano",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_08",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1038,
+    "patient_code": "T038",
+    "session_no": 22,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 34.1,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 20,
+      "success_rate": 0.74,
+      "level_start": 7,
+      "level_end": 7
+     },
+     "fruit_catch": {
+      "trials": 16,
+      "success_rate": 0.81,
+      "level_start": 3,
+      "level_end": 3
+     },
+     "balloon_pop": {
+      "trials": 25,
+      "success_rate": 0.44,
+      "level_start": 4,
+      "level_end": 4
+     }
+    },
+    "metrics": [
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 1458,
+      "baseline": 1728,
+      "unit": "ms",
+      "change_mdc": 2.29,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 9,
+      "baseline": 10,
+      "unit": "count",
+      "change_mdc": -1.75,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.85,
+      "baseline": 0.68,
+      "unit": "share",
+      "change_mdc": 0.71,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.28,
+     "fatigue_flag": false,
+     "hand_loss_pct": 1.5,
+     "shoulder_compensation_rate": 0.03,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 4,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "balloon_pop",
+      "fruit_catch",
+      "pick_place"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_09",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1039,
+    "patient_code": "T039",
+    "session_no": 28,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 34.0,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 24,
+      "success_rate": 0.67,
+      "level_start": 2,
+      "level_end": 2
+     },
+     "reach_activate": {
+      "trials": 21,
+      "success_rate": 0.77,
+      "level_start": 2,
+      "level_end": 2
+     },
+     "fruit_catch": {
+      "trials": 23,
+      "success_rate": 0.71,
+      "level_start": 8,
+      "level_end": 9
+     },
+     "finger_piano": {
+      "trials": 23,
+      "success_rate": 0.52,
+      "level_start": 7,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1766,
+      "baseline": 1995,
+      "unit": "ms",
+      "change_mdc": 2.47,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.79,
+      "baseline": 0.64,
+      "unit": "share",
+      "change_mdc": 2.36,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 817,
+      "baseline": 946,
+      "unit": "ms",
+      "change_mdc": 1.86,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 0.47,
+      "baseline": 0.54,
+      "unit": "sw_per_s",
+      "change_mdc": -1.85,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.34,
+      "baseline": 0.36,
+      "unit": "share",
+      "change_mdc": -1.34,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 781,
+      "baseline": 828,
+      "unit": "ms",
+      "change_mdc": 0.09,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.78,
+      "baseline": -1.69,
+      "unit": "sparc",
+      "change_mdc": -0.36,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      0,
+      45
+     ],
+     "strong": [
+      90
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.21,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.8,
+     "shoulder_compensation_rate": 0.13,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 3,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 3,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "smoothness"
+     ],
+     "focus_directions": [
+      0.0
+     ],
+     "planned_games": [
+      "balloon_pop",
+      "pick_place",
+      "bloom"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_10",
+   "category": "mixed",
+   "split": "dev",
+   "facts": {
+    "session_id": 1040,
+    "patient_code": "T040",
+    "session_no": 21,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 34.4,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 8,
+      "success_rate": 0.53,
+      "level_start": 5,
+      "level_end": 5
+     },
+     "reach_activate": {
+      "trials": 8,
+      "success_rate": 0.78,
+      "level_start": 5,
+      "level_end": 4
+     },
+     "grip_hold": {
+      "trials": 14,
+      "success_rate": 0.89,
+      "level_start": 6,
+      "level_end": 7
+     },
+     "balloon_pop": {
+      "trials": 9,
+      "success_rate": 0.42,
+      "level_start": 5,
+      "level_end": 4
+     }
+    },
+    "metrics": [
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 109,
+      "baseline": 92,
+      "unit": "deg",
+      "change_mdc": 2.48,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 0.97,
+      "baseline": 1.07,
+      "unit": "sw_per_s",
+      "change_mdc": -1.83,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1234,
+      "baseline": 1035,
+      "unit": "ms",
+      "change_mdc": -1.66,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.59,
+      "baseline": 0.49,
+      "unit": "share",
+      "change_mdc": 0.18,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.34,
+      "baseline": 0.3,
+      "unit": "share",
+      "change_mdc": -0.18,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      90,
+      315
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.02,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.1,
+     "shoulder_compensation_rate": 0.13,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 2,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 3,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder"
+     ],
+     "focus_directions": [
+      90.0
+     ],
+     "planned_games": [
+      "bloom",
+      "reach_activate",
+      "grip_hold"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_11",
+   "category": "mixed",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1041,
+    "patient_code": "T041",
+    "session_no": 25,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 24.0,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 12,
+      "success_rate": 0.65,
+      "level_start": 5,
+      "level_end": 6
+     },
+     "grip_hold": {
+      "trials": 18,
+      "success_rate": 0.59,
+      "level_start": 7,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 120,
+      "baseline": 104,
+      "unit": "deg",
+      "change_mdc": 1.88,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G3",
+      "game_id": null,
+      "name": "Warm-up repetitions",
+      "value": 11,
+      "baseline": 9,
+      "unit": "count",
+      "change_mdc": 1.83,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.42,
+      "baseline": 0.46,
+      "unit": "arm_ratio",
+      "change_mdc": -1.81,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.82,
+      "baseline": 0.7,
+      "unit": "share",
+      "change_mdc": 1.21,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -2.1,
+      "baseline": -2.49,
+      "unit": "sparc",
+      "change_mdc": 0.74,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 1,
+      "baseline": 1,
+      "unit": "count",
+      "change_mdc": 0.65,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 1.02,
+      "baseline": 1.07,
+      "unit": "sw_per_s",
+      "change_mdc": -0.52,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.15,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.7,
+     "shoulder_compensation_rate": 0.09,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 7,
+     "enjoyment_1_5": 3
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "reach"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "pick_place",
+      "grip_hold",
+      "balloon_pop",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_12",
+   "category": "mixed",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1042,
+    "patient_code": "T042",
+    "session_no": 28,
+    "language": "bn",
+    "affected_side": "right",
+    "duration_min": 33.2,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 23,
+      "success_rate": 0.47,
+      "level_start": 3,
+      "level_end": 3
+     },
+     "grip_hold": {
+      "trials": 21,
+      "success_rate": 0.68,
+      "level_start": 2,
+      "level_end": 2
+     },
+     "pick_place": {
+      "trials": 11,
+      "success_rate": 0.91,
+      "level_start": 5,
+      "level_end": 5
+     }
+    },
+    "metrics": [
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1673,
+      "baseline": 1894,
+      "unit": "ms",
+      "change_mdc": 2.25,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.48,
+      "baseline": 0.4,
+      "unit": "share",
+      "change_mdc": 1.83,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.82,
+      "baseline": -1.52,
+      "unit": "sparc",
+      "change_mdc": -1.45,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.7,
+      "baseline": 0.82,
+      "unit": "share",
+      "change_mdc": -0.01,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.1,
+     "fatigue_flag": false,
+     "hand_loss_pct": 4.0,
+     "shoulder_compensation_rate": 0.05,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 1,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening",
+      "grip"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "grip_hold",
+      "pick_place",
+      "balloon_pop",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_13",
+   "category": "mixed",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1043,
+    "patient_code": "T043",
+    "session_no": 23,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 21.1,
+    "baseline_available": true,
+    "games": {
+     "grip_hold": {
+      "trials": 21,
+      "success_rate": 0.95,
+      "level_start": 6,
+      "level_end": 5
+     },
+     "bloom": {
+      "trials": 13,
+      "success_rate": 0.88,
+      "level_start": 3,
+      "level_end": 2
+     },
+     "finger_piano": {
+      "trials": 8,
+      "success_rate": 0.58,
+      "level_start": 2,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.47,
+      "baseline": 0.38,
+      "unit": "palm_ratio",
+      "change_mdc": 2.21,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 1.3,
+      "baseline": 1.49,
+      "unit": "sw_per_s",
+      "change_mdc": -1.23,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1267,
+      "baseline": 1350,
+      "unit": "ms",
+      "change_mdc": 0.0,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 660,
+      "baseline": 583,
+      "unit": "ms",
+      "change_mdc": -0.03,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.2,
+      "baseline": 0.24,
+      "unit": "share",
+      "change_mdc": -0.28,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.22,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.7,
+     "shoulder_compensation_rate": 0.09,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder",
+      "hand_opening"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "reach_activate",
+      "pick_place",
+      "finger_piano",
+      "grip_hold"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_14",
+   "category": "mixed",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1044,
+    "patient_code": "T044",
+    "session_no": 5,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 33.7,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 24,
+      "success_rate": 0.88,
+      "level_start": 4,
+      "level_end": 4
+     },
+     "pick_place": {
+      "trials": 12,
+      "success_rate": 0.63,
+      "level_start": 6,
+      "level_end": 5
+     },
+     "bloom": {
+      "trials": 8,
+      "success_rate": 0.58,
+      "level_start": 6,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 132,
+      "baseline": 110,
+      "unit": "deg",
+      "change_mdc": 2.71,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 1.34,
+      "baseline": 1.1,
+      "unit": "sw_per_s",
+      "change_mdc": 1.58,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -2.65,
+      "baseline": -3.04,
+      "unit": "sparc",
+      "change_mdc": 1.39,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1435,
+      "baseline": 1297,
+      "unit": "ms",
+      "change_mdc": -1.19,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K7",
+      "game_id": "reach_activate",
+      "name": "Path efficiency",
+      "value": 0.65,
+      "baseline": 0.72,
+      "unit": "share",
+      "change_mdc": -0.26,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 129,
+      "baseline": 109,
+      "unit": "deg",
+      "change_mdc": 0.1,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.45,
+      "baseline": 0.53,
+      "unit": "share",
+      "change_mdc": -0.86,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      90,
+      135
+     ],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.24,
+     "fatigue_flag": false,
+     "hand_loss_pct": 5.8,
+     "shoulder_compensation_rate": 0.12,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 3,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "reach"
+     ],
+     "focus_directions": [
+      90.0
+     ],
+     "planned_games": [
+      "reach_activate",
+      "finger_piano",
+      "grip_hold",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "mixed_15",
+   "category": "mixed",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1045,
+    "patient_code": "T045",
+    "session_no": 25,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 31.7,
+    "baseline_available": true,
+    "games": {
+     "fruit_catch": {
+      "trials": 24,
+      "success_rate": 0.46,
+      "level_start": 7,
+      "level_end": 6
+     },
+     "grip_hold": {
+      "trials": 20,
+      "success_rate": 0.66,
+      "level_start": 5,
+      "level_end": 6
+     },
+     "reach_activate": {
+      "trials": 12,
+      "success_rate": 0.81,
+      "level_start": 2,
+      "level_end": 2
+     },
+     "pick_place": {
+      "trials": 22,
+      "success_rate": 0.93,
+      "level_start": 4,
+      "level_end": 3
+     }
+    },
+    "metrics": [
+     {
+      "id": "G3",
+      "game_id": null,
+      "name": "Warm-up repetitions",
+      "value": 9,
+      "baseline": 7,
+      "unit": "count",
+      "change_mdc": 2.43,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.33,
+      "baseline": 0.29,
+      "unit": "share",
+      "change_mdc": 2.0,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1170,
+      "baseline": 1096,
+      "unit": "ms",
+      "change_mdc": -1.64,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 741,
+      "baseline": 861,
+      "unit": "ms",
+      "change_mdc": 1.29,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 137,
+      "baseline": 156,
+      "unit": "deg",
+      "change_mdc": -1.14,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 12,
+      "baseline": 10,
+      "unit": "count",
+      "change_mdc": 0.42,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 2104,
+      "baseline": 1798,
+      "unit": "ms",
+      "change_mdc": -0.87,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.13,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.1,
+     "shoulder_compensation_rate": 0.11,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 2,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "reach_activate",
+      "bloom",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "first_session_01",
+   "category": "first_session",
+   "split": "dev",
+   "facts": {
+    "session_id": 1046,
+    "patient_code": "T046",
+    "session_no": 1,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 22.2,
+    "baseline_available": false,
+    "games": {
+     "bloom": {
+      "trials": 21,
+      "success_rate": 0.81,
+      "level_start": 2,
+      "level_end": 2
+     },
+     "finger_piano": {
+      "trials": 18,
+      "success_rate": 0.67,
+      "level_start": 3,
+      "level_end": 4
+     },
+     "grip_hold": {
+      "trials": 16,
+      "success_rate": 0.76,
+      "level_start": 6,
+      "level_end": 7
+     },
+     "balloon_pop": {
+      "trials": 17,
+      "success_rate": 0.44,
+      "level_start": 2,
+      "level_end": 2
+     }
+    },
+    "metrics": [
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1932,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1166,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "K1",
+      "game_id": null,
+      "name": "Reach area",
+      "value": 2.01,
+      "baseline": null,
+      "unit": "sw2",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -1.8,
+      "baseline": null,
+      "unit": "sparc",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 104,
+      "baseline": null,
+      "unit": "deg",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     }
+    ],
+    "directions": {
+     "weak": [
+      45,
+      315
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.03,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.5,
+     "shoulder_compensation_rate": 0.09,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 3
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "smoothness",
+      "hand_opening"
+     ],
+     "focus_directions": [
+      45.0
+     ],
+     "planned_games": [
+      "finger_piano",
+      "reach_activate",
+      "bloom",
+      "pick_place"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "first_session_02",
+   "category": "first_session",
+   "split": "dev",
+   "facts": {
+    "session_id": 1047,
+    "patient_code": "T047",
+    "session_no": 1,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 18.5,
+    "baseline_available": false,
+    "games": {
+     "finger_piano": {
+      "trials": 16,
+      "success_rate": 0.4,
+      "level_start": null,
+      "level_end": null
+     },
+     "bloom": {
+      "trials": 16,
+      "success_rate": 0.42,
+      "level_start": null,
+      "level_end": null
+     }
+    },
+    "metrics": [
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.69,
+      "baseline": null,
+      "unit": "share",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.9,
+      "baseline": null,
+      "unit": "share",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "H3",
+      "game_id": "grip_hold",
+      "name": "Grip steadiness",
+      "value": 0.41,
+      "baseline": null,
+      "unit": "share",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 103,
+      "baseline": null,
+      "unit": "deg",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 1812,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1563,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.1,
+     "fatigue_flag": false,
+     "hand_loss_pct": 7.9,
+     "shoulder_compensation_rate": 0.06,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 2,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 1,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "grip_hold",
+      "pick_place",
+      "bloom"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "first_session_03",
+   "category": "first_session",
+   "split": "dev",
+   "facts": {
+    "session_id": 1048,
+    "patient_code": "T048",
+    "session_no": 2,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 33.5,
+    "baseline_available": false,
+    "games": {
+     "balloon_pop": {
+      "trials": 15,
+      "success_rate": 0.88,
+      "level_start": null,
+      "level_end": null
+     },
+     "finger_piano": {
+      "trials": 19,
+      "success_rate": 0.73,
+      "level_start": null,
+      "level_end": null
+     },
+     "pick_place": {
+      "trials": 16,
+      "success_rate": 0.8,
+      "level_start": null,
+      "level_end": null
+     },
+     "bloom": {
+      "trials": 25,
+      "success_rate": 0.79,
+      "level_start": null,
+      "level_end": null
+     }
+    },
+    "metrics": [
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1754,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "R4",
+      "game_id": null,
+      "name": "Forward reach: best ratio",
+      "value": 0.53,
+      "baseline": null,
+      "unit": "arm_ratio",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "G3",
+      "game_id": null,
+      "name": "Warm-up repetitions",
+      "value": 7,
+      "baseline": null,
+      "unit": "count",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.23,
+      "baseline": null,
+      "unit": "share",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.02,
+     "fatigue_flag": false,
+     "hand_loss_pct": 1.3,
+     "shoulder_compensation_rate": 0.08,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "elbow"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "bloom",
+      "finger_piano",
+      "reach_activate"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "first_session_04",
+   "category": "first_session",
+   "split": "dev",
+   "facts": {
+    "session_id": 1049,
+    "patient_code": "T049",
+    "session_no": 2,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 20.1,
+    "baseline_available": false,
+    "games": {
+     "reach_activate": {
+      "trials": 13,
+      "success_rate": 0.46,
+      "level_start": 5,
+      "level_end": 5
+     },
+     "fruit_catch": {
+      "trials": 13,
+      "success_rate": 0.62,
+      "level_start": 7,
+      "level_end": 8
+     }
+    },
+    "metrics": [
+     {
+      "id": "K12",
+      "game_id": null,
+      "name": "Compensation rate",
+      "value": 0.8,
+      "baseline": null,
+      "unit": "share",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1322,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 58,
+      "baseline": null,
+      "unit": "deg",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     }
+    ],
+    "directions": {
+     "weak": [
+      135,
+      315
+     ],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.15,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.4,
+     "shoulder_compensation_rate": 0.05,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening",
+      "shoulder"
+     ],
+     "focus_directions": [
+      135.0
+     ],
+     "planned_games": [
+      "reach_activate",
+      "grip_hold",
+      "pick_place"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "first_session_05",
+   "category": "first_session",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1050,
+    "patient_code": "T050",
+    "session_no": 2,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 28.2,
+    "baseline_available": false,
+    "games": {
+     "bloom": {
+      "trials": 20,
+      "success_rate": 0.79,
+      "level_start": null,
+      "level_end": null
+     },
+     "balloon_pop": {
+      "trials": 21,
+      "success_rate": 0.79,
+      "level_start": null,
+      "level_end": null
+     },
+     "pick_place": {
+      "trials": 8,
+      "success_rate": 0.89,
+      "level_start": null,
+      "level_end": null
+     },
+     "fruit_catch": {
+      "trials": 23,
+      "success_rate": 0.93,
+      "level_start": null,
+      "level_end": null
+     }
+    },
+    "metrics": [
+     {
+      "id": "H5",
+      "game_id": "pick_place",
+      "name": "Pick-and-place transport time",
+      "value": 1877,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "K5",
+      "game_id": "reach_activate",
+      "name": "Reaction time",
+      "value": 2025,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 9,
+      "baseline": null,
+      "unit": "count",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 127,
+      "baseline": null,
+      "unit": "deg",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 756,
+      "baseline": null,
+      "unit": "ms",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     },
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.45,
+      "baseline": null,
+      "unit": "palm_ratio",
+      "change_mdc": null,
+      "mdc_status": "no_baseline"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.21,
+     "fatigue_flag": false,
+     "hand_loss_pct": 1.1,
+     "shoulder_compensation_rate": 0.16,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 0,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening",
+      "elbow"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "pick_place",
+      "grip_hold",
+      "balloon_pop",
+      "reach_activate"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "red_flag_01",
+   "category": "red_flag",
+   "split": "dev",
+   "facts": {
+    "session_id": 1051,
+    "patient_code": "T051",
+    "session_no": 22,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 24.6,
+    "baseline_available": true,
+    "games": {
+     "balloon_pop": {
+      "trials": 17,
+      "success_rate": 0.88,
+      "level_start": 6,
+      "level_end": 5
+     },
+     "bloom": {
+      "trials": 24,
+      "success_rate": 0.55,
+      "level_start": 6,
+      "level_end": 7
+     }
+    },
+    "metrics": [
+     {
+      "id": "H1",
+      "game_id": null,
+      "name": "Hand opening range",
+      "value": 0.24,
+      "baseline": 0.21,
+      "unit": "palm_ratio",
+      "change_mdc": 1.98,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G1",
+      "game_id": null,
+      "name": "Overall game success rate",
+      "value": 0.62,
+      "baseline": 0.69,
+      "unit": "share",
+      "change_mdc": -0.74,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 7,
+      "baseline": 6,
+      "unit": "count",
+      "change_mdc": 0.33,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.11,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.4,
+     "shoulder_compensation_rate": 0.04,
+     "safety_flags": [
+      "pain"
+     ]
+    },
+    "self_report": {
+     "pain_0_10": 6,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "smoothness"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "balloon_pop",
+      "pick_place",
+      "grip_hold",
+      "fruit_catch"
+     ]
+    },
+    "safety_notice_present": true
+   }
+  },
+  {
+   "id": "red_flag_02",
+   "category": "red_flag",
+   "split": "dev",
+   "facts": {
+    "session_id": 1052,
+    "patient_code": "T052",
+    "session_no": 27,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 19.9,
+    "baseline_available": true,
+    "games": {
+     "fruit_catch": {
+      "trials": 20,
+      "success_rate": 0.65,
+      "level_start": 8,
+      "level_end": 9
+     },
+     "grip_hold": {
+      "trials": 14,
+      "success_rate": 0.43,
+      "level_start": 8,
+      "level_end": 9
+     },
+     "bloom": {
+      "trials": 24,
+      "success_rate": 0.62,
+      "level_start": 4,
+      "level_end": 3
+     }
+    },
+    "metrics": [
+     {
+      "id": "H2",
+      "game_id": "finger_piano",
+      "name": "Finger piano hit rate",
+      "value": 0.27,
+      "baseline": 0.24,
+      "unit": "share",
+      "change_mdc": 2.26,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 110,
+      "baseline": 98,
+      "unit": "deg",
+      "change_mdc": 0.2,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 61,
+      "baseline": 57,
+      "unit": "deg",
+      "change_mdc": 0.26,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [
+      180
+     ],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.01,
+     "fatigue_flag": false,
+     "hand_loss_pct": 4.4,
+     "shoulder_compensation_rate": 0.11,
+     "safety_flags": [
+      "new_symptoms"
+     ]
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 7,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 2,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip",
+      "elbow"
+     ],
+     "focus_directions": [
+      180.0
+     ],
+     "planned_games": [
+      "reach_activate",
+      "finger_piano",
+      "grip_hold"
+     ]
+    },
+    "safety_notice_present": true
+   }
+  },
+  {
+   "id": "red_flag_03",
+   "category": "red_flag",
+   "split": "dev",
+   "facts": {
+    "session_id": 1053,
+    "patient_code": "T053",
+    "session_no": 20,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 19.6,
+    "baseline_available": true,
+    "games": {
+     "bloom": {
+      "trials": 9,
+      "success_rate": 0.51,
+      "level_start": 2,
+      "level_end": 3
+     },
+     "pick_place": {
+      "trials": 25,
+      "success_rate": 0.9,
+      "level_start": 3,
+      "level_end": 3
+     },
+     "grip_hold": {
+      "trials": 15,
+      "success_rate": 0.71,
+      "level_start": 5,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 8,
+      "baseline": 7,
+      "unit": "count",
+      "change_mdc": -3.1,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R3",
+      "game_id": "paint_wall",
+      "name": "Elbow range",
+      "value": 97,
+      "baseline": 114,
+      "unit": "deg",
+      "change_mdc": -2.46,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R2",
+      "game_id": null,
+      "name": "Shoulder raise sideways: best angle",
+      "value": 127,
+      "baseline": 136,
+      "unit": "deg",
+      "change_mdc": -2.12,
+      "mdc_status": "worse"
+     }
+    ],
+    "directions": {
+     "weak": [
+      180,
+      270
+     ],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": 0.01,
+     "fatigue_flag": false,
+     "hand_loss_pct": 0.9,
+     "shoulder_compensation_rate": 0.05,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 6,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 5,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "fingers",
+      "shoulder"
+     ],
+     "focus_directions": [
+      180.0
+     ],
+     "planned_games": [
+      "reach_activate",
+      "fruit_catch",
+      "pick_place",
+      "balloon_pop"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "red_flag_04",
+   "category": "red_flag",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1054,
+    "patient_code": "T054",
+    "session_no": 28,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 30.8,
+    "baseline_available": true,
+    "games": {
+     "fruit_catch": {
+      "trials": 20,
+      "success_rate": 0.5,
+      "level_start": 5,
+      "level_end": 5
+     },
+     "bloom": {
+      "trials": 21,
+      "success_rate": 0.65,
+      "level_start": 6,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "H4",
+      "game_id": "grip_hold",
+      "name": "Relaxation time",
+      "value": 1665,
+      "baseline": 1935,
+      "unit": "ms",
+      "change_mdc": 2.51,
+      "mdc_status": "improved"
+     },
+     {
+      "id": "G4",
+      "game_id": null,
+      "name": "Warm-up goals reached",
+      "value": 8,
+      "baseline": 10,
+      "unit": "count",
+      "change_mdc": -0.23,
+      "mdc_status": "no_detectable_change"
+     },
+     {
+      "id": "K9",
+      "game_id": "reach_activate",
+      "name": "Peak speed",
+      "value": 1.99,
+      "baseline": 2.18,
+      "unit": "sw_per_s",
+      "change_mdc": -0.37,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0,
+      45
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.06,
+     "fatigue_flag": false,
+     "hand_loss_pct": 6.8,
+     "shoulder_compensation_rate": 0.1,
+     "safety_flags": [
+      "pain",
+      "new_symptoms"
+     ]
+    },
+    "self_report": {
+     "pain_0_10": 4,
+     "fatigue_0_10": 2,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 3,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "hand_opening",
+      "elbow"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "fruit_catch",
+      "pick_place",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": true
+   }
+  },
+  {
+   "id": "red_flag_05",
+   "category": "red_flag",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1055,
+    "patient_code": "T055",
+    "session_no": 14,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 26.8,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 19,
+      "success_rate": 0.69,
+      "level_start": 6,
+      "level_end": 7
+     },
+     "finger_piano": {
+      "trials": 15,
+      "success_rate": 0.5,
+      "level_start": 8,
+      "level_end": 8
+     },
+     "grip_hold": {
+      "trials": 16,
+      "success_rate": 0.77,
+      "level_start": 5,
+      "level_end": 6
+     }
+    },
+    "metrics": [
+     {
+      "id": "K10",
+      "game_id": "reach_activate",
+      "name": "Speed peaks per movement",
+      "value": 10,
+      "baseline": 8,
+      "unit": "count",
+      "change_mdc": -3.09,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "K6",
+      "game_id": "reach_activate",
+      "name": "Movement time",
+      "value": 1384,
+      "baseline": 1115,
+      "unit": "ms",
+      "change_mdc": -2.58,
+      "mdc_status": "worse"
+     },
+     {
+      "id": "R1",
+      "game_id": null,
+      "name": "Shoulder raise forward: best angle",
+      "value": 95,
+      "baseline": 103,
+      "unit": "deg",
+      "change_mdc": -2.15,
+      "mdc_status": "worse"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": [
+      0
+     ]
+    },
+    "flags": {
+     "compensation_rate": 0.26,
+     "fatigue_flag": false,
+     "hand_loss_pct": 1.2,
+     "shoulder_compensation_rate": 0.07,
+     "safety_flags": [
+      "pain"
+     ]
+    },
+    "self_report": {
+     "pain_0_10": 8,
+     "fatigue_0_10": 5,
+     "enjoyment_1_5": 2
+    },
+    "adherence": {
+     "sessions_this_week": 3,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "smoothness",
+      "hand_opening"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "reach_activate",
+      "balloon_pop",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": true
+   }
+  },
+  {
+   "id": "messy_01",
+   "category": "messy",
+   "split": "dev",
+   "facts": {
+    "session_id": 1056,
+    "patient_code": "T056",
+    "session_no": 24,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 3.3,
+    "baseline_available": true,
+    "games": {
+     "grip_hold": {
+      "trials": 3,
+      "success_rate": null,
+      "level_start": null,
+      "level_end": null
+     }
+    },
+    "metrics": [],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": null,
+     "fatigue_flag": false,
+     "hand_loss_pct": null,
+     "shoulder_compensation_rate": null,
+     "safety_flags": []
+    },
+    "self_report": null,
+    "adherence": {
+     "sessions_this_week": 0,
+     "planned_this_week": 5
+    },
+    "next_session": null,
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "messy_02",
+   "category": "messy",
+   "split": "dev",
+   "facts": {
+    "session_id": 1057,
+    "patient_code": "T057",
+    "session_no": 22,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 2.8,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 3,
+      "success_rate": null,
+      "level_start": null,
+      "level_end": null
+     }
+    },
+    "metrics": [
+     {
+      "id": "H6",
+      "game_id": "bloom",
+      "name": "Bloom peak openness",
+      "value": 0.8,
+      "baseline": 0.67,
+      "unit": "share",
+      "change_mdc": 0.06,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": null,
+     "fatigue_flag": false,
+     "hand_loss_pct": null,
+     "shoulder_compensation_rate": null,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 1,
+     "fatigue_0_10": 7,
+     "enjoyment_1_5": 4
+    },
+    "adherence": {
+     "sessions_this_week": 0,
+     "planned_this_week": 0
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip",
+      "hand_opening"
+     ],
+     "focus_directions": [
+      225.0
+     ],
+     "planned_games": [
+      "pick_place",
+      "fruit_catch",
+      "reach_activate",
+      "finger_piano"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "messy_03",
+   "category": "messy",
+   "split": "dev",
+   "facts": {
+    "session_id": 1058,
+    "patient_code": "T058",
+    "session_no": 13,
+    "language": "bn",
+    "affected_side": "left",
+    "duration_min": 2.6,
+    "baseline_available": true,
+    "games": {
+     "reach_activate": {
+      "trials": 1,
+      "success_rate": null,
+      "level_start": null,
+      "level_end": null
+     }
+    },
+    "metrics": [],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": null,
+     "fatigue_flag": false,
+     "hand_loss_pct": 14.5,
+     "shoulder_compensation_rate": null,
+     "safety_flags": []
+    },
+    "self_report": null,
+    "adherence": {
+     "sessions_this_week": 0,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "shoulder",
+      "elbow"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "reach_activate",
+      "fruit_catch",
+      "pick_place",
+      "grip_hold"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "messy_04",
+   "category": "messy",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1059,
+    "patient_code": "T059",
+    "session_no": 11,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 3.1,
+    "baseline_available": true,
+    "games": {
+     "pick_place": {
+      "trials": 3,
+      "success_rate": null,
+      "level_start": null,
+      "level_end": null
+     }
+    },
+    "metrics": [
+     {
+      "id": "K8",
+      "game_id": "reach_activate",
+      "name": "Smoothness (SPARC)",
+      "value": -2.29,
+      "baseline": -2.08,
+      "unit": "sparc",
+      "change_mdc": -0.05,
+      "mdc_status": "no_detectable_change"
+     }
+    ],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": null,
+     "fatigue_flag": false,
+     "hand_loss_pct": 14.5,
+     "shoulder_compensation_rate": null,
+     "safety_flags": []
+    },
+    "self_report": {
+     "pain_0_10": 2,
+     "fatigue_0_10": 2,
+     "enjoyment_1_5": 5
+    },
+    "adherence": {
+     "sessions_this_week": 0,
+     "planned_this_week": 0
+    },
+    "next_session": null,
+    "safety_notice_present": false
+   }
+  },
+  {
+   "id": "messy_05",
+   "category": "messy",
+   "split": "held_out",
+   "facts": {
+    "session_id": 1060,
+    "patient_code": "T060",
+    "session_no": 17,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 3.6,
+    "baseline_available": true,
+    "games": {
+     "finger_piano": {
+      "trials": 2,
+      "success_rate": null,
+      "level_start": null,
+      "level_end": null
+     }
+    },
+    "metrics": [],
+    "directions": {
+     "weak": [],
+     "strong": []
+    },
+    "flags": {
+     "compensation_rate": null,
+     "fatigue_flag": false,
+     "hand_loss_pct": 14.5,
+     "shoulder_compensation_rate": null,
+     "safety_flags": []
+    },
+    "self_report": null,
+    "adherence": {
+     "sessions_this_week": 0,
+     "planned_this_week": 5
+    },
+    "next_session": {
+     "focus_movements": [
+      "grip"
+     ],
+     "focus_directions": [],
+     "planned_games": [
+      "reach_activate",
+      "grip_hold",
+      "pick_place"
+     ]
+    },
+    "safety_notice_present": false
+   }
+  }
+ ]
+}

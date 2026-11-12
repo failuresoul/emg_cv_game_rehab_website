@@ -78,17 +78,17 @@ def numbers_in(text: str) -> list[float]:
     return [float(match) for match in _NUMBER.findall(text)]
 
 
-def _fact_numbers(value: Any) -> Iterator[float]:
+def fact_numbers(value: Any) -> Iterator[float]:
     if isinstance(value, bool) or value is None:
         return
     if isinstance(value, int | float):
         yield float(value)
     elif isinstance(value, dict):
         for item in value.values():
-            yield from _fact_numbers(item)
+            yield from fact_numbers(item)
     elif isinstance(value, list | tuple):
         for item in value:
-            yield from _fact_numbers(item)
+            yield from fact_numbers(item)
 
 
 def number_is_known(number: float, known: list[float]) -> bool:
@@ -118,7 +118,7 @@ def banned_patterns() -> tuple[tuple[str, re.Pattern[str]], ...]:
     return tuple(found)
 
 
-def _mention_patterns(metric_id: str, language: FeedbackLanguage) -> list[re.Pattern[str]]:
+def mention_patterns(metric_id: str, language: FeedbackLanguage) -> list[re.Pattern[str]]:
     patterns = [re.compile(rf"(?<![A-Za-z\d]){re.escape(metric_id)}(?![A-Za-z\d])")]
     names = list(MENTIONS[language].get(metric_id, ()))
     metric = get_metric(metric_id)
@@ -146,7 +146,7 @@ def _direction_errors(
     field: str, text: str, language: FeedbackLanguage, statuses: dict[str, set[str]]
 ) -> list[str]:
     errors: list[str] = []
-    patterns = {metric_id: _mention_patterns(metric_id, language) for metric_id in statuses}
+    patterns = {metric_id: mention_patterns(metric_id, language) for metric_id in statuses}
     for clause in _CLAUSES.split(text):
         mentioned = [
             metric_id
@@ -255,7 +255,7 @@ def validate(
         if highlight.metric_id not in statuses:
             errors.append(f"highlights[{index}].metric_id: {highlight.metric_id} is not in metrics.")
 
-    known = list(_fact_numbers(facts_seen))
+    known = list(fact_numbers(facts_seen))
     flagged = bool(red_flags)
     patient_sentences: list[int] = []
     for field, text, for_patient in text_fields(report):

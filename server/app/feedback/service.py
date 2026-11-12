@@ -62,13 +62,14 @@ def generate_report_from_facts(
     language: FeedbackLanguage = "en",
     model: str | None = None,
     provider: LLMProvider | None = None,
+    prompt_version: str = prompt.PROMPT_VERSION,
 ) -> ReportResult:
     provider = provider or get_provider()
     found = candidates(facts)
     flags = red_flags(facts, language)
     seen = prompt.facts_seen(facts)
-    system = prompt.system_prompt()
-    user = prompt.user_prompt(seen, found, language)
+    system = prompt.system_prompt(prompt_version)
+    user = prompt.user_prompt(seen, found, language, prompt_version)
     schema = report_json_schema(
         language, [candidate.id for candidate in found], [metric.id for metric in facts.metrics]
     )
@@ -111,7 +112,7 @@ def generate_report_from_facts(
         safety_notices=notice_texts(flags),
         meta=ReportMeta(
             model=used_model,
-            prompt_version=prompt.PROMPT_VERSION,
+            prompt_version=prompt_version,
             latency_ms=round(latency, 1),
             prompt_tokens=prompt_tokens,
             output_tokens=output_tokens,
