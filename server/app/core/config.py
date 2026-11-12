@@ -24,6 +24,18 @@ class Settings(BaseSettings):
     # Minutes of active game play after which the games suggest finishing soon, then finishing.
     SESSION_FINISH_SOON_MIN: float = 25.0
     SESSION_FINISH_MIN: float = 35.0
+    # The LLM feedback module (app/feedback): "ollama" or "mock" (tests always use mock).
+    LLM_PROVIDER: str = "mock"
+    OLLAMA_URL: str = "http://localhost:11434"
+    LLM_MODEL: str = "qwen3.5:4b"
+    # Comma-separated models compared by the speed test and the evaluation.
+    LLM_MODELS_CANDIDATES: str = "qwen3.5:4b,qwen3.5:2b,phi4-mini"
+    LLM_TEMPERATURE: float = 0.2
+    LLM_TOP_P: float = 0.9
+    LLM_NUM_CTX: int = 4096
+    LLM_MAX_TOKENS: int = 700
+    LLM_TIMEOUT_S: float = 60.0
+    LLM_KEEP_ALIVE: str = "30m"
 
     @property
     def game_specs_path(self) -> Path:
@@ -36,6 +48,10 @@ class Settings(BaseSettings):
         if self.METRICS_CATALOG_PATH:
             return Path(self.METRICS_CATALOG_PATH)
         return SERVER_DIR.parent / "shared" / "metrics-catalog.json"
+
+    @property
+    def llm_candidates(self) -> list[str]:
+        return [name.strip() for name in self.LLM_MODELS_CANDIDATES.split(",") if name.strip()]
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -8,6 +8,8 @@ os.environ["JWT_SECRET"] = "test-secret-test-secret-test-secret-test-secret-test
 os.environ["ADMIN_EMAIL"] = "admin@motionlab.local"
 os.environ["ADMIN_PASSWORD"] = "test-password"
 os.environ["ADMIN_NAME"] = "Test Admin"
+# Tests never call a real model.
+os.environ["LLM_PROVIDER"] = "mock"
 
 import pytest
 from fastapi.testclient import TestClient
