@@ -16,6 +16,7 @@ import type {
   GameSettingUpdate,
   Patient,
   PatientCreate,
+  LatestPlan,
   PatientLevels,
   PatientMetrics,
   PatientProgress,
@@ -214,5 +215,13 @@ export function useAdminPatientLevels(id: number) {
   return useQuery({
     queryKey: [ADMIN_KEY, "patient", id, "levels"],
     queryFn: async () => (await api.get<PatientLevels>(`/admin/patients/${id}/levels`)).data,
+  });
+}
+
+/** The patient's most recent plan with its reasons, and the changes they made to it. */
+export function useAdminPatientPlan(id: number) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "patient", id, "plan"],
+    queryFn: async () => (await api.get<LatestPlan>(`/admin/patients/${id}/plan`)).data,
   });
 }

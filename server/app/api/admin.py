@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlmodel import col, select
 
 from app.api.deps import SessionDep, TzOffset, require_admin
 from app.models import PatientProfile, User
@@ -9,6 +10,7 @@ from app.schemas.game import MetricsRecomputeRead
 from app.schemas.game_setting import AdminGameRead, GameSettingUpdate
 from app.schemas.metrics import GameLevel, PatientLevels, PatientMetrics
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
+from app.schemas.plan import LatestPlan, PlanOverrideRead, SessionPlan
 from app.schemas.session import (
     AdminCalibrationRead,
     AdminRecentSession,
@@ -127,6 +129,26 @@ def get_patient_levels(patient_id: int, session: SessionDep) -> PatientLevels:
             )
             for row in levels.patient_engine_states(session, profile)
         ],
+    )
+
+
+@router.get("/patients/{patient_id}/plan")
+def get_patient_plan(patient_id: int, session: SessionDep) -> LatestPlan:
+    """The patient's most recent session with a plan, its reasons and any changes they made."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    record = session.exec(
+        select(SessionRecord)
+        .where(SessionRecord.patient_id == profile.id, col(SessionRecord.plan).is_not(None))
+        .order_by(col(SessionRecord.started_at).desc())
+    ).first()
+    if record is None:
+        return LatestPlan(session_id=None, started_at=None, session_status=None, plan=None, overrides=[])
+    return LatestPlan(
+        session_id=record.id,
+        started_at=record.started_at,
+        session_status=record.status,
+        plan=SessionPlan.model_validate(record.plan),
+        overrides=[PlanOverrideRead.model_validate(item) for item in record.plan_overrides or []],
     )
 
 

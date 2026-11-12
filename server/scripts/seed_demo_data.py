@@ -57,7 +57,8 @@ from app.schemas.session_feedback import SessionFeedbackCreate
 from app.schemas.warmup import ExerciseId, WarmupResultCreate
 from app.engine.trial_summary import last_trial
 from app.schemas.common import as_utc
-from app.services import adaptation, safety, session_metrics, trial_metrics
+from app.schemas.plan import PlanOverrideRead
+from app.services import adaptation, planner, safety, session_metrics, trial_metrics
 from app.services.patients import create_patient
 
 SEED = 20261110
@@ -1591,6 +1592,8 @@ def seed_demo_data(
         profile = session.get(PatientProfile, created.id)
         assert profile is not None
         profile.is_demo = True
+        # The demo shows the Bayesian, workspace-aware engine and the planner.
+        profile.engine_mode = "L2"
         session.add(profile)
 
         histories: dict[ExerciseId, ExerciseHistory] = {}
@@ -1659,9 +1662,30 @@ def replay_adaptation(session: Session, profile: PatientProfile, record: Session
             )
 
 
+def store_plan(session: Session, profile: PatientProfile, record: SessionRecord) -> None:
+    """The plan the planner would have shown at the start of the session, from the sessions
+    before it, and the patient's change to it: demo patients play every game, so each session
+    records the games they added to the plan, in the order played."""
+    plan = planner.plan_session(session, profile, record)
+    record.plan = plan.model_dump(mode="json")
+    planned = [game.game_id for game in plan.games]
+    played = list((record.game_queue or {}).get("games") or [])
+    kept = [game for game in planned if game in played]
+    entry = PlanOverrideRead(
+        at=as_utc(record.started_at) + timedelta(minutes=12),
+        planned=planned,
+        games=played,
+        removed=[game for game in planned if game not in played],
+        added=[game for game in played if game not in planned],
+        reordered=[game for game in played if game in planned] != kept,
+    )
+    record.plan_overrides = [entry.model_dump(mode="json")]
+    session.add(record)
+
+
 def compute_demo_metrics(session: Session, profile: PatientProfile) -> None:
-    """The difficulty engine's decisions, the server's trial measures and each session's
-    catalogue measures, as a real session's are while playing and when it ends."""
+    """The plan, the difficulty engine's decisions, the server's trial measures and each
+    session's catalogue measures, as a real session's are while playing and when it ends."""
     statement = (
         select(SessionRecord)
         .where(SessionRecord.patient_id == profile.id)
@@ -1669,6 +1693,7 @@ def compute_demo_metrics(session: Session, profile: PatientProfile) -> None:
     )
     for record in session.exec(statement).all():
         assert record.id is not None
+        store_plan(session, profile, record)
         replay_adaptation(session, profile, record)
         session.commit()
         trial_metrics.recompute(session, record.id)

@@ -54,6 +54,10 @@ export interface EngineLastTrial {
   movement_ms: number | null;
   completion_ms: number | null;
   activation_peak: number | null;
+  /** Where the target was (spatial games), so L2 credits the sector played. */
+  direction_deg?: number;
+  distance_frac?: number;
+  side?: "out" | "across";
 }
 
 export interface EngineNextResponse {
@@ -65,6 +69,12 @@ export interface EngineNextResponse {
   decision: string;
   safety_override: string | null;
   engine: string;
+  /** Where the next target goes, when the engine chooses it (L2, spatial games); else null. */
+  direction_deg?: number | null;
+  distance_frac?: number | null;
+  /** The workspace sector, such as "D2R3" or "out-R2". */
+  sector?: string | null;
+  side?: "out" | "across" | null;
 }
 
 export interface Me extends User {
@@ -95,7 +105,7 @@ export interface PatientCreate {
   weekly_goal?: number;
 }
 
-export type PatientUpdate = Partial<PatientCreate>;
+export type PatientUpdate = Partial<PatientCreate> & { engine_mode?: EngineMode };
 
 export type PatientRegister = Omit<PatientCreate, "notes">;
 
@@ -127,6 +137,8 @@ export type SessionStep =
 export interface GameQueueState {
   games: GameId[];
   index: number;
+  /** Trials per game from the plan, where it set them. */
+  trials?: Partial<Record<GameId, number>>;
 }
 
 export interface SessionProgressUpdate {
@@ -614,9 +626,72 @@ export interface AdaptationLogRow {
   safety_override: string | null;
   cue: EngineCue | null;
   trial: EngineLastTrial | null;
+  /** L2's sampled values, choices and target; null for L0 and L1. */
+  details?: AdaptationDetails | null;
   /** 1–10, after the decision. */
   level: number;
   created_at: string;
+}
+
+/** What L2 logs with each decision. */
+export interface AdaptationDetails {
+  target?: {
+    direction_deg: number | null;
+    side: "out" | "across" | null;
+    distance_frac: number;
+    sector: string;
+  };
+  sector_samples?: Record<string, number>;
+  chosen_sector?: string;
+  levels?: Record<string, number>;
+}
+
+/** L2's beliefs, kept in the engine state's `extra`. */
+export interface L2Extra {
+  sectors?: Record<string, [number, number]>;
+  seen?: Record<string, number>;
+}
+
+/** The session planner's plan (GET /api/sessions/{id}/plan). */
+export interface PlannedGame {
+  game_id: GameId;
+  trials: number;
+  minutes: number;
+  reason_key: string;
+  reason_params: Record<string, string | number>;
+}
+
+export interface SessionPlan {
+  games: PlannedGame[];
+  total_minutes: number;
+  focus: { movements: string[]; directions: number[] };
+  notes: { key: string; params: Record<string, string> }[];
+  version: number;
+  created_at: string | null;
+}
+
+export interface PlanOverride {
+  at: string;
+  planned: GameId[];
+  games: GameId[];
+  removed: GameId[];
+  added: GameId[];
+  reordered: boolean;
+}
+
+export interface LatestPlan {
+  session_id: number | null;
+  started_at: string | null;
+  session_status: string | null;
+  plan: SessionPlan | null;
+  overrides: PlanOverride[];
+}
+
+/** The planner's plan for the next session, in the session facts. */
+export interface FactsNextSession {
+  focus_movements: string[];
+  focus_directions: number[];
+  planned_games: GameId[];
 }
 
 /** A patient's current difficulty in one game, for the admin. */

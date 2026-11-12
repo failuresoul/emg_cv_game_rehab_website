@@ -385,3 +385,65 @@ def test_demo_patients_get_plans_from_their_real_history(session: Session) -> No
         plan = planner.plan_next(session, patient, last)
         assert_rules(plan)
         assert plan.games
+
+
+# The admin's view and controls
+
+
+def test_an_admin_changes_the_engine_and_runs_follow(
+    client: TestClient,
+    session: Session,
+    admin_headers: Headers,
+    create_patient: Callable[..., dict[str, Any]],
+    login: Callable[[str, str], Headers],
+) -> None:
+    patient = create_patient(email="engine@example.com")
+    url = f"/api/admin/patients/{patient['id']}"
+    assert client.get(url, headers=admin_headers).json()["engine_mode"] == "L1"
+    response = client.patch(url, json={"engine_mode": "L2"}, headers=admin_headers)
+    assert response.status_code == 200, response.text
+    assert response.json()["engine_mode"] == "L2"
+    assert client.patch(url, json={"engine_mode": "L9"}, headers=admin_headers).status_code == 422
+    headers = login("engine@example.com", PATIENT_PASSWORD)
+    me = client.get("/api/auth/me", headers=headers).json()
+    assert me["patient_profile"]["engine_mode"] == "L2"
+    session_id = client.post("/api/sessions", headers=headers).json()["id"]
+    run = client.post(
+        f"/api/sessions/{session_id}/games",
+        json={"game_id": "reach_activate", "engine": "L0", "input_source": "keyboard", "params_initial": {}, "trials_planned": 10},
+        headers=headers,
+    ).json()
+    assert run["engine"] == "L2"
+
+
+def test_the_admin_sees_the_latest_plan_and_changes(
+    client: TestClient,
+    admin_headers: Headers,
+    patient_headers: Headers,
+    session: Session,
+) -> None:
+    patient_id = profile(session).id
+    url = f"/api/admin/patients/{patient_id}/plan"
+    empty = client.get(url, headers=admin_headers).json()
+    assert empty == {"session_id": None, "started_at": None, "session_status": None, "plan": None, "overrides": []}
+    session_id = client.post("/api/sessions", headers=patient_headers).json()["id"]
+    planned = [g["game_id"] for g in client.get(f"/api/sessions/{session_id}/plan", headers=patient_headers).json()["games"]]
+    client.post(f"/api/sessions/{session_id}/plan/override", json={"games": planned[:2]}, headers=patient_headers)
+    latest = client.get(url, headers=admin_headers).json()
+    assert latest["session_id"] == session_id
+    assert latest["session_status"] == "active"
+    assert [g["game_id"] for g in latest["plan"]["games"]] == planned
+    assert latest["overrides"][0]["removed"] == planned[2:]
+    assert client.get(url, headers=patient_headers).status_code == 403
+    assert client.get("/api/admin/patients/999/plan", headers=admin_headers).status_code == 404
+
+
+def test_the_queue_keeps_the_plans_trials(client: TestClient, patient_headers: Headers) -> None:
+    session_id = client.post("/api/sessions", headers=patient_headers).json()["id"]
+    url = f"/api/sessions/{session_id}/progress"
+    queue = {"games": ["bloom", "reach_activate"], "index": 0, "trials": {"bloom": 10}}
+    response = client.patch(url, json={"game_queue": queue}, headers=patient_headers)
+    assert response.status_code == 200, response.text
+    assert response.json()["game_queue"]["trials"] == {"bloom": 10}
+    bad = {**queue, "trials": {"bloom": 2}}
+    assert client.patch(url, json={"game_queue": bad}, headers=patient_headers).status_code == 422

@@ -5,6 +5,7 @@ import type { GameId } from "@/types/api";
 import { GAME_IDS, GAMES } from "@/games/shared/registry";
 
 import {
+  cleanTrials,
   createQueue,
   DEFAULT_PLAN,
   defaultPlanRows,
@@ -145,5 +146,32 @@ describe("defaultPlanRows", () => {
       { id: "bloom", selected: true },
       { id: "fruit_catch", selected: false },
     ]);
+  });
+});
+
+describe("planned trials", () => {
+  it("keeps the plan's trials for queued games only, as whole numbers from 5 to 40", () => {
+    expect(
+      cleanTrials({ bloom: 12, grip_hold: 4, fruit_catch: 12.5, chess: 10 }, [
+        "bloom",
+        "grip_hold",
+        "fruit_catch",
+      ]),
+    ).toEqual({ bloom: 12 });
+    expect(cleanTrials({}, ["bloom"])).toBeUndefined();
+    expect(cleanTrials("nonsense", ["bloom"])).toBeUndefined();
+  });
+
+  it("carries them in the queue and through storage", () => {
+    const queue = createQueue(7, ["bloom", "reach_activate"], { bloom: 10 });
+    expect(queue.trials).toEqual({ bloom: 10 });
+    expect(createQueue(7, ["bloom"]).trials).toBeUndefined();
+    const storage = new Map<string, string>();
+    const fake = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => void storage.set(key, value),
+    } as unknown as Storage;
+    saveQueue(queue, fake);
+    expect(loadQueue(7, GAME_IDS, fake)?.trials).toEqual({ bloom: 10 });
   });
 });

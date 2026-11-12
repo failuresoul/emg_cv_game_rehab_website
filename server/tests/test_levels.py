@@ -174,3 +174,34 @@ def test_last_trial_uses_the_completion_time_without_a_movement_time() -> None:
     assert summary.movement_ms is None
     assert summary.completion_ms == 2650
     assert summary.activation_peak == 0.7
+
+
+def test_trial_summaries_say_where_the_target_was() -> None:
+    from app.engine.trial_summary import target_location
+
+    def made(**params: Any) -> TrialCreate:
+        payload = trial_payload()
+        payload["params"] = params
+        return TrialCreate.model_validate(payload)
+
+    reach = target_location("reach_activate", make_trial())
+    assert reach == {"direction_deg": 45.0, "distance_frac": 0.7}
+    assert target_location("balloon_pop", made(direction_deg=90, height_frac=0.85)) == {
+        "direction_deg": 90.0,
+        "distance_frac": 0.85,
+    }
+    assert target_location("fruit_catch", made(target_side=-1, spread_frac=0.8, target_frac=0.5)) == {
+        "side": "across",
+        "distance_frac": 0.4,
+    }
+    assert target_location("pick_place", made(carry_direction=2, pick_distance_frac=0.6)) == {
+        "direction_deg": 90.0,
+        "distance_frac": 0.6,
+    }
+    assert target_location("path_trace", made(direction=-1, path_length_frac=0.7)) == {
+        "direction_deg": 180.0,
+        "distance_frac": 0.7,
+    }
+    assert target_location("bloom", made(open_demand=0.6)) == {}
+    summary = last_trial("balloon_pop", made(direction_deg=135, height_frac=0.55))
+    assert (summary.direction_deg, summary.distance_frac) == (135.0, 0.55)

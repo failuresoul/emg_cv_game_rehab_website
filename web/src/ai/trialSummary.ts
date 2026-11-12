@@ -1,5 +1,7 @@
 import type { EngineLastTrial, GameId, TrialCreate } from "@/types/api";
 
+import { targetLocation } from "./targets";
+
 export type FailureType = EngineLastTrial["failure_type"];
 
 /**
@@ -64,5 +66,7 @@ export function trialSummary(gameId: GameId, record: TrialCreate): EngineLastTri
     // Games without a movement time: how long the trial took.
     completion_ms: movement === null && end !== null ? Math.max(0, end - spawn) : null,
     activation_peak: activationPeak(record),
+    // Where the target was, so L2 credits the sector played.
+    ...targetLocation(gameId, record),
   };
 }

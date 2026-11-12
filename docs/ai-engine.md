@@ -107,8 +107,10 @@ The browser works out each trial's failure type from the game's own outcome (`we
 L2 keeps beliefs about the chance of success and chooses the next trial by Thompson sampling. It implements the same interface as L0 and L1. The safety layer runs after it unchanged, and every decision is logged the same way, with its samples in the log's `details`.
 
 **Workspace sectors.** These apply to spatial games whose targets have a direction:
-- Reach and squeeze, Pick and place and Path trace use all 8 directions.
+- Reach and squeeze uses all 8 directions.
 - Balloon pop uses only the upward directions (45°, 90° and 135°).
+- Pick and place uses its four carry directions (0°, 90°, 180°, 270°).
+- Path trace uses outward (0°) and inward (180°).
 - Fruit catch uses its two sides, "out" and "across".
 
 Each direction (or side) has rings of the target's distance fraction:

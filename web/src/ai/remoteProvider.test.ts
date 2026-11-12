@@ -157,6 +157,49 @@ describe("RemoteProvider", () => {
     expect(remote.level).toBe(3);
   });
 
+  it("places targets where L2 says, and keeps the rotation otherwise", async () => {
+    const { request, pending } = controlled();
+    const remote = provider(request);
+    const rotation = remote.nextParams("reach_activate", [], 1).direction_deg;
+    void remote.start(5, "reach_activate");
+    pending[0].resolve(
+      answer({ distance_frac: 0.6 }, { direction_deg: 225, distance_frac: 0.6, sector: "D5R2" }),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(remote.nextTarget?.sector).toBe("D5R2");
+    for (const trial of [1, 2, 3]) {
+      const params = remote.nextParams("reach_activate", [], trial);
+      expect(params.direction_deg).toBe(225);
+      expect(params.direction_index).toBe(5);
+      expect(params.distance_frac).toBe(0.6);
+    }
+    // An L1 answer has no target: the rotation chooses again.
+    remote.report("reach_activate", record("success", {}, {}, 1));
+    pending[1].resolve(answer({ distance_frac: 0.7 }));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(remote.nextTarget).toBeNull();
+    expect(typeof rotation).toBe("number");
+    // A new run starts without the old target.
+    void remote.start(6, "reach_activate");
+    expect(remote.nextTarget).toBeNull();
+  });
+
+  it("sends where each target was, so L2 credits the sector played", async () => {
+    const { request, pending } = controlled();
+    const remote = provider(request);
+    void remote.start(1, "reach_activate");
+    pending[0].resolve(answer({}));
+    await Promise.resolve();
+    const trial = record("reach_fail", {}, {}, 1);
+    trial.params = { direction_deg: 135, distance_frac: 0.9 };
+    remote.report("reach_activate", trial);
+    expect(pending[1].body).toMatchObject({
+      last_trial: { trial_no: 1, direction_deg: 135, distance_frac: 0.9 },
+    });
+  });
+
   it("does nothing before the run has started", () => {
     const { request, pending } = controlled();
     provider(request).report("reach_activate", record("success"));

@@ -36,6 +36,7 @@ import type { ExerciseResult } from "@/warmup/exerciseRunner";
 
 import { browserName } from "./calibration";
 import {
+  cleanTrials,
   createQueue,
   finishGame as finishInQueue,
   type GameQueue,
@@ -142,8 +143,8 @@ interface SessionContextValue {
   addWarmupResult: (result: ExerciseResult) => void;
   /** Today's games in order; saved on the server, so a refresh carries on at the right game. */
   gameQueue: GameQueue | null;
-  /** Sets today's games, starting with the first. */
-  startGames: (games: readonly GameId[]) => void;
+  /** Sets today's games, starting with the first; `trials` from the plan, where it set them. */
+  startGames: (games: readonly GameId[], trials?: Partial<Record<GameId, number>>) => void;
   /** Marks a game as done and returns the next one, or null to move on to the cool-down. */
   finishGame: (gameId: GameId) => GameId | null;
   /** Saves the step the patient is on. Quietly: a failure only means a less exact resume. */
@@ -235,14 +236,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const startGames = useCallback(
-    (games: readonly GameId[]) => {
+    (games: readonly GameId[], trials?: Partial<Record<GameId, number>>) => {
       if (sessionId === null) return;
-      const queue = createQueue(sessionId, games);
+      const queue = createQueue(sessionId, games, cleanTrials(trials, games));
       saveQueue(queue);
       setGameQueue(queue);
       saveProgress({
         id: sessionId,
-        update: { current_step: "game", game_queue: { games: queue.games, index: 0 } },
+        update: {
+          current_step: "game",
+          game_queue: {
+            games: queue.games,
+            index: 0,
+            ...(queue.trials ? { trials: queue.trials } : {}),
+          },
+        },
       });
     },
     [sessionId, saveProgress],
@@ -258,7 +266,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           id: queue.sessionId,
           update: {
             current_step: next ? "game" : "cooldown",
-            game_queue: { games: queue.games, index: queue.index },
+            game_queue: {
+              games: queue.games,
+              index: queue.index,
+              ...(queue.trials ? { trials: queue.trials } : {}),
+            },
           },
         });
       }

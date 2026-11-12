@@ -3,7 +3,8 @@
 **Workspace sectors** (spatial games whose targets have a direction): 8 directions x rings of
 the target's distance fraction (R1 0.40-0.55, R2 0.55-0.85, R3 0.85-1.00), plus a stretch ring R4
 1.00-1.10 in a direction once its R3 has a posterior mean above 0.8 from at least 5 trials.
-- Balloon pop uses only the upward directions (45, 90 and 135 degrees).
+- Balloon pop uses only the upward directions (45, 90 and 135 degrees); Pick and place its four
+  carry directions (0, 90, 180, 270); Path trace outward (0) and inward (180).
 - Fruit catch uses its two sides, "out" and "across", instead of directions.
 
 **Beliefs** about success:
@@ -118,8 +119,9 @@ class Lane:
 _EIGHT = tuple(Lane(f"D{i}", 45.0 * i, None, i) for i in range(8))
 LANES: dict[str, tuple[Lane, ...]] = {
     "reach_activate": _EIGHT,
-    "pick_place": _EIGHT,
-    "path_trace": _EIGHT,
+    # Pick and place carries out, up, across or down; Path trace is traced outward or inward.
+    "pick_place": tuple(lane for lane in _EIGHT if lane.index in (0, 2, 4, 6)),
+    "path_trace": tuple(lane for lane in _EIGHT if lane.index in (0, 4)),
     "balloon_pop": tuple(lane for lane in _EIGHT if lane.index in (1, 2, 3)),
     "fruit_catch": (Lane("out-", None, "out", None), Lane("across-", None, "across", None)),
 }

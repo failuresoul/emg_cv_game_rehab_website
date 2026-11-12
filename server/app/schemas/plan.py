@@ -62,3 +62,13 @@ class PlanOverrideRead(BaseModel):
 
 class PlanOverrides(BaseModel):
     overrides: list[PlanOverrideRead]
+
+
+class LatestPlan(BaseModel):
+    """A patient's most recent planned session, for the admin."""
+
+    session_id: int | None
+    started_at: datetime | None
+    session_status: str | None
+    plan: SessionPlan | None
+    overrides: list[PlanOverrideRead]

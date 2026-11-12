@@ -1185,7 +1185,7 @@ export const en = {
   "adminLevels.title": "AI levels",
   "adminLevels.mode.L0": "Fixed settings (L0)",
   "adminLevels.mode.L1": "Staircase (L1)",
-  "adminLevels.mode.L2": "Model-based (L2)",
+  "adminLevels.mode.L2": "Bayesian (L2)",
   "adminLevels.column.game": "Game",
   "adminLevels.column.level": "Level",
   "adminLevels.column.trials": "Trials learned from",
@@ -1361,4 +1361,83 @@ export const en = {
   "about.privacy.research.text":
     "To set your practice and show your progress, and, under supervision, for the research described on this page.",
   "about.contact": "Contact:",
+  "plan.introPlanned":
+    "Here are today's games, chosen for you. You can untick or move any of them.",
+  "plan.lighterNote": "A lighter session today: fewer, shorter games after last time.",
+  "plan.why": "Why this game?",
+  "plan.useRecommended": "Use recommended plan",
+  "plan.movement.reach": "reaching",
+  "plan.movement.shoulder": "raising your arm",
+  "plan.movement.elbow": "bending and straightening your elbow",
+  "plan.movement.hand_opening": "opening your hand",
+  "plan.movement.fingers": "moving each finger",
+  "plan.movement.grip": "gripping and holding",
+  "plan.movement.smoothness": "smooth, steady movement",
+  "plan.reason.focus.reach":
+    "Your reaching has improved less than your other movements — let's focus on it.",
+  "plan.reason.focus.shoulder":
+    "Raising your arm has improved less than your other movements — let's focus on it.",
+  "plan.reason.focus.elbow":
+    "Your elbow movement has improved less than your other movements — let's focus on it.",
+  "plan.reason.focus.hand_opening":
+    "Your hand opening has improved less than your other movements — let's focus on it.",
+  "plan.reason.focus.fingers":
+    "Your finger movements have improved less than your other movements — let's focus on them.",
+  "plan.reason.focus.grip":
+    "Your grip has improved less than your other movements — let's focus on it.",
+  "plan.reason.focus.smoothness":
+    "Smooth, steady movement is worth practising more — let's focus on it.",
+  "plan.reason.weakDirection":
+    "Reaching {direction} is a little harder for you — this game practises it gently.",
+  "plan.reason.variety": "You haven't played this for a while — a little variety helps.",
+  "plan.reason.favourite": "One you enjoy, to finish on a high.",
+  "plan.reason.lighter": "A gentle game for a lighter day.",
+  "plan.reason.balance": "Keeps today balanced: practises {movement}.",
+  "plan.reason.keepPractising": "Keeps up your practice of {movement}.",
+  "summary.next.title": "Next time",
+  "summary.next.focus": "Next time we'll focus on {focus}.",
+  "summary.next.direction": "reaching {direction}",
+  "summary.next.list": "{first} and {last}",
+  "adminEngine.title": "Difficulty engine",
+  "adminEngine.intro":
+    "Which engine sets this patient's game difficulty. A change applies from their next game.",
+  "adminEngine.current": "(current)",
+  "adminEngine.change": "Change engine",
+  "adminEngine.researchNote":
+    "Assigning engines for a study, with a record of who changed what, comes with research mode.",
+  "adminEngine.confirmTitle": "Change the difficulty engine?",
+  "adminEngine.confirmText":
+    "This patient's games will change from {from} to {to}, starting with their next game. Their progress so far is kept.",
+  "adminEngine.confirm": "Change engine",
+  "adminEngine.error": "The engine could not be changed. Please try again.",
+  "adminEngine.describe.L0": "Always the starting settings from the game library; nothing adapts.",
+  "adminEngine.describe.L1":
+    "A staircase: two successes make it a little harder, a miss makes it easier.",
+  "adminEngine.describe.L2":
+    "Learns how likely success is in each part of the reach and each difficulty level, and chooses targets near 70% success.",
+  "adminPlan.title": "Latest plan",
+  "adminPlan.empty":
+    "No plan yet: one is made when the patient reaches the plan step of a session.",
+  "adminPlan.session": "Session of {date}, about {minutes} minutes",
+  "adminPlan.focus": "Focus:",
+  "adminPlan.lighter": "A lighter plan, because of {because} last time.",
+  "adminPlan.because.fatigue": "high tiredness",
+  "adminPlan.because.pain": "pain",
+  "adminPlan.because.tooHard": "the session feeling too hard",
+  "adminPlan.trials": "{n} trials, about {minutes} min",
+  "adminPlan.changes": "The patient's changes",
+  "adminPlan.noChanges": "The patient played the plan as recommended.",
+  "adminPlan.played": "Played: {games}",
+  "adminPlan.removed": "Unticked: {games}",
+  "adminPlan.added": "Added: {games}",
+  "adminPlan.reordered": "Changed the order.",
+  "adminAdaptation.sectors.title": "Where the engine placed targets, and how likely success was",
+  "adminAdaptation.sectors.label":
+    "Map of the patient's reach in sectors, each coloured by the chance of success after this game, with the targets chosen as dots",
+  "adminAdaptation.sectors.cell": "{sector}: chance of success {mean}, from {n} trials",
+  "adminAdaptation.sectors.dot": "Trial {n}: {sector}",
+  "adminAdaptation.sectors.low": "Less likely",
+  "adminAdaptation.sectors.high": "More likely",
+  "adminAdaptation.sectors.numbers": "Numbers: trials learned from in the sector",
+  "adminAdaptation.sectors.dots": "Targets chosen, darker later",
 } as const;

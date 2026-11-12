@@ -19,6 +19,7 @@ import { allMeasures, percent } from "@/features/games/results";
 import { useSessionReport } from "@/features/progress/hooks";
 import { type Comparison, compare } from "@/features/progress/progress";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
+import { NextFocus } from "@/features/session/NextFocus";
 import { shouldShowStopNotice } from "@/features/session/questionnaire";
 import { useForgetSession, useSession } from "@/features/session/SessionContext";
 import { GAMES } from "@/games/shared/registry";
@@ -288,6 +289,7 @@ export function SessionSummaryPage() {
         </Card>
       )}
       {report.data && <Report report={report.data} affectedSide={affectedSide} />}
+      {report.data && sessionId !== null && <NextFocus sessionId={sessionId} />}
       <Card>
         <h2 className="mb-2 text-xl font-bold">{t("summary.feedbackTitle")}</h2>
         <EmptyState icon={Sparkles} title={t("summary.feedbackSoon")} />

@@ -9,6 +9,7 @@ import type {
 } from "@/types/api";
 
 import { FixedProvider, type FixedProviderOptions, type ParamsProvider } from "./paramsProvider";
+import { applyTarget, type EngineTarget, TARGET_GAMES, targetOf } from "./targets";
 import { trialSummary } from "./trialSummary";
 
 /** How long the game waits for the server's next settings before keeping the previous ones. */
@@ -81,6 +82,8 @@ export class RemoteProvider implements ParamsProvider {
   /** The newest trial whose answer was used, so a slow answer never overwrites a newer one. */
   private newestApplied = -1;
   private currentLevel: number | null = null;
+  /** Where the engine puts the next target (L2), or null to keep the rotation's choice. */
+  private target: EngineTarget | null = null;
   private fallbackCount = 0;
 
   constructor({
@@ -122,6 +125,7 @@ export class RemoteProvider implements ParamsProvider {
   start(runId: number, gameId: GameId): Promise<void> {
     this.runId = runId;
     this.newestApplied = -1;
+    this.target = null;
     return this.send(gameId, null);
   }
 
@@ -136,7 +140,16 @@ export class RemoteProvider implements ParamsProvider {
     history: Parameters<FixedProvider["nextParams"]>[1],
     trialNo?: number,
   ) {
-    return this.fixed.nextParams(gameId, history, trialNo);
+    const params = this.fixed.nextParams(gameId, history, trialNo);
+    // L2 chooses where the target goes; otherwise the rotation's choice stays.
+    return this.target && TARGET_GAMES.has(gameId)
+      ? applyTarget(gameId, params, this.target)
+      : params;
+  }
+
+  /** The target the engine chose for the next trial, if any (L2). */
+  get nextTarget(): EngineTarget | null {
+    return this.target;
   }
 
   private async send(gameId: GameId, last: EngineLastTrial | null): Promise<void> {
@@ -167,6 +180,7 @@ export class RemoteProvider implements ParamsProvider {
         ([name, value]) => allowed.has(name) && Number.isFinite(value),
       ),
     );
+    this.target = targetOf(response);
     const previous = this.currentLevel;
     this.currentLevel = response.level;
     this.emit({ type: "level", level: response.level, previous });

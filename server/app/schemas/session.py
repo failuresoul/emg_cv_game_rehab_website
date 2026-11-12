@@ -1,6 +1,14 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_serializer,
+    model_validator,
+    SerializerFunctionWrapHandler,
+)
 
 from app.schemas.common import Side, UtcDatetime
 from app.schemas.game import GameId, GameRunDetail, LastSessionGame
@@ -46,6 +54,16 @@ class GameQueueState(BaseModel):
 
     games: list[GameId] = Field(min_length=1, max_length=MAX_QUEUED_GAMES)
     index: int = Field(ge=0, strict=True)
+    #: Trials per game from the plan, when it set them (5-40); the Game Library's otherwise.
+    trials: dict[GameId, Annotated[int, Field(ge=5, le=40)]] | None = None
+
+    @model_serializer(mode="wrap")
+    def _leave_out_empty_trials(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        """Queues without planned trials keep their old shape: {games, index}."""
+        data: dict[str, Any] = handler(self)
+        if data.get("trials") is None:
+            data.pop("trials", None)
+        return data
 
     @model_validator(mode="after")
     def index_within_queue(self) -> Self:

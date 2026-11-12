@@ -24,6 +24,7 @@ import { FingerHitChart, InBandChart, OpennessChart } from "./HandCharts";
 import { PathTracePlot, RangeChart } from "./MovementCharts";
 import { PickPlaceMap } from "./PickPlaceMap";
 import { RunTargetMap } from "./RunTargetMap";
+import { SectorHeatMap } from "./SectorHeatMap";
 import { columnsFor } from "./trialColumns";
 
 const PRIMARY = "var(--color-primary)";
@@ -212,6 +213,11 @@ export function GameRunCard({
           {run.game_id === "grip_hold" && <InBandChart run={run} />}
           <MovementChart run={run} />
           <AdaptationPanel logs={run.adaptation ?? []} />
+          <SectorHeatMap
+            logs={run.adaptation ?? []}
+            calibration={calibration}
+            affectedSide={affectedSide}
+          />
         </>
       )}
     </Card>

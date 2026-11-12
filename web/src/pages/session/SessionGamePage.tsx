@@ -75,7 +75,12 @@ function ConfiguredGame({
   const { gameQueue, finishGame } = useSession();
   // The admin's defaults and trials as the game starts (the game's own if they could not be
   // loaded). Kept for the whole game: settings refreshed mid-game must not restart it.
-  const [configured] = useState(() => applyGameSetting(definition, setting));
+  // The plan's trials for this game, where it set them.
+  const [configured] = useState(() => {
+    const game = applyGameSetting(definition, setting);
+    const planned = gameQueue?.trials?.[definition.id];
+    return planned ? { ...game, trialsDefault: planned } : game;
+  });
   const queue = gameQueue?.games ?? [];
   const position = queue.indexOf(definition.id);
   const hasNext = position >= 0 && position < queue.length - 1;

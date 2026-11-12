@@ -144,7 +144,7 @@ def update_progress(
     if payload.current_step is not None:
         record.current_step = payload.current_step
     if payload.game_queue is not None:
-        record.game_queue = payload.game_queue.model_dump()
+        record.game_queue = payload.game_queue.model_dump(exclude_none=True)
     session.add(record)
     session.commit()
     return record

@@ -62,6 +62,8 @@ class PatientUpdate(BaseModel):
     language: Language | None = None
     notes: str | None = None
     weekly_goal: WeeklyGoal | None = None
+    #: Which engine sets the games' difficulty: L0 fixed, L1 staircase, L2 Bayesian.
+    engine_mode: Literal["L0", "L1", "L2"] | None = None
 
     @model_validator(mode="after")
     def reject_null_for_required_fields(self) -> Self:
@@ -87,7 +89,7 @@ class PatientProfileRead(BaseModel):
     weekly_goal: int
     #: A demo patient with synthetic data, from scripts/seed_demo_data.py.
     is_demo: bool = False
-    #: Which parameter engine sets the games' difficulty: L0 fixed, L1 staircase, L2 (Day 13).
+    #: Which parameter engine sets the games' difficulty: L0 fixed, L1 staircase, L2 Bayesian.
     engine_mode: Literal["L0", "L1", "L2"] = "L1"
     created_at: UtcDatetime
 

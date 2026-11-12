@@ -16,6 +16,8 @@ import { usePatient, useSetPatientActive } from "@/features/admin/hooks";
 import { DemoBadge } from "@/features/admin/DemoBadge";
 import { EditPatientModal } from "@/features/admin/PatientModals";
 import { ExportButton } from "@/features/admin/ExportButton";
+import { EngineModeCard } from "@/features/admin/EngineModeCard";
+import { LatestPlanCard } from "@/features/admin/LatestPlanCard";
 import { LevelsCard } from "@/features/admin/LevelsCard";
 import { PatientPracticeSummary } from "@/features/admin/PatientPracticeSummary";
 import { PatientProgressTab } from "@/features/admin/PatientProgressTab";
@@ -115,6 +117,11 @@ function OverviewTab({ patient }: { patient: Patient }) {
       <PatientPracticeSummary patient={patient} />
       <hr className="my-6 border-black/10" />
       <LevelsCard patientId={patient.id} />
+      <hr className="my-6 border-black/10" />
+      <div className="grid gap-8 xl:grid-cols-2">
+        <EngineModeCard patient={patient} />
+        <LatestPlanCard patientId={patient.id} />
+      </div>
       <hr className="my-6 border-black/10" />
       <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Detail label={t("patientForm.email")}>{patient.user.email}</Detail>

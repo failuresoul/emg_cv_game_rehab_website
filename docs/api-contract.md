@@ -78,6 +78,7 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/admin/export/trials.csv`       | `admin`   | Every trial as CSV, by patient code |
 | POST   | `/api/engine/next`                   | `patient` | The next trial's settings from the adaptive engine |
 | GET    | `/api/admin/patients/{id}/levels`    | `admin`   | A patient's engine mode and level per game |
+| GET    | `/api/admin/patients/{id}/plan`      | `admin`   | The patient's latest plan, with reasons and their changes |
 
 ## Errors
 
@@ -1042,6 +1043,12 @@ Role: the session's patient, or an admin; anyone else gets `404`. Today's games 
 - no two shoulder-heavy games (`balloon_pop`, `path_trace`, `fruit_catch`) next to each other;
 - the easiest game first and the most enjoyable last, when the other rules allow.
 
+The web app sends the plan's trials with the game queue (`PATCH /api/sessions/{id}/progress`, `game_queue.trials`: game id to 5–40), and each game plays that many.
+
+### GET /api/admin/patients/{id}/plan
+
+Role: `admin`. The patient's most recent session with a plan: `{session_id, started_at, session_status, plan, overrides}`, with `plan` as in `GET /api/sessions/{id}/plan` and `overrides` as below; all `null` (and no overrides) before the first plan. Errors: `404`.
+
 ### POST /api/sessions/{id}/plan/override
 
 Role: the session's patient, while it is active. Records the games the patient kept and their order, for analysis; the stored plan does not change.
@@ -1275,7 +1282,7 @@ They read the run summary's `details`: `path_trace` sends `total_stars`, `mean_i
 
 ## Adaptive difficulty
 
-From Day 12 each game's difficulty can adapt to the patient (see [docs/ai-engine.md](ai-engine.md)). A patient's `engine_mode` (`L0` fixed settings, `L1` staircase, `L2` Bayesian and workspace-aware, `L1` by default) is on the profile in `GET /api/auth/me` (`patient_profile.engine_mode`) and is copied to each new game run's `engine`, whatever the web app sends. A patient's maximum difficulty per game (`max_difficulty`, 0–1, 1 when unset) is stored on the profile; neither has an admin route yet.
+From Day 12 each game's difficulty can adapt to the patient (see [docs/ai-engine.md](ai-engine.md)). A patient's `engine_mode` (`L0` fixed settings, `L1` staircase, `L2` Bayesian and workspace-aware, `L1` by default) is on the profile in `GET /api/auth/me` (`patient_profile.engine_mode`) and is copied to each new game run's `engine`, whatever the web app sends. An admin sets `engine_mode` with `PATCH /api/admin/patients/{id}` (`{"engine_mode": "L2"}`); it applies from the patient's next game run. A patient's maximum difficulty per game (`max_difficulty`, 0–1, 1 when unset) is stored on the profile and has no admin route yet.
 
 ### POST /api/engine/next
 

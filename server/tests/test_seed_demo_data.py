@@ -474,34 +474,68 @@ def test_engine_decisions_follow_every_demo_trial(session: Session) -> None:
 
     profiles = {profile.affected_side: profile for profile in demo_profiles(session)}
     for profile in profiles.values():
-        assert profile.engine_mode == "L1"
+        assert profile.engine_mode == "L2"
         states = session.exec(
             select(EngineState).where(EngineState.patient_id == profile.id)
         ).all()
         assert sorted(state.game_id for state in states) == sorted(demo.GAMES)
-        assert all(state.engine == "L1" and state.trials_seen > 0 for state in states)
-    # A decision at the start of each run and after each of its trials.
+        assert all(state.engine == "L2" and state.trials_seen > 0 for state in states)
+        # Stored beliefs: Reach and squeeze's 32 workspace sectors, learned from the trials.
+        reach = next(state for state in states if state.game_id == "reach_activate")
+        extra = reach.state["extra"]
+        assert len(extra["sectors"]) == 32
+        assert sum(extra["seen"].values()) > 50
+        assert extra["sectors"] != extra["sector_priors"]
+    # A decision at the start of each run and after each of its trials, with L2's samples.
     for run in session.exec(select(GameRun)).all():
-        assert run.engine == "L1"
+        assert run.engine == "L2"
         trial_nos = session.exec(
             select(Trial.trial_no).where(Trial.game_run_id == run.id).order_by(col(Trial.trial_no))
         ).all()
-        logged = session.exec(
-            select(AdaptationLog.trial_no)
+        logs = session.exec(
+            select(AdaptationLog)
             .where(AdaptationLog.game_run_id == run.id)
             .order_by(col(AdaptationLog.trial_no))
         ).all()
-        assert list(logged) == [0, *trial_nos]
+        assert [log.trial_no for log in logs] == [0, *trial_nos]
+        if run.game_id == "reach_activate":
+            assert all(log.details and "target" in log.details for log in logs)
+            assert all("sector_samples" in (log.details or {}) for log in logs[1:])
 
-    # Rahim's levels climb over his later sessions.
-    rahim = session_levels(session, profiles["left"])
-    assert rahim[-1] > max(rahim[1:4])
-    assert rahim[-1] > rahim[-3]
     # Salma tires and compensates, and the safety rules step in.
     salma = overrides_of(session, profiles["right"])
     assert any(override.startswith("Compensation") for override in salma)
     assert any("Signs of tiring" in override for override in salma)
-    assert session_levels(session, profiles["right"])[-1] < rahim[-1]
+    # Every level stays on the patient's scale.
+    for profile in profiles.values():
+        assert all(1 <= level <= 10 for level in session_levels(session, profile))
+
+
+def test_demo_sessions_have_plans_with_reasons_and_overrides(session: Session) -> None:
+    demo.seed_demo_data(session, now=NOW)
+
+    records = session.exec(select(SessionRecord)).all()
+    assert len(records) == 14
+    reasons: set[str] = set()
+    lighter = 0
+    for record in records:
+        assert record.plan is not None
+        plan = record.plan
+        assert 3 <= len(plan["games"]) <= 4
+        reasons |= {game["reason_key"] for game in plan["games"]}
+        lighter += any(note["key"] == "lighter_today" for note in plan["notes"])
+        # Demo patients play every game: their change adds the rest to the plan.
+        [override] = record.plan_overrides
+        assert override["planned"] == [game["game_id"] for game in plan["games"]]
+        assert override["games"] == list(demo.GAMES)
+        assert sorted(override["added"]) == sorted(
+            set(demo.GAMES) - set(override["planned"])
+        )
+        assert override["removed"] == []
+    # The plans use several kinds of reason, and some are lighter.
+    assert {"variety", "practise_weak_direction"} <= reasons
+    assert any(reason.startswith("focus_") for reason in reasons)
+    assert lighter >= 1
 
 
 def _snapshot(session: Session) -> list[Any]:

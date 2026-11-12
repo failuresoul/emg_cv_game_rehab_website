@@ -87,7 +87,7 @@ describe("about page", () => {
 
   it("never skips a heading level, and every image has alt text", () => {
     expect(headingJumps(html)).toEqual([]);
-    expect([...html.matchAll(/<img(?![^>]*alt="[^"]+")[^>]*>/g)]).toEqual([]);
+    expect([...html.matchAll(/<img(?![^>]*\balt="[^"]+")[^>]*>/g)]).toEqual([]);
     expect([...html.matchAll(/role="img"(?![^>]*aria-label="[^"]+")[^>]*>/g)]).toEqual([]);
   });
 });

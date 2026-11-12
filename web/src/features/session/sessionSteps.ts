@@ -1,7 +1,7 @@
 import type { TranslationKey } from "@/i18n";
 import type { GameId, GameQueueState, SessionStep } from "@/types/api";
 
-import { currentGame, type GameQueue } from "./gameQueue";
+import { cleanTrials, currentGame, type GameQueue } from "./gameQueue";
 
 export const SESSION_STEPS: readonly SessionStep[] = [
   "setup",
@@ -62,7 +62,10 @@ export function queueFromServer(
   if (!state || state.games.length === 0) return null;
   if (!state.games.every((id) => validIds.includes(id))) return null;
   const index = Math.max(0, Math.min(state.index, state.games.length));
-  return { sessionId, games: [...state.games], index };
+  const trials = cleanTrials(state.trials, state.games);
+  return trials
+    ? { sessionId, games: [...state.games], index, trials }
+    : { sessionId, games: [...state.games], index };
 }
 
 /** The first item of `order` not yet done, or null when all are done. */

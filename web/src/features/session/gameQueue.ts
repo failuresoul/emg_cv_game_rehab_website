@@ -6,6 +6,8 @@ export interface GameQueue {
   games: GameId[];
   /** The game being played or about to be played. Equal to games.length once all are done. */
   index: number;
+  /** Trials per game from the plan, where it set them; the Game Library's otherwise. */
+  trials?: Partial<Record<GameId, number>>;
 }
 
 /**
@@ -37,8 +39,28 @@ export function defaultPlanRows(available: readonly GameId[]): PlanRow[] {
 
 const STORAGE_PREFIX = "motionlab.gameQueue.";
 
-export function createQueue(sessionId: number, games: readonly GameId[]): GameQueue {
-  return { sessionId, games: [...games], index: 0 };
+export function createQueue(
+  sessionId: number,
+  games: readonly GameId[],
+  trials?: Partial<Record<GameId, number>>,
+): GameQueue {
+  return trials
+    ? { sessionId, games: [...games], index: 0, trials }
+    : { sessionId, games: [...games], index: 0 };
+}
+
+/** Trials kept only for queued games, as whole numbers from 5 to 40. */
+export function cleanTrials(
+  value: unknown,
+  games: readonly GameId[],
+): Partial<Record<GameId, number>> | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const found: Partial<Record<GameId, number>> = {};
+  for (const id of games) {
+    const n = (value as Record<string, unknown>)[id];
+    if (typeof n === "number" && Number.isInteger(n) && n >= 5 && n <= 40) found[id] = n;
+  }
+  return Object.keys(found).length ? found : undefined;
 }
 
 /** The game to play now, or null once every game is done. */
@@ -99,11 +121,21 @@ export function loadQueue(
     if (!raw) return null;
     const value: unknown = JSON.parse(raw);
     if (typeof value !== "object" || value === null) return null;
-    const { games, index } = value as { games?: unknown; index?: unknown };
+    const { games, index, trials } = value as {
+      games?: unknown;
+      index?: unknown;
+      trials?: unknown;
+    };
     if (!Array.isArray(games) || typeof index !== "number" || !Number.isInteger(index)) return null;
     const known = games.filter((id): id is GameId => validIds.includes(id as GameId));
     if (known.length !== games.length) return null;
-    return { sessionId, games: known, index: Math.max(0, Math.min(index, known.length)) };
+    const queue: GameQueue = {
+      sessionId,
+      games: known,
+      index: Math.max(0, Math.min(index, known.length)),
+    };
+    const planned = cleanTrials(trials, known);
+    return planned ? { ...queue, trials: planned } : queue;
   } catch {
     return null;
   }
