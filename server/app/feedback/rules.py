@@ -303,9 +303,10 @@ TRIGGERS: dict[str, Trigger] = {
 # The decisions
 
 
-def red_flags(facts: SessionFacts) -> list[RedFlag]:
-    """The fixed notices: pain and new symptoms (the Day 7 stop notice), then a sharp decline."""
-    language: FeedbackLanguage = facts.language
+def red_flags(facts: SessionFacts, language: FeedbackLanguage | None = None) -> list[RedFlag]:
+    """The fixed notices: pain and new symptoms (the Day 7 stop notice), then a sharp decline.
+    Worded in `language`, or the patient's language when not given."""
+    language = language or facts.language
     codes = set(facts.flags.safety_flags)
     if facts.self_report is not None and facts.self_report.pain_0_10 >= PAIN_FLAG_MIN:
         codes.add("pain")

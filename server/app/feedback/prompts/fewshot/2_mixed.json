@@ -1,0 +1,42 @@
+{
+  "facts": {
+    "session_id": 2,
+    "patient_code": "P901",
+    "session_no": 12,
+    "language": "en",
+    "affected_side": "left",
+    "duration_min": 28.0,
+    "baseline_available": true,
+    "games": {
+      "reach_activate": { "trials": 20, "success_rate": 0.7, "level_start": 5, "level_end": 5 },
+      "grip_hold": { "trials": 10, "success_rate": 0.4, "level_start": 4, "level_end": 3 }
+    },
+    "metrics": [
+      { "id": "K6", "game_id": "reach_activate", "name": "Movement time", "value": 1250.0, "baseline": 1400.0, "unit": "ms", "change_mdc": 1.3, "mdc_status": "improved" },
+      { "id": "H3", "game_id": "grip_hold", "name": "Grip steadiness", "value": 0.11, "baseline": 0.08, "unit": "share", "change_mdc": -1.2, "mdc_status": "worse" },
+      { "id": "K7", "game_id": "reach_activate", "name": "Path efficiency", "value": 0.8, "baseline": 0.79, "unit": "share", "change_mdc": 0.3, "mdc_status": "no_detectable_change" },
+      { "id": "R1", "game_id": null, "name": "Shoulder raise forward: best angle", "value": 82.0, "baseline": 80.0, "unit": "deg", "change_mdc": 0.4, "mdc_status": "no_detectable_change" }
+    ],
+    "directions": { "weak": [135], "strong": [0] },
+    "flags": { "compensation_rate": 0.22, "fatigue_flag": false, "hand_loss_pct": 3.0, "shoulder_compensation_rate": 0.05, "safety_flags": [] },
+    "self_report": { "pain_0_10": 1, "fatigue_0_10": 6, "enjoyment_1_5": 3 },
+    "adherence": { "sessions_this_week": 2, "planned_this_week": 5 },
+    "next_session": { "focus_movements": ["grip"], "focus_directions": [135], "planned_games": ["grip_hold", "reach_activate", "bloom"] },
+    "safety_notice_present": false
+  },
+  "report": {
+    "language": "en",
+    "patient_summary": "Thank you for session 12. You reached each target faster today. Holding a squeeze steady was harder than usual. Your other results were similar to your usual level.",
+    "highlights": [
+      { "metric_id": "K6", "text": "You moved to each target faster than your usual level." },
+      { "metric_id": "H3", "text": "Holding a squeeze steady was a little worse today." }
+    ],
+    "suggestions": [
+      { "id": "REST_BREAKS", "text": "You felt quite tired today. Rest between games whenever you need to." },
+      { "id": "POSTURE_TRUNK", "text": "Your body sometimes leaned to help your arm. Sit tall with your back against the chair." },
+      { "id": "STEADY_HOLD", "text": "When you hold a squeeze, use a gentle, even grip and keep breathing." }
+    ],
+    "next_session_text": "Next time you will practise gripping and holding, and reaching up and across. You will play Grip and hold, Reach and squeeze and Bloom.",
+    "therapist_summary": "Session 12. K6 improved: 1400 -> 1250 ms (1.3 MDC). H3 worse: 0.08 -> 0.11 (-1.2 MDC). K7 similar: 0.79 -> 0.8 (0.3 MDC). R1 similar: 80 -> 82 deg (0.4 MDC). grip_hold success 0.4, level 4 -> 3. Compensation 22% of trials; shoulder hike 5%. Fatigue 6/10. Weak direction 135. Adherence 2 of 5 sessions this week. Next session: grip focus, direction 135, games grip_hold, reach_activate, bloom."
+  }
+}

@@ -13,7 +13,15 @@ Turns a session's verified facts into a short, warm, honest report for the patie
 | `llm.py` | Providers: `OllamaProvider` (POST `/api/chat`, structured JSON output, timings, health, warm-up) and `MockProvider` (tests) |
 | `catalogue.yaml` | The 13 suggestions the feedback may make: trigger, threshold, audience, priority and approved guidance |
 | `rules.py` | `candidates(facts)`: the suggestions that apply (at most 5, safety first, each with evidence). `red_flags(facts)`: the fixed notices. `facts_for_llm(facts)`: what the model may see |
-| `kb/en/<ID>.md` | One approved tip per suggestion, which the model may reword. Looked up by id; no search |
+| `kb/en/<ID>.md`, `kb/bn/<ID>.md` | One approved tip per suggestion, which the model may reword. Looked up by id; no search |
+| `schemas.py` | The `Report` (patient summary, up to 3 highlights, 1–3 suggestions, next-session text, English therapist summary), word limits, and the flat JSON schema given to Ollama as `format` |
+| `prompts/` | Versioned prompts: `system_v1.txt`, `user_v1.txt`, and `fewshot/` (an improving and a mixed example, each checked against its facts by the tests) |
+| `prompt.py` | Builds the prompt in compact JSON (about 3,000 tokens at most, for a 4,096 context) |
+| `validate.py` | Every check: schema, word limits, numbers from the facts only, ids from the candidates, improved/worse words matching `mdc_status`, `banned.txt`, no safety text under a notice, sentence length, script |
+| `fallback.py` | The template report from facts, candidates and tips; always passes the validator |
+| `service.py` | `generate_report(session_id)` and `generate_report_from_facts(facts)`: prompt, model, validate, up to 2 retries with the errors, then the template |
+| `cli.py` | `python -m app.feedback.cli <session_id> [--model tag] [--language bn]` prints the report and meta as JSON |
+| `names.py` | Plain names of measures, movements, directions and games in English and Bangla (the Bangla ones are the web app's) |
 
 **Safety notices** come from `shared/safety-notices.json`, the one source of their wording. The web app's stop notice is checked against it by `web/src/features/session/safetyNotices.test.ts`. Red flags:
 - `pain` and `new_symptoms` (the Day 7 stop notice);

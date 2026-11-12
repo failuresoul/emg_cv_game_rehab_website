@@ -1,0 +1,40 @@
+{
+  "facts": {
+    "session_id": 1,
+    "patient_code": "P900",
+    "session_no": 8,
+    "language": "en",
+    "affected_side": "right",
+    "duration_min": 24.0,
+    "baseline_available": true,
+    "games": {
+      "reach_activate": { "trials": 20, "success_rate": 0.85, "level_start": 4, "level_end": 5 },
+      "bloom": { "trials": 15, "success_rate": 0.8, "level_start": 3, "level_end": 4 }
+    },
+    "metrics": [
+      { "id": "K6", "game_id": "reach_activate", "name": "Movement time", "value": 1180.0, "baseline": 1420.0, "unit": "ms", "change_mdc": 1.6, "mdc_status": "improved" },
+      { "id": "K1", "game_id": null, "name": "Reach area", "value": 1.71, "baseline": 1.48, "unit": "sw2", "change_mdc": 1.4, "mdc_status": "improved" },
+      { "id": "G1", "game_id": null, "name": "Overall game success rate", "value": 0.82, "baseline": 0.79, "unit": "share", "change_mdc": 0.5, "mdc_status": "no_detectable_change" }
+    ],
+    "directions": { "weak": [], "strong": [0, 45] },
+    "flags": { "compensation_rate": 0.06, "fatigue_flag": false, "hand_loss_pct": 2.0, "shoulder_compensation_rate": 0.0, "safety_flags": [] },
+    "self_report": { "pain_0_10": 0, "fatigue_0_10": 3, "enjoyment_1_5": 5 },
+    "adherence": { "sessions_this_week": 4, "planned_this_week": 5 },
+    "next_session": { "focus_movements": ["reach"], "focus_directions": [90], "planned_games": ["reach_activate", "balloon_pop", "bloom"] },
+    "safety_notice_present": false
+  },
+  "report": {
+    "language": "en",
+    "patient_summary": "Well done on session 8. You reached targets more quickly today. You could also reach further around you. Your overall game success was steady.",
+    "highlights": [
+      { "metric_id": "K6", "text": "You reached each target faster than your usual level." },
+      { "metric_id": "K1", "text": "Your reach around you improved." }
+    ],
+    "suggestions": [
+      { "id": "CELEBRATE_PROGRESS", "text": "Your regular practice is showing in your results. Well done!" },
+      { "id": "LEVEL_UP", "text": "Both games moved up a level today. Take your time with the new level." }
+    ],
+    "next_session_text": "Next time you will practise reaching, especially upwards. You will play Reach and squeeze, Balloon pop and Bloom.",
+    "therapist_summary": "Session 8. K6 improved: 1420 -> 1180 ms (1.6 MDC). K1 improved: 1.48 -> 1.71 sw2 (1.4 MDC). G1 similar: 0.79 -> 0.82 (0.5 MDC). Levels rose in reach_activate (4 -> 5) and bloom (3 -> 4). Compensation 6% of trials; hand not tracked 2% of the time. Self-report: fatigue 3/10, enjoyment 5/5. Adherence 4 of 5 sessions this week. Next session: reach focus, direction 90, games reach_activate, balloon_pop, bloom."
+  }
+}
