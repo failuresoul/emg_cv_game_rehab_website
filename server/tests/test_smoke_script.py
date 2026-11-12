@@ -22,7 +22,7 @@ def test_smoke_passes_every_step(
     assert run_smoke(client, "admin@motionlab.local", "test-password") is True
 
     output = capsys.readouterr().out
-    assert output.count("PASS") == 55
+    assert output.count("PASS") == 60
     assert "FAIL" not in output
     assert "PASS  Patient plays a bloom run with non-spatial targets" in output
     assert "PASS  Patient plays a finger_piano run with non-spatial targets" in output
@@ -37,12 +37,14 @@ def test_smoke_passes_every_step(
     assert "PASS  Engine: 12 successes raise the level, 8 failures lower it" in output
     assert "PASS  Engine: a decision is logged at the start and after each trial" in output
     assert "PASS  Engine: quick successes then slow failures ask for a rest" in output
+    assert "PASS  L2: a run returns sectors and its beliefs update" in output
+    assert "PASS  Facts plan the next session once this one ends" in output
     assert len(session.exec(select(Calibration)).all()) == 1
     assert len(session.exec(select(WarmupResult)).all()) == 6
-    # Nine games in the first session, two adaptive runs in the second.
-    assert len(session.exec(select(GameRun)).all()) == 11
-    # The start and 20 trials of the staircase run, the start and 10 trials of the tiring run.
-    assert len(session.exec(select(AdaptationLog)).all()) == 21 + 11
+    # Nine games in the first session, two adaptive runs in the second, one L2 run in the third.
+    assert len(session.exec(select(GameRun)).all()) == 12
+    # The starts and trials of the staircase (20), tiring (10) and L2 (8) runs.
+    assert len(session.exec(select(AdaptationLog)).all()) == 21 + 11 + 9
     # 20 trials for each reaching game and 4 for each other game.
     assert len(session.exec(select(Trial)).all()) == 84
     # The game library is as it was: never changed, so no settings are left behind.
@@ -51,8 +53,9 @@ def test_smoke_passes_every_step(
     assert patient.is_active is False
     feedback = session.exec(select(SessionFeedback)).one()
     assert feedback.pain_0_10 == 5
-    first, second = session.exec(select(SessionRecord).order_by(col(SessionRecord.id))).all()
+    first, second, third = session.exec(select(SessionRecord).order_by(col(SessionRecord.id))).all()
     assert second.status == "completed" and second.flags == []
+    assert third.status == "completed" and third.plan and len(third.plan_overrides) == 1
     record = first
     assert record.flags == ["pain"]
     assert record.reviewed_at is not None

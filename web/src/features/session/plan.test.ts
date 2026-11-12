@@ -120,3 +120,24 @@ describe("plan rows", () => {
     expect(changedFromPlan(rows, undefined)).toBe(false);
   });
 });
+
+describe("no medical claims", () => {
+  it("never appear in the planner's reasons and messages, in either language", async () => {
+    const { en } = await import("@/i18n/en");
+    const { bn } = await import("@/i18n/bn");
+    const patientFacing = (key: string) =>
+      key.startsWith("plan.reason.") ||
+      key.startsWith("plan.movement.") ||
+      key.startsWith("summary.next.") ||
+      ["plan.introPlanned", "plan.lighterNote", "plan.why"].includes(key);
+    const english =
+      /\b(cure[sd]?|heal(s|ed|ing)?|treat(s|ed|ment)?|therap(y|ies)|recover(y|s|ed)?|diagnos\w*|clinical\w*|medical\w*|guarantee\w*|prescri\w*|disease\w*|AI)\b/i;
+    const bangla = /চিকিৎসা|আরোগ্য|নিরাময়|রোগ নির্ণয়|নিশ্চয়তা/;
+    const checked = Object.entries(en).filter(([key]) => patientFacing(key));
+    expect(checked.length).toBeGreaterThan(20);
+    for (const [key, text] of checked) {
+      expect(text, key).not.toMatch(english);
+      expect(bn[key as keyof typeof bn], key).not.toMatch(bangla);
+    }
+  });
+});

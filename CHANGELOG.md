@@ -4,6 +4,54 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 13)
+
+- **L2, a Bayesian, workspace-aware engine** (`server/app/engine/l2_bayes.py`, [docs/ai-engine.md](docs/ai-engine.md)):
+  - Beta beliefs per workspace sector (direction × ring of distance, with a stretch ring that unlocks) and per difficulty level (kept monotone by pool-adjacent violators);
+  - Thompson sampling towards 70% success for the trial;
+  - a coverage bonus weighted by feasibility, no third repeat, and compensation blocks per direction;
+  - 30% forgetting between sessions;
+  - priors seeded from the latest calibration and warm-up.
+  - The safety layer runs after it unchanged.
+  - Every decision logs its samples and target (`AdaptationLog.details`).
+- **Games place L2's targets** (Reach and squeeze, Balloon pop, Fruit catch, Pick and place, Path trace) and report where each target was; the rotation stays for L0 and L1.
+- **Patient simulator** (`server/app/engine/sim/`):
+  - simulated patients (mild, moderate, severe) with reach per direction, activation, speed and precision abilities, fatigue, learning and compensation;
+  - they run through the same decision code as the API, with outcome measures.
+- **Simulation study** (`analysis/run_simulation.py`, [docs/simulation-results.md](docs/simulation-results.md)): L0, L1 and L2 on 200 simulated patients per profile, ablations of L2, statistics with Holm correction, and figures. L2 was not better than L1 overall; the report says so.
+- **Session planner** (`server/app/services/planner.py`):
+  - chooses today's games from need (each movement's measures against the baseline), weak directions, variety, enjoyment and load;
+  - follows the rules: Game Library only, one reach or shoulder and one hand game, no adjacent shoulder-heavy games, easiest first and favourite last;
+  - gives each game a plain-language reason.
+- **Plan page:**
+  - the recommended games in order with "Why this game?";
+  - a lighter-session note;
+  - the patient may untick or reorder (recorded), and "Use recommended plan" restores it;
+  - each game plays the planned number of turns.
+- **Admin:**
+  - an engine mode selector (L0, L1, L2) with confirmation;
+  - the latest plan with reasons and the patient's changes;
+  - an L2 sector heat map with the chosen targets on the session page.
+- **Patient summary:** "Next time we'll focus on …" from the next session's plan.
+- **API:**
+  - `GET /api/sessions/{id}/plan`, `POST /api/sessions/{id}/plan/override`, `GET /api/admin/patients/{id}/plan`;
+  - `engine_mode` in `PATCH /api/admin/patients/{id}`;
+  - target fields in `POST /api/engine/next` and in trials;
+  - `next_session` in the session facts;
+  - `game_queue.trials`.
+- **Demo data:** both demo patients use L2, with beliefs, a plan and a recorded change for every session.
+- **Smoke test:** a third session checks L2 (sectors, beliefs), the plan, an override and the next-session facts.
+
+### Changed (Day 13)
+
+- `engine_mode` L2 is the Bayesian engine (it behaved like L1 before).
+- Pick and place's L2 lanes are its four carry directions; Path trace's are outward and inward.
+
+### Fixed (Day 13 review)
+
+- A plan is never made for a session that has already ended (it would have used later measures); such sessions return `404`.
+- Two accessibility tests had a control character instead of `\b` in a regular expression, which weakened their alt-text check and failed lint.
+
 ### Added (Day 12)
 
 - **Adaptive difficulty engine** (`server/app/engine/`, [docs/ai-engine.md](docs/ai-engine.md)):

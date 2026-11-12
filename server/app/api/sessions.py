@@ -218,7 +218,13 @@ def _session_for_user(session: SessionDep, user: CurrentUser, session_id: int) -
 def get_plan(session_id: int, session: SessionDep, user: CurrentUser) -> SessionPlan:
     """Today's games in order, with reasons: planned once, from the sessions before this one,
     and kept with the session."""
-    return planner.stored_plan(session, _session_for_user(session, user, session_id))
+    record = _session_for_user(session, user, session_id)
+    try:
+        return planner.stored_plan(session, record)
+    except planner.NoPlanError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="This session has no plan"
+        ) from None
 
 
 @router.post("/{session_id}/plan/override", status_code=status.HTTP_201_CREATED)

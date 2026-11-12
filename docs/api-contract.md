@@ -1008,7 +1008,7 @@ Errors: `404`.
 
 ### GET /api/sessions/{id}/plan
 
-Role: the session's patient, or an admin; anyone else gets `404`. Today's games in order, each with a reason, from the session planner ([`server/app/services/planner.py`](../server/app/services/planner.py)). The plan is made the first time it is asked for, from the patient's completed sessions before this one, and kept with the session: asking again returns the same plan.
+Role: the session's patient, or an admin; anyone else gets `404`. Today's games in order, each with a reason, from the session planner ([`server/app/services/planner.py`](../server/app/services/planner.py)). The plan is made the first time it is asked for while the session is active, from the patient's completed sessions before this one, and kept with the session: asking again returns the same plan. A session that ended without a plan gets `404`: a plan is never made afterwards.
 
 ```json
 {

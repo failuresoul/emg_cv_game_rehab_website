@@ -449,10 +449,18 @@ def plan_next(session: Session, profile: PatientProfile, after: SessionRecord) -
     return build_plan(session, profile, history, seed=f"{profile.id}:after:{after.id}")
 
 
+class NoPlanError(LookupError):
+    """The session ended without a plan; one is never made afterwards."""
+
+
 def stored_plan(session: Session, record: SessionRecord) -> SessionPlan:
-    """The session's plan: computed the first time it is asked for, then kept."""
+    """The session's plan: computed the first time it is asked for while the session is active,
+    then kept. A session that ended without one has none: a plan made later, from later
+    measures, would misrepresent what was shown at the time."""
     if record.plan:
         return SessionPlan.model_validate(record.plan)
+    if record.status != "active":
+        raise NoPlanError
     profile = session.get(PatientProfile, record.patient_id)
     assert profile is not None
     plan = plan_session(session, profile, record)

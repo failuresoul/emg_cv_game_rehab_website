@@ -1,6 +1,6 @@
-# The adaptive difficulty engine
+# The adaptive engine and the session planner
 
-How MuVi Rehab sets each trial's difficulty, keeps it safe and explains every change. Written for the research paper: the numbers below are the ones in the code (`server/app/engine/`, `server/app/services/adaptation.py`), and each claim names the test that checks it.
+How MuVi Rehab sets each trial's difficulty, keeps it safe and explains every change, and how it plans each session's games. Written for the research paper: the numbers below are the ones in the code (`server/app/engine/`, `server/app/services/adaptation.py`), and each claim names the test that checks it.
 
 ## Principles
 
@@ -147,7 +147,15 @@ R4 opens in a direction once that direction's R3 has a posterior mean above 0.8 
 
 **Between sessions** the beliefs forget 30%: α ← prior + 0.7 (α − prior), and the same for β.
 
-**A simulation study tool** (`server/app/engine/sim/`) drives simulated patients through the same code path as the API, with measures for challenge error, time in the 60–80% zone, convergence, compensation, workspace coverage and learning gain.
+**In formal terms.**
+- For each allowed sector s with posterior Beta(α_s, β_s), L2 draws θ_s ~ Beta(α_s, β_s) and chooses
+  s* = argmax_s [ −|θ_s − a| + w · min(2, Δ_s / 10) · α_s / (α_s + β_s) ],
+  where a = p*^(1/k) is the per-part aim, w = 0.05 and Δ_s the trials since s was last chosen. This is Thompson sampling (Thompson 1933; Russo et al. 2018) aimed at a target success rate rather than at the most likely success.
+- For each level component it draws θ_ℓ ~ Beta(α_ℓ, β_ℓ) for every level ℓ and takes argmin_ℓ |θ_ℓ − a|.
+- The monotone constraint is isotonic regression by pool-adjacent violators (Ayer et al. 1955) on the posterior means μ_ℓ = α_ℓ / (α_ℓ + β_ℓ), weighted by n_ℓ = α_ℓ + β_ℓ, keeping each n_ℓ.
+- Forgetting is α ← α₀ + γ(α − α₀), β ← β₀ + γ(β − β₀), with γ = 0.7.
+
+**How it compared in simulation.** On simulated patients ([docs/simulation-results.md](simulation-results.md)), L2 kept mild patients closer to the 70% target than L1. It was further from the target than L1 for moderate and severe patients, mainly because 24–32 independent sector beliefs learn slowly in 40-trial sessions. The ablations there show the effect of each part. L2 is therefore offered alongside L1, not as its replacement.
 
 ## The safety layer
 
@@ -204,8 +212,66 @@ Every call to the engine writes exactly one `AdaptationLog` row (`test_engine_re
   - Without an answer within 300 ms, or on an error, the previous settings stay and a fallback is counted (`web/src/ai/remoteProvider.ts`).
   - Answers from an earlier run, or older than one already applied, are ignored.
 
+## The session planner (`server/app/services/planner.py`)
+
+The planner chooses the session's games and their order, and gives each a reason.
+- **When:** it runs once per session, when the patient reaches the plan step, and the plan is kept with the session. It never makes a plan for a session that has already ended.
+- **Inputs:** the patient's completed sessions before this one.
+- **Facts:** after a session it also plans the next one, for the session facts (`next_session`).
+
+**Score.** Each game the Game Library has turned on gets
+
+score = need + 0.4·[weak direction] + 0.3·[variety] − 0.6·[third session in a row] + 0.15·success + 0.1·enjoyment + ε
+
+| Term | Definition |
+| --- | --- |
+| need | The most needy of the game's movement measures against the baseline: worse 1.0; no detectable change 0.7 when other measures improved, else 0.4; no baseline 0.3; improved 0. Reach: K1, K6, K7 (Reach and squeeze, Fruit catch, Pick and place); shoulder: R1, R2 (Balloon pop); elbow: R3 (Paint the wall); hand opening: H1, H6 (Bloom); fingers: H2 (Finger piano); grip: H3, H4 (Grip and hold); smoothness: K8 (Path trace) |
+| weak direction | A reach direction whose success is ≥ 0.15 below the patient's average in their L2 beliefs, or ≥ 0.2 below in the last 3 sessions' reach trials; for games that can place it |
+| variety | Not played in the last 2 sessions |
+| third session in a row | Played in both of the last 2 sessions |
+| success | The game's success rate over the last 3 sessions (0.6 when unknown); doubled on a lighter day |
+| enjoyment | The mean enjoyment rating (1–5, scaled to −1..1) of recent sessions that included the game |
+| ε | A tie-break below 10⁻⁶ from a hash of the patient, the session and the game, so the same inputs give the same plan |
+
+**Load.** After a session with fatigue ≥ 7, "too hard", or a pain flag, the plan has 3 games and about 12 minutes. Otherwise it has 4 games and 16–18 minutes; trials are scaled to fit, within 5–40 per game.
+
+**Rules,** applied after choosing the highest scores:
+1. Only games turned on in the Game Library.
+2. At least one reach or shoulder game and one hand, finger or grip game, when any is turned on.
+3. No two shoulder-heavy games (Balloon pop, Path trace, Fruit catch) next to each other.
+4. The easiest game (highest recent success) first and the most enjoyable last, when the other rules allow. The order is chosen over every permutation of the 3–4 games.
+
+A test checks the rules on 40 random histories with random games turned off.
+
+**Reasons.** Each game gets one plain-language reason, in this priority:
+- `practise_weak_direction` (with the direction);
+- `focus_<movement>` (need ≥ 0.6);
+- `variety`;
+- `favourite`;
+- `lighter_today`;
+- `balance` (the plan's only game of a required group);
+- `keep_practising`.
+
+The web app words them gently, for example "Your hand opening has improved less than your other movements — let's focus on it". A test checks that, in both languages, they make no medical claim and never mention AI.
+
+**The patient decides.** The patient may untick, add or reorder games. Each change is recorded with the plan (`plan_overrides`: planned, played, removed, added, reordered) for analysis, and the recommendation itself is never changed.
+
 ## Limitations
 
 - **Approximate starting values:** the inverse mapping averages a component's settings, so multi-setting components reproduce the admin's defaults only approximately; the first trial of each run uses the defaults exactly.
-- **Tuning:** the tiring rule is sensitive on noisy data (it fires often on the synthetic demo data), and its thresholds are not yet tuned on real patients.
-- **No admin controls yet:** the maximum difficulty and the engine mode are stored per patient, but admins cannot change them in the app yet.
+- **Tiring rule:** it fires often on noisy data, partly because it compares movement times across trials of different difficulty; its thresholds are not yet tuned on real patients.
+- **L2 learns slowly** with many independent sectors, and in simulation did worse than L1 for moderate and severe patients. Sharing evidence between neighbouring sectors (a hierarchical prior) is a likely improvement, not yet tested.
+- **L2's level jumps:** the level shown to an L2 patient follows each chosen sector, so it moves more from trial to trial than L1's.
+- **Balloon pop under L1:** the fixed rotation sets the balloon's height, overriding the spatial setting the engine adapts, so L1 does not change balloon height; L2's targets do.
+- **The planner's need** uses the patient's measures as they are when it runs; plans already made are kept, so they reflect what was known at the time. The "next session" in the facts of an older session uses today's measures.
+- **No admin control** for the maximum difficulty per game yet; the engine mode can be changed on the patient page.
+
+## References
+
+- Levitt H (1971). Transformed up-down methods in psychoacoustics. *J Acoust Soc Am* 49(2B):467–477.
+- Kaernbach C (1991). Simple adaptive testing with the weighted up-down method. *Percept Psychophys* 49(3):227–229.
+- Thompson WR (1933). On the likelihood that one unknown probability exceeds another in view of the evidence of two samples. *Biometrika* 25(3/4):285–294.
+- Russo D, Van Roy B, Kazerouni A, Osband I, Wen Z (2018). A tutorial on Thompson sampling. *Foundations and Trends in Machine Learning* 11(1):1–96.
+- Ayer M, Brunk HD, Ewing GM, Reid WT, Silverman E (1955). An empirical distribution function for sampling with incomplete information. *Ann Math Stat* 26(4):641–647.
+
+**Simulation study tool** (`server/app/engine/sim/`): drives simulated patients through the same code as the API (a test replays a simulated session through the API with identical decisions), with measures for challenge error, time in the 60–80% zone, convergence, compensation, workspace coverage and learning gain. See [simulation-results.md](simulation-results.md).

@@ -12,7 +12,10 @@ no place, and a cool-down questionnaire with pain 5) to the database. Its pain a
 reviewed. A second session then checks the adaptive engine (POST /api/engine/next): a
 reach_activate run of 20 trials (12 successes, then 8 failures) whose level rises and then falls,
 with a logged decision at the start and after every trial, and a run that tires (5 quick
-successes, then 5 slow failures) and gets the "rest" cue. The patient is deactivated at the end.
+successes, then 5 slow failures) and gets the "rest" cue. A third session checks the Bayesian
+engine and the planner: the admin switches the patient to L2; the plan has a reason for every game;
+a change to it is stored; an L2 run of 8 trials returns a sector each time and its beliefs update;
+and the facts plan the next session once it ends. The patient is deactivated at the end.
 
 It also turns Bloom off and changes a Grip and hold default in the game library, checks that the
 patient's game settings follow, and then puts both games' settings back as they were. After the
@@ -37,6 +40,8 @@ DEFAULT_BASE_URL = "http://localhost:8000"
 #: The adaptive engine's run: this many trials, the first ENGINE_SUCCESSES of them successes.
 ENGINE_TRIALS = 20
 ENGINE_SUCCESSES = 12
+#: The L2 run's trials.
+L2_TRIALS = 8
 DIRECTIONS_DEG = [0, 45, 90, 135, 180, 225, 270, 315]
 # Every warm-up exercise, with its unit, thresholds and target reps.
 WARMUP_EXERCISES: list[tuple[str, str, float, float, int]] = [
@@ -1278,6 +1283,80 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         body = expect(client.post(url, json={"status": "completed"}, headers=bearer("patient")), 200)
         require(body["status"] == "completed", "the second session is not completed")
 
+    # The Bayesian engine (L2) and the planner, in a third session.
+    def admin_switches_to_l2() -> None:
+        url = f"/api/admin/patients/{state['patient_id']}"
+        body = expect(client.patch(url, json={"engine_mode": "L2"}, headers=bearer("admin")), 200)
+        require(body["engine_mode"] == "L2", f"engine_mode is {body['engine_mode']}, not L2")
+
+    def plan_with_reasons() -> None:
+        body = expect(client.post("/api/sessions", headers=bearer("patient")), 201)
+        state["plan_session_id"] = body["id"]
+        url = f"/api/sessions/{body['id']}/plan"
+        plan = expect(client.get(url, headers=bearer("patient")), 200)
+        games = plan["games"]
+        require(3 <= len(games) <= 4, f"the plan has {len(games)} games")
+        require(all(game["reason_key"] for game in games), "a planned game has no reason")
+        require(plan["total_minutes"] > 0, "the plan has no length")
+        again = expect(client.get(url, headers=bearer("patient")), 200)
+        require(again == plan, "asking again gave a different plan")
+        state["planned"] = [game["game_id"] for game in games]
+
+    def plan_override_stored() -> None:
+        url = f"/api/sessions/{state['plan_session_id']}/plan/override"
+        kept = list(reversed(state["planned"][1:]))
+        body = expect(client.post(url, json={"games": kept}, headers=bearer("patient")), 201)
+        [entry] = body["overrides"]
+        require(entry["removed"] == state["planned"][:1], f"removed {entry['removed']}")
+        require(entry["reordered"] is (len(kept) > 1), "the new order was not noticed")
+
+    def l2_run_learns_by_sector() -> None:
+        url = f"/api/sessions/{state['plan_session_id']}/games"
+        payload = {
+            "game_id": "reach_activate",
+            "engine": "L0",
+            "input_source": "keyboard",
+            "params_initial": PARAMS["reach_activate"],
+            "trials_planned": L2_TRIALS,
+        }
+        run = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
+        require(run["engine"] == "L2", f"the run's engine is {run['engine']}, not L2")
+        answer = engine_next(int(run["id"]), None)
+        for n in range(1, L2_TRIALS + 1):
+            require(
+                isinstance(answer.get("sector"), str) and answer["sector"].startswith("D"),
+                f"no sector in the answer: {answer.get('sector')}",
+            )
+            require(answer["direction_deg"] is not None, "no direction in the answer")
+            last = {
+                "trial_no": n,
+                "outcome": "success" if n % 3 else "reach_fail",
+                "movement_ms": 900,
+                "direction_deg": answer["direction_deg"],
+                "distance_frac": answer["distance_frac"],
+            }
+            answer = engine_next(int(run["id"]), last)
+        end_engine_run(int(run["id"]))
+        url = f"/api/admin/sessions/{state['plan_session_id']}"
+        detail = expect(client.get(url, headers=bearer("admin")), 200)
+        rows = next(item for item in detail["games"] if item["id"] == run["id"])["adaptation"]
+        require(len(rows) == L2_TRIALS + 1, f"{len(rows)} decisions logged")
+        first = rows[0]["state_after"]["extra"]["sectors"]
+        last_beliefs = rows[-1]["state_after"]["extra"]["sectors"]
+        changed = [name for name in first if first[name] != last_beliefs.get(name)]
+        require(changed, "no sector's belief changed")
+        require(all(row["details"] and row["details"]["target"] for row in rows), "a decision has no target")
+
+    def facts_plan_next_session() -> None:
+        session_id = state["plan_session_id"]
+        facts = expect(client.get(f"/api/sessions/{session_id}/facts", headers=bearer("patient")), 200)
+        require(facts["next_session"] is None, "the facts planned ahead before the session ended")
+        url = f"/api/sessions/{session_id}/end"
+        expect(client.post(url, json={"status": "completed"}, headers=bearer("patient")), 200)
+        facts = expect(client.get(f"/api/sessions/{session_id}/facts", headers=bearer("patient")), 200)
+        nxt = facts["next_session"]
+        require(nxt is not None and nxt["planned_games"], "the facts have no next-session plan")
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -1337,6 +1416,11 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Engine: a decision is logged at the start and after each trial", engine_log_rows),
         ("Engine: quick successes then slow failures ask for a rest", engine_fatigue_rest),
         ("Patient ends the second session", end_engine_session),
+        ("Admin switches the patient to the Bayesian engine (L2)", admin_switches_to_l2),
+        ("Patient gets today's plan, with a reason for each game", plan_with_reasons),
+        ("Patient's change to the plan is stored", plan_override_stored),
+        ("L2: a run returns sectors and its beliefs update", l2_run_learns_by_sector),
+        ("Facts plan the next session once this one ends", facts_plan_next_session),
         ("Admin deactivates the test patient", deactivate_patient),
     ]
 
