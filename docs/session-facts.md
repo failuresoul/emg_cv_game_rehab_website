@@ -27,7 +27,7 @@ alone.
 | `flags.hand_loss_pct` | number \| null | Share of the movement trials' time with the hand not tracked (gaps over 200 ms between points), 0–100; `null` without trajectories |
 | `self_report` | object \| null | `{ "pain_0_10", "fatigue_0_10", "enjoyment_1_5" }` from the questionnaire; `null` before it is sent |
 | `adherence` | object | `{ "sessions_this_week": n, "planned_this_week": n }`: completed sessions from Monday up to this session's day (UTC), and the patient's weekly goal |
-| `next_session` | null | The next session's plan; always `null` until the planner (Day 13) |
+| `next_session` | object \| null | The planner's plan for the patient's next session, made from every completed session up to this one; `null` while this session is open. `{ "focus_movements": [...], "focus_directions": [deg], "planned_games": [game ids in order] }`. Movements are `reach`, `shoulder`, `elbow`, `hand_opening`, `fingers`, `grip` or `smoothness`; directions are weaker reach directions (0 outward, 90 up). |
 | `safety_notice_present` | boolean | The session raised a `pain` or `new_symptoms` safety flag. The feedback must then include the safety notice and must not encourage more effort |
 
 ### `metrics`
@@ -110,7 +110,11 @@ Each item is one measure of the [metrics catalogue](../shared/metrics-catalog.js
   "flags": { "compensation_rate": 0.12, "fatigue_flag": false, "hand_loss_pct": 3.4 },
   "self_report": { "pain_0_10": 1, "fatigue_0_10": 4, "enjoyment_1_5": 4 },
   "adherence": { "sessions_this_week": 3, "planned_this_week": 5 },
-  "next_session": null,
+  "next_session": {
+    "focus_movements": ["hand_opening"],
+    "focus_directions": [90],
+    "planned_games": ["grip_hold", "reach_activate", "bloom", "fruit_catch"]
+  },
   "safety_notice_present": false
 }
 ```

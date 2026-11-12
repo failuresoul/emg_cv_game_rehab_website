@@ -19,6 +19,10 @@ class Session(SQLModel, table=True):
     current_step: str = "setup"  # "setup" | "calibrate" | "warmup" | "plan" | "game" | ...
     #: Today's games and the index of the current one: {"games": [...], "index": 0}.
     game_queue: dict[str, Any] | None = Field(default=None, sa_type=JSON)
+    #: The planner's plan for this session (SessionPlan), computed once when first asked for.
+    plan: dict[str, Any] | None = Field(default=None, sa_type=JSON)
+    #: Each change the patient made to the plan (PlanOverrideRead), for analysis.
+    plan_overrides: list[dict[str, Any]] = Field(default_factory=list, sa_type=JSON)
     # Safety flags from the cool-down questionnaire; see app/services/safety.py.
     flags: list[str] = Field(default_factory=list, sa_type=JSON)
     needs_review: bool = False

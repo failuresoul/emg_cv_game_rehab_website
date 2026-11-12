@@ -127,6 +127,17 @@ class FactsAdherence(BaseModel):
     planned_this_week: int
 
 
+class FactsNextSession(BaseModel):
+    """The planner's plan for the patient's next session, made after this one ended."""
+
+    #: Movements to work on (reach, shoulder, elbow, hand_opening, fingers, grip, smoothness).
+    focus_movements: list[str]
+    #: Weaker reach directions, in degrees (0 outward, 90 up).
+    focus_directions: list[float]
+    #: The games planned, in order.
+    planned_games: list[str]
+
+
 class SessionFacts(BaseModel):
     session_id: int
     patient_code: str
@@ -143,8 +154,8 @@ class SessionFacts(BaseModel):
     flags: FactsFlags
     self_report: FactsSelfReport | None
     adherence: FactsAdherence
-    #: The next session's plan; None until the planner (Day 13).
-    next_session: None = None
+    #: The next session's plan, once this session has ended; None while it is open.
+    next_session: FactsNextSession | None = None
     #: The session raised a pain or new-symptoms flag, so feedback must show the safety notice.
     safety_notice_present: bool
 

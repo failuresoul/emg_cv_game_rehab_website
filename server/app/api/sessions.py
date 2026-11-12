@@ -15,10 +15,12 @@ from app.schemas.session import (
     SessionStart,
 )
 from app.schemas.metrics import SessionFacts
+from app.schemas.plan import PlanOverrideCreate, PlanOverrideRead, PlanOverrides, SessionPlan
 from app.schemas.progress import SessionReport
 from app.schemas.session_feedback import SessionFeedbackCreate, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultCreate, WarmupResultRead
-from app.services import progress, session_facts, session_feedback, sessions, warmup
+from app.models.user import utc_now
+from app.services import planner, progress, session_facts, session_feedback, sessions, warmup
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -198,3 +200,50 @@ def get_session_facts(session_id: int, session: SessionDep, user: CurrentUser) -
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     return session_facts.build_facts(session, record)
+
+
+def _session_for_user(session: SessionDep, user: CurrentUser, session_id: int) -> SessionRecord:
+    """The session, for its patient or an admin; 404 for anyone else."""
+    record = session.get(SessionRecord, session_id)
+    if record is not None and user.role != "admin":
+        owner = session.get(PatientProfile, record.patient_id)
+        if owner is None or owner.user_id != user.id:
+            record = None
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    return record
+
+
+@router.get("/{session_id}/plan")
+def get_plan(session_id: int, session: SessionDep, user: CurrentUser) -> SessionPlan:
+    """Today's games in order, with reasons: planned once, from the sessions before this one,
+    and kept with the session."""
+    return planner.stored_plan(session, _session_for_user(session, user, session_id))
+
+
+@router.post("/{session_id}/plan/override", status_code=status.HTTP_201_CREATED)
+def override_plan(
+    session_id: int, payload: PlanOverrideCreate, session: SessionDep, patient: CurrentPatient
+) -> PlanOverrides:
+    """Records the games the patient kept and their order, for analysis. The plan itself is not
+    changed."""
+    record = _get_own_session_or_404(session, patient, session_id)
+    if record.status != "active":
+        raise _session_ended()
+    planned = [game.game_id for game in planner.stored_plan(session, record).games]
+    kept = [game for game in planned if game in payload.games]
+    entry = PlanOverrideRead(
+        at=utc_now(),
+        planned=planned,  # type: ignore[arg-type]
+        games=payload.games,
+        removed=[game for game in planned if game not in payload.games],  # type: ignore[misc]
+        added=[game for game in payload.games if game not in planned],
+        reordered=[game for game in payload.games if game in planned] != kept,
+    )
+    record.plan_overrides = [*(record.plan_overrides or []), entry.model_dump(mode="json")]
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return PlanOverrides(
+        overrides=[PlanOverrideRead.model_validate(item) for item in record.plan_overrides]
+    )

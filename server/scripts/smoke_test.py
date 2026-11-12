@@ -1141,7 +1141,11 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(facts["safety_notice_present"] is True, "pain 5 did not set the safety notice")
         require(facts["self_report"]["pain_0_10"] == 5, "the facts have no self-report")
         require(len(facts["metrics"]) <= 8, "the facts have more than eight measures")
-        require(facts["next_session"] is None, "the facts already have a next session")
+        next_session = facts["next_session"]
+        require(next_session is not None, "the facts have no plan for the next session")
+        # Pain 5 in this session: the next plan is the lighter one, with three games.
+        planned = next_session["planned_games"]
+        require(len(planned) == 3, f"the next plan has {len(planned)} games, not 3")
         expect(client.get(url, headers=bearer("admin")), 200)
 
     def export_patient_metrics() -> None:

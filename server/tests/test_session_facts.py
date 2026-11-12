@@ -216,7 +216,10 @@ def test_facts_shape(client: TestClient, patient_headers: Headers, session: Sess
     assert facts["self_report"] == {"pain_0_10": 5, "fatigue_0_10": 4, "enjoyment_1_5": 5}
     assert facts["adherence"]["planned_this_week"] == 5
     assert 1 <= facts["adherence"]["sessions_this_week"] <= 3
-    assert facts["next_session"] is None
+    # The session ended with a pain flag: the next plan is the lighter one, three games.
+    next_session = facts["next_session"]
+    assert set(next_session) == {"focus_movements", "focus_directions", "planned_games"}
+    assert len(next_session["planned_games"]) == 3
     assert facts["safety_notice_present"] is True
 
     metrics = facts["metrics"]

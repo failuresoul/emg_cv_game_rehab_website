@@ -38,6 +38,8 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "review_note": "VARCHAR",
         "current_step": "VARCHAR NOT NULL DEFAULT 'setup'",
         "game_queue": "JSON",
+        "plan": "JSON",
+        "plan_overrides": "JSON NOT NULL DEFAULT '[]'",
     },
     "patientprofile": {
         "weekly_goal": "INTEGER NOT NULL DEFAULT 5",

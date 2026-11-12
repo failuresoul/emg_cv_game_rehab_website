@@ -20,10 +20,11 @@ from app.schemas.metrics import (
     FactsFlags,
     FactsGame,
     FactsMetric,
+    FactsNextSession,
     FactsSelfReport,
     SessionFacts,
 )
-from app.services import levels
+from app.services import levels, planner
 from app.services.metrics_catalog import get_metric
 from app.services.progress import (
     BASELINE_SESSIONS,
@@ -174,6 +175,20 @@ def hand_loss_pct(trials: Sequence[Trial]) -> float | None:
     return round(100 * lost / total, 1) if total > 0 else None
 
 
+def _next_session(
+    session: Session, profile: PatientProfile, record: SessionRecord
+) -> FactsNextSession | None:
+    """The planner's plan for the next session, from every completed session up to this one."""
+    if record.status != "completed":
+        return None
+    plan = planner.plan_next(session, profile, record)
+    return FactsNextSession(
+        focus_movements=plan.focus.movements,
+        focus_directions=plan.focus.directions,
+        planned_games=[game.game_id for game in plan.games],
+    )
+
+
 def build_facts(session: Session, record: SessionRecord) -> SessionFacts:
     assert record.id is not None
     profile = session.get(PatientProfile, record.patient_id)
@@ -242,7 +257,7 @@ def build_facts(session: Session, record: SessionRecord) -> SessionFacts:
             sessions_this_week=sessions_this_week(completed_days, day),
             planned_this_week=profile.weekly_goal,
         ),
-        next_session=None,
+        next_session=_next_session(session, profile, record),
         safety_notice_present=bool(flags & SAFETY_FLAGS),
     )
 

@@ -71,6 +71,8 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/patient/progress/metrics`      | `patient` | Own catalogue measures over the sessions |
 | GET    | `/api/admin/patients/{id}/metrics`   | `admin`   | Each measure against the baseline, with series |
 | GET    | `/api/sessions/{id}/facts`           | owner or `admin` | The session's facts for the feedback module |
+| GET    | `/api/sessions/{id}/plan`            | owner or `admin` | Today's games in order, with reasons |
+| POST   | `/api/sessions/{id}/plan/override`   | `patient` | Record the patient's changes to the plan |
 | POST   | `/api/admin/metrics/recompute`       | `admin`   | Recompute server trial and session measures |
 | GET    | `/api/admin/patients/{id}/export.csv` | `admin`  | One patient's session measures as CSV |
 | GET    | `/api/admin/export/trials.csv`       | `admin`   | Every trial as CSV, by patient code |
@@ -1002,6 +1004,70 @@ Response `200`:
 - **`mdc_provisional`:** true while the MDC values are placeholders.
 
 Errors: `404`.
+
+### GET /api/sessions/{id}/plan
+
+Role: the session's patient, or an admin; anyone else gets `404`. Today's games in order, each with a reason, from the session planner ([`server/app/services/planner.py`](../server/app/services/planner.py)). The plan is made the first time it is asked for, from the patient's completed sessions before this one, and kept with the session: asking again returns the same plan.
+
+```json
+{
+  "games": [
+    { "game_id": "grip_hold", "trials": 8, "minutes": 3.9, "reason_key": "favourite", "reason_params": {} },
+    { "game_id": "reach_activate", "trials": 20, "minutes": 5.0, "reason_key": "practise_weak_direction", "reason_params": { "direction_deg": 90 } },
+    { "game_id": "bloom", "trials": 15, "minutes": 4.0, "reason_key": "focus_hand_opening", "reason_params": {} },
+    { "game_id": "fruit_catch", "trials": 15, "minutes": 4.5, "reason_key": "variety", "reason_params": {} }
+  ],
+  "total_minutes": 17.4,
+  "focus": { "movements": ["hand_opening"], "directions": [90] },
+  "notes": [],
+  "version": 1,
+  "created_at": "2026-11-12T09:00:00Z"
+}
+```
+
+**`reason_key`** is one of:
+- `focus_<movement>`: the movement's measures were worse, or unchanged while others improved. Movements are `reach`, `shoulder`, `elbow`, `hand_opening`, `fingers`, `grip` and `smoothness`.
+- `practise_weak_direction`: with `direction_deg`.
+- `variety`: not played in the last 2 sessions.
+- `favourite`: enjoyed and successful.
+- `lighter_today`.
+- `balance`: the plan's one reach or hand game; with `movement`.
+- `keep_practising`: with `movement`.
+
+**`notes`** may hold `{ "key": "lighter_today", "params": { "because": "fatigue" | "too_hard" | "pain" } }`. After a session with fatigue 7 or more, "too hard" or a pain flag, the plan has 3 games and about 12 minutes; otherwise 4 games and 16–18 minutes.
+
+**Rules that always hold:**
+- only games turned on in the Game Library;
+- at least one reach or shoulder game and one hand, finger or grip game;
+- no two shoulder-heavy games (`balloon_pop`, `path_trace`, `fruit_catch`) next to each other;
+- the easiest game first and the most enjoyable last, when the other rules allow.
+
+### POST /api/sessions/{id}/plan/override
+
+Role: the session's patient, while it is active. Records the games the patient kept and their order, for analysis; the stored plan does not change.
+
+```json
+{ "games": ["bloom", "reach_activate", "fruit_catch"] }
+```
+
+Response `201`: every change recorded for the session so far:
+
+```json
+{
+  "overrides": [
+    {
+      "at": "2026-11-12T09:02:00Z",
+      "planned": ["grip_hold", "reach_activate", "bloom", "fruit_catch"],
+      "games": ["bloom", "reach_activate", "fruit_catch"],
+      "removed": ["grip_hold"],
+      "added": [],
+      "reordered": true
+    }
+  ]
+}
+```
+
+Errors: `404`, `403` for an admin, `409` once the session has ended, `422` for an empty list or an unknown game.
 
 ### GET /api/sessions/{id}/facts
 
