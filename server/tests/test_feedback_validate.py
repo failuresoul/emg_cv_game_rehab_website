@@ -164,6 +164,9 @@ def test_safety_text_leaks_only_matter_under_a_notice() -> None:
     assert any('"doctor" is not allowed' in error for error in errors)
     emergency = flagged_answer() | {"next_session_text": "Call emergency services if needed."}
     assert any("emergency" in error for error in check(emergency, flagged_facts()))
+    # The game Paint the wall is not "pain".
+    paint = flagged_answer() | {"next_session_text": "Next time you will play Paint the wall."}
+    assert check(paint, flagged_facts()) == []
     # Without a notice the same words are not a leak (pain is a fact the model was given).
     calm = changed(therapist_summary="Session 6. Self-report: pain 1/10.")
     assert check(calm) == []

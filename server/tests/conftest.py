@@ -11,6 +11,7 @@ os.environ["ADMIN_NAME"] = "Test Admin"
 # Tests never call a real model.
 os.environ["LLM_PROVIDER"] = "mock"
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
@@ -23,6 +24,20 @@ from app.services.users import ensure_admin
 PATIENT_PASSWORD = "patient-password"
 
 Headers = dict[str, str]
+
+
+@pytest.fixture(autouse=True)
+def no_real_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unit tests never reach a real Ollama: any real HTTP request to it fails the test.
+    (TestClient and httpx.MockTransport do not use HTTPTransport, so they are unaffected.)"""
+    real = httpx.HTTPTransport.handle_request
+
+    def guarded(self: httpx.HTTPTransport, request: httpx.Request) -> httpx.Response:
+        if request.url.port == 11434 or "/api/chat" in request.url.path:
+            raise RuntimeError(f"A test tried to call a real model: {request.url}")
+        return real(self, request)
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", guarded)
 
 
 @pytest.fixture

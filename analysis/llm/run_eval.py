@@ -60,7 +60,7 @@ ERROR_KINDS: list[tuple[str, re.Pattern[str]]] = [
     ("script", re.compile(r"must be written in")),
 ]
 COLUMNS = [
-    "case_id", "category", "language", "valid_first_try", "final_valid", "retries", "fallback_used",
+    "case_id", "category", "language", "model", "prompt_version", "valid_first_try", "final_valid", "retries", "fallback_used",
     "provider_error", "numbers_total", "numbers_known", "numeric_faithfulness", "direction_errors",
     "banned_hits", "leakage_hits", "suggestions_total", "suggestions_valid", "coverage",
     "patient_words", "avg_sentence_words", "latency_s", "prompt_tokens", "output_tokens",
@@ -179,6 +179,9 @@ def evaluate_case(
         "case_id": case["id"],
         "category": case["category"],
         "language": language,
+        # Stored with every result, so runs of different models and prompts never mix.
+        "model": meta.model or "",
+        "prompt_version": meta.prompt_version,
         "valid_first_try": not meta.fallback_used and meta.retries == 0,
         "final_valid": not meta.fallback_used,
         "retries": meta.retries,

@@ -4,6 +4,41 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 14)
+
+- **Local language model provider** (`server/app/feedback/llm.py`):
+  - Ollama `/api/chat` with structured JSON output, `think` off (retried without it for models that refuse it, and remembered), timings, health and warm-up;
+  - a mock provider for tests;
+  - LLM settings in `.env.example`.
+- **Speed test** (`analysis/llm/speed_test.py`): reading and writing speed of each candidate model on a short prompt and a realistic 1,500-token one.
+- **Rule layer** (`server/app/feedback/rules.py`, `catalogue.yaml`, `kb/`):
+  - 13 suggestion types with triggers, thresholds and approved guidance;
+  - at most 5 candidates per session, each with its evidence;
+  - red flags (pain, new symptoms, sharp decline);
+  - one approved tip per suggestion in English and Bangla.
+- **Shared safety notices** (`shared/safety-notices.json`): one source for the notice wording, used by the server; a web test checks that the app's wording is identical.
+- **Safe report generation** (`schemas.py`, `prompts/`, `prompt.py`, `validate.py`, `fallback.py`, `service.py`):
+  - versioned prompts with two checked examples;
+  - a validator for schema, word limits, numbers from the facts, candidate ids, improved/worse words against `mdc_status`, banned words, safety leakage, sentence length and script;
+  - up to two retries with the errors, then a template report;
+  - the model and prompt version recorded with every result.
+- **CLI:** `python -m app.feedback.cli <session_id>` and `--list`.
+- **Evaluation** (`analysis/llm/`):
+  - a 60-case seeded synthetic test set (40 dev, 20 held out);
+  - `run_eval.py`, resumable, scoring every answer the model wrote;
+  - `compare_models.py`, which writes `docs/llm-model-choice.md` against the targets.
+- **Docs:** "LLM feedback" in [docs/ai-engine.md](docs/ai-engine.md).
+
+### Changed (Day 14)
+
+- **Session facts** gained `flags.safety_flags` (questionnaire codes, read by the rules and never sent to the model) and `flags.shoulder_compensation_rate`.
+- **The feedback module** is now developed in this repository (`server/app/feedback/README.md`).
+
+### Fixed (Day 14 review)
+
+- The safety-leakage check treated "Paint the wall" (`paint_wall`) as "pain", so any report naming that game was rejected under a safety notice. It now matches whole words only.
+- Unit tests can no longer reach a real Ollama: any real request to it fails the test.
+
 ### Added (Day 13)
 
 - **L2, a Bayesian, workspace-aware engine** (`server/app/engine/l2_bayes.py`, [docs/ai-engine.md](docs/ai-engine.md)):

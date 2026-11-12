@@ -48,7 +48,9 @@ WORSE_WORDS: dict[FeedbackLanguage, re.Pattern[str]] = {
 }
 #: Words that would repeat or replace the fixed safety notice. Not allowed when one is shown.
 LEAKAGE_WORDS = re.compile(
-    r"\b(pain\w*|hurt\w*|ache\w*|aching|sore\w*|symptom\w*|doctor\w*|physician\w*|GP|"
+    # Whole words: "pain" must not catch the game Paint the wall (paint_wall).
+    r"\b(pain|pains|painful|painfully|hurt|hurts|hurting|ache|aches|aching|sore|soreness|"
+    r"symptom\w*|doctor\w*|physician\w*|GP|"
     r"emergenc\w*|hospital\w*|ambulance|medical|stop practi[sc]ing|tell your therapist|"
     r"contact your therapist|seek help|weakness|numbness|drooping)\b"
     r"|ব্যথা|উপসর্গ|ডাক্তার|চিকিৎসক|জরুরি|হাসপাতাল|থেরাপিস্টকে জানান",

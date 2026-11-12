@@ -256,6 +256,127 @@ The web app words them gently, for example "Your hand opening has improved less 
 
 **The patient decides.** The patient may untick, add or reorder games. Each change is recorded with the plan (`plan_overrides`: planned, played, removed, added, reordered) for analysis, and the recommendation itself is never changed.
 
+## LLM feedback (`server/app/feedback/`)
+
+After each session the patient gets a short report in English or Bangla, and the therapist a technical summary. A small language model, run locally, writes the words. It decides nothing.
+
+### Principle
+
+**The code calculates, the rules decide, the LLM only writes.**
+- **Tested code** produces every number and every judgement of better or worse: a change counts only when it exceeds the measure's minimal detectable change (MDC).
+- **Rules** choose what may be suggested and which safety notices apply.
+- **The model** puts those facts into plain words.
+- **A validator** checks every answer. After two failed retries a template report is used instead.
+- **Safety notices** are fixed, approved text and never written by the model.
+
+### Facts
+
+The input is the session's facts (`GET /api/sessions/{id}/facts`, [session-facts.md](session-facts.md)). They contain codes and numbers only:
+- up to 8 measures, each with its value, baseline, change in MDC units and status (`improved`, `worse`, `no_detectable_change`, `no_baseline`);
+- games with success rates and levels;
+- weak and strong reach directions;
+- compensation, tracking-loss and fatigue flags;
+- the self-report and adherence;
+- the next session's plan.
+
+The model never sees a name, an email, the questionnaire's free-text comment, the patient code or the session id. A test builds a stored session with all of these and checks that none reaches the prompt.
+
+### Rules (`rules.py`, `catalogue.yaml`)
+
+**Suggestions.** A catalogue of 13 suggestion types, each with a trigger, a threshold, an audience, a priority and 2–3 sentences of approved guidance:
+- celebrating progress, steady effort, first sessions;
+- practising weak directions, posture of the trunk, relaxing the shoulder, rest breaks;
+- relaxing after a squeeze, a steady grip, camera set-up;
+- routine, level-up, and the next session's focus.
+
+`candidates(facts)` returns at most five, each with the facts that triggered it (its evidence):
+- safety-related suggestions come first, then celebrating progress, then the rest by priority;
+- the next session's focus is always kept, in the last place.
+
+**Red flags.** `red_flags(facts)` returns:
+- pain (score 4 or more) or new symptoms from the cool-down questionnaire;
+- a sharp decline: three or more key measures worse by 2 MDC or more.
+
+When a red flag fires:
+- suggestions asking for more effort are dropped;
+- the model is told only that a notice exists (`SAFETY_NOTICE_PRESENT`), never the flag, the notice or the pain score;
+- the notice comes from `shared/safety-notices.json`, the single source of its wording in English and Bangla. A web test checks that the app's own notice is identical.
+
+**Tips.** One approved tip per suggestion and language (`kb/en`, `kb/bn`), looked up by id; there is no retrieval.
+
+### Prompt (`prompts/`, `prompt.py`)
+
+Prompts are versioned files (`system_v1.txt`, `user_v1.txt`); a new version is a new file, and each result records its version.
+
+**System rules:**
+- use only the facts, and never calculate a new number;
+- say improved or worse only as `mdc_status` says, and make no comparison without a baseline;
+- choose 1–3 suggestions from the candidates, by id;
+- no exercises beyond the candidates, no medicines, diagnoses or recovery predictions, and no comparison with other people;
+- no mention of pain, symptoms, doctors or emergencies when a notice is shown;
+- patient text in the second person, in short sentences with everyday words;
+- therapist text technical: measure ids, baseline → latest, change in MDC, flags and plan;
+- JSON only.
+
+**The user prompt** holds the language, the notice flag, two hand-written examples (an improving and a mixed session, each checked by the validator against its own facts), the facts and the candidates, all as compact JSON. The largest prompt is about 3,000 tokens, which leaves room for the answer in a 4,096-token context.
+
+**The answer** is constrained by Ollama's structured output (`format` = a flat JSON schema):
+- suggestion and measure ids are limited to the session's own;
+- `think` is off;
+- temperature 0.2, top-p 0.9, at most 700 output tokens.
+
+### Validator (`validate.py`)
+
+Every answer is checked for:
+1. **Schema and length:** the JSON schema, and the word limits (patient summary 120, highlight 20, suggestion 35, next session 40, therapist summary 150).
+2. **Numeric faithfulness:** every number in every text must match a number the model was given, within 0.011. Percentage (×100), rounded and "n/10" forms are allowed.
+3. **Ids:** suggestion ids must be among the candidates; highlight ids must be among the session's measures.
+4. **Direction consistency:** words of improvement or worsening next to a measure's name must agree with its `mdc_status`.
+5. **Banned words** (`banned.txt`): diagnosis and medicine words, cures, guarantees, "back to normal", comparisons with other patients, and dangerous advice.
+6. **Safety leakage:** no pain, symptom, doctor or emergency words when a notice is shown.
+7. **Readability:** patient sentences average at most 18 words.
+8. **Script:** Bangla text mostly in the Bengali block, English text in Latin; the therapist summary always in English.
+
+**Retries and template.** A failed answer is retried with its errors appended, at most twice. After that, or when the model cannot be reached or times out, a template report (`fallback.py`) is built from the facts, candidates and tips; it passes the validator on all 60 evaluation cases in both languages. Each result records the model, prompt version, latency, tokens, retries, whether the template was used, and every validation error.
+
+### Evaluation (`analysis/llm/`)
+
+**Test set.** 60 synthetic facts objects from a fixed seed (`make_testset.py`): 15 improving, 15 declining, 15 mixed, 5 first-session, 5 red-flag and 5 messy. 40 are for development and 20 held out; about a third are in Bangla.
+
+**Scoring.** `run_eval.py` runs the full pipeline on each case and scores every answer the model wrote, including retries, not just the final report (which always passes, because of the template).
+
+**Targets:**
+
+| Measure | Target |
+| --- | --- |
+| Valid at the first try | ≥ 95% |
+| Numeric faithfulness | ≥ 99% |
+| Direction errors | 0 |
+| Banned words | 0 |
+| Template used | ≤ 5% |
+| p95 latency per report | ≤ 30 s |
+
+**Results.** *Pending: the dev comparison (`compare_models.py`, which writes [llm-model-choice.md](llm-model-choice.md)) and the held-out run of the chosen model have not been run yet. Their tables go here.*
+
+### Model and hardware
+
+All models run locally in Ollama on the project laptop, an NVIDIA RTX 3050 with 4 GB. No session data leaves the machine.
+
+| Model | Fit on the GPU | Writing speed |
+| --- | --- | --- |
+| qwen3.5:4b (3.3 GB) | About 50% CPU / 50% GPU | About 19 tokens/s |
+| qwen3.5:2b | Fits | Pending |
+| phi4-mini | Fits | Pending |
+
+**Chosen model:** *pending: to be filled in from the dev comparison, with the reason.*
+
+### Limitations of the feedback
+
+- **Pattern-based checks.** The direction and leakage checks recognise measure names and words. A paraphrase the lists do not know can pass unchecked, and an unusual but harmless wording can force a retry.
+- **Synthetic evaluation.** The test set is synthetic; real session facts may differ. The MDC values behind every judgement are provisional until measured (Day 19).
+- **Bangla wording.** The Bangla text (tips, template sentences, the sharp-decline notice) still needs review by native speakers.
+- **Reports are not stored yet.** They are generated on request; storing them, with their meta, comes with the report API (Day 15).
+
 ## Limitations
 
 - **Approximate starting values:** the inverse mapping averages a component's settings, so multi-setting components reproduce the admin's defaults only approximately; the first trial of each run uses the defaults exactly.
