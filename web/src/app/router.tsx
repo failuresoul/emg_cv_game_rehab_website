@@ -46,6 +46,12 @@ export const router = createBrowserRouter([
             Component: (await import("@/dev/ExerciseLabPage")).ExerciseLabPage,
           }),
         },
+        {
+          path: "/dev/emg-lab",
+          lazy: async () => ({
+            Component: (await import("@/dev/EmgLabPage")).EmgLabPage,
+          }),
+        },
       ]
     : []),
   // The landing page has its own navbar and footer.

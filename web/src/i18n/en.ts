@@ -1619,4 +1619,12 @@ export const en = {
   "review.results.dimension": "Dimension",
   "review.results.raters": "Raters (user ids)",
   "review.results.items": "Reports",
+  "emg.error.notSupported":
+    "This browser cannot connect to the muscle sensor. Please use Google Chrome or Microsoft Edge on a computer.",
+  "emg.error.noPort":
+    "No sensor was chosen. Press Connect again and choose the sensor's port in the list.",
+  "emg.error.openFailed":
+    "The sensor could not be opened. Close any other program using it (such as the Arduino Serial Monitor), then try again.",
+  "emg.error.lost":
+    "The muscle sensor was disconnected. Check the USB cable, then press Reconnect.",
 } as const;

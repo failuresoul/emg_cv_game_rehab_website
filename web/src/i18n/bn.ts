@@ -1606,4 +1606,11 @@ export const bn: Record<TranslationKey, string> = {
   "review.results.dimension": "দিক",
   "review.results.raters": "মূল্যায়নকারী (ইউজার আইডি)",
   "review.results.items": "প্রতিবেদন",
+  "emg.error.notSupported":
+    "এই ব্রাউজার পেশি সেন্সরের সঙ্গে যুক্ত হতে পারে না। অনুগ্রহ করে কম্পিউটারে Google Chrome বা Microsoft Edge ব্যবহার করুন।",
+  "emg.error.noPort":
+    "কোনো সেন্সর বেছে নেওয়া হয়নি। আবার সংযোগ চাপুন এবং তালিকা থেকে সেন্সরের পোর্ট বেছে নিন।",
+  "emg.error.openFailed":
+    "সেন্সরটি খোলা যায়নি। এটি ব্যবহার করছে এমন অন্য প্রোগ্রাম (যেমন Arduino Serial Monitor) বন্ধ করে আবার চেষ্টা করুন।",
+  "emg.error.lost": "পেশি সেন্সরের সংযোগ বিচ্ছিন্ন হয়েছে। USB তারটি দেখে নিয়ে আবার সংযোগ চাপুন।",
 };

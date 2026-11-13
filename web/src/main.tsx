@@ -9,6 +9,7 @@ import { RouterProvider } from "react-router";
 import { router } from "@/app/router";
 import { ErrorBoundary } from "@/components/ErrorPage";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { EmgProvider } from "@/emg/EmgProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider } from "@/features/auth/AuthContext";
 import { isSilent, reportApiError } from "@/lib/apiErrors";
@@ -45,8 +46,10 @@ createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ToastProvider>
-            <OfflineBanner />
-            <RouterProvider router={router} />
+            <EmgProvider>
+              <OfflineBanner />
+              <RouterProvider router={router} />
+            </EmgProvider>
           </ToastProvider>
         </AuthProvider>
       </QueryClientProvider>
