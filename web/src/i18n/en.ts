@@ -1463,6 +1463,7 @@ export const en = {
   "feedback.rating.choose": "Please choose 1 to 5 stars.",
   "feedback.language.en": "English",
   "feedback.language.bn": "বাংলা",
+  "feedback.language.label": "Report language",
   "feedback.reports.session": "Session {number}",
   "feedback.reports.open": "Read",
   "feedback.reports.preparing": "Being prepared…",

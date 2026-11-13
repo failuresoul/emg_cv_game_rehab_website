@@ -1,6 +1,6 @@
 # Words and phrases no feedback text may contain (code rule 4). One per line, any case.
 # A trailing * matches any ending ("diagnos*" matches diagnosis, diagnosed). Lines starting
-# with # are comments. Bangla entries match anywhere in the text.
+# with # are comments. The Bangla list is banned_bn.txt.
 
 # Diagnosis words
 diagnos*
@@ -63,12 +63,3 @@ exercise through the pain
 push through the pain
 work through the pain
 no pain, no gain
-
-# Bangla
-ওষুধ
-রোগনির্ণয়
-নিরাময়
-সম্পূর্ণ সুস্থ
-অন্য রোগী
-অন্যদের তুলনায়
-গ্যারান্টি

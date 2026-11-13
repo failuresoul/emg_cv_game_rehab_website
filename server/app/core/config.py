@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     LLM_KEEP_ALIVE: str = "30m"
     # A report job's total time limit (all attempts); after it, the template report is used.
     LLM_JOB_LIMIT_S: float = 120.0
+    # How Bangla reports are written: "direct" (the model writes Bangla), "translate" (English
+    # first, then the patient text translated and checked again) or "template" (no model).
+    LLM_BN_STRATEGY: str = "direct"
     # A report requested by the questionnaire waits up to this long for its session to end, so
     # its facts include the session's end (duration, next session's plan).
     FEEDBACK_SESSION_END_WAIT_S: float = 10.0

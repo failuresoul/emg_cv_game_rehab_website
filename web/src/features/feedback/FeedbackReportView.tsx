@@ -22,6 +22,7 @@ import {
 import type { ReactNode } from "react";
 
 import { t } from "@/i18n";
+import { useBengaliFont } from "@/lib/bengaliFont";
 import type { FeedbackReport } from "@/types/api";
 
 import { SafetyNotices } from "./SafetyNotices";
@@ -66,6 +67,7 @@ export function FeedbackReportView({
   showNotices?: boolean;
   actions?: ReactNode;
 }) {
+  useBengaliFont(report.language === "bn");
   return (
     <article lang={report.language} className="flex flex-col gap-5">
       {showNotices && <SafetyNotices notices={notices} />}

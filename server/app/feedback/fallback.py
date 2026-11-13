@@ -4,7 +4,11 @@ Built only from the facts, the candidates and the approved tips, with fixed sent
 always passes the validator. It never repeats the safety notice: the app shows that itself.
 """
 
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 from app.feedback.names import (
     GAME_NAMES,
@@ -26,44 +30,21 @@ from app.schemas.metrics import FactsMetric, SessionFacts
 
 _BANGLA_DIGITS = str.maketrans("0123456789", "০১২৩৪৫৬৭৮৯")
 
-TEXT: dict[FeedbackLanguage, dict[str, str]] = {
-    "en": {
-        "thanks": "Thank you for finishing session {n}.",
-        "notice": "Thank you for your session today. Please read the note from the app below.",
-        "no_history": (
-            "There is not enough history yet to compare your results. "
-            "Each session helps the app learn your usual level."
-        ),
-        "improved": "You improved {name} today.",
-        "worse": "One thing was harder than usual today: {name}.",
-        "steady": "This stayed steady: {name}.",
-        "others_steady": "Your other results were steady.",
-        "all_steady": "Your results were steady, close to your usual level.",
-        "next": "Next time you will practise {movements}.",
-        "next_directions": "You will reach {directions} a little more.",
-        "next_games": "Games: {games}.",
-        "next_unknown": "Your next session will be planned after this one.",
-        "join": " and ",
-    },
-    "bn": {
-        "thanks": "সেশন {n} শেষ করার জন্য ধন্যবাদ।",
-        "notice": "আজকের সেশনের জন্য ধন্যবাদ। অনুগ্রহ করে নিচে অ্যাপের বার্তাটি পড়ুন।",
-        "no_history": (
-            "তুলনা করার মতো যথেষ্ট তথ্য এখনও নেই। "
-            "প্রতিটি সেশন থেকে অ্যাপ আপনার স্বাভাবিক মাত্রা শেখে।"
-        ),
-        "improved": "আজ আপনার {name} উন্নত হয়েছে।",
-        "worse": "আজ {name} স্বাভাবিকের চেয়ে কঠিন ছিল।",
-        "steady": "{name} স্থির ছিল।",
-        "others_steady": "আপনার অন্য ফলাফল স্থির ছিল।",
-        "all_steady": "আপনার ফলাফল আগের মতোই স্থির ছিল।",
-        "next": "পরের সেশনে আপনি {movements} অনুশীলন করবেন।",
-        "next_directions": "দিক: {directions}।",
-        "next_games": "খেলা: {games}।",
-        "next_unknown": "এই সেশনের পরে আপনার পরের সেশনের পরিকল্পনা করা হবে।",
-        "join": " ও ",
-    },
-}
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+TEMPLATE_KEYS = (
+    "thanks", "notice", "no_history", "improved", "worse", "steady", "others_steady",
+    "all_steady", "next", "next_directions", "next_games", "next_unknown", "join",
+)  # fmt: skip
+
+
+@lru_cache(maxsize=2)
+def templates(language: FeedbackLanguage) -> dict[str, str]:
+    """The template report's sentences in a language (templates/<language>.yaml)."""
+    data = yaml.safe_load((TEMPLATES_DIR / f"{language}.yaml").read_text(encoding="utf-8"))
+    missing = [key for key in TEMPLATE_KEYS if not isinstance(data.get(key), str)]
+    if missing:
+        raise ValueError(f"templates/{language}.yaml lacks {', '.join(missing)}")
+    return {key: str(data[key]) for key in TEMPLATE_KEYS}
 
 
 def _number(value: float, language: FeedbackLanguage) -> str:
@@ -86,7 +67,7 @@ def _by_status(facts: SessionFacts, status: str) -> list[FactsMetric]:
 
 
 def _summary(facts: SessionFacts, flagged: bool, language: FeedbackLanguage) -> str:
-    text = TEXT[language]
+    text = templates(language)
     if flagged:
         return text["notice"]
     parts = [text["thanks"].format(n=_number(facts.session_no, language))]
@@ -116,7 +97,7 @@ def _highlights(facts: SessionFacts, language: FeedbackLanguage) -> list[Highlig
     return [
         Highlight(
             metric_id=metric.id,
-            text=TEXT[language][kind].format(name=metric_name(metric.id, language)),
+            text=templates(language)[kind].format(name=metric_name(metric.id, language)),
         )
         for metric, kind in chosen
     ]
@@ -136,7 +117,7 @@ def _suggestions(candidates: list[Candidate], language: FeedbackLanguage) -> lis
 
 
 def _next_session(facts: SessionFacts, language: FeedbackLanguage) -> str:
-    text = TEXT[language]
+    text = templates(language)
     plan = facts.next_session
     if plan is None:
         return text["next_unknown"]

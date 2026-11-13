@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
 import { Link, useParams } from "react-router";
 
 import { buttonClasses } from "@/components/ui/buttonStyles";
@@ -7,10 +8,16 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { FinishedReport, PreparingCard } from "@/features/feedback/FeedbackSection";
-import { useReport } from "@/features/feedback/hooks";
+import {
+  FeedbackStateView,
+  FinishedReport,
+  PreparingCard,
+} from "@/features/feedback/FeedbackSection";
+import { useFeedback, useReport } from "@/features/feedback/hooks";
+import { LanguageToggle } from "@/features/feedback/LanguageToggle";
 import { t } from "@/i18n";
 import { formatDateTime } from "@/lib/format";
+import type { Language } from "@/types/api";
 
 /** One report, laid out as on the session summary: safety notices first. */
 export function PatientReportDetailPage() {
@@ -18,6 +25,14 @@ export function PatientReportDetailPage() {
   const id = Number(jobId);
   const report = useReport(Number.isInteger(id) && id > 0 ? id : null);
   const data = report.data;
+  // The other language, when asked for: the session's report in it (written if missing).
+  const [asked, setAsked] = useState<Language | null>(null);
+  const other = asked !== null && data && asked !== data.language ? asked : null;
+  const otherFeedback = useFeedback(
+    other !== null && data ? data.session_id : null,
+    other ?? undefined,
+  );
+  const finished = data?.status === "done" || data?.status === "fallback";
 
   return (
     <>
@@ -40,8 +55,21 @@ export function PatientReportDetailPage() {
         </Card>
       )}
       {data && (
-        <Card>
-          {data.status === "done" || data.status === "fallback" ? (
+        <Card className="flex flex-col gap-4">
+          {finished && (
+            <LanguageToggle
+              value={other ?? data.language}
+              onChange={(language) => setAsked(language === data.language ? null : language)}
+              disabled={other !== null && otherFeedback.state.status === "preparing"}
+            />
+          )}
+          {other !== null ? (
+            <FeedbackStateView
+              state={otherFeedback.state}
+              onRetry={otherFeedback.retry}
+              showNotices
+            />
+          ) : finished ? (
             <FinishedReport read={data} />
           ) : data.status === "failed" ? (
             <EmptyState title={t("feedback.error")} />

@@ -163,7 +163,7 @@ def test_a_report_is_queued_written_and_read(
         stored = db.get(LlmReport, job["job_id"])
         assert stored is not None
         assert stored.facts is not None and stored.facts["session_no"] == 3
-        assert stored.candidates and stored.raw_output and stored.raw_output.startswith("--- attempt 1 ---")
+        assert stored.candidates and stored.raw_output and stored.raw_output.startswith("--- report attempt 1 ---")
         assert stored.finished_at is not None and stored.retries == 0
 
 
@@ -231,7 +231,7 @@ def test_invalid_answers_are_retried_then_the_template_is_used(
     assert model.calls == 3
     detail = client.get(f"/api/admin/reports/{job['job_id']}", headers=admin_headers).json()
     assert len(detail["validation_errors"]) == 3
-    assert detail["raw_output"].count("--- attempt") == 3
+    assert detail["raw_output"].count("--- report attempt") == 3
 
 
 def test_an_unexpected_error_fails_the_job_and_a_new_request_replaces_it(

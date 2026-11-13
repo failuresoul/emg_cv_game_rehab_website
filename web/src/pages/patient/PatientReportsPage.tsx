@@ -10,6 +10,7 @@ import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { usePatientReports } from "@/features/feedback/hooks";
 import { t } from "@/i18n";
+import { useBengaliFont } from "@/lib/bengaliFont";
 import { formatDateTime } from "@/lib/format";
 import type { Language, PatientReportItem } from "@/types/api";
 
@@ -60,6 +61,7 @@ function ReportRow({ item }: { item: PatientReportItem }) {
 /** The patient's feedback reports, newest first. */
 export function PatientReportsPage() {
   const reports = usePatientReports();
+  useBengaliFont(reports.data?.some((item) => item.language === "bn") ?? false);
   return (
     <>
       <PageHeader title={t("page.patient.reports.title")} />

@@ -1,0 +1,15 @@
+# The template report's fixed sentences in English (fallback.py). {n}, {name},
+# {movements}, {directions} and {games} are filled in by the code.
+thanks: "Thank you for finishing session {n}."
+notice: "Thank you for your session today. Please read the note from the app below."
+no_history: "There is not enough history yet to compare your results. Each session helps the app learn your usual level."
+improved: "You improved {name} today."
+worse: "One thing was harder than usual today: {name}."
+steady: "This stayed steady: {name}."
+others_steady: "Your other results were steady."
+all_steady: "Your results were steady, close to your usual level."
+next: "Next time you will practise {movements}."
+next_directions: "You will reach {directions} a little more."
+next_games: "Games: {games}."
+next_unknown: "Your next session will be planned after this one."
+join: " and "

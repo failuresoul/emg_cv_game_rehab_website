@@ -1,0 +1,47 @@
+# Needs review by a native speaker.
+# Bangla words and phrases no feedback text may contain: the Bangla equivalents of banned.txt.
+# One per line; each matches anywhere in the text (Bangla words take endings, so a stem catches
+# its forms). Lines starting with # are comments.
+
+# Diagnosis words
+রোগনির্ণয়
+রোগ নির্ণয়
+ডায়াগনোসিস
+অস্বাভাবিক
+ব্যাধি
+প্রোগনোসিস
+
+# Medicine words
+ওষুধ
+ঔষধ
+ট্যাবলেট
+বড়ি
+ইনজেকশন
+ডোজ
+প্রেসক্রিপশন
+ব্যবস্থাপত্র
+সাপ্লিমেন্ট
+
+# Promises and predictions
+নিরাময়
+সেরে উঠবেন
+সেরে যাবে
+সম্পূর্ণ সুস্থ
+পুরোপুরি সুস্থ
+সুস্থ হয়ে উঠবেন
+আগের মতো স্বাভাবিক
+গ্যারান্টি
+নিশ্চয়তা দিচ্ছি
+
+# Comparisons with other people
+অন্য রোগী
+অন্যান্য রোগী
+অন্যদের তুলনায়
+অন্যদের চেয়ে
+বেশিরভাগ মানুষ
+আপনার বয়সী
+
+# Dangerous advice
+ওষুধ বন্ধ
+ব্যথা সত্ত্বেও
+ব্যথা নিয়েই

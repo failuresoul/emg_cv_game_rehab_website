@@ -1,3 +1,4 @@
+import { ensureBengaliFont } from "@/lib/bengaliFont";
 import type { Language } from "@/types/api";
 
 import { bn } from "./bn";
@@ -14,6 +15,7 @@ let currentLanguage: Language = "en";
 export function setLanguage(language: Language): void {
   currentLanguage = language;
   document.documentElement.lang = language;
+  if (language === "bn") ensureBengaliFont();
 }
 
 export function getLocale(): string {

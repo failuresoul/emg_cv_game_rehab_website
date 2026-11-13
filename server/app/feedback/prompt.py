@@ -123,3 +123,14 @@ def retry_prompt(user: str, errors: list[str]) -> str:
         f"{user}\n\nYour last answer had these problems:\n{listed}\n"
         "Write the whole JSON report again, fixing every problem."
     )
+
+
+def translate_system_prompt(version: str = PROMPT_VERSION) -> str:
+    """The rules for translating a validated English report into Bangla ("translate")."""
+    return _read(f"translate_{version}.txt")
+
+
+def translate_user_prompt(source: dict[str, Any]) -> str:
+    """The English patient text to translate. The therapist summary is filled in by the code."""
+    data = {"language": "bn", **source, "therapist_summary": "(keep as given)"}
+    return f"Translate this report into Bangla:\nREPORT: {compact(data)}\nWrite the JSON report."

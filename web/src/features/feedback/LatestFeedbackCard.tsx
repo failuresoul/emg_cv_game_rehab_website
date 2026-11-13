@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { t } from "@/i18n";
+import { useBengaliFont } from "@/lib/bengaliFont";
 import { formatDateTime } from "@/lib/format";
 
 import { usePatientReports } from "./hooks";
@@ -14,6 +15,7 @@ import { usePatientReports } from "./hooks";
 export function LatestFeedbackCard({ className }: { className?: string }) {
   const reports = usePatientReports();
   const latest = reports.data?.find((item) => item.status === "done" || item.status === "fallback");
+  useBengaliFont(latest?.language === "bn");
 
   return (
     <Card className={className}>

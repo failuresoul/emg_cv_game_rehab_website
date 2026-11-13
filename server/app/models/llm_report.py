@@ -42,6 +42,8 @@ class LlmReport(SQLModel, table=True):
     candidates: list[dict[str, Any]] | None = Field(default=None, sa_type=JSON)
     model: str | None = None
     prompt_version: str | None = None
+    #: How a Bangla report was made: "direct", "translate" or "template" ("direct" for English).
+    strategy: str | None = None
     latency_ms: float | None = None
     prompt_tokens: int | None = None
     output_tokens: int | None = None

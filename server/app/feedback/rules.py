@@ -11,6 +11,7 @@ Every threshold is in catalogue.yaml or below, so it can be changed in one place
 """
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -145,7 +146,9 @@ def get_suggestion(suggestion_id: str) -> Suggestion:
 def tip(suggestion_id: str, language: FeedbackLanguage = "en") -> str:
     """The approved tip the model may reword (kb/<language>/<id>.md). Keyed by id: no search."""
     get_suggestion(suggestion_id)  # Unknown ids are an error, not a missing file.
-    return (KB_DIR / language / f"{suggestion_id}.md").read_text(encoding="utf-8").strip()
+    text = (KB_DIR / language / f"{suggestion_id}.md").read_text(encoding="utf-8")
+    # Review notes (<!-- ... -->) are for people, not the model.
+    return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL).strip()
 
 
 @lru_cache(maxsize=4)

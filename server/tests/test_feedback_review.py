@@ -91,6 +91,8 @@ def test_the_notice_wording_lives_only_in_the_shared_file() -> None:
         for folder in (ROOT / "server" / "app", ROOT / "web" / "src")
         for path in folder.rglob("*")
         if path.suffix in {".py", ".ts", ".tsx", ".txt", ".md", ".yaml", ".json"}
+        # Tests may use the wording as a fixture; only the app's own files count.
+        and ".test." not in path.name
         and STOP_NOTICE_START in path.read_text(encoding="utf-8", errors="ignore")
     ]
     # Only the web app's i18n strings, which a web test checks against the shared file.

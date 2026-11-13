@@ -132,6 +132,7 @@ def finish(db: Session, report: LlmReport, result: ReportResult, facts: dict[str
     report.candidates = result.candidates
     report.model = meta.model
     report.prompt_version = meta.prompt_version
+    report.strategy = meta.strategy
     report.latency_ms = meta.latency_ms
     report.prompt_tokens = meta.prompt_tokens
     report.output_tokens = meta.output_tokens
@@ -222,6 +223,7 @@ def to_admin_detail(report: LlmReport) -> AdminReportDetail:
         validation_errors=report.validation_errors,
         raw_output=report.raw_output,
         error=report.error,
+        strategy=report.strategy,
         prompt_tokens=report.prompt_tokens,
         output_tokens=report.output_tokens,
     )

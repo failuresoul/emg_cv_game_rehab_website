@@ -1451,6 +1451,7 @@ export const bn: Record<TranslationKey, string> = {
   "feedback.rating.choose": "অনুগ্রহ করে ১ থেকে ৫টি তারা বেছে নিন।",
   "feedback.language.en": "English",
   "feedback.language.bn": "বাংলা",
+  "feedback.language.label": "প্রতিবেদনের ভাষা",
   "feedback.reports.session": "সেশন {number}",
   "feedback.reports.open": "পড়ুন",
   "feedback.reports.preparing": "তৈরি হচ্ছে…",

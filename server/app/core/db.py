@@ -54,6 +54,9 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
     "adaptationlog": {
         "details": "JSON",
     },
+    "llmreport": {
+        "strategy": "VARCHAR",
+    },
 }
 
 

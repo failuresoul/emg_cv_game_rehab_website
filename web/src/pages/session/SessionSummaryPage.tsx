@@ -6,7 +6,7 @@ import {
   PartyPopper,
   Sparkles,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/Button";
@@ -27,7 +27,7 @@ import { useForgetSession, useSession } from "@/features/session/SessionContext"
 import { GAMES } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
 import { formatDuration, formatNumber } from "@/lib/format";
-import type { SessionReport, SessionReportGame, Side } from "@/types/api";
+import type { Language, SessionReport, SessionReportGame, Side } from "@/types/api";
 
 const COMPARISON_DISPLAY: Record<
   Comparison | "first",
@@ -249,7 +249,9 @@ export function SessionSummaryPage() {
   const forgetSession = useForgetSession();
   const { sessionId, affectedSide } = useSession();
   const report = useSessionReport(sessionId);
-  const feedback = useFeedback(sessionId);
+  // Undefined: the patient's language. The toggle asks for the other one.
+  const [feedbackLanguage, setFeedbackLanguage] = useState<Language | undefined>(undefined);
+  const feedback = useFeedback(sessionId, feedbackLanguage);
   // Fixed text only, first on the page: the report's notices once it is here, before that the
   // questionnaire's stop notice (pain or something new).
   const notices = summaryNotices(
@@ -286,7 +288,14 @@ export function SessionSummaryPage() {
       )}
       {report.data && <Report report={report.data} affectedSide={affectedSide} />}
       {report.data && sessionId !== null && <NextFocus sessionId={sessionId} />}
-      {sessionId !== null && <FeedbackSection state={feedback.state} onRetry={feedback.retry} />}
+      {sessionId !== null && (
+        <FeedbackSection
+          state={feedback.state}
+          onRetry={feedback.retry}
+          language={feedbackLanguage}
+          onLanguage={setFeedbackLanguage}
+        />
+      )}
       <Button size="lg" className="self-end" onClick={() => void goHome()}>
         {t("summary.home")}
       </Button>

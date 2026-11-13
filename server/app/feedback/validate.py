@@ -22,7 +22,9 @@ from app.feedback.schemas import WORD_LIMITS, Report
 from app.schemas.metrics import SessionFacts
 from app.services.metrics_catalog import get_metric
 
-BANNED_PATH = Path(__file__).resolve().parent / "banned.txt"
+FEEDBACK_DIR = Path(__file__).resolve().parent
+#: The banned words in English, then in Bangla; both lists apply to every text.
+BANNED_PATHS = (FEEDBACK_DIR / "banned.txt", FEEDBACK_DIR / "banned_bn.txt")
 
 #: A number in a text and a fact match when this close.
 NUMBER_TOLERANCE = 0.011
@@ -107,11 +109,13 @@ def number_is_known(number: float, known: list[float]) -> bool:
 @lru_cache(maxsize=1)
 def banned_patterns() -> tuple[tuple[str, re.Pattern[str]], ...]:
     found: list[tuple[str, re.Pattern[str]]] = []
-    for line in BANNED_PATH.read_text(encoding="utf-8").splitlines():
+    lines = [line for path in BANNED_PATHS for line in path.read_text(encoding="utf-8").splitlines()]
+    for line in lines:
         phrase = line.strip()
         if not phrase or phrase.startswith("#"):
             continue
         if not phrase.isascii():
+            # Bangla words take endings, so a Bangla entry matches anywhere in the text.
             found.append((phrase, re.compile(re.escape(phrase))))
             continue
         stem = phrase.rstrip("*")

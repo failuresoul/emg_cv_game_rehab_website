@@ -7,6 +7,7 @@ import type { FeedbackReportRead, Language } from "@/types/api";
 
 import type { FeedbackState } from "./feedbackJob";
 import { FeedbackReportView } from "./FeedbackReportView";
+import { LanguageToggle } from "./LanguageToggle";
 import { RatingForm } from "./RatingForm";
 import { ReadAloudButton } from "./ReadAloudButton";
 import { speechText } from "./readAloud";
@@ -64,29 +65,73 @@ export function FinishedReport({
   );
 }
 
-/** "Your feedback" on the session summary. The safety notices are shown at the top of the page
- * instead, above everything. */
-export function FeedbackSection({ state, onRetry }: { state: FeedbackState; onRetry: () => void }) {
+/** A report request in any state: preparing, the report (the template looks the same), or an
+ * error with Try again. */
+export function FeedbackStateView({
+  state,
+  onRetry,
+  showNotices,
+}: {
+  state: FeedbackState;
+  onRetry: () => void;
+  showNotices: boolean;
+}) {
+  if (state.status === "ready" || state.status === "fallback") {
+    // Keyed by report, so switching language starts a fresh rating form.
+    return <FinishedReport key={state.read.job_id} read={state.read} showNotices={showNotices} />;
+  }
+  if (state.status === "error") {
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-lg">
+          {t(state.reason === "timeout" ? "feedback.errorTimeout" : "feedback.error")}
+        </p>
+        <Button variant="secondary" onClick={onRetry}>
+          <RefreshCw size={20} aria-hidden />
+          {t("feedback.tryAgain")}
+        </Button>
+      </div>
+    );
+  }
+  return <PreparingCard />;
+}
+
+/** The language a request is about: the one asked for, else the finished report's. */
+export function shownLanguage(state: FeedbackState, asked: Language | undefined): Language | null {
+  if (asked) return asked;
+  if (state.status === "ready" || state.status === "fallback") return state.read.language;
+  return null;
+}
+
+/** "Your feedback" on the session summary, with English / বাংলা. The safety notices are shown
+ * at the top of the page instead, above everything. */
+export function FeedbackSection({
+  state,
+  onRetry,
+  language,
+  onLanguage,
+}: {
+  state: FeedbackState;
+  onRetry: () => void;
+  language?: Language | undefined;
+  onLanguage?: (language: Language) => void;
+}) {
+  const shown = shownLanguage(state, language);
   return (
     <Card aria-labelledby="summary-feedback" className="flex flex-col gap-4">
-      <h2 id="summary-feedback" className="text-xl font-bold">
-        {t("summary.feedbackTitle")}
-      </h2>
-      {(state.status === "preparing" || state.status === "idle") && <PreparingCard />}
-      {(state.status === "ready" || state.status === "fallback") && (
-        <FinishedReport read={state.read} showNotices={false} />
-      )}
-      {state.status === "error" && (
-        <div className="flex flex-col items-start gap-3">
-          <p className="text-lg">
-            {t(state.reason === "timeout" ? "feedback.errorTimeout" : "feedback.error")}
-          </p>
-          <Button variant="secondary" onClick={onRetry}>
-            <RefreshCw size={20} aria-hidden />
-            {t("feedback.tryAgain")}
-          </Button>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="summary-feedback" className="text-xl font-bold">
+          {t("summary.feedbackTitle")}
+        </h2>
+        {shown && onLanguage && (
+          <LanguageToggle
+            value={shown}
+            onChange={onLanguage}
+            disabled={state.status === "preparing"}
+          />
+        )}
+      </div>
+      <FeedbackStateView state={state} onRetry={onRetry} showNotices={false} />
     </Card>
   );
 }

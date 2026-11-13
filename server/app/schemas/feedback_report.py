@@ -102,6 +102,8 @@ class AdminReportDetail(ReportRead):
     validation_errors: list[list[str]]
     raw_output: str | None
     error: str | None
+    #: How a Bangla report was made: "direct", "translate" or "template".
+    strategy: str | None
     prompt_tokens: int | None
     output_tokens: int | None
 

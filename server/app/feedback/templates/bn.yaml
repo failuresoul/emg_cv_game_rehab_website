@@ -1,0 +1,17 @@
+# Needs review by a native speaker.
+# The template report's fixed sentences in Bangla (fallback.py). {n}, {name},
+# {movements}, {directions} and {games} are filled in by the code; numbers are written with
+# Bengali digits.
+thanks: "সেশন {n} শেষ করার জন্য ধন্যবাদ।"
+notice: "আজকের সেশনের জন্য ধন্যবাদ। অনুগ্রহ করে নিচে অ্যাপের বার্তাটি পড়ুন।"
+no_history: "আপনার ফলাফল তুলনা করার মতো তথ্য এখনো জমেনি। প্রতিটি সেশন থেকে অ্যাপ আপনার স্বাভাবিক মাত্রা শিখে নেয়।"
+improved: "আজ আপনার {name} উন্নত হয়েছে।"
+worse: "আজ {name} অন্য দিনের চেয়ে একটু কঠিন ছিল।"
+steady: "{name} আগের মতোই স্থির ছিল।"
+others_steady: "আপনার বাকি ফলাফল আগের মতোই স্থির ছিল।"
+all_steady: "আপনার ফলাফল আপনার স্বাভাবিক মাত্রার কাছাকাছি, স্থির ছিল।"
+next: "পরের বার আপনি {movements} অনুশীলন করবেন।"
+next_directions: "{directions} দিকে একটু বেশি হাত বাড়াবেন।"
+next_games: "খেলা: {games}।"
+next_unknown: "এই সেশনের পরে আপনার পরের সেশনের পরিকল্পনা করা হবে।"
+join: " ও "

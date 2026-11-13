@@ -1,5 +1,6 @@
 {
   "_comment": "Fixed, approved safety notices: the one source of this wording. The server reads it (server/app/feedback/rules.py); a web test checks that the app's i18n strings named in web_key match it. Never written by the language model.",
+  "_review": "Needs review by a native speaker: the Bangla texts (bn). The stop notice's Bangla is the app's wording since Day 7; the sharp-decline notice's Bangla is new (Day 14).",
   "notices": {
     "stop": {
       "web_key": "summary.stopNotice",
