@@ -20,4 +20,6 @@ export const bloom: GameDefinition = {
   compensationExercise: "hand_open_close",
   showCursor: false,
   showGripMeter: false,
+  // Opening follows the extensors when the muscle sensor is calibrated there.
+  emgSignal: "openness",
 };

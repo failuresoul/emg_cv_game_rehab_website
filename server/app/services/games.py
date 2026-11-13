@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
-from app.models import Calibration, GameRun, PatientProfile, Trial, User
+from app.models import Calibration, EmgCalibration, GameRun, PatientProfile, Trial, User
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
 from app.schemas.game import (
@@ -17,6 +17,7 @@ from app.schemas.game import (
     TrialCreate,
     TrialRead,
 )
+from app.schemas.emg import EmgCalibrationRead
 from app.schemas.metrics import SessionMetricRead
 from app.schemas.session import (
     AdminRecentSession,
@@ -178,6 +179,9 @@ def get_admin_session_detail(session: Session, record: SessionRecord) -> AdminSe
     calibration = session.exec(
         select(Calibration).where(Calibration.session_id == record.id)
     ).first()
+    emg_calibration = session.exec(
+        select(EmgCalibration).where(EmgCalibration.session_id == record.id)
+    ).first()
     runs = list_session_runs(session, record.id)
     adaptation = levels.logs_for_runs(session, [run.id for run in runs if run.id is not None])
     feedback = session_feedback.get_feedback(session, record.id)
@@ -217,4 +221,7 @@ def get_admin_session_detail(session: Session, record: SessionRecord) -> AdminSe
             SessionMetricRead.model_validate(row)
             for row in session_metrics.list_session_metrics(session, record.id)
         ],
+        emg_calibration=(
+            EmgCalibrationRead.model_validate(emg_calibration) if emg_calibration else None
+        ),
     )

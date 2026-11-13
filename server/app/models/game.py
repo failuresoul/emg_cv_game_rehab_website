@@ -41,6 +41,8 @@ class Trial(SQLModel, table=True):
     compensation: dict[str, Any] = Field(default_factory=dict, sa_type=JSON)
     # [t_ms, x_sw, y_sw] at about 30 Hz, raw (unsmoothed) fingertip in the body frame.
     trajectory: list[list[float]] = Field(default_factory=list, sa_type=JSON)
+    #: The muscle signal (site, 50 Hz %MVC trace, measures) when the sensor drove the game.
+    emg: dict[str, Any] | None = Field(default=None, sa_type=JSON)
     #: The server's own measures (app/services/trial_metrics.py): recomputed from the RAW
     #: trajectory for spatial games, checked copies of the client's for the others. None until
     #: the run ends or an admin recomputes.

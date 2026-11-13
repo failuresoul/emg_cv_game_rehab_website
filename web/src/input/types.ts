@@ -35,6 +35,20 @@ export const SOURCE_BADGE_KEYS: Readonly<Record<ActivationSourceId, TranslationK
   emg: "game.source.emg",
 };
 
+/**
+ * The source driving a game's own hand signal now, as saved in input_source: the muscle sensor
+ * when it drives that signal (grip or openness), the keyboard in development, else the camera.
+ */
+export function signalSourceId(
+  signal: "grip" | "openness" | null,
+  gripSourceId: ActivationSourceId,
+  opennessSourceId: OpennessSourceId,
+): ActivationSourceId {
+  if (signal === "openness" && opennessSourceId === "emg") return "emg";
+  if (signal === "openness" && gripSourceId === "emg") return "cv_grip";
+  return gripSourceId;
+}
+
 export function clamp01(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.min(1, Math.max(0, value));

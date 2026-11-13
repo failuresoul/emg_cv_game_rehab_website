@@ -16,4 +16,6 @@ export const reachActivate: GameDefinition = {
   estimatedMinutes: 4,
   create: createReachActivateGame,
   implemented: true,
+  // The squeeze follows the flexors when the muscle sensor is calibrated there.
+  emgSignal: "grip",
 };

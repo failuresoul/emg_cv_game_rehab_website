@@ -13,6 +13,7 @@ import { useAdminSession } from "@/features/admin/hooks";
 import { AdminSessionReportCard } from "@/features/feedback/AdminReportsTab";
 import { GameRunCard } from "@/features/admin/session/GameRunCard";
 import { QuestionnaireCard } from "@/features/admin/session/QuestionnaireCard";
+import { EmgSessionCard } from "@/features/admin/session/EmgSessionCard";
 import { SessionMetricsCard } from "@/features/admin/session/SessionMetricsCard";
 import { CalibrationReachMap } from "@/features/session/CalibrationReachMap";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
@@ -129,6 +130,7 @@ export function AdminSessionDetailPage() {
         <QuestionnaireCard session={data} />
         <AdminSessionReportCard sessionId={data.id} />
         <SessionMetricsCard rows={data.session_metrics ?? []} />
+        <EmgSessionCard session={data} />
         <Card className="lg:col-span-3">
           <h2 className="mb-2 text-xl font-bold">{t("history.warmupTitle")}</h2>
           {warmup.length > 0 ? (

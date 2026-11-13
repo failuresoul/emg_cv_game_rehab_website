@@ -26,6 +26,12 @@ export const METRIC_NAME_KEYS: Readonly<Record<string, TranslationKey>> = {
   G2: "metric.G2",
   G3: "metric.G3",
   G4: "metric.G4",
+  E2: "metric.E2",
+  E3: "metric.E3",
+  E5: "metric.E5",
+  E6: "metric.E6",
+  E8: "metric.E8",
+  E9: "metric.E9",
   P1: "metric.P1",
   P2: "metric.P2",
   P3: "metric.P3",
@@ -67,6 +73,10 @@ export function formatMetricValue(unit: string, value: number): Worded {
       return { key: "metricUnit.minutes", params: { value: round(value, 1) } };
     case "sparc":
       return { key: "metricUnit.number", params: { value: round(value, 2) } };
+    case "mv":
+      return { key: "metricUnit.mv", params: { value: round(value, 1) } };
+    case "pct_mvc_per_trial":
+      return { key: "metricUnit.pctMvcPerTrial", params: { value: round(value, 2) } };
     default:
       return { key: "metricUnit.number", params: { value: round(value, 2) } };
   }

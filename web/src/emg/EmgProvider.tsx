@@ -35,3 +35,8 @@ export function useEmgStatus(): EmgStatus {
     () => engine.getStatus(),
   );
 }
+
+/** The shared engine, or null outside EmgProvider (tests, isolated components). */
+export function useOptionalEmgEngine(): EmgEngine | null {
+  return useContext(EmgContext);
+}

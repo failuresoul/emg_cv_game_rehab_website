@@ -213,6 +213,64 @@
       "description": "Warm-up exercises whose goal was reached."
     },
     {
+      "id": "E2",
+      "name": "Maximum voluntary contraction (EMG)",
+      "unit": "mv",
+      "better_when": "higher",
+      "source": "emgcalibration.mvc_mv",
+      "level": "session",
+      "description": "The muscle sensor's maximum voluntary contraction: the mean of the calibration's efforts, each its highest 0.5 s mean, in millivolts at the sensor's output."
+    },
+    {
+      "id": "E3",
+      "name": "Activation success with EMG",
+      "unit": "share",
+      "better_when": "higher",
+      "source": "trial.outcome of trials with emg (reach_activate, grip_hold, bloom)",
+      "games": ["reach_activate", "grip_hold", "bloom"],
+      "level": "trial",
+      "description": "Successful trials over all trials the muscle sensor drove."
+    },
+    {
+      "id": "E5",
+      "name": "EMG onset latency",
+      "unit": "ms",
+      "better_when": "lower",
+      "source": "trial.emg.metrics.onset_latency_ms (reach_activate, grip_hold, bloom)",
+      "games": ["reach_activate", "grip_hold", "bloom"],
+      "level": "trial",
+      "description": "The activation cue to the muscle's onset (above rest + 3 SD for 50 ms), median over the trials."
+    },
+    {
+      "id": "E6",
+      "name": "EMG relaxation time",
+      "unit": "ms",
+      "better_when": "lower",
+      "source": "trial.emg.metrics.relaxation_ms (reach_activate, grip_hold, bloom)",
+      "games": ["reach_activate", "grip_hold", "bloom"],
+      "level": "trial",
+      "description": "The release cue to the muscle's offset (below rest + 3 SD for 100 ms), median over the trials."
+    },
+    {
+      "id": "E8",
+      "name": "Grip steadiness (EMG)",
+      "unit": "share",
+      "better_when": "lower",
+      "source": "trial.emg.metrics.steadiness (grip_hold)",
+      "games": ["grip_hold"],
+      "level": "trial",
+      "description": "The standard deviation of the EMG level (0-1) while holding, median over the holds."
+    },
+    {
+      "id": "E9",
+      "name": "Within-session fatigue slope (EMG)",
+      "unit": "pct_mvc_per_trial",
+      "better_when": "higher",
+      "source": "trial.emg.metrics.peak_mvc across the session's EMG trials",
+      "level": "session",
+      "description": "The change in peak %MVC per repeated activation over the session (least-squares slope); below 0 means the contractions weakened."
+    },
+    {
       "id": "P1",
       "name": "Pain",
       "unit": "score_0_10",

@@ -11,16 +11,19 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { useSession } from "@/features/session/SessionContext";
 import { SessionExitButton } from "@/features/session/SessionExitButton";
 import { sessionStops } from "@/features/session/sessionStop";
+import { useOptionalEmgEngine } from "@/emg/EmgProvider";
+import { buildTrialEmg, EMG_TRACE_STEP_MS, EmgTraceRecorder } from "@/emg/trialEmg";
 import { t, type TranslationKey } from "@/i18n";
 import {
   ActivationMeter,
   type InputManager,
+  signalSourceId,
   SOURCE_BADGE_KEYS,
   useSessionHandInput,
 } from "@/input";
 import { api } from "@/lib/api";
 import { formatClock, formatNumber } from "@/lib/format";
-import type { Calibration, Side } from "@/types/api";
+import type { Calibration, Side, TrialCreate } from "@/types/api";
 import type { Point } from "@/vision/geometry";
 import { ArmLengthTracker, computeJointAngles } from "@/vision/angles";
 import { computePosture } from "@/vision/posture";
@@ -207,7 +210,16 @@ const GamePlay = memo(function GamePlay({
 }: GamePlayProps) {
   // A refreshed copy of the same calibration must not restart the game.
   const [calibration] = useState(calibrationAtStart);
-  const hand = useSessionHandInput(false);
+  const hand = useSessionHandInput(false, definition.emgSignal ?? null);
+  // The source of this game's own signal (grip or openness), for the badge and input_source.
+  const signalSource = signalSourceId(
+    definition.emgSignal ?? null,
+    hand.gripSourceId,
+    hand.opennessSourceId,
+  );
+  const emgEngine = useOptionalEmgEngine();
+  const emgEngineRef = useRef(emgEngine);
+  const [emgRecorder] = useState(() => new EmgTraceRecorder());
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const trackingRef = useRef<TrackingState | null>(null);
@@ -241,7 +253,22 @@ const GamePlay = memo(function GamePlay({
 
   useEffect(() => {
     handRef.current = hand;
-  }, [hand]);
+    emgEngineRef.current = emgEngine;
+  }, [hand, emgEngine]);
+
+  // While the muscle sensor drives the game, its %MVC is kept at 50 Hz in game time, so each
+  // trial can save its trace and measures. Only numbers are kept, never the raw signal.
+  const emgDriving = signalSource === "emg";
+  useEffect(() => {
+    if (!emgDriving || !emgEngine) return undefined;
+    const timer = setInterval(() => {
+      const runtime = runtimeRef.current;
+      const percent = emgEngine.percentMvc;
+      if (!runtime || percent === null) return;
+      emgRecorder.add(runtime.toGameTime(performance.now()), percent);
+    }, EMG_TRACE_STEP_MS);
+    return () => clearInterval(timer);
+  }, [emgDriving, emgEngine, emgRecorder]);
 
   useEffect(() => subscribeTracking((state) => (trackingRef.current = state)), [subscribeTracking]);
 
@@ -333,6 +360,31 @@ const GamePlay = memo(function GamePlay({
 
     let feedbackId = 0;
     const area = () => playAreaRef.current as PlayArea;
+    // The trial's part of the %MVC trace, when the muscle sensor drove it. Trials are logged as
+    // they end, so the spawn was `timings.end` ms ago in game time.
+    const withTrialEmg = (trial: TrialCreate): TrialCreate => {
+      const engine = emgEngineRef.current;
+      const runtime = runtimeRef.current;
+      const emgCalibration = engine?.calibrationValues ?? null;
+      const site = engine?.site ?? null;
+      if (!definition.emgSignal || !runtime || !emgCalibration || !site) return trial;
+      if (emgRecorder.size === 0) return trial;
+      const now = runtime.toGameTime(performance.now());
+      const spawn = now - (trial.timings.end ?? 0);
+      const trace = emgRecorder.slice(spawn, now);
+      if (trace.length === 0) return trial;
+      return {
+        ...trial,
+        emg: buildTrialEmg({
+          site,
+          trace,
+          gameId: definition.id,
+          timings: trial.timings,
+          target: trial.target,
+          calibration: emgCalibration,
+        }),
+      };
+    };
     const firstParams = provider.nextParams(definition.id, []);
     const logger = new TrialLogger({
       http: api,
@@ -341,7 +393,11 @@ const GamePlay = memo(function GamePlay({
       run: () => ({
         game_id: definition.id,
         engine: provider.engine,
-        input_source: handRef.current.sourceId,
+        input_source: signalSourceId(
+          definition.emgSignal ?? null,
+          handRef.current.gripSourceId,
+          handRef.current.opennessSourceId,
+        ),
         params_initial: { ...firstParams, seed },
         trials_planned: definition.trialsDefault,
       }),
@@ -379,7 +435,7 @@ const GamePlay = memo(function GamePlay({
       },
       activation: {
         get sourceId() {
-          return handRef.current.sourceId;
+          return handRef.current.gripSourceId;
         },
         getLevel: () => handRef.current.getGrip(),
         isReady: () => handRef.current.managers?.grip.isReady() ?? false,
@@ -414,7 +470,7 @@ const GamePlay = memo(function GamePlay({
       },
       logger: {
         log: (trial) => {
-          logger.log(trial);
+          logger.log(withTrialEmg(trial));
           // The engine learns from each trial as it ends.
           if (provider instanceof RemoteProvider) provider.report(definition.id, trial);
         },
@@ -603,7 +659,7 @@ const GamePlay = memo(function GamePlay({
       game.destroy();
       runtimeRef.current = null;
     };
-  }, [definition, sessionId, affectedSide, calibration, provider, seed, monitor]);
+  }, [definition, sessionId, affectedSide, calibration, provider, seed, monitor, emgRecorder]);
 
   const saveKey = SAVE_KEYS[saveStatus];
 
@@ -635,8 +691,8 @@ const GamePlay = memo(function GamePlay({
               {t(saveKey)}
             </span>
           )}
-          <Badge variant={hand.sourceId === "keyboard" ? "warning" : "neutral"}>
-            {t(SOURCE_BADGE_KEYS[hand.sourceId])}
+          <Badge variant={signalSource === "keyboard" ? "warning" : "neutral"}>
+            {t(SOURCE_BADGE_KEYS[signalSource])}
           </Badge>
           {stage === "playing" && (
             <Button
@@ -649,6 +705,15 @@ const GamePlay = memo(function GamePlay({
           )}
         </div>
       </header>
+
+      {hand.emgPaused && stage === "playing" && (
+        <p
+          role="status"
+          className="absolute inset-x-0 top-20 mx-auto w-fit max-w-[80%] rounded-xl bg-amber-500/90 px-5 py-2 text-center text-lg font-semibold text-black"
+        >
+          {t("game.emgPaused")}
+        </p>
+      )}
 
       {definition.showGripMeter !== false && (
         <div className="absolute right-4 bottom-4 flex flex-col items-center gap-2">

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "@/features/session/SessionContext";
 import type { TranslationKey } from "@/i18n";
 import type { Side } from "@/types/api";
+import { useOptionalEmgEngine } from "@/emg/EmgProvider";
 import { visionEngine } from "@/vision/visionEngine";
 
 import {
@@ -35,12 +36,8 @@ import { TouchManager } from "./touchManager";
 import { type ActivationSourceId, type OpennessSourceId, SOURCE_BADGE_KEYS } from "./types";
 import { useActivation } from "./useActivation";
 
-/** The openness source that goes with each activation source. */
-const OPENNESS_FOR: Record<ActivationSourceId, OpennessSourceId> = {
-  cv_grip: "cv_openness",
-  keyboard: "keyboard",
-  emg: "emg",
-};
+/** Which hand signal a game lets the muscle sensor drive (one electrode site per session). */
+export type EmgSignal = "grip" | "openness";
 
 /** No muscle sensor can tell fingers apart, so EMG mode keeps the camera for touches. */
 const TOUCH_FOR: Record<ActivationSourceId, FingerTouchSourceId> = {
@@ -69,6 +66,8 @@ export interface UseHandInputOptions {
    * turn it off and call getOpenness() and getGrip() each frame instead.
    */
   liveLevel?: boolean;
+  /** The signal this game lets the muscle sensor drive, when calibrated at its site. */
+  emg?: EmgSignal | null;
 }
 
 export interface HandInputManagers {
@@ -81,6 +80,11 @@ export interface HandInputManagers {
 export interface HandInputValue {
   /** The input mode, shared by grip, openness and touch. Saved as a game run's input_source. */
   sourceId: ActivationSourceId;
+  /** The source of each level in use now (the camera while a preferred sensor is paused). */
+  gripSourceId: ActivationSourceId;
+  opennessSourceId: OpennessSourceId;
+  /** The muscle sensor is preferred but paused (unplugged, an electrode off, lost samples). */
+  emgPaused: boolean;
   /** The words for the source badge, such as "Webcam" or "Keyboard". */
   badgeKey: TranslationKey;
   /** 0 a fist, 1 fully open. */
@@ -127,29 +131,38 @@ export function useHandInput({
   touchThreshold = DEFAULT_TOUCH_THRESHOLD,
   pinchThreshold = DEFAULT_PINCH_THRESHOLD,
   liveLevel = true,
+  emg = null,
 }: UseHandInputOptions): HandInputValue {
   const { openRef, closedRef } = refs;
-  const grip = useActivation({ affectedSide, refs: { openRef, closedRef }, liveLevel });
+  const grip = useActivation({
+    affectedSide,
+    refs: { openRef, closedRef },
+    liveLevel,
+    preferEmg: emg === "grip",
+  });
   const gripManager = grip.manager;
+  const emgEngine = useOptionalEmgEngine();
 
-  const opennessManager = useMemo(
-    () =>
-      affectedSide
-        ? new InputManager<OpennessSourceId>(
-            [
-              new CvOpennessSource({
-                affectedSide,
-                engine: visionEngine,
-                refs: { openRef, closedRef },
-              }),
-              new KeyboardSource({ code: OPENNESS_KEY_CODE }),
-              new EmgSource({ channel: "extensor" }),
-            ],
-            "cv_openness",
-          )
-        : null,
-    [affectedSide, openRef, closedRef],
-  );
+  const opennessBuilt = useMemo(() => {
+    if (!affectedSide) return null;
+    const sensor = new EmgSource({ channel: "extensor", engine: emgEngine });
+    const manager = new InputManager<OpennessSourceId>(
+      [
+        new CvOpennessSource({
+          affectedSide,
+          engine: visionEngine,
+          refs: { openRef, closedRef },
+        }),
+        new KeyboardSource({ code: OPENNESS_KEY_CODE }),
+        sensor,
+      ],
+      "cv_openness",
+      // A paused muscle sensor falls back to the camera.
+      { emg: "cv_openness" },
+    );
+    return { manager, sensor };
+  }, [affectedSide, openRef, closedRef, emgEngine]);
+  const opennessManager = opennessBuilt?.manager ?? null;
   const touchManager = useMemo(
     () =>
       affectedSide
@@ -178,6 +191,8 @@ export function useHandInput({
 
   const [openness, setOpenness] = useState(0);
   const [opennessReady, setOpennessReady] = useState(false);
+  const [opennessSourceId, setOpennessSourceId] = useState<OpennessSourceId>("cv_openness");
+  const [opennessPaused, setOpennessPaused] = useState(false);
   const [touch, setTouch] = useState<Finger | null>(null);
   const [pinch, setPinch] = useState<PinchState>(IDLE_PINCH);
 
@@ -185,6 +200,8 @@ export function useHandInput({
     if (!opennessManager) return;
     const unsubscribe = opennessManager.subscribe((snapshot) => {
       setOpennessReady(snapshot.ready);
+      setOpennessSourceId(snapshot.sourceId);
+      setOpennessPaused(snapshot.selectedId === "emg" && snapshot.fallback === true);
       if (liveLevel) setOpenness(snapshot.level);
     });
     opennessManager.start();
@@ -219,17 +236,26 @@ export function useHandInput({
     };
   }, [pinchManager, liveLevel]);
 
-  // Grip owns the K shortcut; openness and touch follow its mode.
+  // Grip owns the K shortcut; openness, touch and pinch follow its mode. Openness prefers the
+  // muscle sensor when this game lets it and today's calibration is at the extensors.
   useEffect(() => {
-    if (!gripManager) return;
-    const follow = (id: ActivationSourceId) => {
-      opennessManager?.select(OPENNESS_FOR[id]);
+    if (!gripManager) return undefined;
+    const follow = () => {
+      const id = gripManager.sourceId;
+      const keyboard = id === "keyboard";
+      const sensor = emg === "openness" && opennessBuilt?.sensor.isAvailable() === true;
+      opennessManager?.select(keyboard ? "keyboard" : sensor ? "emg" : "cv_openness");
       touchManager?.select(TOUCH_FOR[id]);
       pinchManager?.select(PINCH_FOR[id]);
     };
-    follow(gripManager.sourceId);
-    return gripManager.subscribe((snapshot) => follow(snapshot.sourceId));
-  }, [gripManager, opennessManager, touchManager, pinchManager]);
+    follow();
+    const offGrip = gripManager.subscribe(follow);
+    const offEngine = emgEngine?.subscribe(follow) ?? (() => {});
+    return () => {
+      offGrip();
+      offEngine();
+    };
+  }, [gripManager, opennessManager, opennessBuilt, touchManager, pinchManager, emg, emgEngine]);
 
   const getOpenness = useCallback(() => opennessManager?.getLevel() ?? 0, [opennessManager]);
   const isOpennessReady = useCallback(() => opennessManager?.isReady() ?? false, [opennessManager]);
@@ -267,6 +293,9 @@ export function useHandInput({
 
   return {
     sourceId: grip.sourceId,
+    gripSourceId: grip.sourceId,
+    opennessSourceId: opennessManager ? opennessSourceId : "cv_openness",
+    emgPaused: grip.emgPaused || (opennessManager ? opennessPaused : false),
     badgeKey: SOURCE_BADGE_KEYS[grip.sourceId],
     openness: opennessManager ? openness : 0,
     opennessReady: opennessManager ? opennessReady : false,
@@ -292,7 +321,10 @@ export function useHandInput({
  * useHandInput for the session pages: the affected side, the hand references and the touch and
  * pinch distances come from the session, using this session's hand warm-ups when there are some.
  */
-export function useSessionHandInput(liveLevel = true): HandInputValue {
+export function useSessionHandInput(
+  liveLevel = true,
+  emg: EmgSignal | null = null,
+): HandInputValue {
   const { affectedSide, warmupResults } = useSession();
   const refs = useMemo(() => apertureRefsFromWarmup(warmupResults), [warmupResults]);
   const { threshold } = useMemo(() => touchThresholdFromWarmup(warmupResults), [warmupResults]);
@@ -303,5 +335,6 @@ export function useSessionHandInput(liveLevel = true): HandInputValue {
     touchThreshold: threshold,
     pinchThreshold: pinch.threshold,
     liveLevel,
+    emg,
   });
 }

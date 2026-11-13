@@ -8,13 +8,17 @@ import { t, type TranslationKey } from "@/i18n";
 
 export type DotState = "on" | "paused" | "off";
 
-/** Green streaming, amber connected but not streaming (or just lost), grey off. */
+/** Green streaming, amber connected but paused (not streaming, an electrode off, samples lost)
+ * or just lost, grey off. Amber is when the games use the camera instead. */
 export function dotState(status: {
   connected: boolean;
   streaming: boolean;
   error: string | null;
+  electrodeOff?: boolean;
+  gapsPct?: number;
 }): DotState {
-  if (status.connected && status.streaming) return "on";
+  const paused = status.electrodeOff === true || (status.gapsPct ?? 0) > 1;
+  if (status.connected && status.streaming && !paused) return "on";
   if (status.connected || status.error === "lost") return "paused";
   return "off";
 }

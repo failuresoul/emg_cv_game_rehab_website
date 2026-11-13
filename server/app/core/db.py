@@ -50,6 +50,7 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
     "trial": {
         "metrics_server": "JSON",
         "data_quality": "JSON",
+        "emg": "JSON",
     },
     "adaptationlog": {
         "details": "JSON",

@@ -35,6 +35,12 @@ METRIC_NAMES: dict[FeedbackLanguage, dict[str, str]] = {
         "G2": "your active time",
         "G3": "your warm-up repetitions",
         "G4": "your warm-up goals",
+        "E2": "your strongest squeeze",
+        "E3": "your muscle-controlled game success",
+        "E5": "how quickly your muscle starts working",
+        "E6": "how quickly your muscle relaxes",
+        "E8": "how steadily your muscle holds",
+        "E9": "how your strength kept up through the session",
     },
     "bn": {
         "K1": "নাগালের এলাকা",
@@ -59,6 +65,12 @@ METRIC_NAMES: dict[FeedbackLanguage, dict[str, str]] = {
         "G2": "সক্রিয় মিনিট",
         "G3": "ওয়ার্ম-আপ পুনরাবৃত্তি",
         "G4": "ওয়ার্ম-আপের লক্ষ্য পূরণ",
+        "E2": "সবচেয়ে জোরালো চাপ",
+        "E3": "পেশি দিয়ে খেলার সফলতা",
+        "E5": "পেশি কত দ্রুত কাজ শুরু করে",
+        "E6": "পেশি কত দ্রুত ঢিলে হয়",
+        "E8": "পেশি কত স্থিরভাবে ধরে রাখে",
+        "E9": "সেশনজুড়ে শক্তি কতটা বজায় ছিল",
     },
 }
 
@@ -87,6 +99,12 @@ MENTIONS: dict[FeedbackLanguage, dict[str, tuple[str, ...]]] = {
         "G2": ("active minutes", "active time"),
         "G3": ("warm-up repetitions",),
         "G4": ("warm-up goals",),
+        "E2": ("strongest squeeze", "maximum voluntary contraction"),
+        "E3": ("muscle-controlled game success",),
+        "E5": ("onset latency", "muscle starts working"),
+        "E6": ("emg relaxation", "muscle relaxes"),
+        "E8": ("muscle holds", "grip steadiness (emg)"),
+        "E9": ("fatigue slope", "strength kept up"),
     },
     "bn": {metric_id: (name,) for metric_id, name in METRIC_NAMES["bn"].items()},
 }

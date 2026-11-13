@@ -231,7 +231,8 @@ def _rest_breaks(facts: SessionFacts, suggestion: Suggestion) -> list[Evidence]:
 
 
 def _relax_after_squeeze(facts: SessionFacts, _: Suggestion) -> list[Evidence]:
-    return _with_status(facts, "worse", "H4")
+    # From the camera (H4) or the muscle sensor (E6).
+    return _with_status(facts, "worse", "H4", "E6")
 
 
 def _steady_hold(facts: SessionFacts, suggestion: Suggestion) -> list[Evidence]:

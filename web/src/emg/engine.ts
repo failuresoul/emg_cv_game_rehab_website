@@ -292,12 +292,19 @@ export class EmgEngine {
   }
 
   /** The electrode site of today's calibration ("flexors" drive grip, "extensors" opening). */
+  /** Today's calibration (rest and MVC, mV), or null before it. */
+  get calibrationValues(): EmgCalibration | null {
+    return this.calibration;
+  }
+
   get site(): "flexors" | "extensors" | null {
     return this.calibratedSite;
   }
 
   setSite(site: "flexors" | "extensors" | null): void {
     this.calibratedSite = site;
+    // The input sources choose the sensor from the site: tell them.
+    this.statusListeners.forEach((listener) => listener());
   }
 
   // ---- Events --------------------------------------------------------------------------------

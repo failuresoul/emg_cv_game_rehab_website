@@ -36,6 +36,12 @@ MDC: Final[dict[str, float]] = {
     "G2": 3.0,  # minutes active
     "G3": 10.0,  # warm-up repetitions
     "G4": 1.0,  # warm-up goals reached
+    "E2": 150.0,  # mV: maximum voluntary contraction
+    "E3": 0.1,  # share: activation success with EMG
+    "E5": 100.0,  # ms: EMG onset latency
+    "E6": 300.0,  # ms: EMG relaxation time
+    "E8": 0.02,  # share: grip steadiness from EMG (standard deviation)
+    "E9": 1.0,  # %MVC per activation: within-session fatigue slope
     "P1": 2.0,  # pain, 0-10
     "P2": 2.0,  # fatigue, 0-10
     "P3": 1.0,  # enjoyment, 1-5

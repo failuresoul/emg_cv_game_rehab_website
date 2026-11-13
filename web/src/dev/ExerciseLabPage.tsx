@@ -23,10 +23,12 @@ import {
   DEFAULT_PINCH_THRESHOLD,
   DEFAULT_TOUCH_THRESHOLD,
   FINGERS,
+  percentToLevel,
   PINCH_HYSTERESIS,
   TOUCH_HYSTERESIS,
   useHandInput,
 } from "@/input";
+import { useEmgStatus } from "@/emg/EmgProvider";
 import type { Side } from "@/types/api";
 import type { AngleMeasure } from "@/vision/angles";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
@@ -229,6 +231,25 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+/** The muscle sensor's level (%MVC / 100) beside the camera's, once it is calibrated today. */
+function EmgLevelStat() {
+  const status = useEmgStatus();
+  if (!status.calibrated) {
+    return <Stat label="EMG" value={status.connected ? "not calibrated" : "not connected"} />;
+  }
+  const level = percentToLevel(status.percentMvc);
+  const paused = !status.streaming || status.electrodeOff;
+  return (
+    <div className="flex items-center gap-3">
+      <ActivationMeter level={level} ready={!paused} />
+      <Stat
+        label="EMG level"
+        value={`${number(level, 2)} (${number(status.percentMvc ?? 0, 0)} %MVC)${paused ? " · paused" : ""}`}
+      />
+    </div>
+  );
+}
+
 function HandInputCard({ side }: { side: Side }) {
   const {
     sourceId,
@@ -278,6 +299,7 @@ function HandInputCard({ side }: { side: Side }) {
           <ActivationMeter level={openness} ready={opennessReady} />
           <Stat label="Openness" value={number(openness, 2)} />
         </div>
+        <EmgLevelStat />
         <div className="flex flex-col gap-2">
           <p className="text-muted">Thumb touching</p>
           <ul className="flex gap-2" aria-label="Thumb touch">

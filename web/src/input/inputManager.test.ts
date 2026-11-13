@@ -62,7 +62,13 @@ describe("InputManager", () => {
     grip.set(0.4);
     keyboard.set(0.9); // Not chosen: ignored.
     expect(manager.getLevel()).toBe(0.4);
-    expect(snapshots.at(-1)).toEqual({ sourceId: "cv_grip", level: 0.4, ready: true });
+    expect(snapshots.at(-1)).toEqual({
+      sourceId: "cv_grip",
+      level: 0.4,
+      ready: true,
+      selectedId: "cv_grip",
+      fallback: false,
+    });
     expect(snapshots).toHaveLength(2);
   });
 

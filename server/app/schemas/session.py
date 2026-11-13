@@ -10,7 +10,7 @@ from pydantic import (
     SerializerFunctionWrapHandler,
 )
 
-from app.schemas.emg import EmgDeviceInfo
+from app.schemas.emg import EmgCalibrationRead, EmgDeviceInfo
 from app.schemas.common import Side, UtcDatetime
 from app.schemas.game import GameId, GameRunDetail, LastSessionGame
 from app.schemas.metrics import SessionMetricRead
@@ -214,6 +214,8 @@ class AdminSessionDetail(SessionRead):
     review_note: str | None = None
     #: The session's catalogue measures, by metric id then game; empty until computed.
     session_metrics: list[SessionMetricRead] = Field(default_factory=list)
+    #: The muscle sensor's calibration, when the session used the sensor.
+    emg_calibration: EmgCalibrationRead | None = None
 
 
 class AdminRecentSession(BaseModel):

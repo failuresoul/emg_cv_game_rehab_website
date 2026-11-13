@@ -41,6 +41,8 @@ MAX_FACT_METRICS = 8
 KEY_METRICS = (
     "G1", "K6", "K7", "K8", "R1", "R3", "H1", "H5", "H3", "K1",
     "K5", "K9", "K10", "R2", "R4", "H2", "H4", "H6", "K12", "G2", "G3", "G4",
+    # The muscle sensor's, when the session used it.
+    "E2", "E5", "E6", "E3", "E8", "E9",
 )  # fmt: skip
 #: Self-report answers are given separately, not as measures.
 SELF_REPORT_METRICS = frozenset({"P1", "P2", "P3"})

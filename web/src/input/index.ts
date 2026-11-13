@@ -18,7 +18,7 @@ export {
   type GripRefs,
   gripRefsFromWarmup,
 } from "./cvGripSource";
-export { type EmgChannel, EmgSource } from "./emgSource";
+export { type EmgChannel, EmgSource, percentToLevel } from "./emgSource";
 export {
   DEFAULT_TOUCH_THRESHOLD,
   type Finger,
@@ -59,11 +59,13 @@ export {
   type OpennessSource,
   type OpennessSourceId,
   SOURCE_BADGE_KEYS,
+  signalSourceId,
 } from "./types";
 export { type ActivationValue, useActivation } from "./useActivation";
 export {
   type HandInputManagers,
   type HandInputValue,
+  type EmgSignal,
   useHandInput,
   useSessionHandInput,
 } from "./useHandInput";

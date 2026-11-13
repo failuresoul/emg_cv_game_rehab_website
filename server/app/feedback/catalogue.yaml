@@ -94,7 +94,7 @@ suggestions:
     group: general
     priority: 41
     audience: [patient, therapist]
-    trigger: Relaxation time (H4) got worse.
+    trigger: Relaxation time got worse, from the camera (H4) or the muscle sensor (E6).
     effort: false
     guidance: >-
       Letting go after a squeeze took longer than usual today. After each squeeze, take a moment

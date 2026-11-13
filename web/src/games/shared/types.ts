@@ -221,4 +221,9 @@ export interface GameDefinition {
    * settings they name. Without it, every setting starts at its default.
    */
   personalDefaults?: (warmup: readonly ExerciseResult[]) => GameParams;
+  /**
+   * The hand signal the muscle sensor may drive, when today's EMG calibration is at its site:
+   * grip (flexors) or openness (extensors). Without it, the game uses the camera only.
+   */
+  emgSignal?: "grip" | "openness";
 }

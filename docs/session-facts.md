@@ -47,6 +47,19 @@ Each item is one measure of the [metrics catalogue](../shared/metrics-catalog.js
 
 **Order:** measures that `improved` or got `worse` come first, largest change first. Key measures that did not change follow, in this order: G1, K6, K7, K8, R1, R3, H1, H5, H3, K1, then the rest. The list stops at 8. Pain, fatigue and enjoyment are in `self_report`, not here.
 
+**Muscle sensor (EMG) measures.** When the session used the muscle sensor (Day 16), its measures appear like any other, with their game where they come from trials:
+
+| Id | Measure | Unit | Better when |
+| --- | --- | --- | --- |
+| E2 | Maximum voluntary contraction: the calibration's MVC | mV | higher |
+| E3 | Activation success with EMG (per game) | share | higher |
+| E5 | EMG onset latency: activation cue to the muscle's onset, median | ms | lower |
+| E6 | EMG relaxation time: release cue to the muscle's offset, median | ms | lower |
+| E8 | Grip steadiness from EMG (Grip and hold), median SD of the level | share | lower |
+| E9 | Within-session fatigue slope: peak %MVC per repeated activation | %MVC per activation | higher |
+
+They come after the key measures above when nothing changed. A worse E6 (or H4) brings the feedback's "relax after a squeeze" suggestion.
+
 **The MDC values are provisional placeholders** (`server/app/core/mdc.py`) until they are measured on Day 19. A status says only whether a change is larger than a measure's usual session-to-session noise. It says nothing about whether the change matters clinically, and feedback must not present it as a clinical finding.
 
 ## Example

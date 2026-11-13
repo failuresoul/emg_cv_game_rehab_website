@@ -281,6 +281,46 @@ class TrialCompensation(BaseModel):
     max_values: dict[str, float] = Field(default_factory=dict, max_length=20)
 
 
+#: At most 30 s of a 50 Hz %MVC trace per trial.
+MAX_EMG_TRACE_POINTS = 1500
+PercentMvc = Annotated[float, Field(ge=0, le=120)]
+
+
+class TrialEmgMetrics(BaseModel):
+    """The muscle sensor's measures of one trial (EMG games only)."""
+
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    #: Highest %MVC in the trial.
+    peak_mvc: PercentMvc | None = None
+    #: Mean %MVC while above the onset threshold.
+    mean_mvc_active: PercentMvc | None = None
+    #: The cue to the contraction's onset.
+    onset_latency_ms: NonNegative | None = None
+    #: The release cue to the contraction's offset.
+    relaxation_ms: NonNegative | None = None
+    #: Onset and offset, from the trial's spawn (for the admin's trace markers).
+    onset_ms: NonNegative | None = None
+    offset_ms: NonNegative | None = None
+    #: Grip and hold: share of the hold with the EMG level in the band, 0-100.
+    time_in_band_pct: Annotated[float, Field(ge=0, le=100)] | None = None
+    #: Grip and hold: standard deviation of the EMG level (0-1) during the hold.
+    steadiness: Share | None = None
+
+
+class TrialEmg(BaseModel):
+    """A trial's muscle signal while the sensor drove the game: a %MVC trace at 50 Hz as
+    [ms from the spawn, %MVC] pairs, and its measures."""
+
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    site: Literal["flexors", "extensors"]
+    trace: list[Annotated[list[float], Field(min_length=2, max_length=2)]] = Field(
+        default_factory=list, max_length=MAX_EMG_TRACE_POINTS
+    )
+    metrics: TrialEmgMetrics = Field(default_factory=TrialEmgMetrics)
+
+
 class TrialCreate(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
@@ -294,6 +334,8 @@ class TrialCreate(BaseModel):
     trajectory: list[TrajectoryPoint] = Field(
         default_factory=list, max_length=MAX_TRAJECTORY_POINTS
     )
+    #: The muscle signal, when the sensor drove the game.
+    emg: TrialEmg | None = None
 
 
 class TrialRead(BaseModel):
@@ -309,6 +351,7 @@ class TrialRead(BaseModel):
     metrics: TrialMetrics
     compensation: TrialCompensation
     trajectory: list[TrajectoryPoint]
+    emg: TrialEmg | None = None
     #: The server's own measures and the data quality; null until computed.
     metrics_server: dict[str, Any] | None = None
     data_quality: dict[str, Any] | None = None

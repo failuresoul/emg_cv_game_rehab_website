@@ -549,6 +549,27 @@ export interface TrialCreate {
   metrics: TrialMetrics;
   compensation: TrialCompensation;
   trajectory: TrajectoryPoint[];
+  /** The muscle sensor's part of the trial, when it drove the game: %MVC only, never raw data. */
+  emg?: TrialEmg | null;
+}
+
+/** One trial's muscle-sensor measures (%MVC, ms or shares). */
+export interface TrialEmgMetrics {
+  peak_mvc: number | null;
+  mean_mvc_active: number | null;
+  onset_latency_ms: number | null;
+  relaxation_ms: number | null;
+  onset_ms: number | null;
+  offset_ms: number | null;
+  time_in_band_pct: number | null;
+  steadiness: number | null;
+}
+
+export interface TrialEmg {
+  site: EmgSite;
+  /** [ms since spawn, %MVC] at 50 Hz, at most 1500 points. */
+  trace: [number, number][];
+  metrics: TrialEmgMetrics;
 }
 
 export interface GameSummary {
@@ -736,6 +757,8 @@ export interface AdminSessionDetail extends SessionRecord {
   review_note: string | null;
   /** The session's catalogue measures, by metric id then game; empty until computed. */
   session_metrics?: SessionMetricRow[];
+  /** The muscle sensor's calibration, when the session used the sensor. */
+  emg_calibration?: EmgCalibrationRead | null;
 }
 
 export interface AdminRecentSession {

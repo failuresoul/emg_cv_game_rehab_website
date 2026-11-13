@@ -21,4 +21,6 @@ export const gripHold: GameDefinition = {
   // The kite's height is the grip level, so the shell's cursor and squeeze meter are not needed.
   showCursor: false,
   showGripMeter: false,
+  // The kite follows the flexors' effort when the muscle sensor is calibrated there.
+  emgSignal: "grip",
 };

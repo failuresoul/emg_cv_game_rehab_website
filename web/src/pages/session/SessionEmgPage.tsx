@@ -746,12 +746,12 @@ export function SessionEmgPage() {
     setSaveError(false);
     try {
       await api.post<EmgCalibrationRead>(`/sessions/${sessionId}/emg-calibration`, payload);
+      engine.setSite(state.site);
       engine.setCalibration({
         restMean: state.rest.mean,
         restSd: state.rest.sd,
         mvc: state.mvc.mvc,
       });
-      engine.setSite(state.site);
       await reportDevice({
         connected: true,
         source,

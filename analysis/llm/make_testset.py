@@ -55,8 +55,12 @@ UNIT_RANGES: dict[str, tuple[float, float]] = {
     "arm_ratio": (0.4, 1.0),
     "min": (5, 30),
 }
-#: Measures in the facts never include the self-report ones.
-MEASURES = [m for m in load_catalog() if m.id not in {"P1", "P2", "P3"}]
+#: Measures in the facts never include the self-report ones. The muscle-sensor measures (E*,
+#: Day 16) are left out too: the test set describes camera sessions, and it stays the seeded set
+#: the models were compared on (Day 14).
+MEASURES = [
+    m for m in load_catalog() if m.id not in {"P1", "P2", "P3"} and not m.id.startswith("E")
+]
 
 
 def _value(rng: random.Random, metric: CatalogMetric) -> float:

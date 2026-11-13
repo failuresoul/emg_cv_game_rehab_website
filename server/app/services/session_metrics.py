@@ -22,7 +22,7 @@ from typing import Any
 from sqlmodel import Session, col, delete, select
 
 from app.metrics.aggregate import flagged_rate, success_rate, summarise
-from app.models import Calibration, GameRun, SessionFeedback, Trial, WarmupResult
+from app.models import Calibration, EmgCalibration, GameRun, SessionFeedback, Trial, WarmupResult
 from app.models import Session as SessionRecord
 from app.models.session_metric import SessionMetric
 from app.models.user import utc_now
@@ -53,6 +53,15 @@ MEDIAN_MEASURES: dict[str, dict[str, str]] = {
     "H5": {"pick_place": "transport_ms"},
     "H6": {"bloom": "peak_openness"},
 }
+#: Games the muscle sensor can drive, and their EMG measures summarised by the median.
+EMG_GAMES = ("reach_activate", "grip_hold", "bloom")
+EMG_MEDIANS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "E5": ("onset_latency_ms", EMG_GAMES),
+    "E6": ("relaxation_ms", EMG_GAMES),
+    "E8": ("steadiness", ("grip_hold",)),
+}
+#: The fatigue slope needs at least this many activations.
+MIN_FATIGUE_TRIALS = 4
 #: Range measures from trials, summarised by their best (largest) value.
 BEST_TRIAL_MEASURES: dict[str, dict[str, str]] = {"R3": {"paint_wall": "achieved_range_deg"}}
 #: Range measures from the warm-up: the exercise's best peak.
@@ -164,6 +173,64 @@ def _trial_rows(trials_by_game: dict[str, list[Trial]]) -> list[_Row]:
     return rows
 
 
+def _emg_value(trial: Trial, key: str) -> float | None:
+    return _number(((trial.emg or {}).get("metrics") or {}).get(key))
+
+
+def fatigue_slope(peaks: Sequence[float]) -> float | None:
+    """The least-squares slope of peak %MVC against the activation's order (per activation);
+    None for fewer than MIN_FATIGUE_TRIALS."""
+    n = len(peaks)
+    if n < MIN_FATIGUE_TRIALS:
+        return None
+    mean_x = (n - 1) / 2
+    mean_y = sum(peaks) / n
+    spread = sum((x - mean_x) ** 2 for x in range(n))
+    return sum((x - mean_x) * (y - mean_y) for x, y in enumerate(peaks)) / spread
+
+
+def _emg_rows(
+    calibration: EmgCalibration | None, ordered: Sequence[tuple[str, Trial]]
+) -> list[_Row]:
+    """The muscle sensor's measures: the calibration's MVC (E2), and from the trials it drove
+    activation success (E3), onset latency (E5), relaxation (E6), steadiness (E8) and the
+    fatigue slope of their peaks (E9)."""
+    rows: list[_Row] = []
+    if calibration is not None and _number(calibration.mvc_mv) is not None:
+        rows.append(
+            _Row(
+                "E2",
+                float(calibration.mvc_mv),
+                len(calibration.mvc_attempts or []) or 1,
+                None,
+                {"site": calibration.site, "attempts": calibration.mvc_attempts},
+            )
+        )
+    with_emg = [(game_id, trial) for game_id, trial in ordered if trial.emg]
+    by_game: dict[str, list[Trial]] = defaultdict(list)
+    for game_id, trial in with_emg:
+        by_game[game_id].append(trial)
+    for game_id, trials in by_game.items():
+        rate = success_rate(trial.outcome for trial in trials)
+        if rate is not None:
+            rows.append(_Row("E3", rate, len(trials), game_id))
+    for metric_id, (key, games) in EMG_MEDIANS.items():
+        for game_id in games:
+            found = [
+                _TrialValue(value, "client")
+                for trial in by_game.get(game_id, [])
+                if (value := _emg_value(trial, key)) is not None
+            ]
+            row = _median_row(metric_id, game_id, found)
+            if row is not None:
+                rows.append(row)
+    peaks = [value for _, trial in with_emg if (value := _emg_value(trial, "peak_mvc")) is not None]
+    slope = fatigue_slope(peaks)
+    if slope is not None:
+        rows.append(_Row("E9", slope, len(peaks), None, {"first": peaks[0], "last": peaks[-1]}))
+    return rows
+
+
 def _warmup_rows(results: Sequence[WarmupResult]) -> list[_Row]:
     done = [result for result in results if not result.skipped]
     if not done:
@@ -227,12 +294,22 @@ def build_rows(session: Session, session_id: int) -> list[_Row]:
         ).all()
     )
     trials_by_game: dict[str, list[Trial]] = defaultdict(list)
+    # Every trial in the order played (run, then trial number), for the fatigue slope.
+    ordered: list[tuple[str, Trial]] = []
     run_ids = {run.id: run.game_id for run in runs}
     if run_ids:
-        statement = select(Trial).where(col(Trial.game_run_id).in_(list(run_ids)))
+        statement = (
+            select(Trial)
+            .where(col(Trial.game_run_id).in_(list(run_ids)))
+            .order_by(col(Trial.game_run_id), col(Trial.trial_no))
+        )
         for trial in session.exec(statement).all():
             if trial.outcome != "aborted":
                 trials_by_game[run_ids[trial.game_run_id]].append(trial)
+                ordered.append((run_ids[trial.game_run_id], trial))
+    emg_calibration = session.exec(
+        select(EmgCalibration).where(EmgCalibration.session_id == session_id)
+    ).first()
     feedback = session.exec(
         select(SessionFeedback).where(SessionFeedback.session_id == session_id)
     ).first()
@@ -246,6 +323,7 @@ def build_rows(session: Session, session_id: int) -> list[_Row]:
     if active is not None:
         rows.append(active)
     rows.extend(_feedback_rows(feedback))
+    rows.extend(_emg_rows(emg_calibration, ordered))
     return rows
 
 

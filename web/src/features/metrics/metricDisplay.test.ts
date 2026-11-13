@@ -22,6 +22,7 @@ const CATALOGUE_IDS = [
   ...["K1", "K5", "K6", "K7", "K8", "K9", "K10", "K12"],
   ...["R1", "R2", "R3", "R4", "H1", "H2", "H3", "H4", "H5", "H6"],
   ...["G1", "G2", "G3", "G4", "P1", "P2", "P3"],
+  ...["E2", "E3", "E5", "E6", "E8", "E9"],
 ];
 
 function series(metricId: string, gameId: MetricSeries["game_id"], values: number[]): MetricSeries {
