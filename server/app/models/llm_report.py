@@ -55,6 +55,8 @@ class LlmReport(SQLModel, table=True):
     raw_output: str | None = Field(default=None, sa_type=Text)
     #: Why the model could not be used (not running, too slow), or why the job failed.
     error: str | None = None
+    #: Set for the reports of a blind review set (always superseded: never a patient's report).
+    review_set_id: int | None = Field(default=None, foreign_key="reviewset.id", index=True)
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))
     finished_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
 
@@ -69,4 +71,9 @@ class ReportRating(SQLModel, table=True):
     #: 1-5 per criterion, such as {"clarity": 4, "usefulness": 5}.
     scores: dict[str, int] = Field(default_factory=dict, sa_type=JSON)
     comment: str | None = Field(default=None, max_length=300)
+    #: Blind review only: the review set, the rater's "unsafe" judgement, and any sentence the
+    #: facts do not support.
+    review_set_id: int | None = Field(default=None, foreign_key="reviewset.id", index=True)
+    unsafe: bool | None = None
+    unsupported_text: str | None = Field(default=None, max_length=1000)
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))

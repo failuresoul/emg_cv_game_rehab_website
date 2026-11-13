@@ -22,6 +22,7 @@ Turns a session's verified facts into a short, warm, honest report for the patie
 | `service.py` | `generate_report(session_id)` and `generate_report_from_facts(facts)`: prompt, model, validate, up to 2 retries with the errors, then the template |
 | `store.py` | Stored reports (`LlmReport`, `ReportRating`): request (reuse, regenerate, supersede), run one job, finish, list for patients and admins, ratings |
 | `jobs.py` | The background runner: one asyncio worker (one generation on the GPU at a time), restart recovery, the 120 s job limit; `/api` routes in `app/api/feedback.py` |
+| `review.py` | The blind human evaluation: review sets (LLM vs template reports from the same facts, shuffled under random codes), results per version and weighted Cohen's kappa; routes in `app/api/review.py`, method in `docs/llm-evaluation.md` |
 | `cli.py` | `python -m app.feedback.cli <session_id> [--model tag] [--language bn]` prints the report and meta as JSON |
 | `names.py` | Plain names of measures, movements, directions and games in English and Bangla (the Bangla ones are the web app's) |
 

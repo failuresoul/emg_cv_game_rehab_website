@@ -1502,3 +1502,18 @@ Role: any logged-in user.
 - `reachable: false` means reports use the template at once.
 - `model_loaded` reflects Ollama's `/api/ps`. At start-up, the server loads the model in the background and never waits for it.
 - `queue_length` counts reports queued or being written.
+
+## Blind report review (`server/app/api/review.py`)
+
+Role: `admin` for every route. The method and its analysis are described in [llm-evaluation.md](llm-evaluation.md).
+
+| Method | Path | What it does |
+| --- | --- | --- |
+| POST | `/api/admin/review-sets` | `{ "size": 20, "language": "en", "name": null }` → `201` a set. Chooses completed sessions (half real, half demo), writes each template report and queues each LLM report behind patients' reports. `409` without completed sessions |
+| GET | `/api/admin/review-sets` | The sets, newest first: `id`, `name`, `language`, `sessions`, `items`, `ready_items`, `status` (`building` / `ready`), `my_ratings`, `created_at` |
+| GET | `/api/admin/review-sets/{id}` | One set, as above |
+| GET | `/api/admin/review-sets/{id}/items` | `[{ "code", "position", "rated_by_me" }]` in the shuffled order. `409` while reports are still being written |
+| GET | `/api/admin/review-sets/{id}/items/{code}` | One report, blind: `code`, `position`, `total`, `facts` (without the patient's code or session id), `safety_notices`, `report` (patient text only), `my_rating`. Never the version, model or timings |
+| POST | `/api/admin/review-sets/{id}/items/{code}/rating` | `{ "rater": "team" \| "clinician", "scores": { "accuracy", "safety", "helpfulness", "clarity", "tone" } (each 1–5), "unsafe": bool, "unsupported": text \| null (≤ 1000), "comment": text \| null (≤ 300) }` → `201`. Once per rater per item (`409`) |
+| GET | `/api/admin/review-sets/{id}/results` | Means and SDs per version (`llm`, `llm_model_written`, `template`) and dimension, `unsafe_pct`, `llm_fallbacks`, raters, and `agreement` (quadratic-weighted kappa per dimension and pair of raters; unweighted for `unsafe`) |
+| GET | `/api/admin/review-sets/{id}/export.csv` | Every rating with its item's version, session and patient code |

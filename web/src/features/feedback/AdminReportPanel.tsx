@@ -39,6 +39,7 @@ const CRITERION_KEYS: Record<RatingCriterion, TranslationKey> = {
   accuracy: "feedback.admin.criterion.accuracy",
   tone: "feedback.admin.criterion.tone",
   safety: "feedback.admin.criterion.safety",
+  helpfulness: "feedback.admin.criterion.helpfulness",
 };
 
 export function StatusBadge({ status }: { status: ReportStatus }) {

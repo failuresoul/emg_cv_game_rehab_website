@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from typing import cast
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 from sqlmodel import Session, col, func, select
 
 from app.feedback.llm import LLMProvider
@@ -24,6 +25,7 @@ from app.schemas.feedback_report import (
     patient_view,
 )
 from app.schemas.common import Language
+from app.schemas.metrics import SessionFacts
 from app.services.session_facts import build_facts
 
 IN_PROGRESS: tuple[ReportStatus, ...] = ("queued", "running")
@@ -89,25 +91,31 @@ def request_report(
     return report, True
 
 
-def recover(db: Session) -> list[int]:
-    """At start-up: jobs cut off by a stop are queued again. Their ids, oldest first."""
+#: Jobs that still count: current reports, and the reports of review sets (kept superseded so
+#: they are never a patient's).
+_LIVE = or_(col(LlmReport.superseded).is_(False), col(LlmReport.review_set_id).is_not(None))
+
+
+def recover(db: Session) -> list[tuple[int, bool]]:
+    """At start-up: jobs cut off by a stop are queued again. (id, is a review job), oldest
+    first."""
     rows = db.exec(
         select(LlmReport)
-        .where(col(LlmReport.status).in_(IN_PROGRESS), col(LlmReport.superseded).is_(False))
+        .where(col(LlmReport.status).in_(IN_PROGRESS), _LIVE)
         .order_by(col(LlmReport.id))
     ).all()
     for row in rows:
         row.status = "queued"
         db.add(row)
     db.commit()
-    return [row.id for row in rows if row.id is not None]
+    return [(row.id, row.review_set_id is not None) for row in rows if row.id is not None]
 
 
 def count_waiting(db: Session) -> int:
     return db.exec(
         select(func.count())
         .select_from(LlmReport)
-        .where(col(LlmReport.status).in_(IN_PROGRESS), col(LlmReport.superseded).is_(False))
+        .where(col(LlmReport.status).in_(IN_PROGRESS), _LIVE)
     ).one()
 
 
@@ -156,7 +164,9 @@ def run_report(
     """One job: facts -> report (model, validator, retries, template) -> stored. Never raises:
     an unexpected error marks the report failed."""
     report = db.get(LlmReport, report_id)
-    if report is None or report.status != "queued" or report.superseded:
+    if report is None or report.status != "queued":
+        return
+    if report.superseded and report.review_set_id is None:
         return
     report.status = "running"
     db.add(report)
@@ -165,8 +175,12 @@ def run_report(
         record = db.get(SessionRecord, report.session_id)
         if record is None:
             raise LookupError(f"There is no session {report.session_id}.")
-        _wait_for_end(db, record, end_wait_s)
-        facts = build_facts(db, record)
+        if report.review_set_id is not None and report.facts is not None:
+            # A review set's report: the same facts as its template twin.
+            facts = SessionFacts.model_validate(report.facts)
+        else:
+            _wait_for_end(db, record, end_wait_s)
+            facts = build_facts(db, record)
         result = generate_report_from_facts(
             facts,
             language=cast(FeedbackLanguage, report.language),
@@ -314,6 +328,8 @@ def _admin_query():  # type: ignore[no-untyped-def]
         select(LlmReport, SessionRecord, PatientProfile)
         .join(SessionRecord, col(SessionRecord.id) == col(LlmReport.session_id))
         .join(PatientProfile, col(PatientProfile.id) == col(SessionRecord.patient_id))
+        # Review sets' reports are not reports anyone was given.
+        .where(col(LlmReport.review_set_id).is_(None))
         .order_by(col(LlmReport.created_at).desc(), col(LlmReport.id).desc())
     )
 

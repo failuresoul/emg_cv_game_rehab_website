@@ -56,6 +56,12 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
     },
     "llmreport": {
         "strategy": "VARCHAR",
+        "review_set_id": "INTEGER",
+    },
+    "reportrating": {
+        "review_set_id": "INTEGER",
+        "unsafe": "BOOLEAN",
+        "unsupported_text": "VARCHAR",
     },
 }
 

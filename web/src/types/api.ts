@@ -998,7 +998,8 @@ export interface PatientMetrics {
 
 export type ReportStatus = "queued" | "running" | "done" | "fallback" | "failed";
 export type Rater = "participant" | "team" | "clinician";
-export type RatingCriterion = "clarity" | "usefulness" | "accuracy" | "tone" | "safety";
+export type RatingCriterion =
+  "clarity" | "usefulness" | "accuracy" | "tone" | "safety" | "helpfulness";
 
 export interface FeedbackHighlight {
   metric_id: string;
@@ -1103,6 +1104,10 @@ export interface RatingRead {
   rater_user_id: number;
   scores: Partial<Record<RatingCriterion, number>>;
   comment: string | null;
+  /** Blind review ratings only. */
+  review_set_id?: number | null;
+  unsafe?: boolean | null;
+  unsupported_text?: string | null;
   created_at: string;
 }
 
@@ -1112,4 +1117,117 @@ export interface FeedbackHealth {
   reachable: boolean;
   model_loaded: boolean;
   queue_length: number;
+}
+
+// Blind review of the feedback (server/app/api/review.py)
+
+export type ReviewDimension = "accuracy" | "safety" | "helpfulness" | "clarity" | "tone";
+export type ReviewRater = "team" | "clinician";
+
+export interface ReviewSetRead {
+  id: number;
+  name: string;
+  language: Language;
+  sessions: number;
+  items: number;
+  ready_items: number;
+  status: "building" | "ready";
+  my_ratings: number;
+  created_at: string;
+}
+
+export interface ReviewSetCreate {
+  size: number;
+  language: Language;
+  name?: string | null;
+}
+
+export interface BlindItemSummary {
+  code: string;
+  position: number;
+  rated_by_me: boolean;
+}
+
+/** The session's facts as the rater sees them (the session facts without the ids). */
+export interface ReviewFacts {
+  session_no?: number;
+  duration_min?: number | null;
+  baseline_available?: boolean;
+  games?: Record<
+    string,
+    {
+      trials: number;
+      success_rate: number | null;
+      level_start?: number | null;
+      level_end?: number | null;
+    }
+  >;
+  metrics?: {
+    id: string;
+    game_id: string | null;
+    name: string;
+    value: number;
+    baseline: number | null;
+    unit: string;
+    change_mdc: number | null;
+    mdc_status: MetricStatus;
+  }[];
+  directions?: { weak: number[]; strong: number[] };
+  flags?: {
+    compensation_rate: number | null;
+    fatigue_flag: boolean;
+    hand_loss_pct: number | null;
+    shoulder_compensation_rate?: number | null;
+    safety_flags?: string[];
+  };
+  self_report?: { pain_0_10: number; fatigue_0_10: number; enjoyment_1_5: number } | null;
+  adherence?: { sessions_this_week: number; planned_this_week: number };
+  next_session?: {
+    focus_movements: string[];
+    focus_directions: number[];
+    planned_games: string[];
+  } | null;
+  safety_notice_present?: boolean;
+}
+
+export interface BlindItem {
+  code: string;
+  position: number;
+  total: number;
+  facts: ReviewFacts;
+  safety_notices: string[];
+  report: FeedbackReport | null;
+  my_rating: RatingRead | null;
+}
+
+export interface ReviewRatingCreate {
+  rater: ReviewRater;
+  scores: Record<ReviewDimension, number>;
+  unsafe: boolean;
+  unsupported?: string | null;
+  comment?: string | null;
+}
+
+export interface ReviewVersionSummary {
+  items: number;
+  ratings: number;
+  means: Partial<Record<ReviewDimension, number | null>>;
+  sds: Partial<Record<ReviewDimension, number | null>>;
+  unsafe_pct: number | null;
+}
+
+export interface ReviewResults {
+  review_set_id: number;
+  status: "building" | "ready";
+  items: number;
+  llm_fallbacks: number;
+  versions: Record<"llm" | "template" | "llm_model_written", ReviewVersionSummary>;
+  raters: { user_id: number; rater: string; ratings: number }[];
+  agreement: {
+    dimension: ReviewDimension | "unsafe";
+    rater_a: number;
+    rater_b: number;
+    items: number;
+    kappa: number | null;
+  }[];
 }

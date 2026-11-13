@@ -12,7 +12,8 @@ ReportStatus = Literal["queued", "running", "done", "fallback", "failed"]
 FINISHED_STATUSES: tuple[ReportStatus, ...] = ("done", "fallback")
 Rater = Literal["participant", "team", "clinician"]
 #: What a rating may score, each 1-5.
-RATING_CRITERIA = ("clarity", "usefulness", "accuracy", "tone", "safety")
+#: "helpfulness" is the blind review's (app/feedback/review.py); "usefulness" the participant's.
+RATING_CRITERIA = ("clarity", "usefulness", "accuracy", "tone", "safety", "helpfulness")
 
 
 class FeedbackRequest(BaseModel):
@@ -144,6 +145,10 @@ class RatingRead(BaseModel):
     rater_user_id: int
     scores: dict[str, int]
     comment: str | None
+    #: Blind review ratings only.
+    review_set_id: int | None = None
+    unsafe: bool | None = None
+    unsupported_text: str | None = None
     created_at: UtcDatetime
 
 

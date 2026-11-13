@@ -32,7 +32,9 @@ class ReportJobs:
         #: False leaves jobs queued in the database (most tests).
         self.run_jobs = True
         self._loop: asyncio.AbstractEventLoop | None = None
-        self._queue: asyncio.Queue[int] | None = None
+        #: (priority, order, report id): patients' reports (0) before review sets' (1).
+        self._queue: asyncio.PriorityQueue[tuple[int, int, int]] | None = None
+        self._order = 0
         self._worker: asyncio.Task[None] | None = None
         self._lock = threading.Lock()
         #: Queued or running job ids.
@@ -65,13 +67,13 @@ class ReportJobs:
         if not self.run_jobs:
             return
         self._loop = asyncio.get_running_loop()
-        self._queue = asyncio.Queue()
+        self._queue = asyncio.PriorityQueue()
         self._pending.clear()
         self.max_running = self._running = 0
         with Session(self.engine) as db:
             unfinished = store.recover(db)
-        for report_id in unfinished:
-            self.enqueue(report_id)
+        for report_id, review in unfinished:
+            self.enqueue(report_id, background=review)
         if unfinished:
             logger.info("Report jobs: %d unfinished job(s) queued again", len(unfinished))
         self._worker = asyncio.create_task(self._work(), name="report-jobs")
@@ -89,17 +91,20 @@ class ReportJobs:
 
     # Jobs
 
-    def enqueue(self, report_id: int) -> None:
-        """Queues a job; safe from any thread. Without a running worker the job stays queued
-        in the database and runs at the next start."""
+    def enqueue(self, report_id: int, background: bool = False) -> None:
+        """Queues a job; safe from any thread. `background` jobs (review sets) wait for every
+        patient's report. Without a running worker the job stays queued in the database and
+        runs at the next start."""
         with self._lock:
             if report_id in self._pending:
                 return
             self._pending.add(report_id)
+            self._order += 1
+            item = (1 if background else 0, self._order, report_id)
         loop, queue = self._loop, self._queue
         if loop is None or queue is None or loop.is_closed():
             return
-        loop.call_soon_threadsafe(queue.put_nowait, report_id)
+        loop.call_soon_threadsafe(queue.put_nowait, item)
 
     @property
     def queue_length(self) -> int:
@@ -116,7 +121,7 @@ class ReportJobs:
     async def _work(self) -> None:
         assert self._queue is not None
         while True:
-            report_id = await self._queue.get()
+            _, _, report_id = await self._queue.get()
             try:
                 await asyncio.to_thread(self.run, report_id)
             finally:
