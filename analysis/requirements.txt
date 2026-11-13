@@ -2,3 +2,5 @@
 #   server\.venv\Scripts\python.exe -m pip install -r analysis\requirements.txt
 -r ../server/requirements.txt
 matplotlib~=3.11.2
+# Reading the ESP32's EMG stream from Python (analysis/tools/serial_rate.py); never the server.
+pyserial~=3.5

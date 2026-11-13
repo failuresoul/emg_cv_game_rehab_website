@@ -1,0 +1,46 @@
+# Lines the EMG firmware prints, and how both the browser and the Python tools must read them.
+# Each example: the raw line, " => ", then the expected result as JSON (null: nothing to read).
+# In the raw part, \r stands for a carriage return. Lines starting with # are comments.
+#
+# Samples: E,<counter>,<mv> with a uint32 counter and 0-3600 mV
+E,0,200 => {"type": "sample", "counter": 0, "mv": 200}
+E,1834,1802 => {"type": "sample", "counter": 1834, "mv": 1802}
+E,12,1834\r => {"type": "sample", "counter": 12, "mv": 1834}
+E,4294967295,3600 => {"type": "sample", "counter": 4294967295, "mv": 3600}
+E,007,0 => {"type": "sample", "counter": 7, "mv": 0}
+E,4294967296,200 => {"type": "invalid", "line": "E,4294967296,200"}
+E,5,3601 => {"type": "invalid", "line": "E,5,3601"}
+E,-1,200 => {"type": "invalid", "line": "E,-1,200"}
+E,1,2a0 => {"type": "invalid", "line": "E,1,2a0"}
+E,1 => {"type": "invalid", "line": "E,1"}
+E,1,200,9 => {"type": "invalid", "line": "E,1,200,9"}
+E,,200 => {"type": "invalid", "line": "E,,200"}
+E, 1,200 => {"type": "invalid", "line": "E, 1,200"}
+# A line cut in two by the serial buffer: each piece on its own is broken.
+E,18 => {"type": "invalid", "line": "E,18"}
+34,1802 => {"type": "unknown", "line": "34,1802"}
+#
+# Status: S,<counter>,<dropped>,<version>,<ADC|SIM>
+S,1500,0,1.0.0,ADC => {"type": "status", "counter": 1500, "dropped": 0, "version": "1.0.0", "mode": "ADC"}
+S,1500,3,1.0.0,SIM => {"type": "status", "counter": 1500, "dropped": 3, "version": "1.0.0", "mode": "SIM"}
+S,1500,3,1.0.0,XYZ => {"type": "invalid", "line": "S,1500,3,1.0.0,XYZ"}
+S,1500,1.0.0,ADC => {"type": "invalid", "line": "S,1500,1.0.0,ADC"}
+#
+# Answers to commands
+PONG,1.0.0 => {"type": "pong", "version": "1.0.0"}
+PONG => {"type": "invalid", "line": "PONG"}
+OK,START => {"type": "ok", "detail": "START"}
+OK,STOP => {"type": "ok", "detail": "STOP"}
+OK,RATE,333 => {"type": "ok", "detail": "RATE,333"}
+OK,SIM,ON => {"type": "ok", "detail": "SIM,ON"}
+ERR,UNKNOWN,FOO => {"type": "error", "detail": "UNKNOWN,FOO"}
+ERR,RATE,100-1000 => {"type": "error", "detail": "RATE,100-1000"}
+I,version=1.0.0,rate=500,mode=ADC,streaming=0,pin=34,baud=230400,core=3.x,queue=512 => {"type": "info", "fields": {"version": "1.0.0", "rate": "500", "mode": "ADC", "streaming": "0", "pin": "34", "baud": "230400", "core": "3.x", "queue": "512"}}
+I,version => {"type": "invalid", "line": "I,version"}
+#
+# Nothing to read, or not from the firmware (the ESP32's boot messages)
+ => null
+\r => null
+ets Jun  8 2016 00:22:57 => {"type": "unknown", "line": "ets Jun  8 2016 00:22:57"}
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT) => {"type": "unknown", "line": "rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)"}
+e,1,200 => {"type": "unknown", "line": "e,1,200"}
