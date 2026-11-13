@@ -48,6 +48,9 @@ export class SerialEmgStream implements EmgStream {
   private reading: Promise<void> | null = null;
   private closing = false;
   private isConnected = false;
+  /** The port was lost (unplugged), not closed on purpose: plugging in may reopen it. */
+  private lost = false;
+  private readonly replugListeners = new Set<() => void>();
 
   constructor(
     serial: SerialLike | null = webSerial(),
@@ -56,6 +59,15 @@ export class SerialEmgStream implements EmgStream {
     this.serial = serial;
     this.now = now;
     this.serial?.addEventListener("disconnect", this.onUnplugged);
+    this.serial?.addEventListener("connect", this.onPlugged);
+  }
+
+  /** Called when a port is plugged in after this stream lost its own (see EmgEngine). */
+  onReplug(listener: () => void): () => void {
+    this.replugListeners.add(listener);
+    return () => {
+      this.replugListeners.delete(listener);
+    };
   }
 
   get connected(): boolean {
@@ -99,6 +111,7 @@ export class SerialEmgStream implements EmgStream {
     if (!port.readable) throw new EmgError("open_failed", "The port cannot be read");
     this.port = port;
     this.closing = false;
+    this.lost = false;
     this.splitter.reset();
     const decoder = new TextDecoderStream();
     this.pipeDone = port.readable
@@ -184,8 +197,13 @@ export class SerialEmgStream implements EmgStream {
     }
     this.reader = null;
     this.pipeDone = null;
+    this.lost = error === "lost";
     this.hub.emit({ type: "disconnected", error });
   }
+
+  private readonly onPlugged = (): void => {
+    if (!this.isConnected && this.lost) this.replugListeners.forEach((listener) => listener());
+  };
 
   private readonly onUnplugged = (event: Event): void => {
     if (this.isConnected && (event.target === this.port || event.target === null)) {
@@ -201,5 +219,6 @@ export class SerialEmgStream implements EmgStream {
   /** Stops listening to the browser's unplug events (the stream is no longer used). */
   dispose(): void {
     this.serial?.removeEventListener("disconnect", this.onUnplugged);
+    this.serial?.removeEventListener("connect", this.onPlugged);
   }
 }

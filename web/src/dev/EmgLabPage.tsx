@@ -161,6 +161,8 @@ export function EmgLabPage() {
     () => engine.onOnset((event) => setOnsets((list) => [event, ...list].slice(0, 20))),
     [engine],
   );
+  // Leaving the lab closes the serial port, so the session's EMG step can open it.
+  useEffect(() => () => void engine.disconnect().catch(() => undefined), [engine]);
   useEffect(
     () =>
       engine.onEvent((event) => {

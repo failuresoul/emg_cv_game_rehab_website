@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { EmgEngine } from "./engine";
 import type { OnsetEvent } from "./processing";
@@ -166,5 +166,48 @@ describe("the EMG engine", () => {
     };
     await expect(engine.connectSerial(failing)).rejects.toThrow();
     expect(engine.getStatus().error).toBe("open_failed");
+  });
+});
+
+describe("review: the simulated sensor in production", () => {
+  it("refuses the simulated source in a production build without the setting", async () => {
+    vi.stubEnv("DEV", false);
+    try {
+      const engine = new EmgEngine();
+      const { stream } = simulated();
+      await expect(engine.connectSimulated(stream)).rejects.toMatchObject({
+        code: "not_supported",
+      });
+      expect(engine.getStatus().connected).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
+
+describe("review: a board that restarts", () => {
+  const bootLine: EmgEvent = {
+    type: "info",
+    fields: { version: "1.0.0", rate: "500", mode: "ADC", streaming: "0" },
+  };
+
+  it("is started again when its start-up line says it is not streaming", async () => {
+    const engine = new EmgEngine();
+    const stream = new ManualStream();
+    await engine.connectSerial(stream);
+    expect(stream.sent).toEqual(["PING", "START"]);
+    stream.emit(bootLine);
+    expect(stream.sent).toEqual(["PING", "START", "START"]);
+  });
+
+  it("is left stopped after STOP, and an INFO answer while streaming changes nothing", async () => {
+    const engine = new EmgEngine();
+    const stream = new ManualStream();
+    await engine.connectSerial(stream);
+    stream.emit({ ...bootLine, fields: { ...bootLine.fields, streaming: "1" } });
+    expect(stream.sent).toEqual(["PING", "START"]);
+    await engine.send("STOP");
+    stream.emit(bootLine);
+    expect(stream.sent).toEqual(["PING", "START", "STOP"]);
   });
 });

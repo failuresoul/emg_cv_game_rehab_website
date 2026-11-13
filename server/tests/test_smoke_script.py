@@ -5,6 +5,7 @@ from sqlmodel import Session, col, select
 from app.models import (
     AdaptationLog,
     Calibration,
+    EmgCalibration,
     GameRun,
     GameSetting,
     SessionFeedback,
@@ -27,7 +28,7 @@ def test_smoke_passes_every_step(
     assert run_smoke(client, "admin@motionlab.local", "test-password") is True
 
     output = capsys.readouterr().out
-    assert output.count("PASS") == 65
+    assert output.count("PASS") == 71
     assert "FAIL" not in output
     assert "PASS  Patient plays a bloom run with non-spatial targets" in output
     assert "PASS  Patient plays a finger_piano run with non-spatial targets" in output
@@ -38,6 +39,8 @@ def test_smoke_passes_every_step(
     assert "PASS  Patient's game settings follow the admin's" in output
     assert "PASS  Admin puts both games' settings back" in output
     assert "PASS  Patient reads the session facts, with no name or email" in output
+    assert "PASS  The session metrics hold E2, E3, E5, E6, E8 and E9" in output
+    assert "PASS  The session facts hold the EMG measures, without traces" in output
     assert "PASS  Admin downloads all trials as CSV" in output
     assert "PASS  Engine: 12 successes raise the level, 8 failures lower it" in output
     assert "PASS  Engine: a decision is logged at the start and after each trial" in output
@@ -52,19 +55,28 @@ def test_smoke_passes_every_step(
     assert len(session.exec(select(ReportRating)).all()) == 1
     assert len(session.exec(select(Calibration)).all()) == 1
     assert len(session.exec(select(WarmupResult)).all()) == 6
-    # Nine games in the first session, two adaptive runs in the second, one L2 run in the third.
-    assert len(session.exec(select(GameRun)).all()) == 12
+    # Nine games in the first session, two adaptive runs in the second, one L2 run in the third,
+    # and one Grip and hold run with the muscle sensor in the fourth.
+    assert len(session.exec(select(GameRun)).all()) == 13
     # The starts and trials of the staircase (20), tiring (10) and L2 (8) runs.
     assert len(session.exec(select(AdaptationLog)).all()) == 21 + 11 + 9
-    # 20 trials for each reaching game and 4 for each other game.
-    assert len(session.exec(select(Trial)).all()) == 84
+    # 20 trials for each reaching game and 4 for each other game, and 4 with the muscle sensor.
+    trials = session.exec(select(Trial)).all()
+    assert len(trials) == 88
+    assert sum(1 for trial in trials if trial.emg) == 4
+    # The rejected calibration (laptop on mains power) left nothing behind.
+    emg = session.exec(select(EmgCalibration)).one()
+    assert emg.battery_ok is True and emg.source == "serial" and len(emg.readiness) == 9
     # The game library is as it was: never changed, so no settings are left behind.
     assert session.exec(select(GameSetting)).all() == []
     patient = session.exec(select(User).where(User.role == "patient")).one()
     assert patient.is_active is False
     feedback = session.exec(select(SessionFeedback)).one()
     assert feedback.pain_0_10 == 5
-    first, second, third = session.exec(select(SessionRecord).order_by(col(SessionRecord.id))).all()
+    first, second, third, fourth = session.exec(
+        select(SessionRecord).order_by(col(SessionRecord.id))
+    ).all()
+    assert fourth.status == "completed" and emg.session_id == fourth.id
     assert second.status == "completed" and second.flags == []
     assert third.status == "completed" and third.plan and len(third.plan_overrides) == 1
     record = first

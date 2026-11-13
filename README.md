@@ -45,6 +45,16 @@ Webcam video never leaves the browser. Personal feedback reports, adaptive diffi
 - [10-minute demo script](docs/demo-script.md)
 - [API contract](docs/api-contract.md) and [day logs](docs/day-logs/README.md)
 
+## Hardware: the muscle sensor (optional)
+
+From Day 16 (not yet in a release), a session can also use a muscle sensor: an **Advancer Muscle Sensor V3.0** read by an **ESP32 DevKit V1** at 500 samples per second, connected to the laptop by USB and read by the browser over Web Serial (Chrome or Edge). Each session uses one electrode site: the forearm **flexors** drive the grip level in Reach and squeeze and Grip and hold, or the **extensors** drive hand opening in Bloom. If the sensor pauses (unplugged, an electrode off), the games carry on with the webcam and switch back when it recovers. Without the sensor, everything works on the webcam as before.
+
+> **Electrical safety:** whenever electrodes are on a person, the laptop must run on battery, with its charger unplugged. The sensor runs on two 9 V batteries, and its signal reaches the ESP32 only through a voltage divider that keeps the pin at or below 3.0 V.
+
+- [Firmware and hardware guide](firmware/README.md): parts, wiring, the voltage divider, electrode placement and uploading the firmware with the Arduino IDE.
+- [EMG hardware test](docs/emg-hardware-test.md): the step-by-step first test, with a table to fill in.
+- Development without hardware: a simulated sensor (press **M** to squeeze) is offered in development builds only. A production build offers it only when the browser's `localStorage` key `muvi-simulated-emg` is set to `on` (for demos).
+
 ## Planned folders
 
 | Folder      | Purpose                                                       | Status  |

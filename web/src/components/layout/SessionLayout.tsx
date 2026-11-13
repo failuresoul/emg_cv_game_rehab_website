@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { QueryError } from "@/components/ui/QueryError";
 import { Spinner } from "@/components/ui/Spinner";
+import { useOptionalEmgEngine } from "@/emg/EmgProvider";
 import { readEmgPreference } from "@/emg/preference";
 import { useAuth } from "@/features/auth/AuthContext";
 import { EmgStatusDot } from "@/features/emg/EmgStatusDot";
@@ -139,6 +140,18 @@ export function SessionLayout() {
 
   // Leaving the session pages any other way, such as the browser's Back button, stops it all too.
   useEffect(() => () => void stopSession(), []);
+  // The muscle sensor too: the serial port is closed and today's calibration forgotten, so the
+  // next session starts with its own safety check and calibration.
+  const emgEngine = useOptionalEmgEngine();
+  useEffect(
+    () => () => {
+      if (!emgEngine) return;
+      emgEngine.setCalibration(null);
+      emgEngine.setSite(null);
+      void emgEngine.disconnect().catch(() => undefined);
+    },
+    [emgEngine],
+  );
 
   return (
     <SessionProvider>

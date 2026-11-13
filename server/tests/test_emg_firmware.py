@@ -158,6 +158,11 @@ def test_the_sampler_runs_on_core_0_and_never_prints_or_allocates() -> None:
     assert "xQueueSend(sampleQueue, &sample, 0)" in body and "droppedCount" in body
     for forbidden in ("Serial", "printf", "malloc", "new ", "String"):
         assert forbidden not in body, forbidden
+    # Nor do the helpers it calls for each sample.
+    for helper in ("static uint16_t readMillivolts", "static uint16_t simulatedMillivolts"):
+        helper_body = function_body(helper)
+        for forbidden in ("Serial", "printf", "malloc", "new ", "String"):
+            assert forbidden not in helper_body, (helper, forbidden)
     assert re.search(r"xTaskCreatePinnedToCore\(samplerTask,.*?,\s*0\);", INO, re.S)
     assert "xQueueCreateStatic(QUEUE_LENGTH, sizeof(Sample)" in INO
     for forbidden in ("malloc(", "String ", "new Sample"):

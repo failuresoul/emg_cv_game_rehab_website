@@ -216,3 +216,67 @@ describe("what is stored", () => {
     expect(readinessRecord(null)).toEqual({});
   });
 });
+
+describe("review: the safety stage and the readiness check cannot be skipped", () => {
+  it("does not leave the safety stage for a real sensor without all three answers", () => {
+    for (const missing of ["chargerUnplugged", "batteriesFresh", "electrodesOn"] as const) {
+      const state = run(
+        throughSafety.map((action) =>
+          action.type === "answerSafety" && action.key === missing
+            ? { ...action, value: false }
+            : action,
+        ),
+      );
+      expect(state.stage).toBe("safety");
+    }
+  });
+
+  it("sends a real sensor connected after choosing the simulated one back to the safety stage", () => {
+    const state = run([
+      { type: "chooseSite", site: "flexors" },
+      { type: "continueToCheck", simulated: true },
+      { type: "connected", source: "serial" },
+    ]);
+    expect(state.stage).toBe("safety");
+    expect(state.source).toBeNull();
+    // Answering the safety questions then leads to the check without the simulated source.
+    const answered = run(throughSafety, state);
+    expect(answered.stage).toBe("check");
+    expect(answered.source).toBeNull();
+  });
+
+  it("keeps the simulated sensor's connection without the answers", () => {
+    const state = run([
+      { type: "chooseSite", site: "flexors" },
+      { type: "continueToCheck", simulated: true },
+      { type: "connected", source: "simulated" },
+    ]);
+    expect(state.stage).toBe("check");
+    expect(state.source).toBe("simulated");
+  });
+
+  it("refuses calibration before the test squeeze passed, or from the safety stage", () => {
+    const noSqueeze = run([
+      ...throughSafety,
+      { type: "connected", source: "serial" },
+      { type: "squeezeTested", result: { ...GOOD_SQUEEZE, pass: false } },
+      { type: "ready", readiness: READY_CHECKS },
+    ]);
+    expect(noSqueeze.stage).toBe("check");
+    expect(canCalibrate(noSqueeze)).toBe(false);
+
+    const fromSafety = run([
+      { type: "chooseSite", site: "flexors" },
+      { type: "squeezeTested", result: GOOD_SQUEEZE },
+      { type: "ready", readiness: READY_CHECKS },
+    ]);
+    expect(fromSafety.stage).toBe("safety");
+    expect(canCalibrate(fromSafety)).toBe(false);
+  });
+
+  it("cannot start a rest or an attempt before the sensor is ready", () => {
+    const state = run([...throughSafety, { type: "startRest", now: 0 }]);
+    expect(state.stage).toBe("check");
+    expect(state.rest).toBeNull();
+  });
+});

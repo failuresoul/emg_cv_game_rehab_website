@@ -4,6 +4,45 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 16)
+
+- **ESP32 firmware** (`firmware/emg_stream/emg_stream.ino`, [firmware/README.md](firmware/README.md)):
+  - 500 Hz sampling of the Advancer Muscle Sensor V3.0 on GPIO34, in a FreeRTOS task on core 0 that never prints or allocates;
+  - a line protocol at 230400 baud (`E` samples, `S` status, `I` info) and the commands `START`, `STOP`, `PING`, `RATE`, `SIM ON/OFF` and `INFO`;
+  - a hardware guide (wiring, the 3.0 V voltage divider, electrodes, safety) and `firmware/test-lines.txt`, shared by the browser and Python tests;
+  - `analysis/tools/serial_rate.py` (pyserial) to measure the rate, gaps and drops.
+- **EMG in the browser** (`web/src/emg/`):
+  - Web Serial and a simulated sensor (development builds only, unless the browser's `localStorage` key `muvi-simulated-emg` is set to `on`; **M** squeezes);
+  - a sample clock, a 50 ms envelope, %MVC, onset and offset detection, saturation and flat-line checks;
+  - one engine for the whole app, and `/dev/emg-lab` (development only).
+- **Muscle sensor check and calibration** (`/session/emg`, when "Use the muscle sensor today" is on at setup):
+  - safety and electrode placement (laptop on battery, fresh batteries, electrodes on), then nine readiness checks that must stay green for 2 s, and a test squeeze;
+  - rest for 10 s, three strongest efforts (an extra one if they differ by more than 15%), and a summary;
+  - `EmgCalibration`, saved with the readiness results; the server refuses a real sensor without `battery_ok`;
+  - the session's "Muscle sensor" status dot; Skip at every stage.
+- **EMG in the games:**
+  - `EmgSource`: level = clamp(%MVC / 100) with smoothing; the flexors drive grip in Reach and squeeze and Grip and hold, the extensors drive opening in Bloom;
+  - when the sensor pauses (unplugged, an electrode off, more than 1% of samples lost) the webcam takes over, with an amber dot and "Muscle sensor paused — using the camera", and the sensor takes back over when it recovers;
+  - the HUD badge ("Muscle sensor", "Camera", "Keyboard") and `input_source: "emg"`;
+  - each trial saves a %MVC trace (50 Hz, at most 1500 points) and its measures: peak, mean when active, onset latency, relaxation time, time in band and steadiness.
+- **EMG measures** (`shared/metrics-catalog.json`): E2 MVC, E3 activation success with EMG, E5 onset latency, E6 relaxation time, E8 grip steadiness (EMG) and E9 within-session fatigue slope, in session measures and the facts. A worse E6 brings the "relax after a squeeze" suggestion.
+- **Dashboards:** the admin session page's "Muscle sensor" card (calibration, readiness, per-trial traces with onset and offset), EMG trends on the Progress tab, and the EMG level in the Exercise Lab.
+- **Smoke test:** a fourth session with an EMG calibration and a Grip and hold run with the sensor (71 steps).
+- **Docs:** [EMG hardware test](docs/emg-hardware-test.md), the API contract's "Muscle sensor (EMG)" section, and the README's hardware section.
+
+### Changed (Day 16)
+
+- The game badge for the webcam now reads "Camera".
+- The Day 14 LLM test set leaves out the EMG measures, so it stays the seeded set the models were compared on.
+
+### Fixed (Day 16 review)
+
+- After choosing the simulated sensor (which skips the safety questions), the check stage still offered to connect a real one. A real sensor now always needs the safety answers first.
+- The serial port stayed open after leaving the session pages or the EMG lab; leaving now closes it and forgets the day's calibration.
+- After the USB was unplugged in a game, the sensor never came back without a click; plugging it in again now reopens the port and starts the stream, so the game switches back by itself.
+- A board that restarted (its start-up line says it is not streaming) was never started again; the engine now sends `START` again.
+- The simulated sensor could be connected through the engine in a production build without `muvi-simulated-emg` set; the engine now refuses it.
+
 ### Added (Day 15)
 
 - **Report API with background jobs** (`server/app/api/feedback.py`, `feedback/store.py`, `feedback/jobs.py`):

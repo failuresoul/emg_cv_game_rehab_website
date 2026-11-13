@@ -15,7 +15,11 @@ with a logged decision at the start and after every trial, and a run that tires 
 successes, then 5 slow failures) and gets the "rest" cue. A third session checks the Bayesian
 engine and the planner: the admin switches the patient to L2; the plan has a reason for every game;
 a change to it is stored; an L2 run of 8 trials returns a sector each time and its beliefs update;
-and the facts plan the next session once it ends. The patient is deactivated at the end.
+and the facts plan the next session once it ends. A fourth session uses the muscle sensor: a real
+sensor's calibration on mains power is refused; one with the nine readiness results is saved; a
+grip_hold run with input_source "emg" uploads a %MVC trace and EMG measures with every trial; and
+the session's metrics and facts then hold the EMG measures (E2, E3, E5, E6, E8, E9). The patient
+is deactivated at the end.
 
 It also turns Bloom off and changes a Grip and hold default in the game library, checks that the
 patient's game settings follow, and then puts both games' settings back as they were. After the
@@ -498,6 +502,75 @@ UNPLACED_GAMES: dict[str, tuple[dict[str, float], Callable[[int], dict[str, Any]
     "grip_hold": (GRIP_HOLD_PARAMS, grip_trial, function_summary),
 }
 ALL_GAME_IDS = GAME_IDS + UNPLACED_GAME_IDS
+# The muscle-sensor session: rest 200 +- 10 mV, MVC 1500 mV (threshold 230 mV), and a Grip and
+# hold run whose peak %MVC falls by 5 each trial (fatigue slope E9 = -5).
+EMG_REST_MEAN_MV = 200.0
+EMG_REST_SD_MV = 10.0
+EMG_MVC_MV = 1500.0
+EMG_PEAKS = [60.0, 55.0, 50.0, 45.0]
+EMG_READINESS_CHECKS = (
+    "webSerial",
+    "connected",
+    "responding",
+    "rate",
+    "gaps",
+    "contact",
+    "saturation",
+    "relaxed",
+    "squeeze",
+)
+
+
+def emg_calibration_payload(battery_ok: bool) -> dict[str, Any]:
+    """A real sensor's calibration at the flexors, with the nine readiness results."""
+    return {
+        "site": "flexors",
+        "source": "serial",
+        "firmware_version": "1.0.0",
+        "sample_rate": 500,
+        "rest_mean_mv": EMG_REST_MEAN_MV,
+        "rest_sd_mv": EMG_REST_SD_MV,
+        "mvc_mv": EMG_MVC_MV,
+        "mvc_attempts": [1460.0, 1500.0, 1480.0],
+        "readiness": {check: {"pass": True, "value": None} for check in EMG_READINESS_CHECKS},
+        "quality": {"gaps_pct": 0.0, "saturated_attempts": 0},
+        "battery_ok": battery_ok,
+        "gain_note": "smoke test",
+    }
+
+
+def emg_grip_trial(trial_no: int) -> dict[str, Any]:
+    """A Grip and hold trial driven by the muscle sensor: its 50 Hz %MVC trace (rest, a ramp to
+    the hold, the hold, then relaxing) and the browser's EMG measures."""
+    trial = grip_trial(trial_no)
+    trial["metrics"]["input_source"] = "emg"
+    peak = EMG_PEAKS[trial_no - 1]
+    trace = []
+    for ms in range(0, 5000, 20):
+        if ms < 600:
+            value = 1.0
+        elif ms < 4200:
+            value = peak - (2.0 if (ms // 20) % 2 else 0.0)
+        else:
+            value = 1.0
+        trace.append([ms, value])
+    trial["emg"] = {
+        "site": "flexors",
+        "trace": trace,
+        "metrics": {
+            "peak_mvc": peak,
+            "mean_mvc_active": peak - 1.0,
+            "onset_latency_ms": 600 + 20 * trial_no,
+            "relaxation_ms": 300 + 20 * trial_no,
+            "onset_ms": 600,
+            "offset_ms": 4200,
+            "time_in_band_pct": 100.0 if peak >= 35 else 0.0,
+            "steadiness": 0.01,
+        },
+    }
+    return trial
+
+
 #: The games whose library settings the smoke test changes, then puts back.
 SETTING_GAMES = ("bloom", "grip_hold")
 
@@ -1443,6 +1516,88 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(isinstance(body["queue_length"], int), "the health has no queue length")
         require(body["provider"] in ("mock", "ollama"), f"unknown provider {body['provider']}")
 
+    # The muscle sensor, in a fourth session.
+    def emg_session() -> None:
+        body = expect(client.post("/api/sessions", headers=bearer("patient")), 201)
+        state["emg_session_id"] = body["id"]
+
+    def emg_calibration_needs_battery() -> None:
+        url = f"/api/sessions/{state['emg_session_id']}/emg-calibration"
+        payload = emg_calibration_payload(battery_ok=False)
+        expect(client.post(url, json=payload, headers=bearer("patient")), 422)
+
+    def emg_calibration_saved() -> None:
+        url = f"/api/sessions/{state['emg_session_id']}/emg-calibration"
+        payload = emg_calibration_payload(battery_ok=True)
+        body = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
+        require(body["threshold_mv"] == 230.0, f"the threshold is {body['threshold_mv']}, not 230")
+        require(
+            sorted(body["readiness"]) == sorted(EMG_READINESS_CHECKS),
+            "the readiness results were not stored",
+        )
+        latest = expect(
+            client.get("/api/patient/emg-calibration/latest", headers=bearer("patient")), 200
+        )
+        require(latest["id"] == body["id"], "the latest EMG calibration is another one")
+
+    def emg_grip_hold_run() -> None:
+        url = f"/api/sessions/{state['emg_session_id']}/games"
+        payload = {
+            "game_id": "grip_hold",
+            "engine": "L0",
+            "input_source": "emg",
+            "params_initial": GRIP_HOLD_PARAMS,
+            "trials_planned": len(EMG_PEAKS),
+        }
+        run = expect(client.post(url, json=payload, headers=bearer("patient")), 201)
+        require(run["input_source"] == "emg", f"the run's input is {run['input_source']}")
+        trials = [emg_grip_trial(n) for n in range(1, len(EMG_PEAKS) + 1)]
+        url = f"/api/games/{run['id']}/trials"
+        body = expect(client.post(url, json=trials, headers=bearer("patient")), 200)
+        require(body["trials_done"] == len(EMG_PEAKS), f"trials_done is {body['trials_done']}")
+        summary = function_summary("grip_hold", trials)
+        end = {"status": "completed", "score": 100 * summary["successes"], "summary": summary}
+        url = f"/api/games/{run['id']}/end"
+        expect(client.post(url, json=end, headers=bearer("patient")), 200)
+        url = f"/api/sessions/{state['emg_session_id']}/end"
+        body = expect(client.post(url, json={"status": "completed"}, headers=bearer("patient")), 200)
+        require(body["status"] == "completed", "the muscle-sensor session is not completed")
+
+    def emg_session_metrics() -> None:
+        url = f"/api/admin/sessions/{state['emg_session_id']}"
+        body = expect(client.get(url, headers=bearer("admin")), 200)
+        calibration = body["emg_calibration"]
+        require(calibration is not None, "the session detail has no EMG calibration")
+        require(calibration["mvc_mv"] == EMG_MVC_MV, "the session detail has another MVC")
+        trials = [trial for run in body["games"] for trial in run["trials"]]
+        require(
+            all(trial["emg"] and len(trial["emg"]["trace"]) == 250 for trial in trials),
+            "a trial lost its %MVC trace",
+        )
+        rows = {(row["metric_id"], row["game_id"]): row for row in body["session_metrics"]}
+        for key in (
+            ("E2", None),
+            ("E3", "grip_hold"),
+            ("E5", "grip_hold"),
+            ("E6", "grip_hold"),
+            ("E8", "grip_hold"),
+            ("E9", None),
+        ):
+            require(key in rows, f"the session metrics have no {key[0]}")
+        require(rows[("E2", None)]["value"] == EMG_MVC_MV, "E2 is not the calibration's MVC")
+        require(rows[("E3", "grip_hold")]["value"] == 0.75, "E3 is not 3 of 4")
+        require(abs(rows[("E9", None)]["value"] + 5.0) < 1e-6, "E9 is not -5 %MVC per trial")
+
+    def emg_session_facts() -> None:
+        url = f"/api/sessions/{state['emg_session_id']}/facts"
+        response = client.get(url, headers=bearer("patient"))
+        facts = expect(response, 200)
+        ids = {metric["id"] for metric in facts["metrics"]}
+        require(len(facts["metrics"]) <= 8, "the facts have more than eight measures")
+        require({"E2", "E5"} <= ids, f"the facts have no EMG measures: {sorted(ids)}")
+        require("Smoke Test" not in response.text, "the facts contain the patient's name")
+        require("\"trace\":" not in response.text, "the facts contain an EMG trace")
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -1512,6 +1667,12 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Patient's change to the plan is stored", plan_override_stored),
         ("L2: a run returns sectors and its beliefs update", l2_run_learns_by_sector),
         ("Facts plan the next session once this one ends", facts_plan_next_session),
+        ("Patient starts a fourth session, with the muscle sensor", emg_session),
+        ("A real sensor's calibration on mains power is refused", emg_calibration_needs_battery),
+        ("Patient saves an EMG calibration with its readiness results", emg_calibration_saved),
+        ("Patient plays Grip and hold with input_source emg and EMG data", emg_grip_hold_run),
+        ("The session metrics hold E2, E3, E5, E6, E8 and E9", emg_session_metrics),
+        ("The session facts hold the EMG measures, without traces", emg_session_facts),
         ("Admin deactivates the test patient", deactivate_patient),
     ]
 

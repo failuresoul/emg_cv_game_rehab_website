@@ -15,10 +15,10 @@ This document lists every API route the server provides today, plus the routes r
   - `language`: `en`, `bn`
   - `game_id`: `reach_activate`, `balloon_pop`, `fruit_catch`, `bloom`, `finger_piano`, `path_trace`, `paint_wall`, `pick_place`, `grip_hold`
   - `engine`: `L0` (fixed settings), `L1`, `L2` (adaptive, from Day 12)
-  - `input_source`: `cv_grip` (the webcam: closing and opening the hand, and finger touches), `keyboard` (testing only), `emg` (from Day 15)
+  - `input_source`: `cv_grip` (the webcam: closing and opening the hand, and finger touches), `keyboard` (testing only), `emg` (the muscle sensor, from Day 16)
   - Trial `outcome`: `success`, `reach_fail`, `activation_fail`, `miss` (a target that left by itself, such as a balloon floating away or a fruit landing), `aborted`
 - **Units:** positions are in the body frame, in shoulder widths (SW), with the affected shoulder at the origin, +x away from the body's midline and +y up. Trial times are milliseconds relative to the trial's spawn.
-- **Privacy:** password hashes are never returned. Webcam video and images are never sent to the server.
+- **Privacy:** password hashes are never returned. Webcam video and images are never sent to the server. The muscle sensor's signal is sent only as numbers: the calibration's levels in mV and, per trial, a %MVC trace at 50 Hz and its measures; never the raw 500 Hz signal.
 
 ## Routes
 
@@ -49,6 +49,9 @@ This document lists every API route the server provides today, plus the routes r
 | PATCH  | `/api/sessions/{id}/progress`        | `patient` | Save the current step and game queue |
 | POST   | `/api/sessions/{id}/end`             | `patient` | End own session                 |
 | POST   | `/api/sessions/{id}/calibration`     | `patient` | Save a calibration              |
+| POST   | `/api/sessions/{id}/emg-calibration` | `patient` | Save the muscle sensor's calibration |
+| GET    | `/api/patient/emg-calibration/latest` | `patient` | Own latest muscle-sensor calibration |
+| GET    | `/api/admin/patients/{id}/emg-calibrations` | `admin` | A patient's muscle-sensor calibrations |
 | POST   | `/api/sessions/{id}/warmup`          | `patient` | Save or replace warm-up results |
 | GET    | `/api/sessions/{id}/warmup`          | `patient` | Get a session's warm-up results |
 | POST   | `/api/sessions/{id}/games`           | `patient` | Start a game run                |
@@ -501,6 +504,14 @@ Request:
 { "browser": "Chrome 140", "fps": 30.0, "delegate": "GPU" }
 ```
 
+With the muscle sensor, the request may add `emg`, which is merged into what was saved before:
+
+```json
+{ "emg": { "connected": true, "source": "serial", "site": "flexors", "firmware_version": "1.0.0" } }
+```
+
+`source` is `serial` or `simulated`, `site` `flexors` or `extensors`. Sessions without the sensor never have an `emg` field in `device_info`.
+
 Response `200`: the session.
 
 Errors: `404`, `422`.
@@ -516,7 +527,7 @@ Saves where the patient is, so a refresh or a later return resumes at the same s
 }
 ```
 
-- `current_step`: `setup`, `calibrate`, `warmup`, `plan`, `game`, `cooldown` or `summary`. New sessions start at `setup`.
+- `current_step`: `setup`, `emg` (the muscle sensor step, only when it is used), `calibrate`, `warmup`, `plan`, `game`, `cooldown` or `summary`. New sessions start at `setup`.
 - `game_queue`: today's games in order (1 to 20 known game ids) and `index`, the game being played. `index` equals the number of games once all are done. `null` until the plan is set.
 - Send either field or both; at least one is required. A field left out keeps its value.
 
@@ -769,6 +780,7 @@ Request: an array of 1 to 50 trials. A trial whose `trial_no` was already saved 
 | `metrics` | Each 0 or more, or `null`; `path_efficiency` and `activation_peak` are 0–1. Reach measures use the raw fingertip from move onset to entering the target; move onset is the first point faster than 0.15 SW/s. Some games add optional metrics, listed below |
 | `compensation.max_values` | Up to 20 named numbers |
 | `trajectory` | Up to 2000 points of `[t_ms, x_sw, y_sw]`: the raw (unsmoothed) fingertip at about 30 Hz |
+| `emg` | Optional; only when the muscle sensor drove the trial (see [Muscle sensor (EMG)](#muscle-sensor-emg)). `{site, trace, metrics}`; `null` or left out otherwise |
 
 Optional metrics for particular games (leave them out, or send `null`):
 
@@ -1505,6 +1517,101 @@ Role: any logged-in user.
 - `reachable: false` means reports use the template at once.
 - `model_loaded` reflects Ollama's `/api/ps`. At start-up, the server loads the model in the background and never waits for it.
 - `queue_length` counts reports queued or being written.
+
+## Muscle sensor (EMG)
+
+The Advancer Muscle Sensor V3.0 on an ESP32 ([firmware/README.md](../firmware/README.md)), read by the browser over Web Serial. Each session uses one electrode site: `flexors` drive the grip level (`reach_activate`, `grip_hold`), `extensors` the hand's openness (`bloom`). The other signal stays on the webcam. When the sensor pauses (unplugged, an electrode off, or more than 1% of the last second's samples lost) the games use the webcam until it recovers.
+
+### POST /api/sessions/{id}/emg-calibration
+
+Role: `patient` (own active session). Once per session.
+
+```json
+{
+  "site": "flexors",
+  "source": "serial",
+  "firmware_version": "1.0.0",
+  "sample_rate": 500,
+  "rest_mean_mv": 200.0,
+  "rest_sd_mv": 10.0,
+  "mvc_mv": 1500.0,
+  "mvc_attempts": [1460.0, 1500.0, 1480.0],
+  "readiness": { "connected": { "pass": true, "value": null }, "rate": { "pass": true, "value": "500/s" } },
+  "quality": { "gaps_pct": 0.0, "saturated_attempts": 0 },
+  "battery_ok": true,
+  "gain_note": "gain at 12 o'clock"
+}
+```
+
+| Field | Rules |
+| --- | --- |
+| `site` | `flexors` or `extensors` |
+| `source` | `serial` (the real sensor) or `simulated` |
+| `sample_rate` | 50–2000 samples per second |
+| `rest_mean_mv`, `mvc_mv`, `mvc_attempts` | 0–3600 mV; 1–6 attempts |
+| `rest_sd_mv` | 0–1000 mV |
+| `readiness` | The sensor check's results, by check id (`webSerial`, `connected`, `responding`, `rate`, `gaps`, `contact`, `saturation`, `relaxed`, `squeeze`): `{pass, value}` |
+| `battery_ok` | The safety answers: laptop on battery and fresh batteries. **Must be `true` when `source` is `serial`** |
+| `gain_note` | Optional, up to 300 characters |
+
+- `mvc_mv` must be above the onset threshold, `rest_mean_mv + 3 × rest_sd_mv`.
+- Response `201`: the calibration, with `id`, `session_id`, `threshold_mv` (the onset threshold) and `created_at`.
+- Errors: `404` (not the patient's session), `409` (the session has ended, or already has an EMG calibration), `422` (invalid, a weak MVC, or a real sensor without `battery_ok`).
+
+### GET /api/patient/emg-calibration/latest
+
+Role: `patient`. The latest calibration of the patient's own sessions, as above; `404` before the first.
+
+### GET /api/admin/patients/{id}/emg-calibrations
+
+Role: `admin`. All of a patient's muscle-sensor calibrations, as above.
+
+### A trial's `emg`
+
+Sent with a trial (`POST /api/games/{run_id}/trials`) when the sensor drove it, and returned in the admin session detail:
+
+```json
+{
+  "site": "flexors",
+  "trace": [[0, 1.2], [20, 1.0], [40, 3.5]],
+  "metrics": {
+    "peak_mvc": 62.0, "mean_mvc_active": 48.5,
+    "onset_latency_ms": 640, "relaxation_ms": 320,
+    "onset_ms": 640, "offset_ms": 4520,
+    "time_in_band_pct": 85.0, "steadiness": 0.031
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `trace` | Up to 1500 `[ms from spawn, %MVC]` pairs at 50 Hz; %MVC is 0–120 |
+| `peak_mvc` | The highest %MVC (0–120) |
+| `mean_mvc_active` | Mean %MVC while above the onset threshold |
+| `onset_ms`, `onset_latency_ms` | The first contraction (above the threshold for 50 ms) after the cue, and its time after the cue. Cues: `reach_activate` the dwell's end; `grip_hold` and `bloom` the spawn |
+| `offset_ms`, `relaxation_ms` | The first relaxation (below the threshold for 100 ms) after the release cue, and its time after it. Release cues: `reach_activate` and `grip_hold` `activation_done`; `bloom` the start of the close |
+| `time_in_band_pct`, `steadiness` | `grip_hold` only: the share of the hold (0–100) within the band, and the SD of the level (%MVC / 100) during it |
+
+Every measure may be `null`. A trace over 1500 points, or a %MVC over 120, is `422`.
+
+### The admin session detail
+
+`GET /api/admin/sessions/{id}` adds `emg_calibration`: the session's calibration as above, or `null`.
+
+### EMG session measures
+
+When a session has EMG data, its session measures (and so the facts and the metrics tables) include:
+
+| Id | Measure | Unit | Per game | Better when |
+| --- | --- | --- | --- | --- |
+| `E2` | Maximum voluntary contraction (the calibration's MVC) | `mv` | No | higher |
+| `E3` | Activation success with the sensor: the success rate of the trials it drove | `share` | Yes | higher |
+| `E5` | Onset latency: median `onset_latency_ms` | `ms` | Yes | lower |
+| `E6` | Relaxation time: median `relaxation_ms` | `ms` | Yes | lower |
+| `E8` | Grip steadiness from EMG: median `steadiness` (`grip_hold`) | `share` | Yes | lower |
+| `E9` | Within-session fatigue slope: least-squares slope of `peak_mvc` over the sensor trials in order, at least 4 trials | `pct_mvc_per_trial` | No | higher |
+
+A worse `E6` (or `H4`) brings the feedback's "relax after a squeeze" suggestion. The MDC values are provisional, as for every measure.
 
 ## Blind report review (`server/app/api/review.py`)
 

@@ -7,6 +7,7 @@ import {
   type SerialLike,
   type SerialPortLike,
 } from "./serial";
+import { EmgEngine, REPLUG_DELAY_MS } from "./engine";
 import type { EmgEvent } from "./stream";
 
 /** A fake ESP32 port: `send` delivers bytes to the browser; writes are collected. */
@@ -179,5 +180,52 @@ describe("the serial EMG stream", () => {
     expect(events.at(-1)).toEqual({ type: "disconnected", error: "lost" });
     stream.dispose();
     expect(serial.listeners.has("disconnect")).toBe(false);
+  });
+});
+
+describe("review: plugging the ESP32 back in", () => {
+  it("tells its listeners only after a lost port, not after closing on purpose", async () => {
+    const { serial, stream } = await connected();
+    let replugs = 0;
+    stream.onReplug(() => (replugs += 1));
+    const plugIn = () => serial.listeners.get("connect")!({} as Event);
+
+    plugIn();
+    expect(replugs).toBe(0); // still connected
+
+    serial.port.unplug();
+    await stream.whenClosed();
+    plugIn();
+    expect(replugs).toBe(1);
+
+    serial.port = new FakePort();
+    await stream.reconnect();
+    await stream.disconnect();
+    plugIn();
+    expect(replugs).toBe(1); // closed on purpose
+    stream.dispose();
+    expect(serial.listeners.has("connect")).toBe(false);
+  });
+
+  it("the engine reopens the port, pings and starts again, keeping the calibration", async () => {
+    const serial = new FakeSerial();
+    const stream = new SerialEmgStream(serial);
+    const engine = new EmgEngine();
+    await engine.connectSerial(stream);
+    engine.setCalibration({ restMean: 200, restSd: 10, mvc: 1500 });
+    expect(serial.port.written).toEqual(["PING\n", "START\n"]);
+
+    serial.port.unplug();
+    await stream.whenClosed();
+    expect(engine.getStatus().connected).toBe(false);
+    expect(engine.getStatus().error).toBe("lost");
+
+    serial.port = new FakePort();
+    serial.listeners.get("connect")!({} as Event);
+    await new Promise((resolve) => setTimeout(resolve, REPLUG_DELAY_MS + 50));
+    expect(engine.getStatus().connected).toBe(true);
+    expect(serial.port.written).toEqual(["PING\n", "START\n"]);
+    expect(engine.getStatus().calibrated).toBe(true);
+    await engine.disconnect();
   });
 });

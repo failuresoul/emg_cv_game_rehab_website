@@ -131,9 +131,14 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
       return {
         ...state,
         stage: "check",
-        source: action.simulated ? "simulated" : state.source,
+        // Going on without the simulated sensor forgets it, so the real one can be connected.
+        source: action.simulated ? "simulated" : state.source === "simulated" ? null : state.source,
       };
     case "connected":
+      // A real sensor needs the safety answers, even after choosing the simulated one.
+      if (action.source === "serial" && !canLeaveSafety(state)) {
+        return { ...state, stage: "safety", source: null, squeeze: null, readiness: null };
+      }
       return { ...state, source: action.source };
     case "squeezeTested":
       // Passing once is enough.

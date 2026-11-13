@@ -286,6 +286,11 @@ function CheckStage({
 
   async function connect(kind: "serial" | "simulated") {
     setError(null);
+    // The safety answers were skipped for the simulated sensor: a real one needs them first.
+    if (kind === "serial" && !canLeaveSafety(state)) {
+      dispatch({ type: "back" });
+      return;
+    }
     try {
       if (kind === "serial") await engine.connectSerial();
       else await engine.connectSimulated();
@@ -310,7 +315,7 @@ function CheckStage({
     <div className="grid gap-4 lg:grid-cols-3">
       <Panel className="flex flex-col gap-3 lg:col-span-2">
         <div className="flex flex-wrap gap-3">
-          {!status.connected && (
+          {!status.connected && state.source !== "simulated" && (
             <Button size="lg" disabled={!webSerial} onClick={() => void connect("serial")}>
               <Plug size={20} aria-hidden />
               {t("emgStep.connect")}

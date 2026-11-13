@@ -19,7 +19,7 @@ import {
 } from "./processing";
 import type { DeviceMode, EmgCommand } from "./protocol";
 import { SerialEmgStream } from "./serial";
-import { SimulatedEmgStream } from "./simulated";
+import { isSimulatedEmgAllowed, SimulatedEmgStream } from "./simulated";
 import {
   EmgError,
   type EmgErrorCode,
@@ -29,6 +29,8 @@ import {
 } from "./stream";
 
 export const BUFFER_SECONDS = 10;
+/** After the ESP32 is plugged back in, wait this long for it to start before reopening it. */
+export const REPLUG_DELAY_MS = 500;
 export const DEFAULT_FS = 500;
 /** How often the status (and the screens reading it) may change. */
 const STATUS_INTERVAL_MS = 250;
@@ -103,6 +105,9 @@ export class EmgEngine {
   private arrivals: { at: number; received: number; missing: number }[] = [];
   private calibratedSite: "flexors" | "extensors" | null = null;
   private unsubscribe: (() => void) | null = null;
+  private unwatchReplug: (() => void) | null = null;
+  /** START was asked for (and not STOP since): a board that restarts is started again. */
+  private wantStreaming = false;
   private fs = DEFAULT_FS;
   private clock = new SampleClock(DEFAULT_FS);
   private smoother = new MovingAverage(DEFAULT_FS);
@@ -218,7 +223,9 @@ export class EmgEngine {
     });
   }
 
+  /** The simulated sensor: only in development builds, or with the "simulated EMG" setting on. */
   async connectSimulated(stream: EmgStream = new SimulatedEmgStream()): Promise<void> {
+    if (!isSimulatedEmgAllowed()) throw new EmgError("not_supported", "simulated EMG is off");
     await this.use(stream, () => stream.connect());
   }
 
@@ -228,6 +235,7 @@ export class EmgEngine {
     try {
       await open();
       await this.ping();
+      this.wantStreaming = true;
       await stream.send("START");
     } catch (error) {
       const code = error instanceof EmgError ? error.code : "open_failed";
@@ -240,6 +248,7 @@ export class EmgEngine {
   async disconnect(): Promise<void> {
     const stream = this.stream;
     if (!stream) return;
+    this.wantStreaming = false;
     await stream.disconnect();
     this.detach();
     this.setStatus({ ...IDLE_STATUS, calibrated: this.calibration !== null }, true);
@@ -251,6 +260,8 @@ export class EmgEngine {
       await this.ping();
       return;
     }
+    if (command === "START") this.wantStreaming = true;
+    if (command === "STOP") this.wantStreaming = false;
     await this.stream.send(command);
   }
 
@@ -266,13 +277,32 @@ export class EmgEngine {
     this.detach();
     this.stream = stream;
     this.unsubscribe = stream.subscribe((event) => this.handle(event));
+    if (stream instanceof SerialEmgStream) {
+      this.unwatchReplug = stream.onReplug(() => this.reopenAfterReplug(stream));
+    }
     this.resetSignal(this.fs);
   }
 
   private detach(): void {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.unwatchReplug?.();
+    this.unwatchReplug = null;
     this.stream = null;
+  }
+
+  /**
+   * The ESP32 was unplugged and is back: reopen the same port (no chooser), ping and start, so
+   * the games switch back from the camera by themselves. Today's calibration is kept. If it
+   * fails, the next plug-in tries again.
+   */
+  private reopenAfterReplug(stream: SerialEmgStream): void {
+    setTimeout(() => {
+      if (this.stream !== stream || stream.connected) return;
+      void this.reconnectSerial().catch(() => {
+        if (this.stream === null) this.attach(stream);
+      });
+    }, REPLUG_DELAY_MS);
   }
 
   // ---- Calibration ---------------------------------------------------------------------------
@@ -348,6 +378,11 @@ export class EmgEngine {
             ? event.fields.mode
             : this.status.mode;
         this.setStatus({ ...this.status, firmwareVersion: version, mode }, true);
+        // The board restarted (its start-up line says it is not streaming), for example when it
+        // was plugged back in or the port's opening reset it: start it again.
+        if (event.fields.streaming === "0" && this.wantStreaming && this.stream) {
+          void this.stream.send("START").catch(() => undefined);
+        }
         break;
       }
       case "ok":
