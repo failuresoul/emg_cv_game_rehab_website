@@ -3,6 +3,7 @@ import { LogoMark } from "@/components/brand/LogoMark";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { type Institution, project } from "@/config/project";
+import { LlmHealthCard } from "@/features/feedback/LlmHealthCard";
 import { t } from "@/i18n";
 
 function InstitutionCard({ title, institution }: { title: string; institution: Institution }) {
@@ -51,6 +52,7 @@ export function AdminSystemPage() {
         <InstitutionCard title={t("adminSystem.institution")} institution={project.institution} />
         <InstitutionCard title={t("adminSystem.collaborator")} institution={project.collaborator} />
       </div>
+      <LlmHealthCard />
     </div>
   );
 }

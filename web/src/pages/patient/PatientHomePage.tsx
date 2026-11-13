@@ -6,7 +6,6 @@ import {
   type LucideIcon,
   MessageSquareText,
   Move,
-  Sparkles,
   Target,
 } from "lucide-react";
 import { Link } from "react-router";
@@ -17,6 +16,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/features/auth/AuthContext";
+import { LatestFeedbackCard } from "@/features/feedback/LatestFeedbackCard";
 import { percent } from "@/features/games/results";
 import { usePatientDashboard } from "@/features/patient/usePatientDashboard";
 import { useLatestCalibration } from "@/features/patient/usePatientData";
@@ -281,10 +281,7 @@ export function PatientHomePage() {
           <ReachMapCard affectedSide={dashboard.data.profile.affected_side} />
           <LastWarmupCard warmup={dashboard.data.last_warmup} />
           <LastSessionCard session={lastSession} />
-          <Card className="lg:col-span-2">
-            <h2 className="mb-2 text-xl font-bold">{t("patient.feedback.title")}</h2>
-            <EmptyState icon={Sparkles} title={t("patient.feedback.empty")} />
-          </Card>
+          <LatestFeedbackCard className="lg:col-span-2" />
         </div>
       )}
     </>

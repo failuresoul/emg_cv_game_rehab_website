@@ -21,6 +21,7 @@ import { LatestPlanCard } from "@/features/admin/LatestPlanCard";
 import { LevelsCard } from "@/features/admin/LevelsCard";
 import { PatientPracticeSummary } from "@/features/admin/PatientPracticeSummary";
 import { PatientProgressTab } from "@/features/admin/PatientProgressTab";
+import { AdminReportsTab } from "@/features/feedback/AdminReportsTab";
 import { PatientSessionsTab } from "@/features/admin/PatientSessionsTab";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
 import { QueryError } from "@/components/ui/QueryError";
@@ -227,9 +228,8 @@ export function AdminPatientDetailPage() {
           {tab === "overview" && <OverviewTab patient={patient.data} />}
           {tab === "sessions" && <PatientSessionsTab patientId={patient.data.id} />}
           {tab === "progress" && <PatientProgressTab patient={patient.data} />}
-          {(tab === "programme" || tab === "reports") && (
-            <EmptyState title={t("patient.tab.emptyUntilSessions")} />
-          )}
+          {tab === "reports" && <AdminReportsTab patientId={patient.data.id} />}
+          {tab === "programme" && <EmptyState title={t("patient.tab.emptyUntilSessions")} />}
         </Tabs>
       </Card>
     </>

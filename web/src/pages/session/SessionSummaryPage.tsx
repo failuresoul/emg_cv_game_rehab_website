@@ -2,7 +2,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Equal,
-  HeartHandshake,
   type LucideIcon,
   PartyPopper,
   Sparkles,
@@ -15,6 +14,9 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { FeedbackSection, summaryNotices } from "@/features/feedback/FeedbackSection";
+import { useFeedback } from "@/features/feedback/hooks";
+import { SafetyNotices } from "@/features/feedback/SafetyNotices";
 import { allMeasures, percent } from "@/features/games/results";
 import { useSessionReport } from "@/features/progress/hooks";
 import { type Comparison, compare } from "@/features/progress/progress";
@@ -26,19 +28,6 @@ import { GAMES } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
 import { formatDuration, formatNumber } from "@/lib/format";
 import type { SessionReport, SessionReportGame, Side } from "@/types/api";
-
-/** Shown when the questionnaire raised pain or something new: a fixed text, never advice. */
-function StopNotice() {
-  return (
-    <div
-      role="status"
-      className="border-info bg-info/10 flex items-start gap-3 rounded-xl border-2 p-4 text-lg font-medium"
-    >
-      <HeartHandshake size={32} aria-hidden className="text-info shrink-0" />
-      <p>{t("summary.stopNotice")}</p>
-    </div>
-  );
-}
 
 const COMPARISON_DISPLAY: Record<
   Comparison | "first",
@@ -260,6 +249,13 @@ export function SessionSummaryPage() {
   const forgetSession = useForgetSession();
   const { sessionId, affectedSide } = useSession();
   const report = useSessionReport(sessionId);
+  const feedback = useFeedback(sessionId);
+  // Fixed text only, first on the page: the report's notices once it is here, before that the
+  // questionnaire's stop notice (pain or something new).
+  const notices = summaryNotices(
+    feedback.state,
+    report.data && shouldShowStopNotice(report.data.flags) ? t("summary.stopNotice") : null,
+  );
 
   async function goHome() {
     await navigate("/patient");
@@ -269,7 +265,7 @@ export function SessionSummaryPage() {
 
   return (
     <div className="m-auto flex w-full max-w-5xl flex-col gap-6">
-      {report.data && shouldShowStopNotice(report.data.flags) && <StopNotice />}
+      <SafetyNotices notices={notices} />
       <Card className="flex items-center gap-4">
         <PartyPopper size={48} aria-hidden className="text-accent shrink-0" />
         <div>
@@ -290,10 +286,7 @@ export function SessionSummaryPage() {
       )}
       {report.data && <Report report={report.data} affectedSide={affectedSide} />}
       {report.data && sessionId !== null && <NextFocus sessionId={sessionId} />}
-      <Card>
-        <h2 className="mb-2 text-xl font-bold">{t("summary.feedbackTitle")}</h2>
-        <EmptyState icon={Sparkles} title={t("summary.feedbackSoon")} />
-      </Card>
+      {sessionId !== null && <FeedbackSection state={feedback.state} onRetry={feedback.retry} />}
       <Button size="lg" className="self-end" onClick={() => void goHome()}>
         {t("summary.home")}
       </Button>

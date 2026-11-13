@@ -17,6 +17,7 @@ import { PatientHistoryPage } from "@/pages/patient/PatientHistoryPage";
 import { PatientHomePage } from "@/pages/patient/PatientHomePage";
 import { PatientProfilePage } from "@/pages/patient/PatientProfilePage";
 import { PatientProgressPage } from "@/pages/patient/PatientProgressPage";
+import { PatientReportDetailPage } from "@/pages/patient/PatientReportDetailPage";
 import { PatientReportsPage } from "@/pages/patient/PatientReportsPage";
 import { PatientSessionDetailPage } from "@/pages/patient/PatientSessionDetailPage";
 import { AboutPage } from "@/pages/public/AboutPage";
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
               { path: "history", element: <PatientHistoryPage /> },
               { path: "history/:sessionId", element: <PatientSessionDetailPage /> },
               { path: "reports", element: <PatientReportsPage /> },
+              { path: "reports/:jobId", element: <PatientReportDetailPage /> },
               { path: "profile", element: <PatientProfilePage /> },
             ],
           },

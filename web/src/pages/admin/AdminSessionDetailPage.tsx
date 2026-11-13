@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAdminSession } from "@/features/admin/hooks";
+import { AdminSessionReportCard } from "@/features/feedback/AdminReportsTab";
 import { GameRunCard } from "@/features/admin/session/GameRunCard";
 import { QuestionnaireCard } from "@/features/admin/session/QuestionnaireCard";
 import { SessionMetricsCard } from "@/features/admin/session/SessionMetricsCard";
@@ -126,6 +127,7 @@ export function AdminSessionDetailPage() {
           )}
         </Card>
         <QuestionnaireCard session={data} />
+        <AdminSessionReportCard sessionId={data.id} />
         <SessionMetricsCard rows={data.session_metrics ?? []} />
         <Card className="lg:col-span-3">
           <h2 className="mb-2 text-xl font-bold">{t("history.warmupTitle")}</h2>

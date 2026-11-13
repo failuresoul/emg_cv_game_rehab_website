@@ -2,9 +2,9 @@ import type { Language } from "@/types/api";
 
 import { isMuted } from "./beep";
 
-const SPEECH_LANGUAGES: Record<Language, string> = { en: "en-US", bn: "bn-BD" };
+export const SPEECH_LANGUAGES: Record<Language, string> = { en: "en-US", bn: "bn-BD" };
 
-function voicesFor(language: Language) {
+export function voicesFor(language: Language): SpeechSynthesisVoice[] {
   const prefix = language === "bn" ? "bn" : "en";
   return window.speechSynthesis
     .getVoices()

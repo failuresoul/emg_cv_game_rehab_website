@@ -993,3 +993,123 @@ export interface PatientMetrics {
   series: MetricSeries[];
   mdc_provisional: boolean;
 }
+
+// Feedback reports (server/app/api/feedback.py). Model text is always shown as plain text.
+
+export type ReportStatus = "queued" | "running" | "done" | "fallback" | "failed";
+export type Rater = "participant" | "team" | "clinician";
+export type RatingCriterion = "clarity" | "usefulness" | "accuracy" | "tone" | "safety";
+
+export interface FeedbackHighlight {
+  metric_id: string;
+  text: string;
+}
+
+export interface FeedbackSuggestion {
+  /** A suggestion id from the catalogue, such as "REST_BREAKS". */
+  id: string;
+  text: string;
+}
+
+export interface FeedbackReport {
+  language: Language;
+  patient_summary: string;
+  highlights: FeedbackHighlight[];
+  suggestions: FeedbackSuggestion[];
+  next_session_text: string;
+  /** Admins only. */
+  therapist_summary?: string;
+}
+
+export interface FeedbackJob {
+  job_id: number;
+  status: ReportStatus;
+}
+
+export interface FeedbackMeta {
+  model: string | null;
+  prompt_version: string | null;
+  latency_ms: number | null;
+  retries: number;
+  fallback_used: boolean;
+}
+
+/** A report, or the state of its job: report, notices and meta once done or fallback. */
+export interface FeedbackReportRead {
+  job_id: number;
+  session_id: number;
+  language: Language;
+  status: ReportStatus;
+  report: FeedbackReport | null;
+  /** Fixed, approved safety notices: show them first. */
+  safety_notices: string[] | null;
+  meta: FeedbackMeta | null;
+  created_at: string;
+  finished_at: string | null;
+}
+
+export interface PatientReportItem {
+  job_id: number;
+  session_id: number;
+  session_no: number;
+  date: string;
+  language: Language;
+  status: ReportStatus;
+  preview: string;
+  has_safety_notice: boolean;
+}
+
+export interface AdminReportItem {
+  job_id: number;
+  session_id: number;
+  patient_id: number;
+  patient_code: string;
+  language: Language;
+  status: ReportStatus;
+  superseded: boolean;
+  model: string | null;
+  prompt_version: string | null;
+  latency_ms: number | null;
+  retries: number;
+  fallback_used: boolean;
+  error: string | null;
+  validation_errors: string[][];
+  ratings: number;
+  created_at: string;
+  finished_at: string | null;
+}
+
+export interface AdminReportDetail extends FeedbackReportRead {
+  superseded: boolean;
+  facts: Record<string, unknown> | null;
+  candidates: Record<string, unknown>[] | null;
+  validation_errors: string[][];
+  raw_output: string | null;
+  error: string | null;
+  prompt_tokens: number | null;
+  output_tokens: number | null;
+}
+
+export interface RatingCreate {
+  rater: Rater;
+  scores: Partial<Record<RatingCriterion, number>>;
+  comment?: string | null;
+}
+
+export interface RatingRead {
+  id: number;
+  report_id: number;
+  rater: Rater;
+  rater_user_id: number;
+  scores: Partial<Record<RatingCriterion, number>>;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface FeedbackHealth {
+  provider: string;
+  model: string;
+  reachable: boolean;
+  model_loaded: boolean;
+  queue_length: number;
+}

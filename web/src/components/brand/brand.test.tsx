@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
@@ -58,7 +59,12 @@ describe("people and institutions", () => {
 
 describe("where the identity appears", () => {
   it("the admin System page shows the name, version, institution and collaborator", () => {
-    const markup = renderToStaticMarkup(<AdminSystemPage />);
+    // The page also shows the feedback model's health, which it fetches.
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <AdminSystemPage />
+      </QueryClientProvider>,
+    );
     expect(markup).toContain(project.name);
     expect(markup).toContain(`>${project.version}<`);
     expect(markup).toContain(escaped(project.institution.name));
