@@ -4,6 +4,44 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 15)
+
+- **Report API with background jobs** (`server/app/api/feedback.py`, `feedback/store.py`, `feedback/jobs.py`):
+  - one worker writes reports one at a time (one generation on the GPU), patients' reports before review reports;
+  - limits of `LLM_TIMEOUT_S` per attempt and 120 s per job, then the template;
+  - restart recovery and background model warm-up;
+  - submitting the questionnaire queues the report in the patient's language;
+  - `LlmReport` stores the report, notices, facts snapshot, candidates, model, prompt version, strategy, timings, validation errors and raw output, with older versions kept;
+  - `ReportRating` stores ratings;
+  - endpoints to request, poll, read, list, monitor and rate reports, plus feedback health.
+- **Reports in the app:**
+  - "Your feedback" on the summary, with a calm preparing card; fixed safety notices first; summary, highlight and tip cards with icons; next time; disclaimer;
+  - read aloud (hidden without a voice), print, and "Was this helpful?";
+  - the patient's Reports pages and "Latest feedback" on home;
+  - admin: a Reports tab (patient view, therapist summary, validation info, ratings, Regenerate), the session's report, and LLM health on System.
+- **Bangla reports:**
+  - `LLM_BN_STRATEGY` = `direct`, `translate` (English, then the patient text translated and checked again, numbers preserved) or `template`;
+  - Bangla tips, banned list, template sentences and notices, marked for native review;
+  - `analysis/llm/eval_bangla.py`: a blind side-by-side comparison;
+  - an English / বাংলা toggle;
+  - Noto Sans Bengali loaded only when Bangla is shown.
+- **Blind human review** (Admin → Research → Report review; [docs/llm-evaluation.md](docs/llm-evaluation.md)):
+  - review sets of LLM and template reports from the same facts, under random codes;
+  - a rubric (accuracy, safety, helpfulness, clarity, tone, unsafe, unsupported sentence);
+  - results per version, % unsafe and weighted Cohen's kappa;
+  - CSV export.
+- **Smoke test:** the questionnaire's report, admin detail, rating, and a Bangla report.
+
+### Changed (Day 15)
+
+- **The template report's sentences** moved to `server/app/feedback/templates/en.yaml` and `bn.yaml`; the Bangla banned words to `banned_bn.txt`.
+- **`index.html`** no longer loads Noto Sans Bengali for everyone.
+- **The placeholder "Your feedback" area** on the summary is replaced by the report.
+
+### Fixed (Day 15 review)
+
+- A patient could open, or rate, a blind-review report of their own session by its id; review reports now answer `404` to patients.
+
 ### Added (Day 14)
 
 - **Local language model provider** (`server/app/feedback/llm.py`):

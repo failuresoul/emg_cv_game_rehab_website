@@ -1465,7 +1465,10 @@ Role: `admin`. Monitoring across patients, newest first (at most 200), in the sa
 Role: `admin`. Everything about one report: the fields above, plus:
 - `facts` and `candidates`, as they were when it was written;
 - every attempt's `validation_errors`, `raw_output` (each answer the model wrote);
-- `prompt_tokens`, `output_tokens`, `error`, `superseded`.
+- `prompt_tokens`, `output_tokens`, `error`, `superseded`;
+- `strategy`: how a Bangla report was made (`direct`, `translate` or `template`; `direct` for English).
+
+Blind-review reports (see below) answer `404` to patients on every report route, even for their own sessions, and are left out of every report list.
 
 ### POST /api/feedback/{report_id}/ratings
 

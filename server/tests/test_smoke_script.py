@@ -12,8 +12,13 @@ from app.models import (
     User,
     WarmupResult,
 )
+from app.models import LlmReport, ReportRating
 from app.models import Session as SessionRecord
 from scripts.smoke_test import run_smoke
+
+# A file database and a running report worker (the mock model), as on a real server: the smoke
+# test waits for the questionnaire's report to be written.
+from tests.test_feedback_api import client, model, session  # noqa: F401, E402
 
 
 def test_smoke_passes_every_step(
@@ -22,7 +27,7 @@ def test_smoke_passes_every_step(
     assert run_smoke(client, "admin@motionlab.local", "test-password") is True
 
     output = capsys.readouterr().out
-    assert output.count("PASS") == 60
+    assert output.count("PASS") == 65
     assert "FAIL" not in output
     assert "PASS  Patient plays a bloom run with non-spatial targets" in output
     assert "PASS  Patient plays a finger_piano run with non-spatial targets" in output
@@ -39,6 +44,12 @@ def test_smoke_passes_every_step(
     assert "PASS  Engine: quick successes then slow failures ask for a rest" in output
     assert "PASS  L2: a run returns sectors and its beliefs update" in output
     assert "PASS  Facts plan the next session once this one ends" in output
+    assert "PASS  The questionnaire's report is written, with the fixed stop notice" in output
+    assert "PASS  A Bangla report is written in Bangla" in output
+    reports = session.exec(select(LlmReport).order_by(col(LlmReport.id))).all()
+    assert [(r.language, r.status) for r in reports] == [("en", "fallback"), ("bn", "fallback")]
+    assert all(r.facts and r.facts["patient_code"] for r in reports)
+    assert len(session.exec(select(ReportRating)).all()) == 1
     assert len(session.exec(select(Calibration)).all()) == 1
     assert len(session.exec(select(WarmupResult)).all()) == 6
     # Nine games in the first session, two adaptive runs in the second, one L2 run in the third.

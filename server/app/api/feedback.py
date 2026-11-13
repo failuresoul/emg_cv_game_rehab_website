@@ -44,7 +44,8 @@ def _session_for(db: SessionDep, user: User, session_id: int) -> tuple[SessionRe
 
 def _report_for(db: SessionDep, user: User, report_id: int) -> LlmReport:
     report = db.get(LlmReport, report_id)
-    if report is None:
+    # Blind-review reports are research material, never a patient's report.
+    if report is None or (report.review_set_id is not None and user.role != "admin"):
         raise _not_found("Report")
     try:
         _session_for(db, user, report.session_id)

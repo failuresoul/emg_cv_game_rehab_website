@@ -111,14 +111,6 @@ def recover(db: Session) -> list[tuple[int, bool]]:
     return [(row.id, row.review_set_id is not None) for row in rows if row.id is not None]
 
 
-def count_waiting(db: Session) -> int:
-    return db.exec(
-        select(func.count())
-        .select_from(LlmReport)
-        .where(col(LlmReport.status).in_(IN_PROGRESS), _LIVE)
-    ).one()
-
-
 # Running
 
 

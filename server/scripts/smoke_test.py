@@ -21,11 +21,21 @@ It also turns Bloom off and changes a Grip and hold default in the game library,
 patient's game settings follow, and then puts both games' settings back as they were. After the
 session ends it checks the server's measures: the session metrics, the admin's metrics table,
 the session facts for the feedback module (no name or email), and both CSV exports.
+
+Feedback reports: the questionnaire queues the session's report; the script waits for it to be
+written (up to 150 s), checks the fixed stop notice comes first, that the patient never gets the
+therapist summary and the admin gets it with the facts snapshot, rates it once, and has a Bangla
+report written. Run the server with the mock model so this takes seconds:
+
+    $env:LLM_PROVIDER="mock"; $env:LLM_BN_STRATEGY="template"
+    python -m uvicorn app.main:app
+
 The exit code is 0 if every step passes and 1 otherwise.
 """
 
 import math
 import secrets
+import time
 from functools import partial
 import sys
 from collections.abc import Callable
@@ -37,6 +47,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import httpx
 
 DEFAULT_BASE_URL = "http://localhost:8000"
+#: The longest wait for a feedback report (the model on a laptop GPU, or the mock).
+REPORT_WAIT_S = 150
 #: The adaptive engine's run: this many trials, the first ENGINE_SUCCESSES of them successes.
 ENGINE_TRIALS = 20
 ENGINE_SUCCESSES = 12
@@ -1357,6 +1369,80 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         nxt = facts["next_session"]
         require(nxt is not None and nxt["planned_games"], "the facts have no next-session plan")
 
+    def wait_for_report(job_id: int, token: str) -> dict[str, Any]:
+        """Polls a report job until it is written (the model, or the template)."""
+        deadline = time.monotonic() + REPORT_WAIT_S
+        while True:
+            body = expect(client.get(f"/api/feedback/jobs/{job_id}", headers=bearer(token)), 200)
+            if body["status"] in ("done", "fallback"):
+                return dict(body)
+            require(body["status"] != "failed", "the report job failed")
+            require(time.monotonic() < deadline, f"the report is still {body['status']}")
+            time.sleep(0.5)
+
+    def questionnaire_report() -> None:
+        # The questionnaire queued it, in the patient's language.
+        url = f"/api/sessions/{state['session_id']}/feedback"
+        current = expect(client.get(url, headers=bearer("patient")), 200)
+        body = wait_for_report(current["job_id"], "patient")
+        state["report_id"] = body["job_id"]
+        require(body["language"] == "en", f"the report is in {body['language']}")
+        require(body["report"]["patient_summary"], "the report has no summary")
+        require("therapist_summary" not in body["report"], "the patient got the therapist summary")
+        notices = body["safety_notices"]
+        require(
+            len(notices) == 1 and notices[0].startswith("Please stop practising for today"),
+            "pain 5 did not bring the fixed stop notice",
+        )
+        require(body["meta"]["prompt_version"], "the report has no prompt version")
+
+    def admin_reads_report() -> None:
+        url = f"/api/admin/reports/{state['report_id']}"
+        body = expect(client.get(url, headers=bearer("admin")), 200)
+        require(body["report"]["therapist_summary"], "the admin has no therapist summary")
+        require(body["facts"] and body["facts"]["session_no"] >= 1, "the facts snapshot is missing")
+        require(body["candidates"] is not None, "the candidates were not stored")
+        require(body["superseded"] is False, "the report is marked superseded")
+        listed = expect(
+            client.get(f"/api/admin/patients/{state['patient_id']}/reports", headers=bearer("admin")),
+            200,
+        )
+        require(state["report_id"] in [item["job_id"] for item in listed], "not in the admin list")
+
+    def patient_lists_and_rates_report() -> None:
+        listed = expect(client.get("/api/patient/reports", headers=bearer("patient")), 200)
+        require([item["job_id"] for item in listed] == [state["report_id"]], "the list is wrong")
+        url = f"/api/feedback/{state['report_id']}/ratings"
+        rating = {"rater": "participant", "scores": {"usefulness": 4}, "comment": "Smoke test"}
+        body = expect(client.post(url, json=rating, headers=bearer("patient")), 201)
+        require(body["scores"] == {"usefulness": 4}, "the rating was not saved as sent")
+        again = client.post(url, json=rating, headers=bearer("patient")).status_code
+        require(again == 409, f"a second rating got HTTP {again}, not 409")
+        ratings = expect(
+            client.get(f"/api/admin/reports/{state['report_id']}/ratings", headers=bearer("admin")),
+            200,
+        )
+        require(len(ratings) == 1 and ratings[0]["rater"] == "participant", "admin sees no rating")
+
+    def bangla_report() -> None:
+        url = f"/api/sessions/{state['session_id']}/feedback"
+        job = expect(client.post(url, json={"language": "bn"}, headers=bearer("patient")), 202)
+        body = wait_for_report(job["job_id"], "patient")
+        require(body["language"] == "bn", "the report is not in Bangla")
+        text = body["report"]["patient_summary"]
+        letters = [char for char in text if char.isalpha()]
+        bengali = sum(1 for char in letters if "\u0980" <= char <= "\u09ff")
+        require(letters and bengali / len(letters) > 0.6, "the summary is not in Bengali script")
+        require(body["safety_notices"][0].startswith("অনুগ্রহ করে"), "the notice is not in Bangla")
+        # The English report is still the current one in English.
+        english = expect(client.get(url, headers=bearer("patient")), 200)
+        require(english["job_id"] == state["report_id"], "the English report was replaced")
+
+    def feedback_health() -> None:
+        body = expect(client.get("/api/feedback/health", headers=bearer("admin")), 200)
+        require(isinstance(body["queue_length"], int), "the health has no queue length")
+        require(body["provider"] in ("mock", "ollama"), f"unknown provider {body['provider']}")
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -1407,6 +1493,11 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("The session's metrics were computed when it ended", session_metrics_exist),
         ("Admin reads the patient's metrics table", admin_metrics_table),
         ("Patient reads the session facts, with no name or email", session_facts),
+        ("The questionnaire's report is written, with the fixed stop notice", questionnaire_report),
+        ("Admin reads the report, its facts snapshot and the list", admin_reads_report),
+        ("Patient lists the report and rates it once", patient_lists_and_rates_report),
+        ("A Bangla report is written in Bangla", bangla_report),
+        ("Feedback health answers", feedback_health),
         ("Admin downloads the patient's metrics CSV", export_patient_metrics),
         ("Admin downloads all trials as CSV", export_all_trials),
         ("Admin sees the pain alert", admin_sees_alert),

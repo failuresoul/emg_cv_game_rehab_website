@@ -370,12 +370,70 @@ All models run locally in Ollama on the project laptop, an NVIDIA RTX 3050 with 
 
 **Chosen model:** *pending: to be filled in from the dev comparison, with the reason.*
 
+### Serving reports (`store.py`, `jobs.py`, `app/api/feedback.py`)
+
+**Jobs.**
+- A report is a background job, stored as an `LlmReport` row: `queued` → `running` → `done` (the model's report), `fallback` (the template) or `failed` (an unexpected error).
+- Submitting the cool-down questionnaire queues the session's report in the patient's language. The job waits up to 10 s for the session to end, so its facts include the duration and the next session's plan.
+- **One worker writes reports one at a time**, so only one generation uses the GPU at once. It is an in-process asyncio priority queue: patients' reports go before blind-review reports.
+- Each attempt is limited by `LLM_TIMEOUT_S`, and the whole job by `LLM_JOB_LIMIT_S` (120 s). After that, or at once when Ollama is unreachable, the template is used.
+- Jobs live while the server runs. At start-up, jobs left `queued` or `running` are queued again.
+- The server loads the model in the background at start-up and never waits for it.
+
+**What is stored.** Each report keeps:
+- the report and its fixed safety notices;
+- a **snapshot of the facts** and the candidates it was made from;
+- the model, prompt version, Bangla strategy, latency, tokens, retries, whether the template was used, every validation error, and the model's raw output (admins only).
+
+Each session and language has one current report. Regenerating keeps the old version, marked superseded.
+
+**API** ([api-contract.md](api-contract.md#feedback-reports-serverappapifeedbackpy)):
+- request, poll and read a report;
+- the patient's list;
+- admin monitoring (`?status=fallback|failed`) and detail;
+- ratings: participants rate their own report; the team and clinicians rate as such;
+- health: provider, model, reachable, loaded, queue length.
+
+Patients see only their own reports, and never the therapist summary, raw output or validation errors.
+
+**In the app:**
+- The summary page shows the report under "Your feedback" while the rest of the summary is already visible.
+- The fixed safety notices come first on the page.
+- Model text is always rendered as plain text, never HTML.
+- Read aloud uses the browser's en-US or bn-BD voice, and is hidden without one.
+- Reports can be printed, rated (1–5), and viewed in English or Bangla.
+
+### Bangla
+
+`LLM_BN_STRATEGY` chooses how Bangla reports are written:
+- **direct:** the model writes the patient text in Bangla; the therapist summary stays English.
+- **translate:**
+  - An English report is written and validated first.
+  - A second call (`prompts/translate_v1.txt`) translates only the patient text with the same schema.
+  - The translation must keep every item, id and number (Bengali digits ০–৯ count as the same numbers), then passes the full Bangla validation.
+- **template:** the Bangla template, without the model.
+
+**Validation in Bangla:**
+- a Bangla script check (mostly the Bengali Unicode block);
+- `banned_bn.txt`;
+- Bangla direction and safety-leak words;
+- Bengali digits read as numbers.
+
+**Content.** The Bangla tips (`kb/bn`), template sentences (`templates/bn.yaml`), banned list and the sharp-decline notice are marked "Needs review by a native speaker".
+
+**Comparison.** `analysis/llm/eval_bangla.py` writes 15 dev cases with each strategy for a blind side-by-side rating of fluency and correctness. *Result of the Bangla review: pending (the native speaker's ratings and the chosen strategy go here).*
+
+### Human evaluation
+
+A blind comparison of LLM and template reports from the same facts is described in [llm-evaluation.md](llm-evaluation.md) (research question RQ5). The tool is Admin → Research → Report review.
+
 ### Limitations of the feedback
 
 - **Pattern-based checks.** The direction and leakage checks recognise measure names and words. A paraphrase the lists do not know can pass unchecked, and an unusual but harmless wording can force a retry.
 - **Synthetic evaluation.** The test set is synthetic; real session facts may differ. The MDC values behind every judgement are provisional until measured (Day 19).
 - **Bangla wording.** The Bangla text (tips, template sentences, the sharp-decline notice) still needs review by native speakers.
-- **Reports are not stored yet.** They are generated on request; storing them, with their meta, comes with the report API (Day 15).
+- **Bangla length.** Bangla takes more tokens than English, so a direct Bangla answer may hit the 700-token output limit; the evaluation shows whether it does.
+- **Jobs are in-process.** A report being written when the server stops is written again at the next start; reports do not survive across machines or several server processes.
 
 ## Limitations
 
