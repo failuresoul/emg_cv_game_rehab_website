@@ -4,11 +4,12 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import CurrentPatient, SessionDep, TzOffset
 from app.schemas.patient import PatientDashboard, PatientProfileRead, TodayPlanStep
+from app.schemas.emg import EmgCalibrationRead
 from app.schemas.metrics import MetricSeries
 from app.schemas.progress import PatientProgress
 from app.schemas.session import CalibrationRead, LastSession, SessionDetail, SessionSummary
 from app.schemas.warmup import ExerciseId, WarmupResultRead
-from app.services import games, progress, sessions, warmup
+from app.services import emg, games, progress, sessions, warmup
 from app.services.metrics_catalog import get_metric
 
 router = APIRouter(prefix="/patient", tags=["patient"])
@@ -88,6 +89,16 @@ def latest_calibration(patient: CurrentPatient, session: SessionDep) -> Calibrat
     if calibration is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No calibration yet")
     return CalibrationRead.model_validate(calibration)
+
+
+@router.get("/emg-calibration/latest")
+def latest_emg_calibration(patient: CurrentPatient, session: SessionDep) -> EmgCalibrationRead:
+    """The patient's latest muscle-sensor calibration, or 404."""
+    assert patient.id is not None
+    calibration = emg.latest_calibration(session, patient.id)
+    if calibration is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No EMG calibration yet")
+    return EmgCalibrationRead.model_validate(calibration)
 
 
 @router.get("/sessions")

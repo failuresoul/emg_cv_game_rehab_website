@@ -69,6 +69,25 @@ export const IDLE_STATUS: EmgStatus = {
   error: null,
 };
 
+/** The last PING: when it was sent and when the firmware answered. */
+export interface PingState {
+  sentAt: number | null;
+  answeredAt: number | null;
+  version: string | null;
+}
+
+/** Arrivals over a recent window, measured as samples come in (not from the sample clock). */
+export interface ArrivalStats {
+  /** Samples per second that arrived in the window; 0 when none did. */
+  rateHz: number;
+  /** Samples missing between those received, as a share of those expected (0-100). */
+  gapsPct: number;
+  received: number;
+}
+
+/** How long arrivals are remembered (the longest readiness window is 5 s). */
+const ARRIVAL_MEMORY_MS = 6000;
+
 export interface RecentSignal {
   t: Float64Array;
   mv: Float64Array;
@@ -78,7 +97,11 @@ export interface RecentSignal {
 }
 
 export class EmgEngine {
+  private readonly now: () => number;
   private stream: EmgStream | null = null;
+  private pingState: PingState = { sentAt: null, answeredAt: null, version: null };
+  private arrivals: { at: number; received: number; missing: number }[] = [];
+  private calibratedSite: "flexors" | "extensors" | null = null;
   private unsubscribe: (() => void) | null = null;
   private fs = DEFAULT_FS;
   private clock = new SampleClock(DEFAULT_FS);
@@ -96,6 +119,10 @@ export class EmgEngine {
   private readonly statusListeners = new Set<() => void>();
   private readonly onsetListeners = new Set<(event: OnsetEvent) => void>();
   private readonly eventListeners = new Set<(event: EmgEvent) => void>();
+
+  constructor(now: () => number = () => performance.now()) {
+    this.now = now;
+  }
 
   // ---- Reading -------------------------------------------------------------------------------
 
@@ -115,6 +142,32 @@ export class EmgEngine {
 
   get sampleRateHz(): number {
     return this.fs;
+  }
+
+  get sourceKind(): EmgSourceKind | null {
+    return this.stream?.kind ?? null;
+  }
+
+  getPing(): PingState {
+    return this.pingState;
+  }
+
+  /** Samples that arrived in the last `windowMs` before `nowMs`. */
+  arrivalStats(windowMs: number, nowMs: number = this.now()): ArrivalStats {
+    let received = 0;
+    let missing = 0;
+    for (const arrival of this.arrivals) {
+      if (arrival.at > nowMs - windowMs && arrival.at <= nowMs) {
+        received += arrival.received;
+        missing += arrival.missing;
+      }
+    }
+    const expected = received + missing;
+    return {
+      rateHz: (received * 1000) / windowMs,
+      gapsPct: expected > 0 ? (missing / expected) * 100 : 0,
+      received,
+    };
   }
 
   /** The last `seconds` of the signal (at most 10 s), oldest first. */
@@ -174,7 +227,7 @@ export class EmgEngine {
     this.attach(stream);
     try {
       await open();
-      await stream.send("PING");
+      await this.ping();
       await stream.send("START");
     } catch (error) {
       const code = error instanceof EmgError ? error.code : "open_failed";
@@ -194,7 +247,18 @@ export class EmgEngine {
 
   async send(command: EmgCommand): Promise<void> {
     if (!this.stream) throw new EmgError("write_failed", "Not connected");
+    if (command === "PING") {
+      await this.ping();
+      return;
+    }
     await this.stream.send(command);
+  }
+
+  /** Sends PING and notes the time, so the answer's delay is known. */
+  async ping(): Promise<void> {
+    if (!this.stream) throw new EmgError("write_failed", "Not connected");
+    this.pingState = { sentAt: this.now(), answeredAt: null, version: null };
+    await this.stream.send("PING");
   }
 
   /** Feeds a stream's events in; public so tests can drive the engine. */
@@ -227,6 +291,15 @@ export class EmgEngine {
     return this.calibration;
   }
 
+  /** The electrode site of today's calibration ("flexors" drive grip, "extensors" opening). */
+  get site(): "flexors" | "extensors" | null {
+    return this.calibratedSite;
+  }
+
+  setSite(site: "flexors" | "extensors" | null): void {
+    this.calibratedSite = site;
+  }
+
   // ---- Events --------------------------------------------------------------------------------
 
   handle(event: EmgEvent): void {
@@ -256,6 +329,7 @@ export class EmgEngine {
         );
         break;
       case "pong":
+        this.pingState = { ...this.pingState, answeredAt: this.now(), version: event.version };
         this.setStatus({ ...this.status, firmwareVersion: event.version }, true);
         break;
       case "info": {
@@ -300,9 +374,12 @@ export class EmgEngine {
   }
 
   private addSamples(samples: { counter: number; mv: number }[], arrivalMs: number): void {
+    const missingBefore = this.clock.stats().missing;
+    let received = 0;
     for (const { counter, mv } of samples) {
       const t = this.clock.push(counter, arrivalMs);
       if (t === null) continue;
+      received += 1;
       const envelope = this.smoother.push(mv);
       this.latestEnvelope = envelope;
       this.times.push(t);
@@ -316,6 +393,14 @@ export class EmgEngine {
       } else {
         this.percents.push(Number.NaN);
       }
+    }
+    this.arrivals.push({
+      at: arrivalMs,
+      received,
+      missing: Math.max(0, this.clock.stats().missing - missingBefore),
+    });
+    while (this.arrivals.length > 0 && this.arrivals[0]!.at < arrivalMs - ARRIVAL_MEMORY_MS) {
+      this.arrivals.shift();
     }
     this.refreshStatus(arrivalMs);
   }
@@ -349,6 +434,7 @@ export class EmgEngine {
     this.raw = new RingBuffer(capacity);
     this.smooth = new RingBuffer(capacity);
     this.percents = new RingBuffer(capacity);
+    this.arrivals = [];
     this.lastStatusAt = -Infinity;
     if (this.calibration) this.onset = new OnsetDetector(this.calibration);
   }

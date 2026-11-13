@@ -6,6 +6,7 @@ from sqlmodel import col, select
 from app.api.deps import SessionDep, TzOffset, require_admin
 from app.models import PatientProfile, User
 from app.models import Session as SessionRecord
+from app.schemas.emg import EmgCalibrationRead
 from app.schemas.game import MetricsRecomputeRead
 from app.schemas.game_setting import AdminGameRead, GameSettingUpdate
 from app.schemas.metrics import GameLevel, PatientLevels, PatientMetrics
@@ -21,6 +22,7 @@ from app.schemas.progress import PatientProgress
 from app.schemas.session_feedback import AdminAlert, AlertReview
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
 from app.services import (
+    emg,
     exports,
     game_settings,
     levels,
@@ -158,6 +160,16 @@ def list_patient_calibrations(patient_id: int, session: SessionDep) -> list[Admi
     return [
         AdminCalibrationRead.model_validate(calibration)
         for calibration in sessions.list_calibrations(session, patient_id)
+    ]
+
+
+@router.get("/patients/{patient_id}/emg-calibrations")
+def list_patient_emg_calibrations(patient_id: int, session: SessionDep) -> list[EmgCalibrationRead]:
+    """The patient's muscle-sensor calibrations, newest first."""
+    _get_patient_or_404(session, patient_id)
+    return [
+        EmgCalibrationRead.model_validate(calibration)
+        for calibration in emg.list_calibrations(session, patient_id)
     ]
 
 

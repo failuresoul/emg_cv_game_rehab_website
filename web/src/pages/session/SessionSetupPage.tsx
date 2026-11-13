@@ -4,6 +4,8 @@ import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Switch } from "@/components/ui/Switch";
+import { readEmgPreference, writeEmgPreference } from "@/emg/preference";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useSessionStep } from "@/features/session/SessionContext";
 import { t, type TranslationKey } from "@/i18n";
@@ -103,6 +105,9 @@ function LiveCheck() {
 
   const { user } = useAuth();
   const side = user?.patient_profile?.affected_side ?? null;
+  const patientId = user?.patient_profile?.id ?? null;
+  // "Use the muscle sensor today", remembered per patient in this browser.
+  const [useSensor, setUseSensor] = useState(() => readEmgPreference(patientId));
   const checks = evaluateSetupChecks(result, side);
   const allGreen = Object.values(checks).every(Boolean);
 
@@ -138,7 +143,19 @@ function LiveCheck() {
             {t(side === "left" ? "setup.armHint.left" : "setup.armHint.right")}
           </p>
         )}
-        <Button size="lg" disabled={!passed} onClick={() => void navigate("/session/calibrate")}>
+        <Switch
+          checked={useSensor}
+          onChange={(on) => {
+            setUseSensor(on);
+            writeEmgPreference(patientId, on);
+          }}
+          label={t("setup.useSensor")}
+        />
+        <Button
+          size="lg"
+          disabled={!passed}
+          onClick={() => void navigate(useSensor ? "/session/emg" : "/session/calibrate")}
+        >
           {t("setup.continue")}
         </Button>
         {!passed && <p className="text-muted">{t("setup.checklist.hint")}</p>}

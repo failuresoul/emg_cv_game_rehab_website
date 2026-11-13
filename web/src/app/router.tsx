@@ -28,6 +28,7 @@ import { NotFoundPage } from "@/pages/public/NotFoundPage";
 import { SignupPage } from "@/pages/public/SignupPage";
 import { SessionCalibratePage } from "@/pages/session/SessionCalibratePage";
 import { SessionCooldownPage } from "@/pages/session/SessionCooldownPage";
+import { SessionEmgPage } from "@/pages/session/SessionEmgPage";
 import { SessionGamePage } from "@/pages/session/SessionGamePage";
 import { SessionPlanPage } from "@/pages/session/SessionPlanPage";
 import { SessionSetupPage } from "@/pages/session/SessionSetupPage";
@@ -94,6 +95,11 @@ export const router = createBrowserRouter([
                 path: "setup",
                 element: <SessionSetupPage />,
                 handle: step("page.session.setup.title"),
+              },
+              {
+                path: "emg",
+                element: <SessionEmgPage />,
+                handle: step("page.session.emg.title"),
               },
               {
                 path: "calibrate",

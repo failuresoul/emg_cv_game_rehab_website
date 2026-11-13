@@ -5,6 +5,7 @@ import { cleanTrials, currentGame, type GameQueue } from "./gameQueue";
 
 export const SESSION_STEPS: readonly SessionStep[] = [
   "setup",
+  "emg",
   "calibrate",
   "warmup",
   "plan",
@@ -24,6 +25,8 @@ export const BAR_STEPS: readonly { id: string; labelKey: TranslationKey }[] = [
 
 const BAR_INDEX: Record<SessionStep, number> = {
   setup: 0,
+  // The muscle sensor is part of getting set up.
+  emg: 0,
   calibrate: 1,
   warmup: 2,
   plan: 3,

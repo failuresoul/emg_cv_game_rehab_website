@@ -128,10 +128,21 @@ export interface DeviceInfo {
   browser?: string | null;
   fps?: number | null;
   delegate?: "GPU" | "CPU" | null;
+  /** The muscle sensor, when the session uses it. */
+  emg?: EmgDeviceInfo | null;
+}
+
+export type EmgSite = "flexors" | "extensors";
+
+export interface EmgDeviceInfo {
+  connected: boolean;
+  source?: "serial" | "simulated" | null;
+  site?: EmgSite | null;
+  firmware_version?: string | null;
 }
 
 export type SessionStep =
-  "setup" | "calibrate" | "warmup" | "plan" | "game" | "cooldown" | "summary";
+  "setup" | "emg" | "calibrate" | "warmup" | "plan" | "game" | "cooldown" | "summary";
 
 /** Today's games in order and the one being played; index equals games.length once done. */
 export interface GameQueueState {
@@ -1230,4 +1241,29 @@ export interface ReviewResults {
     items: number;
     kappa: number | null;
   }[];
+}
+
+// The muscle sensor's calibration (server/app/schemas/emg.py)
+
+export interface EmgCalibrationCreate {
+  site: EmgSite;
+  source: "serial" | "simulated";
+  firmware_version: string | null;
+  sample_rate: number;
+  rest_mean_mv: number;
+  rest_sd_mv: number;
+  mvc_mv: number;
+  mvc_attempts: number[];
+  readiness: Record<string, unknown>;
+  quality: Record<string, unknown>;
+  battery_ok: boolean;
+  gain_note?: string | null;
+}
+
+export interface EmgCalibrationRead extends EmgCalibrationCreate {
+  id: number;
+  session_id: number;
+  threshold_mv: number;
+  gain_note: string | null;
+  created_at: string;
 }

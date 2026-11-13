@@ -17,13 +17,14 @@ from app.schemas.session import (
     SessionRead,
     SessionStart,
 )
+from app.schemas.emg import EmgCalibrationCreate, EmgCalibrationRead
 from app.schemas.metrics import SessionFacts
 from app.schemas.plan import PlanOverrideCreate, PlanOverrideRead, PlanOverrides, SessionPlan
 from app.schemas.progress import SessionReport
 from app.schemas.session_feedback import SessionFeedbackCreate, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultCreate, WarmupResultRead
 from app.models.user import utc_now
-from app.services import planner, progress, session_facts, session_feedback, sessions, warmup
+from app.services import emg, planner, progress, session_facts, session_feedback, sessions, warmup
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 logger = logging.getLogger(__name__)
@@ -96,6 +97,23 @@ def end_session(
         return SessionRead.model_validate(sessions.end_session(session, record, payload.status))
     except sessions.SessionEndedError:
         raise _session_ended() from None
+
+
+@router.post("/{session_id}/emg-calibration", status_code=status.HTTP_201_CREATED)
+def save_emg_calibration(
+    session_id: int, payload: EmgCalibrationCreate, session: SessionDep, patient: CurrentPatient
+) -> EmgCalibrationRead:
+    """The muscle sensor's rest level, MVC and checks; once per session, while it is active."""
+    record = _get_own_session_or_404(session, patient, session_id)
+    try:
+        calibration = emg.save_calibration(session, record, payload)
+    except emg.SessionEndedError:
+        raise _session_ended() from None
+    except emg.DuplicateEmgCalibrationError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Session already has an EMG calibration"
+        ) from None
+    return EmgCalibrationRead.model_validate(calibration)
 
 
 @router.post("/{session_id}/calibration", status_code=status.HTTP_201_CREATED)

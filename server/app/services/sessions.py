@@ -128,8 +128,12 @@ def get_own_session(session: Session, patient_id: int, session_id: int) -> Sessi
 def update_device_info(
     session: Session, record: SessionRecord, device_info: DeviceInfo
 ) -> SessionRecord:
-    """FPS and GPU/CPU are only known once the camera has been running."""
-    record.device_info = device_info.model_dump()
+    """FPS and GPU/CPU are only known once the camera has been running; the muscle sensor is
+    known from its own step. Each update keeps what it does not mention."""
+    record.device_info = {
+        **(record.device_info or {}),
+        **device_info.model_dump(exclude_unset=True),
+    }
     session.add(record)
     session.commit()
     return record

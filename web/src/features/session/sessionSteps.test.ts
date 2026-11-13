@@ -50,7 +50,9 @@ describe("stepForPath", () => {
 
 describe("barIndex", () => {
   it("puts the plan and the games under Games, and the summary past the end", () => {
-    expect(SESSION_STEPS.map(barIndex)).toEqual([0, 1, 2, 3, 3, 4, 5]);
+    // The muscle sensor step belongs to Setup.
+    expect(SESSION_STEPS.map(barIndex)).toEqual([0, 0, 1, 2, 3, 3, 4, 5]);
+    expect(barIndex("emg")).toBe(barIndex("setup"));
     expect(BAR_STEPS[barIndex("game")]?.id).toBe("games");
     expect(barIndex("summary")).toBe(BAR_STEPS.length);
   });

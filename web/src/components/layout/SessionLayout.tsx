@@ -7,6 +7,9 @@ import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { QueryError } from "@/components/ui/QueryError";
 import { Spinner } from "@/components/ui/Spinner";
+import { readEmgPreference } from "@/emg/preference";
+import { useAuth } from "@/features/auth/AuthContext";
+import { EmgStatusDot } from "@/features/emg/EmgStatusDot";
 import { ResumeOffer } from "@/features/session/ResumeOffer";
 import { SessionProvider, useSession } from "@/features/session/SessionContext";
 import { SessionExitButton } from "@/features/session/SessionExitButton";
@@ -123,6 +126,12 @@ function SessionContent() {
   return <Outlet />;
 }
 
+/** The muscle sensor's dot, when the patient uses it today (or it is connected). */
+function SensorDot() {
+  const { user } = useAuth();
+  return <EmgStatusDot inUse={readEmgPreference(user?.patient_profile?.id)} />;
+}
+
 export function SessionLayout() {
   const matches = useMatches();
   const { pathname } = useLocation();
@@ -137,7 +146,10 @@ export function SessionLayout() {
         <header className="flex flex-col">
           <div className="flex items-center justify-between gap-4 px-4 py-3">
             <p className="text-xl font-semibold">{handle && t(handle.stepKey)}</p>
-            <SessionExitButton />
+            <div className="flex items-center gap-2">
+              <SensorDot />
+              <SessionExitButton />
+            </div>
           </div>
           <StepBar pathname={pathname} />
         </header>

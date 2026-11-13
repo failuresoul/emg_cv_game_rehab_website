@@ -10,6 +10,7 @@ from pydantic import (
     SerializerFunctionWrapHandler,
 )
 
+from app.schemas.emg import EmgDeviceInfo
 from app.schemas.common import Side, UtcDatetime
 from app.schemas.game import GameId, GameRunDetail, LastSessionGame
 from app.schemas.metrics import SessionMetricRead
@@ -17,7 +18,9 @@ from app.schemas.session_feedback import SafetyFlag, SessionFeedbackRead
 from app.schemas.warmup import WarmupResultRead, WarmupSummary
 
 SessionStatus = Literal["active", "completed", "aborted"]
-SessionStep = Literal["setup", "calibrate", "warmup", "plan", "game", "cooldown", "summary"]
+SessionStep = Literal[
+    "setup", "emg", "calibrate", "warmup", "plan", "game", "cooldown", "summary"
+]
 MAX_QUEUED_GAMES = 20
 Point = tuple[float, float]
 ReachRadius = Annotated[float, Field(ge=0.2, le=3.0)]
@@ -32,6 +35,16 @@ class DeviceInfo(BaseModel):
     browser: str | None = None
     fps: float | None = None
     delegate: Literal["GPU", "CPU"] | None = None
+    #: The muscle sensor, when the session uses it.
+    emg: EmgDeviceInfo | None = None
+
+    @model_serializer(mode="wrap")
+    def _leave_out_no_sensor(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        """Sessions without the muscle sensor keep their old shape: {browser, fps, delegate}."""
+        data: dict[str, Any] = handler(self)
+        if data.get("emg") is None:
+            data.pop("emg", None)
+        return data
 
 
 class SessionStart(BaseModel):

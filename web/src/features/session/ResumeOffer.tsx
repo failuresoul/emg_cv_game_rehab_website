@@ -10,6 +10,7 @@ import { stopSession } from "./stopSession";
 
 const STEP_NAMES: Record<SessionStep, TranslationKey> = {
   setup: "sessionBar.setup",
+  emg: "page.session.emg.title",
   calibrate: "sessionBar.calibrate",
   warmup: "sessionBar.warmup",
   plan: "sessionBar.games",
