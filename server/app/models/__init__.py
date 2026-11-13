@@ -2,6 +2,7 @@ from app.models.adaptation_log import AdaptationLog
 from app.models.engine_state import EngineState
 from app.models.game import GameRun, Trial
 from app.models.game_setting import GameSetting
+from app.models.llm_report import LlmReport, ReportRating
 from app.models.patient import PatientProfile
 from app.models.session import Calibration, Session
 from app.models.session_feedback import SessionFeedback
@@ -15,7 +16,9 @@ __all__ = [
     "EngineState",
     "GameRun",
     "GameSetting",
+    "LlmReport",
     "PatientProfile",
+    "ReportRating",
     "Session",
     "SessionFeedback",
     "SessionMetric",

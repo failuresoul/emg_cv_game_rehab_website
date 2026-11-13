@@ -86,10 +86,22 @@ class LLMProvider(Protocol):
     model: str
 
     def generate(
-        self, system: str, user: str, json_schema: dict[str, Any], model: str | None = None
+        self,
+        system: str,
+        user: str,
+        json_schema: dict[str, Any],
+        model: str | None = None,
+        timeout_s: float | None = None,
     ) -> LLMResult:
-        """The model's JSON answer to the prompt, following the schema."""
+        """The model's JSON answer to the prompt, following the schema. `timeout_s` overrides
+        the provider's own time limit for this call."""
         ...
+
+    def loaded_models(self) -> list[str] | None:
+        """The models in memory now; None when that cannot be known."""
+        ...
+
+    def model_loaded(self, model: str | None = None) -> bool: ...
 
     def health(self) -> Health: ...
 
@@ -185,17 +197,23 @@ class OllamaProvider:
         return payload
 
     def generate(
-        self, system: str, user: str, json_schema: dict[str, Any], model: str | None = None
+        self,
+        system: str,
+        user: str,
+        json_schema: dict[str, Any],
+        model: str | None = None,
+        timeout_s: float | None = None,
     ) -> LLMResult:
         model = model or self.model
+        timeout = timeout_s or self.timeout_s
         payload = self.chat_payload(system, user, json_schema, model)
         started = time.perf_counter()
-        response = self._post("/api/chat", payload, self.timeout_s)
+        response = self._post("/api/chat", payload, timeout)
         if "think" in payload and _rejects_thinking(response):
             # A model without a thinking mode: ask again without the field, and remember it.
             _NO_THINK_MODELS.add(model)
             payload.pop("think")
-            response = self._post("/api/chat", payload, self.timeout_s)
+            response = self._post("/api/chat", payload, timeout)
         latency_ms = round((time.perf_counter() - started) * 1000, 1)
         if response.status_code != 200:
             raise LLMResponseError(
@@ -248,6 +266,23 @@ class OllamaProvider:
             main_model_present=any(_same_model(self.model, name) for name in models),
         )
 
+    def loaded_models(self) -> list[str] | None:
+        """The models Ollama has in memory (GET /api/ps); None when it cannot be reached."""
+        try:
+            if self._client is not None:
+                response = self._client.get(f"{self.url}/api/ps", timeout=5)
+            else:
+                response = httpx.get(f"{self.url}/api/ps", timeout=5)
+            if response.status_code != 200:
+                return None
+            return [str(item.get("name")) for item in response.json().get("models", [])]
+        except (httpx.HTTPError, ValueError, AttributeError):
+            return None
+
+    def model_loaded(self, model: str | None = None) -> bool:
+        loaded = self.loaded_models() or []
+        return any(_same_model(model or self.model, name) for name in loaded)
+
     def warm_up(self, model: str | None = None) -> None:
         """An empty chat loads the model into memory without generating anything."""
         model = model or self.model
@@ -289,9 +324,20 @@ class MockProvider:
         self.calls: list[dict[str, Any]] = []
 
     def generate(
-        self, system: str, user: str, json_schema: dict[str, Any], model: str | None = None
+        self,
+        system: str,
+        user: str,
+        json_schema: dict[str, Any],
+        model: str | None = None,
+        timeout_s: float | None = None,
     ) -> LLMResult:
-        call = {"system": system, "user": user, "json_schema": json_schema, "model": model or self.model}
+        call = {
+            "system": system,
+            "user": user,
+            "json_schema": json_schema,
+            "model": model or self.model,
+            "timeout_s": timeout_s,
+        }
         self.calls.append(call)
         if self.on_call:
             self.on_call(call)
@@ -312,6 +358,12 @@ class MockProvider:
 
     def health(self) -> Health:
         return Health(reachable=True, models_available=[self.model], main_model_present=True)
+
+    def loaded_models(self) -> list[str] | None:
+        return [self.model]
+
+    def model_loaded(self, model: str | None = None) -> bool:
+        return True
 
     def warm_up(self, model: str | None = None) -> None:
         return None

@@ -18,6 +18,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.core.db import get_session
+from app.feedback.jobs import report_jobs
 from app.main import app
 from app.services.users import ensure_admin
 
@@ -60,9 +61,12 @@ def client(session: Session) -> Generator[TestClient, None, None]:
         yield session
 
     app.dependency_overrides[get_session] = get_session_override
+    # Report jobs stay queued in the database: tests/test_feedback_api.py runs them.
+    report_jobs.configure(engine=session.get_bind(), run_jobs=False)
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()
+    report_jobs.configure()
 
 
 @pytest.fixture

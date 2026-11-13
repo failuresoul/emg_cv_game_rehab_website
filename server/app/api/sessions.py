@@ -1,8 +1,11 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Response, status
 
 from app.api.deps import CurrentPatient, CurrentUser, SessionDep
+from app.feedback import store as feedback_store
+from app.feedback.jobs import report_jobs
 from app.models import PatientProfile
 from app.models import Session as SessionRecord
 from app.schemas.session import (
@@ -23,6 +26,7 @@ from app.models.user import utc_now
 from app.services import planner, progress, session_facts, session_feedback, sessions, warmup
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
+logger = logging.getLogger(__name__)
 
 
 def _get_own_session_or_404(
@@ -164,7 +168,22 @@ def save_questionnaire(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Questionnaire already submitted"
         ) from None
+    # The session's measures are computed; queue its report in the patient's language.
+    _queue_report(session, record, patient.language)
     return session_feedback.to_read(feedback, record)
+
+
+def _queue_report(session: SessionDep, record: SessionRecord, language: str) -> None:
+    """Never fails the questionnaire: a report that cannot be queued can be asked for later."""
+    assert record.id is not None
+    try:
+        report, created = feedback_store.request_report(session, record.id, language)
+    except Exception:  # noqa: BLE001
+        logger.exception("Could not queue the report for session %s", record.id)
+        session.rollback()
+        return
+    if created and report.id is not None:
+        report_jobs.enqueue(report.id)
 
 
 @router.get("/{session_id}/questionnaire")

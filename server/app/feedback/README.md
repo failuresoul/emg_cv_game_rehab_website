@@ -20,6 +20,8 @@ Turns a session's verified facts into a short, warm, honest report for the patie
 | `validate.py` | Every check: schema, word limits, numbers from the facts only, ids from the candidates, improved/worse words matching `mdc_status`, `banned.txt`, no safety text under a notice, sentence length, script |
 | `fallback.py` | The template report from facts, candidates and tips; always passes the validator |
 | `service.py` | `generate_report(session_id)` and `generate_report_from_facts(facts)`: prompt, model, validate, up to 2 retries with the errors, then the template |
+| `store.py` | Stored reports (`LlmReport`, `ReportRating`): request (reuse, regenerate, supersede), run one job, finish, list for patients and admins, ratings |
+| `jobs.py` | The background runner: one asyncio worker (one generation on the GPU at a time), restart recovery, the 120 s job limit; `/api` routes in `app/api/feedback.py` |
 | `cli.py` | `python -m app.feedback.cli <session_id> [--model tag] [--language bn]` prints the report and meta as JSON |
 | `names.py` | Plain names of measures, movements, directions and games in English and Bangla (the Bangla ones are the web app's) |
 

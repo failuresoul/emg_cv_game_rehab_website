@@ -6,9 +6,10 @@ or when the model cannot be reached, the template report (fallback) is used. Saf
 returned separately, always as the fixed approved text.
 """
 
+import time
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlmodel import Session
 
 from app.core.db import engine
@@ -55,6 +56,10 @@ class ReportResult(BaseModel):
     #: The fixed safety notices to show with the report; never written by the model.
     safety_notices: list[str]
     meta: ReportMeta
+    #: For storage only (never in the API's answers): the candidates the model was given, and
+    #: every answer it wrote, attempt by attempt.
+    candidates: list[dict[str, Any]] = Field(default_factory=list, exclude=True)
+    raw_output: str | None = Field(default=None, exclude=True)
 
 
 def generate_report_from_facts(
@@ -63,8 +68,12 @@ def generate_report_from_facts(
     model: str | None = None,
     provider: LLMProvider | None = None,
     prompt_version: str = prompt.PROMPT_VERSION,
+    deadline_s: float | None = None,
 ) -> ReportResult:
+    """`deadline_s` limits all attempts together: each call gets the time left, and when none
+    is left the template is used."""
     provider = provider or get_provider()
+    started = time.monotonic()
     found = candidates(facts)
     flags = red_flags(facts, language)
     seen = prompt.facts_seen(facts)
@@ -80,12 +89,20 @@ def generate_report_from_facts(
     failures: list[list[str]] = []
     provider_error: str | None = None
     report: Report | None = None
+    answers: list[str] = []
 
     for _ in range(1 + MAX_RETRIES):
         request = prompt.retry_prompt(user, failures[-1]) if failures else user
+        limit: dict[str, float] = {}
+        if deadline_s is not None:
+            left = deadline_s - (time.monotonic() - started)
+            if left < 1:
+                provider_error = f"No valid report within {deadline_s:g} s"
+                break
+            limit["timeout_s"] = left
         calls += 1
         try:
-            result = provider.generate(system, request, schema, model=model)
+            result = provider.generate(system, request, schema, model=model, **limit)
         except (LLMUnavailableError, LLMTimeoutError) as error:
             # Asking again would only wait again: use the template now.
             provider_error = str(error)
@@ -93,6 +110,7 @@ def generate_report_from_facts(
         except LLMResponseError as error:
             failures.append([f"The answer could not be read: {error}"])
             continue
+        answers.append(result.text)
         used_model = result.model or used_model
         latency += result.latency_ms
         prompt_tokens += result.prompt_tokens or 0
@@ -121,6 +139,11 @@ def generate_report_from_facts(
             validation_errors=failures,
             provider_error=provider_error,
         ),
+        candidates=[candidate.as_dict() for candidate in found],
+        raw_output="\n\n".join(
+            f"--- attempt {number} ---\n{text}" for number, text in enumerate(answers, start=1)
+        )
+        or None,
     )
 
 

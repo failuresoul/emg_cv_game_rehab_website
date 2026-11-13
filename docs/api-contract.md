@@ -1358,16 +1358,147 @@ Role: `admin`. The patient's engine mode and current difficulty in each game pla
 
 `GET /api/admin/sessions/{id}` gives each run an `adaptation` list, in `trial_no` order: `trial_no` (0 for the start), `engine`, `state_before`, `state_after` (`{d, streak, turn}`), `params`, `decision`, `safety_override`, `cue`, `trial` (the `last_trial` sent, or `null` at the start), `details` (L2: the sampled values, the chosen sector and levels, and the target; `null` for L0 and L1), `level` (after the decision) and `created_at`. Runs with fixed settings that never called the engine have an empty list.
 
-## Reserved for the LLM feedback module (teammate, server/app/feedback/)
+## Feedback reports (`server/app/api/feedback.py`)
 
-These routes are **not implemented yet**. The module's owner builds them in `server/app/feedback/`, and they are included under `/api` on Day 16. Other code must not use these paths for anything else.
+Each session gets a report written by the local language model (see [ai-engine.md, "LLM feedback"](ai-engine.md#llm-feedback-serverappfeedback)).
 
-| Method | Path                                |
-| ------ | ----------------------------------- |
-| POST   | `/api/sessions/{id}/feedback`       |
-| GET    | `/api/feedback/jobs/{job_id}`       |
-| GET    | `/api/sessions/{id}/feedback`       |
-| POST   | `/api/feedback/{report_id}/ratings` |
-| GET    | `/api/feedback/health`              |
+**Writing a report.** A report is written in the background by one worker, so only one report uses the GPU at a time. The worker:
+1. builds the facts;
+2. asks the model, validating each answer and retrying up to twice;
+3. falls back to the template report after that, or when Ollama is unreachable or the job passes `LLM_JOB_LIMIT_S` (120 s).
 
-Their roles, requests and responses are for the module's owner to define, and will be added here at integration.
+Each attempt is limited by `LLM_TIMEOUT_S`.
+
+**Requests.** Submitting the cool-down questionnaire queues a report automatically, in the patient's language.
+
+**The job is the report.** A job's id is the report's id. Its status runs `queued` → `running` → `done` (the model's report), `fallback` (the template) or `failed` (an unexpected error; no report).
+
+**Versions.** Each session and language has one current report. Regenerating keeps the old one, marked `superseded`.
+
+**Restarts.** Jobs live while the server runs. At start-up, jobs left `queued` or `running` are queued again.
+
+**What patients see.** Model text is plain text, never HTML. Patients never get `therapist_summary`, validation errors or the raw output.
+
+### POST /api/sessions/{id}/feedback
+
+Role: the session's patient, or an admin. Others get `404`.
+
+Request (optional): `{ "language": "en" | "bn", "regenerate": false }`. The language defaults to the patient's.
+
+Response `202`: `{ "job_id": 12, "status": "queued" }`.
+- A finished report in that language comes back as it is (`"status": "done"` or `"fallback"`) unless `regenerate` is true.
+- A report already being written is never queued twice.
+- A `failed` one is replaced.
+
+### GET /api/feedback/jobs/{job_id}
+
+Role: the report's patient, or an admin.
+
+```json
+{
+  "job_id": 12,
+  "session_id": 42,
+  "language": "en",
+  "status": "done",
+  "report": {
+    "language": "en",
+    "patient_summary": "…",
+    "highlights": [{ "metric_id": "K6", "text": "…" }],
+    "suggestions": [{ "id": "REST_BREAKS", "text": "…" }],
+    "next_session_text": "…"
+  },
+  "safety_notices": ["Please stop practising for today and …"],
+  "meta": {
+    "model": "qwen3.5:4b",
+    "prompt_version": "v1",
+    "latency_ms": 21400.5,
+    "retries": 0,
+    "fallback_used": false
+  },
+  "created_at": "…",
+  "finished_at": "…"
+}
+```
+
+- `report`, `safety_notices` and `meta` are `null` until the status is `done` or `fallback`.
+- Admins also get `report.therapist_summary`.
+- `safety_notices` is fixed approved text from `shared/safety-notices.json`; show it above the report.
+
+### GET /api/sessions/{id}/feedback?language=en
+
+The session's current report, as above, or `404`. Role: the session's patient, or an admin. The language defaults to the patient's.
+
+### GET /api/patient/reports
+
+Role: `patient`. Their current reports, newest session first; failed ones are left out:
+
+```json
+[
+  {
+    "job_id": 12,
+    "session_id": 42,
+    "session_no": 7,
+    "date": "…",
+    "language": "en",
+    "status": "done",
+    "preview": "Thank you for finishing session 7. …",
+    "has_safety_notice": false
+  }
+]
+```
+
+### GET /api/admin/patients/{id}/reports
+
+Role: `admin`. Every version of the patient's reports, newest first:
+- `job_id`, `session_id`, `patient_id`, `patient_code`, `language`, `status`, `superseded`;
+- `model`, `prompt_version`, `latency_ms`, `retries`, `fallback_used`, `error`;
+- `validation_errors` (the first 3 of each attempt), `ratings` (a count), `created_at`, `finished_at`.
+
+Errors: `404` for an unknown patient.
+
+### GET /api/admin/reports?status=fallback
+
+Role: `admin`. Monitoring across patients, newest first (at most 200), in the same shape; `status` is optional (`queued`, `running`, `done`, `fallback`, `failed`).
+
+### GET /api/admin/reports/{id}
+
+Role: `admin`. Everything about one report: the fields above, plus:
+- `facts` and `candidates`, as they were when it was written;
+- every attempt's `validation_errors`, `raw_output` (each answer the model wrote);
+- `prompt_tokens`, `output_tokens`, `error`, `superseded`.
+
+### POST /api/feedback/{report_id}/ratings
+
+Role: the report's patient, rating as `participant`, or an admin, rating as `team` or `clinician` (another rater gets `403`).
+
+Request:
+
+```json
+{ "rater": "participant", "scores": { "clarity": 5, "usefulness": 4 }, "comment": "Easy to follow" }
+```
+
+- `scores` is 1–5 for any of `clarity`, `usefulness`, `accuracy`, `tone` and `safety` (at least one).
+- `comment` is at most 300 characters and is never sent to the model.
+
+Response `201`: the rating (`id`, `report_id`, `rater`, `rater_user_id`, `scores`, `comment`, `created_at`).
+
+Errors:
+- `409` if the report is not finished, or this person already rated it;
+- `404` for someone else's report;
+- `422` for unknown criteria or scores outside 1–5.
+
+### GET /api/admin/reports/{id}/ratings
+
+Role: `admin`. The report's ratings, oldest first.
+
+### GET /api/feedback/health
+
+Role: any logged-in user.
+
+```json
+{ "provider": "ollama", "model": "qwen3.5:4b", "reachable": true, "model_loaded": true, "queue_length": 0 }
+```
+
+- `reachable: false` means reports use the template at once.
+- `model_loaded` reflects Ollama's `/api/ps`. At start-up, the server loads the model in the background and never waits for it.
+- `queue_length` counts reports queued or being written.
