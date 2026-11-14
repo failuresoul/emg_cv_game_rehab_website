@@ -18,8 +18,14 @@ a change to it is stored; an L2 run of 8 trials returns a sector each time and i
 and the facts plan the next session once it ends. A fourth session uses the muscle sensor: a real
 sensor's calibration on mains power is refused; one with the nine readiness results is saved; a
 grip_hold run with input_source "emg" uploads a %MVC trace and EMG measures with every trial; and
-the session's metrics and facts then hold the EMG measures (E2, E3, E5, E6, E8, E9). The patient
-is deactivated at the end.
+the session's metrics and facts then hold the EMG measures (E2, E3, E5, E6, E8, E9).
+
+Day 17: the admin sets a programme (three games, reach capped at level 3, 2-3 games a session) and
+a session's plan and engine obey it, while a game outside it is refused; research consent is
+recorded and a within-subject study (L0 and L2) runs one blinded session in each condition, with
+its progress, results and export; three stopped sessions raise a device-problems alert, which is
+resolved; and the patient switches to Bangla, so their next report is written in Bangla. The
+patient is deactivated at the end.
 
 It also turns Bloom off and changes a Grip and hold default in the game library, checks that the
 patient's game settings follow, and then puts both games' settings back as they were. After the
@@ -86,6 +92,13 @@ def expect(response: httpx.Response, status: int) -> Any:
     if response.status_code != status:
         raise StepFailed(f"expected HTTP {status}, got {response.status_code}")
     return response.json()
+
+
+def expect_text(response: httpx.Response, status: int = 200) -> str:
+    """A non-JSON answer, such as a CSV export."""
+    if response.status_code != status:
+        raise StepFailed(f"expected HTTP {status}, got {response.status_code}")
+    return response.text
 
 
 def require(condition: bool, message: str) -> None:
@@ -571,6 +584,8 @@ def emg_grip_trial(trial_no: int) -> dict[str, Any]:
     return trial
 
 
+#: The Day 17 programme's games.
+PROGRAMME_GAMES = ["reach_activate", "grip_hold", "bloom"]
 #: The games whose library settings the smoke test changes, then puts back.
 SETTING_GAMES = ("bloom", "grip_hold")
 
@@ -1611,6 +1626,160 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require("Smoke Test" not in response.text, "the facts contain the patient's name")
         require("\"trace\":" not in response.text, "the facts contain an EMG trace")
 
+    # ---- Day 17: programme, research mode, alerts, Bangla --------------------------------
+
+    def admin_sets_programme() -> None:
+        url = f"/api/admin/patients/{state['patient_id']}/programme"
+        current = expect(client.get(url, headers=bearer("admin")), 200)
+        programme = {
+            key: current[key]
+            for key in ("warmup_exercises", "warmup_preset", "rest_every_minutes",
+                        "emg_default_site", "weekly_goal")
+        }
+        programme.update(
+            enabled_games=PROGRAMME_GAMES,
+            max_level={"reach_activate": 3},
+            session_minutes_target=12,
+            games_per_session={"min": 2, "max": 3},
+            engine_mode="L1",
+            notes="Smoke test programme",
+            reason="Smoke test",
+        )
+        body = expect(client.put(url, json=programme, headers=bearer("admin")), 200)
+        require(body["max_level"] == {"reach_activate": 3}, "the level cap was not saved")
+        history = expect(client.get(f"{url}/history", headers=bearer("admin")), 200)
+        fields = {row["field"] for row in history}
+        require({"enabled_games", "max_level", "engine_mode"} <= fields, f"history has {fields}")
+        require(all(row["reason"] == "Smoke test" for row in history[:3]), "the reason was not kept")
+
+    def plan_and_engine_obey_programme() -> None:
+        body = expect(client.post("/api/sessions", headers=bearer("patient")), 201)
+        sid = body["id"]
+        plan = expect(client.get(f"/api/sessions/{sid}/plan", headers=bearer("patient")), 200)
+        games = [game["game_id"] for game in plan["games"]]
+        require(set(games) <= set(PROGRAMME_GAMES), f"the plan has {games}")
+        require(2 <= len(games) <= 3, f"the plan has {len(games)} games")
+        start = {"engine": "L1", "input_source": "keyboard", "params_initial": {}, "trials_planned": 12}
+        url = f"/api/sessions/{sid}/games"
+        refused = client.post(url, json={**start, "game_id": "balloon_pop"}, headers=bearer("patient"))
+        require(refused.status_code == 403, f"a game outside the programme gave {refused.status_code}")
+        run = expect(client.post(url, json={**start, "game_id": "reach_activate"}, headers=bearer("patient")), 201)
+        level = 0
+        for n in range(0, 13):
+            last = None if n == 0 else {"trial_no": n, "outcome": "success"}
+            answer = expect(
+                client.post("/api/engine/next", json={"run_id": run["id"], "last_trial": last},
+                            headers=bearer("patient")),
+                200,
+            )
+            level = max(level, answer["level"])
+        require(level <= 4, f"the level reached {level} above the cap of 3")
+        detail = expect(client.get(f"/api/admin/sessions/{sid}", headers=bearer("admin")), 200)
+        logs = detail["games"][0]["adaptation"]
+        require(
+            all(d <= 0.3 + 1e-9 for log in logs for d in log["state_after"]["d"].values()),
+            "the engine went above d = 0.3",
+        )
+        expect(client.post(f"/api/sessions/{sid}/end", json={"status": "completed"}, headers=bearer("patient")), 200)
+
+    def admin_creates_study() -> None:
+        url = f"/api/admin/patients/{state['patient_id']}"
+        today = time.strftime("%Y-%m-%d", time.gmtime())
+        body = expect(client.patch(url, json={"research_consent_at": today}, headers=bearer("admin")), 200)
+        require(body["research_consent_at"] == today, "the consent date was not saved")
+        study = expect(
+            client.post(
+                "/api/admin/studies",
+                json={"name": "Smoke study", "design": "within_subject", "conditions": ["L0", "L2"],
+                      "sessions_per_condition": 1, "games": ["grip_hold"], "seed": 1},
+                headers=bearer("admin"),
+            ),
+            201,
+        )
+        state["study_id"] = study["id"]
+        enrolled = expect(
+            client.post(f"/api/admin/studies/{study['id']}/participants",
+                        json={"patient_id": state["patient_id"]}, headers=bearer("admin")),
+            201,
+        )
+        state["study_order"] = enrolled["condition_order"]
+        require(sorted(state["study_order"]) == ["L0", "L2"], "the order is not a Latin square row")
+        expect(client.patch(f"/api/admin/studies/{study['id']}", json={"status": "active"},
+                            headers=bearer("admin")), 200)
+
+    def study_sessions_are_blinded() -> None:
+        played = []
+        for _ in range(2):
+            record = expect(client.post("/api/sessions", headers=bearer("patient")), 201)
+            sid = record["id"]
+            require(record["blinded"] is True, "the study session is not blinded")
+            require("study_condition" not in record, "the patient was told the condition")
+            plan = expect(client.get(f"/api/sessions/{sid}/plan", headers=bearer("patient")), 200)
+            require(plan["locked"] is True, "the study plan is not locked")
+            require([g["game_id"] for g in plan["games"]] == ["grip_hold"], "the plan is not the study's")
+            run = expect(
+                client.post(f"/api/sessions/{sid}/games",
+                            json={"game_id": "grip_hold", "engine": "L1", "input_source": "keyboard",
+                                  "params_initial": {}, "trials_planned": 5},
+                            headers=bearer("patient")),
+                201,
+            )
+            require(run["engine"] is None, "the run shows the condition to the patient")
+            answer = expect(
+                client.post("/api/engine/next", json={"run_id": run["id"], "last_trial": None},
+                            headers=bearer("patient")),
+                200,
+            )
+            require(answer["engine"] is None and answer["decision"] == "", "the engine answer names the condition")
+            # One trial, so the study's results and export have data.
+            expect(client.post(f"/api/games/{run['id']}/trials", json=[grip_trial(1)],
+                               headers=bearer("patient")), 200)
+            expect(client.post(f"/api/sessions/{sid}/end", json={"status": "completed"},
+                               headers=bearer("patient")), 200)
+            detail = expect(client.get(f"/api/admin/sessions/{sid}", headers=bearer("admin")), 200)
+            played.append(detail["study_condition"])
+        require(played == state["study_order"], f"the conditions were {played}")
+
+    def study_progress_results_export() -> None:
+        study = state["study_id"]
+        progress = expect(client.get(f"/api/admin/studies/{study}/progress", headers=bearer("admin")), 200)
+        row = progress["participants"][0]
+        require(row["sessions_done"] == {"L0": 1, "L2": 1} and row["complete"], "progress is wrong")
+        results = expect(client.get(f"/api/admin/studies/{study}/results", headers=bearer("admin")), 200)
+        require([c["sessions"] for c in results["conditions"]] == [1, 1], "results miss a condition")
+        csv_text = expect_text(client.get(f"/api/admin/studies/{study}/export.csv", headers=bearer("admin")))
+        require("Smoke Test" not in csv_text and "@" not in csv_text, "the export has a name or email")
+        require(state["patient_code"] in csv_text, "the export has no patient code")
+        expect(client.patch(f"/api/admin/studies/{study}", json={"status": "closed"}, headers=bearer("admin")), 200)
+
+    def device_problems_alert() -> None:
+        for _ in range(3):
+            sid = expect(client.post("/api/sessions", headers=bearer("patient")), 201)["id"]
+            expect(client.post(f"/api/sessions/{sid}/end", json={"status": "aborted"},
+                               headers=bearer("patient")), 200)
+        params = {"type": "repeated_device_problems", "patient": state["patient_id"], "status": "open"}
+        found = expect(client.get("/api/admin/alerts", params=params, headers=bearer("admin")), 200)
+        require(len(found) == 1, f"{len(found)} device-problem alerts, not 1")
+        url = f"/api/admin/alerts/{found[0]['id']}/resolve"
+        body = expect(client.post(url, json={"note": "Smoke test: camera checked"}, headers=bearer("admin")), 200)
+        require(body["status"] == "resolved", "the alert was not resolved")
+
+    def patient_switches_to_bangla() -> None:
+        body = expect(client.patch("/api/patient/profile", json={"language": "bn"}, headers=bearer("patient")), 200)
+        require(body["language"] == "bn", "the language was not saved")
+        sid = expect(client.post("/api/sessions", headers=bearer("patient")), 201)["id"]
+        answers = {"pain_0_10": 1, "fatigue_0_10": 3, "enjoyment_1_5": 5, "difficulty": "just_right",
+                   "new_symptoms": False}
+        expect(client.post(f"/api/sessions/{sid}/questionnaire", json=answers, headers=bearer("patient")), 201)
+        expect(client.post(f"/api/sessions/{sid}/end", json={"status": "completed"}, headers=bearer("patient")), 200)
+        current = expect(client.get(f"/api/sessions/{sid}/feedback", headers=bearer("patient")), 200)
+        report = wait_for_report(current["job_id"], "patient")
+        require(report["language"] == "bn", f"the report is in {report['language']}")
+        text = report["report"]["patient_summary"]
+        letters = [char for char in text if char.isalpha()]
+        bengali = sum(1 for char in letters if "\u0980" <= char <= "\u09ff")
+        require(letters and bengali / len(letters) > 0.6, "the report is not in Bengali script")
+
     def deactivate_patient() -> None:
         url = f"/api/admin/patients/{state['patient_id']}/deactivate"
         body = expect(client.post(url, headers=bearer("admin")), 200)
@@ -1686,6 +1855,13 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Patient plays Grip and hold with input_source emg and EMG data", emg_grip_hold_run),
         ("The session metrics hold E2, E3, E5, E6, E8 and E9", emg_session_metrics),
         ("The session facts hold the EMG measures, without traces", emg_session_facts),
+        ("Admin sets a programme: three games, reach capped at level 3", admin_sets_programme),
+        ("The plan and the engine obey the programme", plan_and_engine_obey_programme),
+        ("Admin records consent, creates a study and enrols the patient", admin_creates_study),
+        ("Two blinded study sessions play the two conditions", study_sessions_are_blinded),
+        ("The study's progress, results and export", study_progress_results_export),
+        ("Three stopped sessions raise a device alert, which is resolved", device_problems_alert),
+        ("The patient switches to Bangla and their report follows", patient_switches_to_bangla),
         ("Admin deactivates the test patient", deactivate_patient),
     ]
 

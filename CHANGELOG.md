@@ -4,6 +4,46 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 17)
+
+- **Per-patient programme** (Admin → patient → Programme; `PatientProgramme`, `ProgrammeChange`):
+  - enabled games and the highest level per game (1-10, the engine's cap d = level / 10);
+  - session minutes, games per session, rest frequency;
+  - warm-up exercises and an "always gentle" preset;
+  - engine mode, default muscle-sensor site, weekly goal, notes.
+  - The safety layer, planner, game list, rest prompts, warm-up and EMG step obey it. Every change is kept in a history with the admin and a reason. Old profile fields were migrated (levels rounded down).
+- **Research mode** (Admin → Research; `Study`, `StudyParticipant`):
+  - within-subject studies with a balanced Latin square, between-subject with seeded balanced randomisation;
+  - each new session of an active participant plays the next condition and the study's locked games, blinded (the browser behaves the same in every condition);
+  - progress, results per condition with 95% CIs, a pseudonymous CSV export, and research consent with its date on the profile.
+- **Unified alerts** (Admin → Alerts; `Alert`), each idempotent:
+  - pain, new symptoms, high fatigue, sharp decline, missed sessions, repeated device problems, template-report rate;
+  - acknowledge and resolve with notes;
+  - counts on the overview and a badge in the menu; a patient Alerts tab.
+  - The questionnaire flags were migrated.
+- **Bilingual website:** a language switch (English / বাংলা) on every layout and the login page, saved to the patient's profile (`PATCH /api/patient/profile`) so reports follow it; `en-GB` and `bn-BD` formatting with an optional Bengali-digits setting; taller Bangla line heights; the Bengali font for canvas text; pseudo-localisation in development (`?pseudo=1`); `npm run i18n:check`.
+- **Accessibility:**
+  - display settings on the profile and in the session top bar: text size, high contrast (AAA), reduce motion, sounds, spoken instructions;
+  - skip-to-content links, and focus moved to the content on page and step changes;
+  - chart table views and a colour-blind-safe palette;
+  - admin breadcrumbs and sticky table columns;
+  - axe-core tests (`vitest-axe`, `jsdom`) of ten pages in both languages.
+- **Performance:** admin pages, the game page and each game load on demand (main chunk 1,737 kB → 573 kB).
+- **Smoke test:** programme, study, alerts and Bangla report steps (78 steps).
+- **Docs:** admin guide (programme, research mode, alerts), patient guide (language and display) in English and Bangla (`docs/user-guide-patient.bn.md`), API contract.
+
+### Changed (Day 17)
+
+- `GET /api/admin/alerts` returns alert rows (filters `status`, `type`, `severity`, `patient`, `session_id`); `POST /api/admin/alerts/{session_id}/review` is replaced by `/api/admin/alerts/{id}/acknowledge`, `/resolve` and `/api/admin/sessions/{id}/alerts/resolve`.
+- The profile's `weekly_goal`, `engine_mode` and `max_difficulty` moved to the programme; `PATCH /api/admin/patients/{id}` still accepts the first two.
+- The game badge for the webcam reads "Camera".
+
+### Fixed (Day 17 review)
+
+- In a study session, the patient's own API answers (a game run's `engine`, and `/api/engine/next`'s `engine`, `decision` and `safety_override`) named the condition; they are now left out for study runs (admins still see everything).
+- A patient could start a game outside their programme, or one turned off in the Game Library, by calling the API directly; it is now refused (`403`).
+- Reach and squeeze's success burst and Bloom's sparkle now respect "reduce motion".
+
 ### Added (Day 16)
 
 - **ESP32 firmware** (`firmware/emg_stream/emg_stream.ino`, [firmware/README.md](firmware/README.md)):

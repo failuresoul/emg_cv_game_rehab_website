@@ -42,6 +42,12 @@ def _run_ended() -> HTTPException:
     return HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Game run has already ended")
 
 
+def _patient_view(run: GameRun) -> GameRunRead:
+    """A run as the patient sees it: a study run's engine (its condition) is left out."""
+    read = GameRunRead.model_validate(run)
+    return read.model_copy(update={"engine": None}) if run.study_id is not None else read
+
+
 @router.get("/games/settings")
 def list_game_settings(session: SessionDep, patient: CurrentPatient) -> list[PatientGameSetting]:
     """The games this patient may play (the Game Library's, within the patient's programme),
@@ -65,14 +71,19 @@ def start_game(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Session has already ended"
         ) from None
-    return GameRunRead.model_validate(run)
+    except games.GameNotAllowedError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This game is not in the patient's programme or is turned off",
+        ) from None
+    return _patient_view(run)
 
 
 @router.get("/sessions/{session_id}/games")
 def list_games(session_id: int, session: SessionDep, patient: CurrentPatient) -> list[GameRunRead]:
     record = _get_own_session_or_404(session, patient, session_id)
     assert record.id is not None
-    return [GameRunRead.model_validate(run) for run in games.list_session_runs(session, record.id)]
+    return [_patient_view(run) for run in games.list_session_runs(session, record.id)]
 
 
 @router.post("/games/{run_id}/trials")
@@ -97,7 +108,7 @@ def save_trials(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Trials were saved at the same time"
         ) from None
-    return GameRunRead.model_validate(run)
+    return _patient_view(run)
 
 
 @router.post("/games/{run_id}/end")
@@ -106,6 +117,6 @@ def end_game(
 ) -> GameRunRead:
     run = _get_own_run_or_404(session, patient, run_id)
     try:
-        return GameRunRead.model_validate(games.end_run(session, run, payload))
+        return _patient_view(games.end_run(session, run, payload))
     except games.GameRunEndedError:
         raise _run_ended() from None

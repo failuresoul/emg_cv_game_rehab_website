@@ -10,6 +10,7 @@ import { placeTarget, type ScreenBounds, type TargetPlacement } from "./placemen
 import { drawBurst, drawTarget, drawTrail, type TrailPoint } from "./render";
 import { CompensationTally, buildTrialRecord, trialScore } from "./trialRecord";
 import { ReachTrialMachine } from "./trialMachine";
+import { prefersReducedMotion } from "@/lib/display";
 
 /** Room kept clear around targets, in pixels: the top bar, and the screen's edges. */
 const MARGIN_TOP = 96;
@@ -96,11 +97,10 @@ export function createReachActivateGame(context: GameContext): GameInstance {
     if (outcome === "success") {
       const successes = records.filter((item) => item.outcome === "success").length;
       context.audio.success(successes % 8);
-      burst = {
-        centreSw: current.target.centreSw,
-        radiusSw: current.target.radiusSw,
-        startMs: nowMs,
-      };
+      // A decorative burst of dots; left out with "reduce motion" (the patient's or the system's).
+      burst = prefersReducedMotion()
+        ? null
+        : { centreSw: current.target.centreSw, radiusSw: current.target.radiusSw, startMs: nowMs };
       context.emit(encourager.success());
     } else {
       context.emit(encourager.miss());

@@ -28,6 +28,7 @@ import {
   seedPosition,
 } from "./render";
 import { bloomMetrics, bloomScore, buildBloomRecord } from "./trialRecord";
+import { prefersReducedMotion } from "@/lib/display";
 
 const HOLD_RING_COLOR = "#F7D774";
 const ICON_BACKDROP = "rgba(0, 0, 0, 0.25)";
@@ -200,7 +201,10 @@ export function createBloomGame(context: GameContext): GameInstance {
       const opening = phase === "OPEN";
       const openness = opening ? context.hand.getOpenness() : 1;
       drawFlower(context2d, { ...flower, openness });
-      if (phase === "BLOOMED") drawSparkle(context2d, head, layout.radius, progress);
+      // The sparkle is decoration only: none with "reduce motion".
+      if (phase === "BLOOMED" && !prefersReducedMotion()) {
+        drawSparkle(context2d, head, layout.radius, progress);
+      }
       if (phase === "CLOSE") drawSeed(context2d, head, layout.radius * 0.12);
       if (phase === "COLLECTED") {
         const mouth = basketMouth(layout.basketBase, layout.basketSize);

@@ -65,26 +65,73 @@ On a patient's page, the **Progress** tab shows:
 
 The patient sees simpler versions of these on their home and **Progress** pages.
 
+## Programme
+
+Each patient has a **programme**: what they may do. The AI, the session planner and the warm-up always stay inside it. Open a patient and choose the **Programme** tab.
+
+| Section | What you set | What follows it |
+| --- | --- | --- |
+| **Games** | Each game on or off, and its **highest level** (1 to 10). The line under the slider says what the level means: 1-3 gentle, 4-6 moderate, 7-9 challenging, 10 no limit. Games turned off in the Game Library cannot be turned on here. | The planner plans only these games; the patient cannot start any other; the AI never makes a game harder than its highest level. |
+| **Session** | Minutes of games (10-40), the fewest and most games per session (2-6), and a rest every 3-10 minutes of play. | The planner's game count and length (the fewest on lighter days, after high fatigue, pain or "too hard"); the rest prompts in games. |
+| **Warm-up** | Which of the six exercises, and **Personal** targets (from the patient's results) or **Always gentle**. | The warm-up shows only these exercises, with the chosen targets. |
+| **AI** | The difficulty engine: L0 fixed, L1 staircase, L2 Bayesian. | New game runs. The safety rules always apply. |
+| **Muscle sensor** | The default electrode site. | The muscle sensor step suggests it; the patient can change it. |
+| **Goals and notes** | The weekly goal (1-14 sessions) and private notes. | The patient's weekly ring and reports. Notes are never shown to the patient. |
+
+**To change it:** make the changes and click **Save programme**. The dialog lists every change (before → after) and asks for an optional **reason**; changing the AI engine also shows a warning. Click **Save**. Every changed field is kept in the **Change history** below, with your name, the time and the reason. **Undo changes** puts the form back before you save.
+
+The weekly goal and engine can still be changed from the patient's **Overview** and **AI levels** tabs; those changes also go into the history.
+
+## Research mode
+
+**Research** in the menu holds the studies, the research consent and the data exports. Studies compare the difficulty engines in a controlled way; patients are never told which condition a session plays.
+
+**Before a study: research consent.** Under **Research consent**, tick **Research consent recorded** for each patient who has given consent, and set the date. Only patients with consent can be enrolled.
+
+**To create a study:** click **New study** and fill in:
+
+- **Design:** **Within-subject** (every participant plays every condition, in an order from a balanced Latin square) or **Between-subject** (each participant plays one condition, from balanced randomisation).
+- **Conditions:** two or three of L0, L1 and L2.
+- **Sessions per condition:** completed sessions each participant plays in each condition.
+- **Games:** the games every study session plays, in the order you turn them on.
+
+**To run it:**
+
+1. **Enrol** consenting patients. The order (or condition) is assigned automatically, in turn.
+2. Click **Start study**. From now on, each new session of an enrolled patient plays the next condition: the condition replaces the programme's engine, and the plan is the study's games, which the patient cannot change. The programme's highest levels and the safety rules still apply.
+3. Follow the **Participants and progress** table: sessions done per condition, and the next condition.
+4. **Withdraw** a participant if needed: their next sessions follow their programme again; the data already collected stays in the results.
+5. Click **Close study** at the end. Sessions go back to each programme. A closed study cannot be reopened.
+
+**Results** show, per condition, the success rate, challenge error (how far the rolling success is from 70%), time in the 60-80% zone, compensation, mean level, enjoyment, fatigue and report ratings. Each bar is the mean over participants and its line the 95% confidence interval (from two participants on); a table gives the same numbers. **Download the study (CSV)** gives one row per trial, with patients by code only.
+
+The design of a study can only change while it is a draft without participants.
+
 ## Alerts
 
-The cool-down questionnaire flags a session for review when:
+Everything that needs a look is an **alert**. Open **Alerts** in the menu; the badge beside it shows how many are open. The **Overview** shows the open high and medium counts and the latest five; a patient's **Alerts** tab shows only theirs.
 
-| Flag | When |
-| --- | --- |
-| **Pain** | Pain is 4 or more out of 10 |
-| **Something new or unusual** | The patient said they noticed something new or unusual in their body |
-| **Very tired** | Tiredness is 8 or more out of 10 |
+| Alert | Severity | Raised when |
+| --- | --- | --- |
+| **Pain** | High | The questionnaire's pain is 4 or more out of 10 |
+| **New or unusual symptoms** | High | The patient noticed something new or unusual |
+| **High fatigue** | Medium | Tiredness is 8 or more out of 10 |
+| **Sharp decline** | High | Three key measures are much worse than usual (2 MDC or more) when a session ends |
+| **Missed sessions** | Low | No completed session for 4 days or more (checked when the server starts and when the Overview loads) |
+| **Repeated device problems** | Low | Three sessions in a row stopped early, had the muscle sensor pause, or ran the camera very slowly |
+| **Many template reports** | Low | More than 30% of the last 10 feedback reports used the template (the language model may be down); a system alert, for no one patient |
 
-> These thresholds are provisional and must be confirmed with the supervisor. They are in one place in the code, `server/app/services/safety.py`.
+> The thresholds are provisional and must be confirmed with the supervisor. The questionnaire's are in `server/app/services/safety.py`, the others in `server/app/services/alerts.py`.
 
-For **Pain** or **Something new or unusual**, the patient's summary shows a fixed notice: stop practising for today, tell the therapist, and call emergency services for signs of stroke. MuVi Rehab gives no other medical advice.
+For **Pain** or **New or unusual symptoms**, the patient's summary shows a fixed notice: stop practising for today, tell the therapist, and call emergency services for signs of stroke. MuVi Rehab gives no other medical advice.
 
-**To review an alert:**
+**To deal with an alert:**
 
-1. On the **Overview**, find it under **Alerts**. Click the patient code to open the session and read the answers.
-2. Click **Mark reviewed**, add an optional note (for example, "Phoned the patient, pain settled"), and click **Mark reviewed** again.
+1. Filter the list if you like (**Open and acknowledged**, severity, type), and open the patient or the session from its links.
+2. Click **Acknowledge** when you start dealing with it, with an optional note (for example, "Calling the patient today").
+3. Click **Resolve** when it is dealt with, with an optional note. A resolved alert is closed for good.
 
-The alert leaves the list, the **open alerts** count goes down, and the session page shows when it was reviewed and the note. You can also mark it reviewed from the session page.
+On a session's page, **Mark reviewed** resolves all of that session's alerts at once and shows the note. The same cause never raises two alerts.
 
 ## Demo data
 
@@ -105,6 +152,8 @@ python scripts/seed_demo_data.py --clear  # only remove demo patients and all th
 - **Safety:** only patients marked **Demo** are ever removed. If a real patient already uses a demo email, the script stops without changing anything.
 - **Research exports:** demo patients are synthetic. Leave them out of any analysis.
 
-## Not in v0.1
+## Language and accessibility
 
-The **Games**, **Research** and **System** pages, and a patient's **Programme** and **Reports** tabs, are placeholders. Personal feedback reports, adaptive difficulty and EMG input come in later versions.
+- **Language:** the switch at the top of every page (English / বাংলা) is kept in your browser. A patient's choice is saved to their profile, and their reports follow it.
+- **Patients' display settings** (text size, high contrast, reduce motion, sounds, spoken instructions) are their own, on their **Profile** page and in the session's **Display** button.
+- **Keyboard:** every page starts with **Skip to content**; admin tables scroll sideways on small screens with the first column kept in view; charts have **View as table**.

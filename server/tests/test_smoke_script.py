@@ -4,6 +4,7 @@ from sqlmodel import Session, col, select
 
 from app.models import (
     AdaptationLog,
+    Alert,
     Calibration,
     EmgCalibration,
     GameRun,
@@ -28,7 +29,7 @@ def test_smoke_passes_every_step(
     assert run_smoke(client, "admin@motionlab.local", "test-password") is True
 
     output = capsys.readouterr().out
-    assert output.count("PASS") == 71
+    assert output.count("PASS") == 78
     assert "FAIL" not in output
     assert "PASS  Patient plays a bloom run with non-spatial targets" in output
     assert "PASS  Patient plays a finger_piano run with non-spatial targets" in output
@@ -50,19 +51,31 @@ def test_smoke_passes_every_step(
     assert "PASS  The questionnaire's report is written, with the fixed stop notice" in output
     assert "PASS  A Bangla report is written in Bangla" in output
     reports = session.exec(select(LlmReport).order_by(col(LlmReport.id))).all()
-    assert [(r.language, r.status) for r in reports] == [("en", "fallback"), ("bn", "fallback")]
+    # The questionnaire's report, its Bangla version, and (Day 17) the report written in Bangla
+    # after the patient switched language.
+    assert [(r.language, r.status) for r in reports] == [
+        ("en", "fallback"),
+        ("bn", "fallback"),
+        ("bn", "fallback"),
+    ]
     assert all(r.facts and r.facts["patient_code"] for r in reports)
     assert len(session.exec(select(ReportRating)).all()) == 1
     assert len(session.exec(select(Calibration)).all()) == 1
     assert len(session.exec(select(WarmupResult)).all()) == 6
     # Nine games in the first session, two adaptive runs in the second, one L2 run in the third,
-    # and one Grip and hold run with the muscle sensor in the fourth.
-    assert len(session.exec(select(GameRun)).all()) == 13
+    # one Grip and hold run with the muscle sensor in the fourth, and (Day 17) one capped reach
+    # run and two study runs (the game outside the programme was refused).
+    runs = session.exec(select(GameRun)).all()
+    assert len(runs) == 16
+    study_runs = [run for run in runs if run.study_id is not None]
+    assert sorted(run.condition for run in study_runs) == ["L0", "L2"]
+    assert all(run.engine == run.condition for run in study_runs)
     # The starts and trials of the staircase (20), tiring (10) and L2 (8) runs.
-    assert len(session.exec(select(AdaptationLog)).all()) == 21 + 11 + 9
+    # Day 17: 13 decisions of the capped reach run and the start of each study run.
+    assert len(session.exec(select(AdaptationLog)).all()) == 21 + 11 + 9 + 13 + 2
     # 20 trials for each reaching game and 4 for each other game, and 4 with the muscle sensor.
     trials = session.exec(select(Trial)).all()
-    assert len(trials) == 88
+    assert len(trials) == 90  # and one trial in each study session
     assert sum(1 for trial in trials if trial.emg) == 4
     # The rejected calibration (laptop on mains power) left nothing behind.
     emg = session.exec(select(EmgCalibration)).one()
@@ -71,11 +84,19 @@ def test_smoke_passes_every_step(
     assert session.exec(select(GameSetting)).all() == []
     patient = session.exec(select(User).where(User.role == "patient")).one()
     assert patient.is_active is False
-    feedback = session.exec(select(SessionFeedback)).one()
+    # The first session's questionnaire (pain 5), and the Bangla session's (Day 17).
+    feedbacks = session.exec(select(SessionFeedback).order_by(col(SessionFeedback.id))).all()
+    assert len(feedbacks) == 2
+    feedback = feedbacks[0]
     assert feedback.pain_0_10 == 5
-    first, second, third, fourth = session.exec(
+    first, second, third, fourth, *day17 = session.exec(
         select(SessionRecord).order_by(col(SessionRecord.id))
     ).all()
+    # The programme session, two study sessions, three stopped ones, and the Bangla one.
+    assert [record.status for record in day17] == ["completed"] * 3 + ["aborted"] * 3 + ["completed"]
+    assert [record.study_condition is not None for record in day17] == [False, True, True] + [False] * 4
+    device = session.exec(select(Alert).where(Alert.type == "repeated_device_problems")).one()
+    assert device.status == "resolved" and device.note == "Smoke test: camera checked"
     assert fourth.status == "completed" and emg.session_id == fourth.id
     assert second.status == "completed" and second.flags == []
     assert third.status == "completed" and third.plan and len(third.plan_overrides) == 1

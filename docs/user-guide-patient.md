@@ -1,6 +1,6 @@
 # MuVi Rehab: guide for patients
 
-This guide shows you how to do a practice session at home. A family member or carer can read it with you.
+This guide shows you how to do a practice session at home. A family member or carer can read it with you. It is also available in Bangla: [user-guide-patient.bn.md](user-guide-patient.bn.md).
 
 MuVi Rehab uses your webcam to follow your arm and hand. **Your video stays on your computer.** Only numbers about your movement are saved, never pictures.
 
@@ -100,6 +100,14 @@ If you stopped partway through, the warm-up carries on from the next unfinished 
 | **Reach and squeeze** | Reach to the target, hold, then squeeze. |
 | **Balloon pop** | Touch the balloons when they stop rising. |
 | **Fruit catch** | Move the basket left and right to catch the falling fruit. |
+| **Bloom** | Open your hand wide to make the flower bloom, then close it. |
+| **Finger piano** | Touch your thumb to each finger as the notes come. |
+| **Path trace** | Follow the moving guide along the path with your finger. |
+| **Paint the wall** | Bend and straighten your elbow to paint the stripe. |
+| **Pick and place** | Pinch the object, carry it to the box, and let go. |
+| **Grip and hold** | Squeeze to keep the kite inside the band, then relax. |
+
+Your therapist chooses which games you play. Today's games are chosen for you; you can untick one or change the order, unless your therapist has set them for a study (then the note says so).
 
 [Screenshot: a game in progress]
 
@@ -134,7 +142,7 @@ Under many figures you see a short line:
 - **About the same as last time**
 - **A little lower than last time.** This is normal. Every day is different.
 
-The **Your feedback** box will show personal feedback in a later version.
+**Your feedback** shows a short personal report about today's session, in your language. You can have it read aloud, and tell us whether it was helpful.
 
 Click **Back to home** when you are done.
 
@@ -159,6 +167,25 @@ MuVi Rehab is a practice tool. It does not diagnose anything, and it does not re
 - **Last 4 weeks:** a tick on each day you practised.
 - **Progress** (in the menu): larger charts of your reach, warm-up goals and game targets, and your first and latest reach maps.
 - **History:** every session, with its details.
+
+## Language and display
+
+You can change these yourself. They are saved to your account, so they are the same on every computer.
+
+- **Language:** click **English** or **বাংলা** at the top of any page, or on your **Profile** page. The whole website changes, and your next feedback report is written in that language.
+- **Bengali digits:** on your **Profile** page, turn on **Show numbers in Bengali digits** to see ১২৩ instead of 123 (in Bangla only).
+
+On your **Profile** page, under **Display and sound**, or during a session with the **Display** button at the top of the screen:
+
+| Setting | What it does |
+| --- | --- |
+| **Text size** | **Normal**, **Large** or **Extra large** text everywhere. |
+| **High contrast** | Darker text and stronger lines, easier to read. |
+| **Reduce motion** | Fewer moving animations. Your computer's own "reduce motion" setting is followed too. |
+| **Sounds** | Turn the beeps and chimes in the warm-up and games on or off. |
+| **Spoken instructions** | The warm-up and calibration read their instructions aloud. This needs a voice for your language on your computer; without a Bangla voice, Bangla instructions are shown as text only. |
+
+**Using the keyboard:** press **Tab** to move between buttons and links, and **Enter** to choose. The first press of **Tab** on a page shows **Skip to content**.
 
 ## Problems?
 

@@ -477,3 +477,26 @@ def test_programme_rows_are_one_per_patient(session: Session, patient_headers: H
     first = programmes.programme_for(session, own)
     assert programmes.programme_for(session, own).id == first.id
     assert len(session.exec(select(PatientProgramme)).all()) == 1
+
+
+def test_a_game_outside_the_programme_cannot_be_started(
+    client: TestClient, patient_headers: Headers, admin_headers: Headers, session: Session
+) -> None:
+    own = session.exec(select(PatientProfile)).one()
+    assert own.id is not None
+    put(client, admin_headers, own.id, enabled_games=["reach_activate", "bloom", "grip_hold"])
+    sid = client.post("/api/sessions", headers=patient_headers).json()["id"]
+
+    def start(game: str) -> int:
+        return client.post(
+            f"/api/sessions/{sid}/games",
+            json={"game_id": game, "engine": "L1", "input_source": "keyboard",
+                  "params_initial": {}, "trials_planned": 5},
+            headers=patient_headers,
+        ).status_code
+
+    assert start("bloom") == 201
+    assert start("balloon_pop") == 403
+    session.add(GameSetting(game_id="bloom", enabled=False))
+    session.commit()
+    assert start("bloom") == 403  # turned off in the Game Library

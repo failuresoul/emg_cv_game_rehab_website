@@ -45,9 +45,10 @@ class EngineNextResponse(BaseModel):
     level: Annotated[int, Field(ge=1, le=10)]
     cue: Cue | None
     #: The engine's decision in plain words (admin and research only; not for patients).
+    #: Empty, like safety_override and engine, in a study run: they would name the condition.
     decision: str
     safety_override: str | None
-    engine: str
+    engine: str | None
     #: Where the next target goes, when the engine chooses it (L2, spatial games); else None.
     direction_deg: float | None = None
     distance_frac: float | None = None

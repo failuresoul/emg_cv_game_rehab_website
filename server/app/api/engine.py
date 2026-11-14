@@ -20,8 +20,13 @@ def next_trial(
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game run not found")
     try:
-        return adaptation.next_step(session, patient, run, payload.last_trial)
+        answer = adaptation.next_step(session, patient, run, payload.last_trial)
     except adaptation.RunEndedError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Game run has already ended"
         ) from None
+    if run.study_id is not None:
+        # Research mode: the decision log keeps everything; the patient learns nothing of the
+        # condition (the level and cues look the same in every condition).
+        answer = answer.model_copy(update={"engine": None, "decision": "", "safety_override": None})
+    return answer

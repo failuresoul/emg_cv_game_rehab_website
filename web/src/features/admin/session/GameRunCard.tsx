@@ -117,7 +117,7 @@ export function GameRunCard({
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-xl font-bold">{t(GAMES[run.game_id].nameKey)}</h2>
         <SessionStatusBadge status={run.status} />
-        <Badge>{t("adminSession.engine", { engine: run.engine })}</Badge>
+        <Badge>{t("adminSession.engine", { engine: run.engine ?? "–" })}</Badge>
         <Badge>{t(SOURCE_KEYS[run.input_source])}</Badge>
         <Badge variant={RUN_QUALITY_STYLE[quality].tone}>
           {t("dataQuality.label", { status: t(RUN_QUALITY_STYLE[quality].labelKey) })}

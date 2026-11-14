@@ -745,7 +745,7 @@ Response `201`: the game run.
 }
 ```
 
-Errors: `404` (no such session, or another patient's), `409` if the session has already ended, `422` (for example an unknown `game_id`).
+Errors: `403` for a game outside the patient's programme (or, in a study session, the study's games) or turned off in the Game Library (Day 17), `404` (no such session, or another patient's), `409` if the session has already ended, `422` (for example an unknown `game_id`).
 
 ### GET /api/sessions/{id}/games
 
@@ -1658,7 +1658,7 @@ Controlled comparisons of the difficulty engines (`server/app/services/studies.p
 - **Conditions** are engine modes (`L0`, `L1`, `L2`), 2 or 3 of them. `sessions_per_condition` (1–20) completed sessions each. `games` (1–9) are played by every study session, in order.
 - **Status:** `draft` → `active` → `closed`, forward only. The design (`design`, `conditions`, `sessions_per_condition`, `games`) can change only in a draft without participants (`409` otherwise). Only a draft without participants can be deleted.
 - **While a participant's study is active**, each new session gets the next condition: it is stored on the session (`study_id`, `study_condition`), every game run of the session uses it as its engine (`GameRun.study_id`, `GameRun.condition`), and the plan is the study's games (`locked: true`), the same in every condition. The programme's highest levels and the safety rules still apply. When every condition is done, or after withdrawal or closing, sessions follow the programme again.
-- **Blinding:** patients never receive the condition. Their session has only `blinded: true`; the browser then always lets the server set the difficulty, so the level display, cues and messages are the same in every condition. `/api/auth/me` keeps showing the programme's engine mode.
+- **Blinding:** patients never receive the condition. Their session has only `blinded: true`; the browser then always lets the server set the difficulty, so the level display, cues and messages are the same in every condition. `/api/auth/me` keeps showing the programme's engine mode. In a study run, the patient's own answers leave out everything that would name it: a game run's `engine` is `null`, and `POST /api/engine/next` returns `engine: null`, an empty `decision` and `safety_override: null`. Admin routes and the decision log keep all of it.
 
 ### Enrolment
 

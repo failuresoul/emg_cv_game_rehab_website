@@ -67,10 +67,33 @@ def list_run_trials(session: Session, run_id: int) -> list[Trial]:
     return list(session.exec(statement).all())
 
 
+class GameNotAllowedError(Exception):
+    """The game is not in the patient's programme (or the session's study), or the Game Library
+    has turned it off."""
+
+
+def allowed_games(session: Session, record: SessionRecord) -> set[str]:
+    """The games this session may play: the study's in a study session, else the programme's,
+    in both cases only those the Game Library has turned on."""
+    from app.models import Study
+
+    off = set(programmes.library_disabled(session))
+    if record.study_id is not None:
+        study = session.get(Study, record.study_id)
+        if study is not None:
+            return set(study.games) - off
+    profile = session.get(PatientProfile, record.patient_id)
+    if profile is None:
+        return set()
+    return set(programmes.allowed_games(session, programmes.programme_for(session, profile)))
+
+
 def start_run(session: Session, record: SessionRecord, payload: GameRunStart) -> GameRun:
     """Only one game is played at a time, so any run still open in the session is aborted."""
     if record.status != "active":
         raise SessionEndedError
+    if payload.game_id not in allowed_games(session, record):
+        raise GameNotAllowedError
     assert record.id is not None
     abort_active_runs(session, record.id)
     run = GameRun(**payload.model_dump(), session_id=record.id)

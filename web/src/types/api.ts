@@ -80,7 +80,8 @@ export interface EngineNextResponse {
   /** For the admin and research only; never shown to patients. */
   decision: string;
   safety_override: string | null;
-  engine: string;
+  /** Null, with an empty decision, in a study run (blinded). */
+  engine: string | null;
   /** Where the next target goes, when the engine chooses it (L2, spatial games); else null. */
   direction_deg?: number | null;
   distance_frac?: number | null;
@@ -611,7 +612,8 @@ export interface GameRun {
   id: number;
   session_id: number;
   game_id: GameId;
-  engine: GameEngine;
+  /** Null in the patient's view of a study run (the condition is never shown). */
+  engine: GameEngine | null;
   input_source: InputSource;
   params_initial: Record<string, number>;
   started_at: string;

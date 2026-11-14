@@ -397,7 +397,8 @@ class GameRunRead(BaseModel):
     id: int
     session_id: int
     game_id: GameId
-    engine: GameEngine
+    #: Null in a patient's view of a study run (the condition is never shown to the patient).
+    engine: GameEngine | None
     input_source: InputSource
     params_initial: dict[str, Any]
     started_at: UtcDatetime

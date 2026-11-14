@@ -243,11 +243,13 @@ def test_each_session_plays_the_next_condition_with_the_studys_games(
     after = play_session(client, headers)
     for played, condition in ((first, "L0"), (second, "L2")):
         assert played["session"]["blinded"] is True
-        assert played["run"]["engine"] == condition
+        # The patient never sees the condition; the stored run keeps it.
+        assert played["run"]["engine"] is None
         assert [g["game_id"] for g in played["plan"]["games"]] == ["grip_hold", "bloom"]
         assert played["plan"]["locked"] is True
         run = session.get(GameRun, played["run"]["id"])
         assert run is not None and (run.study_id, run.condition) == (study["id"], condition)
+        assert run.engine == condition
         detail = client.get(f"/api/admin/sessions/{played['session']['id']}", headers=admin_headers).json()
         assert (detail["study_id"], detail["study_condition"]) == (study["id"], condition)
     # Every condition done: back to the programme.
@@ -298,7 +300,8 @@ def test_withdrawn_participants_go_back_to_their_programme(
     participant = enrol(client, admin_headers, study["id"], patient["id"]).json()
     activate(client, admin_headers, study["id"])
     first = play_session(client, headers)
-    assert first["run"]["engine"] == "L0"
+    assert first["run"]["engine"] is None  # blinded
+    assert first["session"]["blinded"] is True
     url = f"{STUDIES}/{study['id']}/participants/{participant['id']}/withdraw"
     withdrawn = client.post(url, headers=admin_headers)
     assert withdrawn.status_code == 200 and withdrawn.json()["withdrawn_at"] is not None
@@ -461,3 +464,35 @@ def test_the_export_has_codes_and_no_names_or_emails(
     assert "email" not in rows[0] and "full_name" not in rows[0]
     users = session.exec(select(User)).all()
     assert all(user.email not in text for user in users)
+
+
+def test_engine_answers_in_a_study_run_never_name_the_condition(
+    client: TestClient,
+    admin_headers: Headers,
+    consenting: Callable[[str], tuple[dict[str, Any], Headers]],
+    session: Session,
+) -> None:
+    study = new_study(client, admin_headers, conditions=["L0", "L2"], games=["reach_activate"])
+    patient, headers = consenting("blind@example.com")
+    enrol(client, admin_headers, study["id"], patient["id"])
+    activate(client, admin_headers, study["id"])
+    sid = client.post("/api/sessions", headers=headers).json()["id"]
+    run = client.post(
+        f"/api/sessions/{sid}/games",
+        json={"game_id": "reach_activate", "engine": "L1", "input_source": "keyboard",
+              "params_initial": {}, "trials_planned": 5},
+        headers=headers,
+    ).json()
+    assert run["engine"] is None
+    for last in (None, {"trial_no": 1, "outcome": "success"}):
+        answer = client.post("/api/engine/next", json={"run_id": run["id"], "last_trial": last}, headers=headers)
+        assert answer.status_code == 200, answer.text
+        body = answer.json()
+        assert (body["engine"], body["decision"], body["safety_override"]) == (None, "", None)
+        assert "L0" not in answer.text and "L2" not in answer.text
+    listed = client.get(f"/api/sessions/{sid}/games", headers=headers).json()
+    assert [item["engine"] for item in listed] == [None]
+    # The admin and the decision log still have everything.
+    detail = client.get(f"/api/admin/sessions/{sid}", headers=admin_headers).json()
+    assert detail["games"][0]["engine"] == "L0"
+    assert detail["games"][0]["adaptation"][0]["decision"]
