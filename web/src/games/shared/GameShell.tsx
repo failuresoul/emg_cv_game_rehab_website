@@ -590,6 +590,11 @@ const GamePlay = memo(function GamePlay({
       frameInput.handPresent = tracking?.handPresent ?? false;
       frameInput.hidden = document.hidden;
       runtime.frame(wallMs, frameInput);
+      // Test mode only (removed from other builds): the game's goal, for the synthetic hand.
+      if (import.meta.env.DEV && import.meta.env.VITE_TEST_MODE === "true" && window.__muviTest) {
+        window.__muviTest.currentTarget = game.testTarget?.() ?? null;
+        window.__muviTest.game = { stage: runtime.stage };
+      }
 
       const playArea = area();
       if (game.renderBackground) {
@@ -658,6 +663,10 @@ const GamePlay = memo(function GamePlay({
     return () => {
       unregisterStop();
       stopLoop();
+      if (import.meta.env.DEV && import.meta.env.VITE_TEST_MODE === "true" && window.__muviTest) {
+        window.__muviTest.currentTarget = null;
+        window.__muviTest.game = null;
+      }
       document.removeEventListener("visibilitychange", onVisibility);
       observer.disconnect();
       window.removeEventListener("resize", resize);

@@ -18,6 +18,14 @@ export const CONTRACTION_MV = 1800;
 const TICK_MS = 20;
 const SETTING_KEY = "muvi-simulated-emg";
 
+/** Test mode (Day 18): every simulated sensor holds this level (0-1); null uses the M key. */
+let testLevel: number | null = null;
+
+/** Only called by the test hooks (window.__muviTest.emg.setLevel). */
+export function setSimulatedTestLevel(level: number | null): void {
+  testLevel = level;
+}
+
 /** True in development, or when the setting is on (localStorage "muvi-simulated-emg" = "on"). */
 export function isSimulatedEmgAllowed(): boolean {
   if (import.meta.env.DEV) return true;
@@ -148,6 +156,7 @@ export class SimulatedEmgStream implements EmgStream {
     // Towards 1 while pressed, towards 0 when released, over RAMP_MS.
     const step = elapsed / RAMP_MS;
     this.level = this.pressed ? Math.min(1, this.level + step) : Math.max(0, this.level - step);
+    if (import.meta.env.DEV && testLevel !== null) this.level = testLevel;
 
     if (this.streaming) {
       const due = Math.floor(((now - this.startedAt) * this.rateHz) / 1000);

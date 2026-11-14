@@ -266,6 +266,18 @@ export function createPathTraceGame(context: GameContext): GameInstance {
       trail = [];
     },
 
+    testTarget: () => {
+      if (!trace) return null;
+      const { machine, placement } = trace;
+      const points = placement.points;
+      // At the start until the guide sets off, then the guide's point on the path.
+      const pointSw =
+        machine.phase === "TRACE"
+          ? pointAtDistance(points, machine.guideDistance(nowMs))
+          : points[0];
+      return { phase: machine.phase, pointSw, hand: null, finger: null };
+    },
+
     isFinished: () => records.length >= context.trialsPlanned && trace === null,
 
     getSummary(): GameResult {

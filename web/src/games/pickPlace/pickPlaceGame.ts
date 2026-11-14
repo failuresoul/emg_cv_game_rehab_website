@@ -240,6 +240,18 @@ export function createPickPlaceGame(context: GameContext): GameInstance {
       if (trial?.machine.isLive) trial = null;
     },
 
+    testTarget: () => {
+      if (!trial) return null;
+      const carrying = trial.machine.phase === "CARRY";
+      return {
+        phase: trial.machine.phase,
+        pointSw: carrying ? trial.placement.place : trial.placement.pick,
+        // Pinch at the object, carry it pinched, open the fingers over the box.
+        hand: carrying ? "release" : "pinch",
+        finger: null,
+      };
+    },
+
     isFinished: () => records.length >= context.trialsPlanned && trial === null,
 
     getSummary(): GameResult {

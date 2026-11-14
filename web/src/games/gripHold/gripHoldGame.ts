@@ -169,6 +169,16 @@ export function createGripHoldGame(context: GameContext): GameInstance {
       if (trial?.machine.isLive) trial = null;
     },
 
+    testTarget: () =>
+      trial
+        ? {
+            phase: trial.machine.phase,
+            pointSw: null,
+            hand: trial.machine.phase === "REST" ? "open" : "close",
+            finger: null,
+          }
+        : null,
+
     isFinished: () => records.length >= context.trialsPlanned && trial === null,
 
     getSummary(): GameResult {

@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=SERVER_DIR / ".env", extra="ignore")
 
     APP_NAME: str = "MuVi Rehab"
+    # "development", "production" or "test". Only "test" adds the /api/test routes (Day 18),
+    # which reset the database: never set it on a database you want to keep.
+    APP_ENV: str = "development"
     DATABASE_URL: str = "sqlite:///../data/motionlab.db"
     JWT_SECRET: str
     JWT_EXPIRE_MINUTES: int = 720

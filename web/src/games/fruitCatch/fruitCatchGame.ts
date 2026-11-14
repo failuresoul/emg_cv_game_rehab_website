@@ -205,6 +205,20 @@ export function createFruitCatchGame(context: GameContext): GameInstance {
       lastSpawnAt = nowMs + AFTER_PAUSE_MS - (nextPending()?.settings.spawnIntervalMs ?? 0);
     },
 
+    testTarget: () => {
+      // The lowest fruit still falling: the basket follows the fingertip's x.
+      const falling = fruits
+        .filter((fruit) => fruit.trial.phase === "FALLING")
+        .sort((a, b) => a.trial.moments.spawn - b.trial.moments.spawn)[0];
+      if (!falling) return null;
+      return {
+        phase: falling.trial.phase,
+        pointSw: { x: falling.trial.setup.x, y: BASKET_LINE_Y_SW },
+        hand: null,
+        finger: null,
+      };
+    },
+
     isFinished: () => records.length >= context.trialsPlanned && fruits.length === 0,
 
     getSummary(): GameResult {

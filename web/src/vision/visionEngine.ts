@@ -127,6 +127,8 @@ class VisionEngine {
   private video: HTMLVideoElement | null = null;
   private frameRequest: number | null = null;
   private sampleContext: CanvasRenderingContext2D | null = null;
+  /** Stops the test-mode replay (Day 18), when one runs instead of the camera. */
+  private stopReplay: (() => void) | null = null;
   /** Components using the camera; it stops when the last one lets go. */
   private users = 0;
 
@@ -146,6 +148,22 @@ class VisionEngine {
   start = async ({ poseEveryNthFrame = 1 }: VisionOptions = {}): Promise<void> => {
     if (this.status.phase !== "idle" && this.status.phase !== "error") return;
     const run = ++this.runId;
+
+    // Test mode only (Vite removes this branch from other builds): replayed or synthetic
+    // landmarks instead of the camera and MediaPipe, without asking for the camera.
+    if (import.meta.env.DEV && import.meta.env.VITE_TEST_MODE === "true") {
+      const { startTestReplay } = await import("@/testing/engineReplay");
+      const replaying = await startTestReplay({
+        isCurrent: () => run === this.runId,
+        setStatus: (status) => this.setStatus(status),
+        fail: (error) => this.fail(error),
+        emit: (result) => this.resultListeners.forEach((listener) => listener(result)),
+        setStop: (stop) => {
+          this.stopReplay = stop;
+        },
+      });
+      if (replaying || run !== this.runId) return;
+    }
 
     if (!navigator.mediaDevices?.getUserMedia) {
       this.fail("unsupported");
@@ -352,6 +370,8 @@ class VisionEngine {
   }
 
   private releaseCamera(): void {
+    this.stopReplay?.();
+    this.stopReplay = null;
     if (this.frameRequest !== null) cancelAnimationFrame(this.frameRequest);
     this.frameRequest = null;
     this.stream?.getTracks().forEach((track) => track.stop());

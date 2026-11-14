@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath, URL } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
@@ -42,8 +43,24 @@ function identity(): Plugin {
   };
 }
 
+/** Test fixtures (public/test-fixtures: landmark recordings for the end-to-end tests, Day 18) are
+ * served by the development server only; a production build leaves them out. */
+function noTestFixtures(): Plugin {
+  let outDir = "dist";
+  return {
+    name: "muvi-no-test-fixtures",
+    apply: "build",
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    closeBundle() {
+      rmSync(resolve(outDir, "test-fixtures"), { recursive: true, force: true });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), identity()],
+  plugins: [react(), tailwindcss(), identity(), noTestFixtures()],
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },

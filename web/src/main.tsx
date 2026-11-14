@@ -14,6 +14,11 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider } from "@/features/auth/AuthContext";
 import { isSilent, reportApiError } from "@/lib/apiErrors";
 
+// Test mode only (Vite removes this from other builds): the hooks the end-to-end tests use.
+if (import.meta.env.DEV && import.meta.env.VITE_TEST_MODE === "true") {
+  void import("@/testing/install").then(({ installTestApi }) => installTestApi());
+}
+
 const queryClient = new QueryClient({
   // Every failed request becomes a readable toast, unless it handles its own errors.
   queryCache: new QueryCache({

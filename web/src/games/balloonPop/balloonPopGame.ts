@@ -227,6 +227,16 @@ export function createBalloonPopGame(context: GameContext): GameInstance {
       if (balloon?.machine.isLive) balloon = null;
     },
 
+    testTarget: () =>
+      balloon
+        ? {
+            phase: balloon.machine.phase,
+            pointSw: balloon.placement.centreSw,
+            hand: balloon.machine.phase === "SQUEEZE" ? "close" : null,
+            finger: null,
+          }
+        : null,
+
     isFinished: () => records.length >= context.trialsPlanned && balloon === null,
 
     getSummary(): GameResult {

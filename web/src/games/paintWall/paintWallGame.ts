@@ -222,6 +222,9 @@ export function createPaintWallGame(context: GameContext): GameInstance {
       brush = null;
     },
 
+    testTarget: () =>
+      stripe ? { phase: stripe.machine.phase, pointSw: null, hand: null, finger: null } : null,
+
     isFinished: () => records.length >= context.trialsPlanned && stripe === null,
 
     getSummary(): GameResult {

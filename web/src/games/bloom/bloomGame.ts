@@ -251,6 +251,13 @@ export function createBloomGame(context: GameContext): GameInstance {
       if (trial?.machine.isLive) trial = null;
     },
 
+    testTarget: () => {
+      if (!trial) return null;
+      const phase = trial.machine.phase;
+      const hand = phase === "OPEN" ? "open" : phase === "CLOSE" ? "close" : null;
+      return { phase, pointSw: null, hand, finger: null };
+    },
+
     isFinished: () => records.length >= context.trialsPlanned && trial === null,
 
     getSummary(): GameResult {

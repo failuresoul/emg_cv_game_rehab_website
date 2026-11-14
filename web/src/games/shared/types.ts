@@ -173,6 +173,21 @@ export interface GameResult {
   summary: GameSummary;
 }
 
+/**
+ * The game's current goal, for the automated tests (Day 18): the shell publishes it as
+ * window.__muviTest.currentTarget in test mode only, so the synthetic landmarks can reach it.
+ */
+export interface GameTestTarget {
+  /** The game's phase, such as "REACH" or "SQUEEZE". */
+  phase: string;
+  /** Where the fingertip (or pinch point) should go, in the body frame (SW). */
+  pointSw: Point | null;
+  /** What the hand should do now, if anything. */
+  hand: "open" | "close" | "pinch" | "release" | null;
+  /** The finger to touch with the thumb. */
+  finger: Finger | null;
+}
+
 export interface GameInstance {
   start(): void;
   /** Called at a fixed 60 Hz. nowMs is game time, which stands still while paused. */
@@ -192,6 +207,8 @@ export interface GameInstance {
   /** Optional: extra figures for the top bar, read a few times a second. */
   getHudItems?(): GameHudItem[];
   destroy(): void;
+  /** The current goal, for the automated tests; null between trials. */
+  testTarget?(): GameTestTarget | null;
 }
 
 export type GameFactory = (context: GameContext) => GameInstance;

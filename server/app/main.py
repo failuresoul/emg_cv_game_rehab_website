@@ -70,3 +70,9 @@ app.include_router(engine_api.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(review.router, prefix="/api")
 app.include_router(studies.router, prefix="/api")
+
+# Only for the automated end-to-end tests: the routes do not exist in any other environment.
+if settings.APP_ENV == "test":
+    from app.api import testing
+
+    app.include_router(testing.router, prefix="/api")

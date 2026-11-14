@@ -205,6 +205,16 @@ export function createReachActivateGame(context: GameContext): GameInstance {
       trail = [];
     },
 
+    testTarget: () =>
+      trial?.machine.isLive
+        ? {
+            phase: trial.machine.phase,
+            pointSw: trial.target.centreSw,
+            hand: trial.machine.phase === "ACTIVATE" ? "close" : "open",
+            finger: null,
+          }
+        : null,
+
     isFinished: () => records.length >= context.trialsPlanned && trial === null,
 
     getSummary(): GameResult {

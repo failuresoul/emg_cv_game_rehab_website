@@ -234,6 +234,16 @@ export function createFingerPianoGame(context: GameContext): GameInstance {
       if (melody?.machine.isLive) melody = null;
     },
 
+    testTarget: () =>
+      melody
+        ? {
+            phase: melody.machine.phase,
+            pointSw: null,
+            hand: null,
+            finger: melody.machine.nextNote?.finger ?? null,
+          }
+        : null,
+
     isFinished: () => records.length >= context.trialsPlanned && melody === null,
 
     getSummary(): GameResult {

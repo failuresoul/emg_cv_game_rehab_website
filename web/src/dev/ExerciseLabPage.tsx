@@ -35,6 +35,7 @@ import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
 import { useVision } from "@/vision/useVision";
 import { visionEngine } from "@/vision/visionEngine";
 import { VisionStatusCard } from "@/vision/VisionStatusCard";
+import { LandmarkRecorderCard } from "./LandmarkRecorderCard";
 import {
   ALL_EXERCISE_IDS,
   type ExerciseId,
@@ -640,7 +641,10 @@ export function ExerciseLabPage() {
         </p>
       </header>
       {started ? (
-        <LiveLab />
+        <>
+          <LandmarkRecorderCard />
+          <LiveLab />
+        </>
       ) : (
         <div>
           <Button size="lg" onClick={() => setStarted(true)}>
