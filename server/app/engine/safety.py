@@ -11,7 +11,9 @@ In this order:
    by 0.4 or more, the median movement or completion time up by more than 30%, or the median
    activation peak down by more than 20% -> every component 0.1 easier. Cue "rest". At most once
    every 5 trials, so one tired spell does not keep easing.
-5. Session time: more than 25 minutes of active play -> cue "finish_soon"; more than 35 ->
+5. Regular rests: `rest_every_minutes` (the patient's programme, 3-10) of active play since the
+   session's last rest -> cue "rest". Nothing is eased.
+6. Session time: more than 25 minutes of active play -> cue "finish_soon"; more than 35 ->
    "finish". The limits come from settings (SESSION_FINISH_SOON_MIN, SESSION_FINISH_MIN).
 
 Every rule that changes or blocks something writes a reason to safety_override. Patients only
@@ -71,6 +73,10 @@ class SafetyInput:
     trials_since_rest: int | None = None
     finish_soon_minutes: float = 25.0
     finish_minutes: float = 35.0
+    #: Minutes of active play in the session since its last "rest" cue (or since the start).
+    minutes_since_rest: float | None = None
+    #: The patient's programme: a rest after this many minutes of play; None for no rule.
+    rest_every_minutes: float | None = None
 
 
 @dataclass
@@ -168,7 +174,16 @@ def apply_safety(data: SafetyInput) -> SafetyResult:
             f"Signs of tiring ({'; '.join(signs)}): everything {FATIGUE_EASE} easier"
         )
 
-    # 5. Session time.
+    # 5. Regular rests.
+    if (
+        data.rest_every_minutes is not None
+        and data.minutes_since_rest is not None
+        and data.minutes_since_rest >= data.rest_every_minutes
+        and "rest" not in result.cues
+    ):
+        result.cues.append("rest")
+
+    # 6. Session time.
     if data.active_minutes > data.finish_minutes:
         result.cues.append("finish")
     elif data.active_minutes > data.finish_soon_minutes:

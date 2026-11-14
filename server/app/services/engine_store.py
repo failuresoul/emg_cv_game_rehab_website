@@ -17,6 +17,7 @@ from app.engine.difficulty import clamp01
 from app.models import Calibration, EngineState, PatientProfile, WarmupResult
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
+from app.services import programme as programmes
 from app.services.game_settings import effective_params_for
 from app.services.game_specs import get_spec
 
@@ -44,13 +45,10 @@ def starting_state(
     return state.with_d({component: min(d, cap) for component, d in state.d.items()})
 
 
-def max_difficulty(profile: PatientProfile, game_id: str) -> float:
-    """The admin's maximum for this patient and game: 1.0 unless set."""
-    value = (profile.max_difficulty or {}).get(game_id, 1.0)
-    try:
-        return clamp01(float(value))
-    except (TypeError, ValueError):
-        return 1.0
+def max_difficulty(session: Session, profile: PatientProfile, game_id: str) -> float:
+    """The admin's maximum for this patient and game, from the programme's highest level:
+    level / 10 (1.0 unless set)."""
+    return programmes.max_difficulty(programmes.programme_for(session, profile), game_id)
 
 
 @dataclass
@@ -102,7 +100,7 @@ def context_for(
     return EngineContext(
         game=game,
         settings=effective_params_for(session, game),
-        max_difficulty=max_difficulty(profile, game_id),
+        max_difficulty=max_difficulty(session, profile, game_id),
         calibration=latest_calibration(session, profile) if with_history else None,
         warmup=latest_warmup(session, profile) if with_history else None,
     )
@@ -114,7 +112,7 @@ def load(
     """The patient's engine, context and state for a game. A first use starts from the admin's
     defaults; the first use in a new session applies the warm restart. Not saved until save()."""
     assert profile.id is not None
-    engine = get_engine(profile.engine_mode)
+    engine = get_engine(programmes.programme_for(session, profile).engine_mode)
     context = context_for(session, profile, game_id)
     row = session.exec(
         select(EngineState).where(

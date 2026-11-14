@@ -35,6 +35,7 @@ import {
 import { CALIBRATION, READINESS } from "@/emg/readinessConfig";
 import { isWebSerialSupported } from "@/emg/serial";
 import { isSimulatedEmgAllowed } from "@/emg/simulated";
+import { defaultEmgSite, usePatientProgramme } from "@/features/programme/patientProgramme";
 import { EmgError } from "@/emg/stream";
 import { ElectrodeDiagram } from "@/features/emg/ElectrodeDiagram";
 import { EmgTrace } from "@/features/emg/EmgTrace";
@@ -715,6 +716,10 @@ export function SessionEmgPage() {
   const status = useEmgStatus();
   const { sessionId } = useSession();
   const [state, dispatch] = useReducer(flowReducer, INITIAL_FLOW);
+  // The therapist's default site, chosen for the patient (who may change it).
+  const programme = usePatientProgramme();
+  const suggestedSite = defaultEmgSite(programme.data);
+  useEffect(() => dispatch({ type: "suggestSite", site: suggestedSite }), [suggestedSite]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const simulatedAllowed = isSimulatedEmgAllowed();

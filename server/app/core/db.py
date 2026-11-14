@@ -85,6 +85,10 @@ def create_db_and_tables(target: Engine | None = None) -> None:
     target = target or engine
     SQLModel.metadata.create_all(target)
     add_missing_columns(target)
+    # Day 17: each patient's programme, from the old profile fields where there is none yet.
+    from app.services.programme import migrate_programmes
+
+    migrate_programmes(target)
 
 
 def get_session() -> Generator[Session, None, None]:

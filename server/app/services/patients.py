@@ -12,22 +12,33 @@ from app.schemas.patient import (
     PatientUpdate,
     PatientUserRead,
 )
+from app.services import programme as programmes
 from app.services.session_feedback import count_open_alerts
 from app.services.sessions import count_sessions_today
 from app.services.users import get_user_by_email
 
 _MAX_CODE_ATTEMPTS = 5
 _USER_FIELDS = {"email", "full_name"}
+#: Moved to the programme on Day 17; the patient form may still send them.
+_PROGRAMME_FIELDS = {"weekly_goal", "engine_mode"}
 
 
 class DuplicateEmailError(Exception):
     pass
 
 
-def to_patient_read(profile: PatientProfile, user: User) -> PatientRead:
+def profile_read(session: Session, profile: PatientProfile) -> PatientProfileRead:
+    """The profile, with the weekly goal and engine mode from the patient's programme."""
+    programme = programmes.programme_for(session, profile)
+    # Read through attributes: model_dump() on an instance expired by commit is empty.
+    return PatientProfileRead.model_validate(profile).model_copy(
+        update={"weekly_goal": programme.weekly_goal, "engine_mode": programme.engine_mode}
+    )
+
+
+def to_patient_read(session: Session, profile: PatientProfile, user: User) -> PatientRead:
     return PatientRead(
-        # Read through attributes: model_dump() on an instance expired by commit is empty.
-        **PatientProfileRead.model_validate(profile).model_dump(),
+        **profile_read(session, profile).model_dump(),
         user=PatientUserRead.model_validate(user),
     )
 
@@ -45,7 +56,7 @@ def create_patient(session: Session, payload: PatientCreate) -> PatientRead:
         raise DuplicateEmailError
 
     hashed_password = hash_password(payload.password)
-    profile_data = payload.model_dump(exclude={"email", "full_name", "password"})
+    profile_data = payload.model_dump(exclude={"email", "full_name", "password", "weekly_goal"})
 
     # Two simultaneous requests can pick the same code; the unique constraint catches it.
     for _ in range(_MAX_CODE_ATTEMPTS):
@@ -65,13 +76,15 @@ def create_patient(session: Session, payload: PatientCreate) -> PatientRead:
                 patient_code=_next_patient_code(session),
             )
             session.add(profile)
+            session.flush()
+            session.add(programmes.new_programme(profile, weekly_goal=payload.weekly_goal))
             session.commit()
         except IntegrityError:
             session.rollback()
             if get_user_by_email(session, payload.email) is not None:
                 raise DuplicateEmailError from None
             continue
-        return to_patient_read(profile, user)
+        return to_patient_read(session, profile, user)
 
     raise RuntimeError("Could not allocate a patient code")
 
@@ -90,7 +103,7 @@ def list_patients(session: Session, search: str | None = None) -> list[PatientRe
             )
         )
     rows = session.exec(statement.order_by(col(PatientProfile.id))).all()
-    return [to_patient_read(profile, user) for profile, user in rows]
+    return [to_patient_read(session, profile, user) for profile, user in rows]
 
 
 def get_patient(session: Session, patient_id: int) -> tuple[PatientProfile, User] | None:
@@ -102,9 +115,16 @@ def get_patient(session: Session, patient_id: int) -> tuple[PatientProfile, User
 
 
 def update_patient(
-    session: Session, profile: PatientProfile, user: User, payload: PatientUpdate
+    session: Session,
+    profile: PatientProfile,
+    user: User,
+    payload: PatientUpdate,
+    admin_id: int | None = None,
 ) -> PatientRead:
+    """The patient's details. A weekly goal or engine mode goes to the programme, with its
+    history."""
     changes = payload.model_dump(exclude_unset=True)
+    moved = {field: changes.pop(field) for field in _PROGRAMME_FIELDS if field in changes}
 
     new_email = changes.get("email")
     if new_email is not None and new_email != user.email:
@@ -125,7 +145,10 @@ def update_patient(
     except IntegrityError:
         session.rollback()
         raise DuplicateEmailError from None
-    return to_patient_read(profile, user)
+    if moved:
+        programme = programmes.programme_for(session, profile)
+        programmes.update_some(session, programme, moved, admin_id)
+    return to_patient_read(session, profile, user)
 
 
 def set_patient_active(
@@ -134,7 +157,7 @@ def set_patient_active(
     user.is_active = is_active
     session.add(user)
     session.commit()
-    return to_patient_read(profile, user)
+    return to_patient_read(session, profile, user)
 
 
 def get_stats(session: Session) -> AdminStats:

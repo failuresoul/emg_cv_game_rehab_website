@@ -82,6 +82,10 @@ This document lists every API route the server provides today, plus the routes r
 | POST   | `/api/engine/next`                   | `patient` | The next trial's settings from the adaptive engine |
 | GET    | `/api/admin/patients/{id}/levels`    | `admin`   | A patient's engine mode and level per game |
 | GET    | `/api/admin/patients/{id}/plan`      | `admin`   | The patient's latest plan, with reasons and their changes |
+| GET    | `/api/admin/patients/{id}/programme` | `admin`   | The patient's programme |
+| PUT    | `/api/admin/patients/{id}/programme` | `admin`   | Replace the programme, with a reason |
+| GET    | `/api/admin/patients/{id}/programme/history` | `admin` | Every change of the programme |
+| GET    | `/api/patient/programme`             | `patient` | Own programme, read-only, as the browser needs it |
 
 ## Errors
 
@@ -1517,6 +1521,76 @@ Role: any logged-in user.
 - `reachable: false` means reports use the template at once.
 - `model_loaded` reflects Ollama's `/api/ps`. At start-up, the server loads the model in the background and never waits for it.
 - `queue_length` counts reports queued or being written.
+
+## Patient programme (Day 17)
+
+What the therapist allows for one patient (`PatientProgramme`, one per patient). The engine, the planner, the warm-up, the rest prompts and the muscle-sensor step obey it. It replaces the profile's `weekly_goal`, `engine_mode` and `max_difficulty`: they were copied into each patient's programme when the server first started on Day 17 and are never read again. `PATCH /api/admin/patients/{id}` still accepts `weekly_goal` and `engine_mode`, and saves them to the programme (with history); patient responses still show both, from the programme.
+
+### GET /api/admin/patients/{id}/programme
+
+Role: `admin`.
+
+```json
+{
+  "patient_id": 1,
+  "enabled_games": ["reach_activate", "balloon_pop", "bloom", "grip_hold"],
+  "max_level": { "bloom": 4 },
+  "session_minutes_target": 18,
+  "games_per_session": { "min": 3, "max": 4 },
+  "warmup_exercises": ["shoulder_flexion", "elbow_flexion", "hand_open_close"],
+  "warmup_preset": "personal",
+  "rest_every_minutes": 5,
+  "engine_mode": "L1",
+  "emg_default_site": "flexors",
+  "weekly_goal": 5,
+  "notes": null,
+  "library_disabled_games": ["paint_wall"],
+  "updated_at": "2026-11-14T10:00:00Z"
+}
+```
+
+| Field | Rules | Obeyed by |
+| --- | --- | --- |
+| `enabled_games` | 1 or more known games, each once, at least `games_per_session.min`; none the Game Library has turned off | The planner and `GET /api/games/settings` (the games the patient may add to the plan) |
+| `max_level` | Per game, 1–10; a game left out may reach 10 | The safety layer: the engine's difficulty never goes above `level / 10` |
+| `session_minutes_target` | 10–40 (default 18) | The planner: games for `target − 2` to `target` minutes; about two thirds on a lighter day |
+| `games_per_session` | `min` and `max`, each 2–6, `min` ≤ `max` (default 3–4) | The planner: `max` games, `min` on a lighter day (after fatigue 7+, "too hard" or pain) |
+| `warmup_exercises` | 1 or more of the six exercise ids, each once | The warm-up shows only these, in its own order |
+| `warmup_preset` | `personal` (targets from the patient's own results; the default) or `gentle` (forced) | The warm-up |
+| `rest_every_minutes` | 3–10 (default 5) | The safety layer: a `rest` cue after this many minutes of play since the session's last rest |
+| `engine_mode` | `L0`, `L1`, `L2` | The engine of every new game run |
+| `emg_default_site` | `flexors`, `extensors` or `null` | The muscle-sensor step pre-selects it |
+| `weekly_goal` | 1–14 | Progress and the facts |
+| `notes` | Up to 2000 characters; never shown to the patient | — |
+
+`library_disabled_games` is read-only: games the Game Library has turned off, which are never played whatever the programme says.
+
+### PUT /api/admin/patients/{id}/programme
+
+Role: `admin`. The whole programme as above (without `patient_id`, `library_disabled_games` and `updated_at`), plus an optional `reason` (up to 500 characters). Response `200`: the programme. Each changed field writes one history row; saving the same values writes none.
+
+Errors: `404`, `422` with a message, such as `"The fewest games per session (5) cannot be more than the most (4)"`, `"Turn on at least 3 games, or lower the fewest games per session"` or `"Turned off in the Game Library, so it cannot be in a programme: bloom"`.
+
+### GET /api/admin/patients/{id}/programme/history
+
+Role: `admin`. Newest first: `[{ "id", "field", "before", "after", "reason", "admin_id", "admin_name", "created_at" }]`.
+
+### GET /api/patient/programme
+
+Role: `patient` (own). Read-only; there is no way for a patient to change it.
+
+```json
+{
+  "enabled_games": ["reach_activate", "bloom", "grip_hold"],
+  "warmup_exercises": ["shoulder_flexion", "thumb_opposition"],
+  "warmup_preset": "gentle",
+  "rest_every_minutes": 4,
+  "emg_default_site": "extensors",
+  "weekly_goal": 5
+}
+```
+
+`enabled_games` leaves out games the Game Library has turned off. No notes and no level limits.
 
 ## Muscle sensor (EMG)
 

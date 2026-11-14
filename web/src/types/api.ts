@@ -1290,3 +1290,56 @@ export interface EmgCalibrationRead extends EmgCalibrationCreate {
   gain_note: string | null;
   created_at: string;
 }
+
+// Each patient's programme (server/app/schemas/programme.py)
+
+export type ProgrammeWarmupPreset = "personal" | "gentle";
+
+/** Every setting of a programme, as the admin sees and sends it. */
+export interface ProgrammeFields {
+  enabled_games: GameId[];
+  /** The highest level (1-10) per game; a game left out may reach 10. */
+  max_level: Partial<Record<GameId, number>>;
+  session_minutes_target: number;
+  games_per_session: { min: number; max: number };
+  /** Warm-up exercise ids (see warmup/exercises.ts). */
+  warmup_exercises: string[];
+  warmup_preset: ProgrammeWarmupPreset;
+  rest_every_minutes: number;
+  engine_mode: EngineMode;
+  emg_default_site: EmgSite | null;
+  weekly_goal: number;
+  notes: string | null;
+}
+
+export interface ProgrammeUpdate extends ProgrammeFields {
+  reason?: string | null;
+}
+
+export interface Programme extends ProgrammeFields {
+  patient_id: number;
+  /** Games the Game Library has turned off: never played, whatever the programme says. */
+  library_disabled_games: GameId[];
+  updated_at: string;
+}
+
+export interface ProgrammeChange {
+  id: number;
+  field: keyof ProgrammeFields | string;
+  before: unknown;
+  after: unknown;
+  reason: string | null;
+  admin_id: number | null;
+  admin_name: string | null;
+  created_at: string;
+}
+
+/** The patient's read-only view: what the browser obeys. */
+export interface PatientProgramme {
+  enabled_games: GameId[];
+  warmup_exercises: string[];
+  warmup_preset: ProgrammeWarmupPreset;
+  rest_every_minutes: number;
+  emg_default_site: EmgSite | null;
+  weekly_goal: number;
+}

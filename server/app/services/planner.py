@@ -17,11 +17,13 @@ Inputs, all from the patient's completed sessions before the one being planned:
   in both (a third session in a row).
 - **Enjoyment:** small bonuses for a game's recent success and for the enjoyment ratings of the
   sessions it was played in.
-- **Load:** after a session with fatigue 7 or more, "too hard", or a pain flag, a lighter plan:
-  3 games and about 12 minutes. Otherwise 4 games and 16-18 minutes, the trials scaled to fit.
+- **Load:** from the patient's programme (Day 17; defaults 3-4 games and 18 minutes). After a
+  session with fatigue 7 or more, "too hard", or a pain flag, a lighter plan: the fewest games
+  and about two thirds of the minutes. Otherwise the most games and the target's last two
+  minutes (16-18 by default), the trials scaled to fit.
 
 Rules that always hold:
-- only games the Game Library has turned on;
+- only games the Game Library has turned on and the patient's programme allows;
 - at least one reach or shoulder game and one hand, finger or grip game (when enabled);
 - no two shoulder-heavy games next to each other;
 - the easiest game (highest recent success) first and the most enjoyable last, when the other
@@ -52,6 +54,7 @@ from app.schemas.common import as_utc
 from app.schemas.plan import PlanFocus, PlannedGame, PlanNote, SessionPlan
 from app.services.game_settings import effective_trials
 from app.services.game_specs import GameSpec, load_specs
+from app.services import programme as programmes
 from app.services.progress import patient_metrics
 
 PLANNER_VERSION = 1
@@ -104,8 +107,10 @@ WEIGHT_ENJOYMENT = 0.1
 #: An unknown success rate counts as this.
 DEFAULT_SUCCESS = 0.6
 HEAVY_FATIGUE = 7
-LIGHT_GAMES, LIGHT_MINUTES = 3, 12.0
-NORMAL_GAMES, NORMAL_MINUTES = 4, (16.0, 18.0)
+#: A lighter plan has this share of the programme's minutes (12 of the default 18).
+LIGHT_SHARE = 2 / 3
+#: A normal plan aims for the programme's minutes, or up to this much less.
+NORMAL_BAND = 2.0
 MIN_TRIALS, MAX_TRIALS = 5, 40
 BELIEF_GAP = 0.15
 TRIAL_GAP = 0.2
@@ -352,10 +357,15 @@ def build_plan(
     session: Session, profile: PatientProfile, history: History, seed: str
 ) -> SessionPlan:
     settings = {row.game_id: row for row in session.exec(select(GameSetting)).all()}
+    programme = programmes.programme_for(session, profile)
+    allowed = set(programme.enabled_games or [])
     specs = [
         spec
         for spec in load_specs()
-        if spec.implemented and spec.id in MOVEMENT and (settings.get(spec.id) is None or settings[spec.id].enabled)
+        if spec.implemented
+        and spec.id in MOVEMENT
+        and spec.id in allowed
+        and (settings.get(spec.id) is None or settings[spec.id].enabled)
     ]
     needs = movement_needs(session, profile)
     weak = weak_directions(session, profile, history)
@@ -392,15 +402,16 @@ def build_plan(
                       variety, third, game_success, game_enjoyment)
         )
 
-    count = LIGHT_GAMES if because else NORMAL_GAMES
+    count = programme.games_per_session_min if because else programme.games_per_session_max
     chosen = _order(_select(candidates, min(count, len(candidates)))) if candidates else []
 
     # Trials scaled so the plan fits its time.
     total = sum(_minutes(c.spec, c.trials) for c in chosen)
+    minutes = float(programme.session_minutes_target)
     if because:
-        target = LIGHT_MINUTES
+        target = round(minutes * LIGHT_SHARE, 1)
     else:
-        low, high = NORMAL_MINUTES
+        low, high = minutes - NORMAL_BAND, minutes
         target = high - 1 if total > high else (low if total < low else total)
     factor = target / total if total else 1.0
     favourite = max(chosen, key=lambda c: (c.enjoyment, c.success)).spec.id if chosen else ""

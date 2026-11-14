@@ -19,12 +19,17 @@ import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/AuthContext";
+import {
+  forcedWarmupPreset,
+  usePatientProgramme,
+  warmupOrder,
+} from "@/features/programme/patientProgramme";
 import { useSession, useSessionStep } from "@/features/session/SessionContext";
 import { firstUnfinished } from "@/features/session/sessionSteps";
 import { getLanguage, t, type TranslationKey } from "@/i18n";
 import { playBeep, playChime, playTick, prepareAudio, setMuted } from "@/lib/beep";
 import { canSpeak, onVoicesChanged, speak, stopSpeaking } from "@/lib/speech";
-import type { Side, WarmupResult } from "@/types/api";
+import type { PatientProgramme, Side, WarmupResult } from "@/types/api";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
 import { type JointAngleState, useJointAngles } from "@/vision/useJointAngles";
 import { useVision } from "@/vision/useVision";
@@ -372,6 +377,10 @@ function ExerciseStep({
 
 interface WarmupRunProps {
   affectedSide: Side;
+  /** The programme's exercises, in the warm-up's order. */
+  order: readonly ExerciseId[];
+  /** The preset the programme forces ("gentle"), or null for the patient's usual targets. */
+  forcedPreset: ThresholdPreset | null;
   /** Where to begin: the first exercise not yet done, after a refresh or a return. */
   startPosition: number;
   histories: Record<ExerciseId, WarmupHistoryEntry[]>;
@@ -381,6 +390,8 @@ interface WarmupRunProps {
 
 function WarmupRun({
   affectedSide,
+  order,
+  forcedPreset,
   startPosition,
   histories,
   onResult,
@@ -395,9 +406,10 @@ function WarmupRun({
   const [voiceAvailable, setVoiceAvailable] = useState(() => canSpeak(getLanguage()));
   const [resting, setResting] = useState(false);
 
-  const id = EXERCISE_ORDER[position];
-  // Personal by default: with no history it falls back to the standard preset by itself.
-  const preset = presets[id] ?? "personal";
+  const id = order[position];
+  // Personal by default: with no history it falls back to the standard preset by itself. The
+  // programme may force the gentle one.
+  const preset = forcedPreset ?? presets[id] ?? "personal";
 
   useEffect(() => stopSpeaking, []);
   useEffect(() => onVoicesChanged(() => setVoiceAvailable(canSpeak(getLanguage()))), []);
@@ -406,11 +418,11 @@ function WarmupRun({
   const handleNext = useCallback(
     (rest: boolean) => {
       setStartAtCountdown(false);
-      if (position + 1 >= EXERCISE_ORDER.length) onFinished();
+      if (position + 1 >= order.length) onFinished();
       else if (rest) setResting(true);
       else setPosition(position + 1);
     },
-    [position, onFinished],
+    [position, onFinished, order.length],
   );
   const endRest = useCallback(() => {
     setResting(false);
@@ -430,7 +442,7 @@ function WarmupRun({
     <div className="flex flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center justify-end gap-2">
         <p className="mr-auto font-medium">
-          {t("warmup.progress", { current: position + 1, total: EXERCISE_ORDER.length })}
+          {t("warmup.progress", { current: position + 1, total: order.length })}
         </p>
         {voiceAvailable && (
           <Button
@@ -450,10 +462,7 @@ function WarmupRun({
         </Button>
       </div>
       {resting ? (
-        <RestScreen
-          nextName={t(EXERCISES[EXERCISE_ORDER[position + 1]].nameKey)}
-          onDone={endRest}
-        />
+        <RestScreen nextName={t(EXERCISES[order[position + 1]].nameKey)} onDone={endRest} />
       ) : (
         <ExerciseStep
           key={`${id}-${preset}`}
@@ -488,19 +497,30 @@ export function SessionWarmupPage() {
   useSessionStep("warmup");
   const { sessionId } = useSession();
   const saved = useSessionWarmup(sessionId);
+  const programme = usePatientProgramme();
 
-  if (saved.isPending && sessionId !== null) {
+  if ((saved.isPending && sessionId !== null) || programme.isPending) {
     return (
       <div className="m-auto">
         <Spinner size={48} />
       </div>
     );
   }
-  // Without the saved results the warm-up simply starts from the first exercise.
-  return <Warmup saved={saved.data ?? []} />;
+  // Without the saved results the warm-up simply starts from the first exercise; without the
+  // programme, it has every exercise and the usual targets.
+  return <Warmup saved={saved.data ?? []} programme={programme.data ?? null} />;
 }
 
-function Warmup({ saved }: { saved: readonly WarmupResult[] }) {
+function Warmup({
+  saved,
+  programme,
+}: {
+  saved: readonly WarmupResult[];
+  programme: PatientProgramme | null;
+}) {
+  // Fixed on arrival, so a programme changed during the warm-up does not move it.
+  const [order] = useState(() => warmupOrder(EXERCISE_ORDER, programme));
+  const [forcedPreset] = useState(() => forcedWarmupPreset(programme));
   const navigate = useNavigate();
   const { user } = useAuth();
   const { sessionId, warmupResults, addWarmupResult } = useSession();
@@ -528,10 +548,8 @@ function Warmup({ saved }: { saved: readonly WarmupResult[] }) {
   );
   const affectedSide = user?.patient_profile?.affected_side;
   // Fixed on arrival, like the histories, so finishing an exercise does not move the start.
-  const [startId] = useState(() =>
-    firstUnfinished(EXERCISE_ORDER, doneExercises(warmupResults, saved)),
-  );
-  const startPosition = startId === null ? 0 : EXERCISE_ORDER.indexOf(startId);
+  const [startId] = useState(() => firstUnfinished(order, doneExercises(warmupResults, saved)));
+  const startPosition = startId === null ? 0 : order.indexOf(startId);
   const [phase, setPhase] = useState<"overview" | "running" | "complete">(
     startId === null ? "complete" : "overview",
   );
@@ -558,7 +576,7 @@ function Warmup({ saved }: { saved: readonly WarmupResult[] }) {
         <h1 className="text-2xl font-bold">{t("warmup.overview.title")}</h1>
         <p className="text-muted">{t("warmup.overview.time")}</p>
         <ul className="flex flex-col gap-3">
-          {EXERCISE_ORDER.map((id) => {
+          {order.map((id) => {
             const Icon = EXERCISE_ICONS[id];
             return (
               <li key={id} className="flex items-center gap-3 font-medium">
@@ -592,6 +610,8 @@ function Warmup({ saved }: { saved: readonly WarmupResult[] }) {
     return (
       <WarmupRun
         affectedSide={affectedSide}
+        order={order}
+        forcedPreset={forcedPreset}
         startPosition={startPosition}
         histories={histories ?? historyQueries.histories}
         onResult={handleResult}

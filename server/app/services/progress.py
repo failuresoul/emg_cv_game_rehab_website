@@ -36,6 +36,7 @@ from app.schemas.progress import (
     WarmupComparison,
 )
 from app.services import levels, session_feedback
+from app.services import programme as programmes
 from app.services.game_measures import extra_measures, main_measure
 from app.services.metrics_catalog import load_catalog
 from app.services.sessions import duration_seconds, get_last_session_record, list_calibrations
@@ -277,7 +278,7 @@ def get_progress(
     return PatientProgress(
         streak_days=streak_days(days, today),
         sessions_this_week=sessions_this_week(days, today),
-        weekly_goal=profile.weekly_goal,
+        weekly_goal=programmes.programme_for(session, profile).weekly_goal,
         calendar=calendar(days, today),
         series=series,
         last_session_date=last.started_at if last else None,

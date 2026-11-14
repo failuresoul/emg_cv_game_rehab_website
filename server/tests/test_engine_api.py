@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.engine.difficulty import value_at
 from app.models import AdaptationLog, EngineState, PatientProfile
 from app.services.game_specs import get_spec
+from tests.programme_helpers import set_programme
 
 
 def step(
@@ -183,10 +184,7 @@ def test_safety_cues_through_the_api(
 def test_never_above_the_patients_maximum(
     client: TestClient, patient_headers: Headers, session: Session
 ) -> None:
-    patient = profile(session)
-    patient.max_difficulty = {"reach_activate": 0.3}
-    session.add(patient)
-    session.commit()
+    set_programme(session, profile(session), max_difficulty={"reach_activate": 0.3})
     run_id = new_run(client, patient_headers)
     step(client, patient_headers, run_id)
     reach = get_spec("reach_activate")
@@ -202,10 +200,7 @@ def test_never_above_the_patients_maximum(
 def test_l0_patients_keep_the_admin_defaults(
     client: TestClient, patient_headers: Headers, session: Session
 ) -> None:
-    patient = profile(session)
-    patient.engine_mode = "L0"
-    session.add(patient)
-    session.commit()
+    set_programme(session, profile(session), engine_mode="L0")
     run_id = new_run(client, patient_headers)
     first = step(client, patient_headers, run_id)
     for n in range(1, 5):

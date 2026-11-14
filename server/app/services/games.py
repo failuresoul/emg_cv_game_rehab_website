@@ -8,6 +8,7 @@ from sqlmodel import Session, col, select
 from app.models import Calibration, EmgCalibration, GameRun, PatientProfile, Trial, User
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
+from app.services import programme as programmes
 from app.schemas.game import (
     GameRunDetail,
     GameRunEnd,
@@ -76,7 +77,7 @@ def start_run(session: Session, record: SessionRecord, payload: GameRunStart) ->
     # The engine is the patient's, whatever the browser says.
     profile = session.get(PatientProfile, record.patient_id)
     if profile is not None:
-        run.engine = profile.engine_mode
+        run.engine = programmes.programme_for(session, profile).engine_mode
     session.add(run)
     session.commit()
     return run

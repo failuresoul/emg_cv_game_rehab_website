@@ -1,5 +1,7 @@
 """The admin's game settings: which games patients see, and the defaults they start from."""
 
+from collections.abc import Collection
+
 from sqlmodel import Session, select
 
 from app.models import GameSetting
@@ -103,13 +105,18 @@ def reset(session: Session, game_id: str) -> AdminGameRead:
     return _admin_view(spec, None)
 
 
-def patient_settings(session: Session) -> list[PatientGameSetting]:
-    """The games patients may play (built and enabled), with their starting values."""
+def patient_settings(
+    session: Session, allowed: Collection[str] | None = None
+) -> list[PatientGameSetting]:
+    """The games patients may play (built and enabled), with their starting values. `allowed`
+    (the patient's programme) narrows them further."""
     rows = {row.game_id: row for row in session.exec(select(GameSetting)).all()}
     settings: list[PatientGameSetting] = []
     for spec in load_specs():
         row = rows.get(spec.id)
         if not spec.implemented or (row is not None and not row.enabled):
+            continue
+        if allowed is not None and spec.id not in allowed:
             continue
         settings.append(
             PatientGameSetting(

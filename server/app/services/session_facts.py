@@ -25,6 +25,7 @@ from app.schemas.metrics import (
     SessionFacts,
 )
 from app.services import levels, planner
+from app.services import programme as programmes
 from app.services.metrics_catalog import get_metric
 from app.services.progress import (
     BASELINE_SESSIONS,
@@ -262,7 +263,7 @@ def build_facts(session: Session, record: SessionRecord) -> SessionFacts:
         ),
         adherence=FactsAdherence(
             sessions_this_week=sessions_this_week(completed_days, day),
-            planned_this_week=profile.weekly_goal,
+            planned_this_week=programmes.programme_for(session, profile).weekly_goal,
         ),
         next_session=_next_session(session, profile, record),
         safety_notice_present=bool(flags & SAFETY_FLAGS),

@@ -20,6 +20,9 @@ import type {
   PatientLevels,
   PatientMetrics,
   PatientProgress,
+  Programme,
+  ProgrammeChange,
+  ProgrammeUpdate,
   PatientUpdate,
   SessionSummary,
 } from "@/types/api";
@@ -223,5 +226,33 @@ export function useAdminPatientPlan(id: number) {
   return useQuery({
     queryKey: [ADMIN_KEY, "patient", id, "plan"],
     queryFn: async () => (await api.get<LatestPlan>(`/admin/patients/${id}/plan`)).data,
+  });
+}
+
+/** The patient's programme: games and highest levels, session, warm-up, AI, sensor and goals. */
+export function useAdminProgramme(id: number) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "patient", id, "programme"],
+    queryFn: async () => (await api.get<Programme>(`/admin/patients/${id}/programme`)).data,
+  });
+}
+
+/** Every change of the programme, newest first. */
+export function useProgrammeHistory(id: number) {
+  return useQuery({
+    queryKey: [ADMIN_KEY, "patient", id, "programme", "history"],
+    queryFn: async () =>
+      (await api.get<ProgrammeChange[]>(`/admin/patients/${id}/programme/history`)).data,
+  });
+}
+
+export function useSaveProgramme(id: number) {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: async (payload: ProgrammeUpdate) =>
+      (await api.put<Programme>(`/admin/patients/${id}/programme`, payload)).data,
+    // The save dialog explains the error.
+    meta: SILENT,
+    onSuccess: invalidate,
   });
 }

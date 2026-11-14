@@ -12,6 +12,7 @@ from app.schemas.game_setting import AdminGameRead, GameSettingUpdate
 from app.schemas.metrics import GameLevel, PatientLevels, PatientMetrics
 from app.schemas.patient import AdminStats, PatientCreate, PatientRead, PatientUpdate
 from app.schemas.plan import LatestPlan, PlanOverrideRead, SessionPlan
+from app.schemas.programme import ProgrammeChangeRead, ProgrammeRead, ProgrammeUpdate
 from app.schemas.session import (
     AdminCalibrationRead,
     AdminRecentSession,
@@ -21,6 +22,7 @@ from app.schemas.session import (
 from app.schemas.progress import PatientProgress
 from app.schemas.session_feedback import AdminAlert, AlertReview
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
+from app.services import programme as programmes
 from app.services import (
     emg,
     exports,
@@ -37,6 +39,7 @@ from app.services import (
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+CurrentAdmin = Annotated[User, Depends(require_admin)]
 
 
 def _get_patient_or_404(session: SessionDep, patient_id: int) -> tuple[PatientProfile, User]:
@@ -66,16 +69,50 @@ def create_patient(payload: PatientCreate, session: SessionDep) -> PatientRead:
 @router.get("/patients/{patient_id}")
 def get_patient(patient_id: int, session: SessionDep) -> PatientRead:
     profile, user = _get_patient_or_404(session, patient_id)
-    return patients.to_patient_read(profile, user)
+    return patients.to_patient_read(session, profile, user)
 
 
 @router.patch("/patients/{patient_id}")
-def update_patient(patient_id: int, payload: PatientUpdate, session: SessionDep) -> PatientRead:
+def update_patient(
+    patient_id: int, payload: PatientUpdate, session: SessionDep, admin: CurrentAdmin
+) -> PatientRead:
     profile, user = _get_patient_or_404(session, patient_id)
     try:
-        return patients.update_patient(session, profile, user, payload)
+        return patients.update_patient(session, profile, user, payload, admin_id=admin.id)
     except patients.DuplicateEmailError:
         raise _duplicate_email() from None
+    except (programmes.LibraryDisabledError, ValueError) as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from None
+
+
+@router.get("/patients/{patient_id}/programme")
+def get_programme(patient_id: int, session: SessionDep) -> ProgrammeRead:
+    """The patient's programme: games and their highest levels, session length, warm-up, AI
+    engine, muscle-sensor site, weekly goal and notes."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    return programmes.to_read(session, programmes.programme_for(session, profile))
+
+
+@router.put("/patients/{patient_id}/programme")
+def put_programme(
+    patient_id: int, payload: ProgrammeUpdate, session: SessionDep, admin: CurrentAdmin
+) -> ProgrammeRead:
+    """Replaces the programme; each changed field is kept in the history with the reason."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    programme = programmes.programme_for(session, profile)
+    try:
+        programmes.update(session, programme, payload, admin.id, payload.reason)
+    except programmes.LibraryDisabledError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from None
+    return programmes.to_read(session, programme)
+
+
+@router.get("/patients/{patient_id}/programme/history")
+def get_programme_history(patient_id: int, session: SessionDep) -> list[ProgrammeChangeRead]:
+    """Every change of the programme, newest first."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    assert profile.id is not None
+    return programmes.history(session, profile.id)
 
 
 @router.post("/patients/{patient_id}/deactivate")
@@ -119,7 +156,7 @@ def get_patient_levels(patient_id: int, session: SessionDep) -> PatientLevels:
     """The patient's engine mode and current difficulty level in each game played with it."""
     profile, _ = _get_patient_or_404(session, patient_id)
     return PatientLevels(
-        engine_mode=profile.engine_mode,  # type: ignore[arg-type]
+        engine_mode=programmes.programme_for(session, profile).engine_mode,  # type: ignore[arg-type]
         games=[
             GameLevel(
                 game_id=row.game_id,

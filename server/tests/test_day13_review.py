@@ -24,15 +24,11 @@ from app.models import GameRun
 from app.models import Session as SessionRecord
 from app.services import adaptation
 from app.services.game_specs import get_spec
+from tests.programme_helpers import set_programme
 
 
 def l2_patient(session: Session, **changes: Any) -> None:
-    patient = profile(session)
-    patient.engine_mode = "L2"
-    for name, value in changes.items():
-        setattr(patient, name, value)
-    session.add(patient)
-    session.commit()
+    set_programme(session, profile(session), engine_mode="L2", **changes)
 
 
 def test_every_l2_decision_in_the_app_goes_through_the_safety_layer(

@@ -5,6 +5,7 @@ from app.models.game import GameRun, Trial
 from app.models.game_setting import GameSetting
 from app.models.llm_report import LlmReport, ReportRating
 from app.models.patient import PatientProfile
+from app.models.programme import PatientProgramme, ProgrammeChange
 from app.models.review import ReviewItem, ReviewSet
 from app.models.session import Calibration, Session
 from app.models.session_feedback import SessionFeedback
@@ -21,6 +22,8 @@ __all__ = [
     "GameSetting",
     "LlmReport",
     "PatientProfile",
+    "PatientProgramme",
+    "ProgrammeChange",
     "ReportRating",
     "ReviewItem",
     "ReviewSet",

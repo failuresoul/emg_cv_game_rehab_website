@@ -10,6 +10,7 @@ from test_warmup import result_payload
 
 from app.models import PatientProfile
 from app.schemas.game import GAME_IDS
+from tests.programme_helpers import set_programme
 
 CreatePatient = Callable[..., dict[str, Any]]
 Login = Callable[[str, str], Headers]
@@ -152,9 +153,7 @@ def test_run_engine_follows_the_patients_engine_mode(
     assert response.json()["engine"] == "L1"
 
     profile = session.exec(select(PatientProfile)).one()
-    profile.engine_mode = "L0"
-    session.add(profile)
-    session.commit()
+    set_programme(session, profile, engine_mode="L0")
     response = client.post(url, json=run_payload(engine="L2"), headers=patient_headers)
     assert response.json()["engine"] == "L0"
 

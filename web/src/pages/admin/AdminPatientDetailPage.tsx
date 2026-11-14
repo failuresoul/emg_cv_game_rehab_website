@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { buttonClasses } from "@/components/ui/buttonStyles";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ProgrammeTab } from "@/features/admin/programme/ProgrammeTab";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -229,7 +230,7 @@ export function AdminPatientDetailPage() {
           {tab === "sessions" && <PatientSessionsTab patientId={patient.data.id} />}
           {tab === "progress" && <PatientProgressTab patient={patient.data} />}
           {tab === "reports" && <AdminReportsTab patientId={patient.data.id} />}
-          {tab === "programme" && <EmptyState title={t("patient.tab.emptyUntilSessions")} />}
+          {tab === "programme" && <ProgrammeTab patientId={patient.data.id} />}
         </Tabs>
       </Card>
     </>

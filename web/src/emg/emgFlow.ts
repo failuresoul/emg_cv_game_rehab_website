@@ -63,6 +63,8 @@ export interface FlowState {
 
 export type FlowAction =
   | { type: "chooseSite"; site: EmgSite }
+  /** The programme's default site: chosen only while nothing is, on the safety stage. */
+  | { type: "suggestSite"; site: EmgSite | null }
   | { type: "answerSafety"; key: keyof SafetyAnswers; value: boolean }
   | { type: "continueToCheck"; simulated?: boolean }
   | { type: "connected"; source: EmgSourceKind }
@@ -123,6 +125,9 @@ const restartCalibration = (state: FlowState): FlowState => ({
 export function flowReducer(state: FlowState, action: FlowAction): FlowState {
   switch (action.type) {
     case "chooseSite":
+      return { ...state, site: action.site };
+    case "suggestSite":
+      if (action.site === null || state.site !== null || state.stage !== "safety") return state;
       return { ...state, site: action.site };
     case "answerSafety":
       return { ...state, safety: { ...state.safety, [action.key]: action.value } };

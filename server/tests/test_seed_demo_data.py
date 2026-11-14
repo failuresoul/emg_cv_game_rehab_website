@@ -27,6 +27,8 @@ from app.schemas.warmup import WarmupResultCreate
 from app.services.levels import run_levels
 from app.services.users import authenticate
 from scripts import seed_demo_data as demo
+from tests.programme_helpers import set_programme
+from app.services import programme as programmes
 
 NOW = datetime(2026, 11, 10, 12, 0, tzinfo=UTC)
 
@@ -474,7 +476,7 @@ def test_engine_decisions_follow_every_demo_trial(session: Session) -> None:
 
     profiles = {profile.affected_side: profile for profile in demo_profiles(session)}
     for profile in profiles.values():
-        assert profile.engine_mode == "L2"
+        assert programmes.programme_for(session, profile).engine_mode == "L2"
         states = session.exec(
             select(EngineState).where(EngineState.patient_id == profile.id)
         ).all()

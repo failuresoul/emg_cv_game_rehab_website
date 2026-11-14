@@ -3,13 +3,15 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import CurrentPatient, SessionDep, TzOffset
-from app.schemas.patient import PatientDashboard, PatientProfileRead, TodayPlanStep
+from app.schemas.patient import PatientDashboard, TodayPlanStep
+from app.schemas.programme import PatientProgrammeRead
 from app.schemas.emg import EmgCalibrationRead
 from app.schemas.metrics import MetricSeries
 from app.schemas.progress import PatientProgress
 from app.schemas.session import CalibrationRead, LastSession, SessionDetail, SessionSummary
 from app.schemas.warmup import ExerciseId, WarmupResultRead
-from app.services import emg, games, progress, sessions, warmup
+from app.services import emg, games, patients, progress, sessions, warmup
+from app.services import programme as programmes
 from app.services.metrics_catalog import get_metric
 
 router = APIRouter(prefix="/patient", tags=["patient"])
@@ -38,7 +40,7 @@ def dashboard(
             games.last_session_games(session, record.id),
         )
     return PatientDashboard(
-        profile=PatientProfileRead.model_validate(patient),
+        profile=patients.profile_read(session, patient),
         today_plan=TODAY_PLAN,
         last_session=last_session,
         latest_calibration=sessions.get_latest_calibration_summary(session, patient.id),
@@ -89,6 +91,13 @@ def latest_calibration(patient: CurrentPatient, session: SessionDep) -> Calibrat
     if calibration is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No calibration yet")
     return CalibrationRead.model_validate(calibration)
+
+
+@router.get("/programme")
+def get_own_programme(patient: CurrentPatient, session: SessionDep) -> PatientProgrammeRead:
+    """What the browser needs from the patient's programme. Read-only: only an admin changes
+    it."""
+    return programmes.to_patient_read(session, programmes.programme_for(session, patient))
 
 
 @router.get("/emg-calibration/latest")

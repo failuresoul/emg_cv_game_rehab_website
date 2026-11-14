@@ -7,7 +7,7 @@ from sqlmodel import select
 from app.api.deps import CurrentUser, SessionDep
 from app.core.security import create_access_token
 from app.models import PatientProfile
-from app.schemas.patient import PatientCreate, PatientProfileRead, PatientRegister
+from app.schemas.patient import PatientCreate, PatientRegister
 from app.schemas.user import LoginResponse, MeRead, UserRead
 from app.services import patients
 from app.services.users import authenticate
@@ -54,5 +54,5 @@ def me(user: CurrentUser, session: SessionDep) -> MeRead:
     profile = session.exec(select(PatientProfile).where(PatientProfile.user_id == user.id)).first()
     return MeRead(
         **UserRead.model_validate(user).model_dump(),
-        patient_profile=PatientProfileRead.model_validate(profile) if profile else None,
+        patient_profile=patients.profile_read(session, profile) if profile else None,
     )

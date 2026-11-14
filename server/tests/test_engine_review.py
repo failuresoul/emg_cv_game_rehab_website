@@ -25,6 +25,7 @@ from app.services import adaptation
 from app.services.engine_store import WARM_RESTART
 from app.services.game_settings import effective_params_for
 from app.services.game_specs import get_spec, load_specs
+from tests.programme_helpers import set_programme
 
 OUTCOMES = ["success", "success", "success", "reach_fail", "activation_fail", "miss", "aborted"]
 
@@ -137,10 +138,7 @@ def test_the_warm_restart_happens_once_per_session_and_game(
 def test_l0_patients_get_exactly_the_admin_defaults_and_a_steady_level(
     client: TestClient, patient_headers: Headers, session: Session
 ) -> None:
-    patient = profile(session)
-    patient.engine_mode = "L0"
-    session.add(patient)
-    session.commit()
+    set_programme(session, profile(session), engine_mode="L0")
     run_id = new_run(client, patient_headers)
     first = step(client, patient_headers, run_id)
     answers = [
@@ -167,8 +165,7 @@ def test_l0_has_no_warm_restart(
     client: TestClient, patient_headers: Headers, session: Session
 ) -> None:
     patient = profile(session)
-    patient.engine_mode = "L0"
-    session.add(patient)
+    set_programme(session, patient, engine_mode="L0")
     assert patient.id is not None
     session.add(
         EngineState(

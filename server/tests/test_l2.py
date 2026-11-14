@@ -36,6 +36,7 @@ from app.schemas.engine import LastTrial
 from app.services.adaptation import PastStep, decide
 from app.services.game_specs import GameSpec, get_spec
 from scripts.smoke_test import calibration_payload
+from tests.programme_helpers import set_programme
 
 SECTOR = re.compile(r"^D[0-7]R[1-4]$")
 
@@ -375,10 +376,7 @@ def test_safety_easing_moves_the_target_closer() -> None:
 
 
 def l2_patient(session: Session) -> None:
-    patient = profile(session)
-    patient.engine_mode = "L2"
-    session.add(patient)
-    session.commit()
+    set_programme(session, profile(session), engine_mode="L2")
 
 
 def test_l2_patients_get_a_target_and_logged_samples(

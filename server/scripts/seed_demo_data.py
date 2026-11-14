@@ -39,6 +39,8 @@ from app.models import (
     Calibration,
     GameRun,
     PatientProfile,
+    PatientProgramme,
+    ProgrammeChange,
     AdaptationLog,
     EngineState,
     SessionFeedback,
@@ -55,6 +57,7 @@ from app.schemas.patient import PatientCreate
 from app.schemas.session import DIRECTIONS_DEG, CalibrationCreate
 from app.schemas.session_feedback import SessionFeedbackCreate
 from app.schemas.warmup import ExerciseId, WarmupResultCreate
+from app.services import programme as programmes
 from app.engine.trial_summary import last_trial
 from app.schemas.common import as_utc
 from app.schemas.plan import PlanOverrideRead
@@ -1465,6 +1468,12 @@ def clear_demo_data(session: Session) -> int:
     _delete(session, delete(SessionMetric).where(col(SessionMetric.session_id).in_(session_ids)))
     _delete(session, delete(SessionRecord).where(col(SessionRecord.id).in_(session_ids)))
     _delete(session, delete(EngineState).where(col(EngineState.patient_id).in_(profile_ids)))
+    _delete(
+        session, delete(ProgrammeChange).where(col(ProgrammeChange.patient_id).in_(profile_ids))
+    )
+    _delete(
+        session, delete(PatientProgramme).where(col(PatientProgramme.patient_id).in_(profile_ids))
+    )
     user_ids = [profile.user_id for profile in profiles]
     _delete(session, delete(PatientProfile).where(col(PatientProfile.id).in_(profile_ids)))
     _delete(session, delete(User).where(col(User.id).in_(user_ids)))
@@ -1524,7 +1533,7 @@ def _add_session(
         run = GameRun(
             session_id=record.id,
             game_id=game_id,
-            engine=profile.engine_mode,
+            engine=programmes.programme_for(session, profile).engine_mode,
             input_source="cv_grip",
             params_initial={"seed": rng.randrange(1, 2**31)},
             started_at=run_start,
@@ -1593,7 +1602,9 @@ def seed_demo_data(
         assert profile is not None
         profile.is_demo = True
         # The demo shows the Bayesian, workspace-aware engine and the planner.
-        profile.engine_mode = "L2"
+        programme = programmes.programme_for(session, profile)
+        programme.engine_mode = "L2"
+        session.add(programme)
         session.add(profile)
 
         histories: dict[ExerciseId, ExerciseHistory] = {}

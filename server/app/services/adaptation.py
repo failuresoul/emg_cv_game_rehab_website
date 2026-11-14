@@ -22,6 +22,7 @@ from app.models.user import utc_now
 from app.schemas.common import as_utc
 from app.schemas.engine import EngineNextResponse, LastTrial
 from app.services import engine_store
+from app.services import programme as programmes
 
 
 class RunEndedError(Exception):
@@ -104,6 +105,8 @@ def decide(
     finish_soon_minutes: float | None = None,
     finish_minutes: float | None = None,
     safety: bool = True,
+    minutes_since_rest: float | None = None,
+    rest_every_minutes: float | None = None,
 ) -> Step:
     """The engine learns from the last trial, the safety rules check its proposal, and the next
     trial's settings follow. Pure: the API (next_step) and the simulator (app.engine.sim) both
@@ -149,6 +152,8 @@ def decide(
                 finish_minutes=(
                     settings.SESSION_FINISH_MIN if finish_minutes is None else finish_minutes
                 ),
+                minutes_since_rest=minutes_since_rest,
+                rest_every_minutes=rest_every_minutes,
             )
         )
     if not engine.adapts:
@@ -178,16 +183,37 @@ def decide(
     )
 
 
-def active_minutes(session: Session, run: GameRun, now: datetime | None = None) -> float:
-    """Minutes of game play in the run's session so far: every run's time, this one's up to now."""
+def active_minutes(
+    session: Session, run: GameRun, now: datetime | None = None, until: datetime | None = None
+) -> float:
+    """Minutes of game play in the run's session so far: every run's time, this one's up to now.
+    With `until`, only the play before that moment."""
     runs = session.exec(select(GameRun).where(GameRun.session_id == run.session_id)).all()
     now = now or utc_now()
     total = timedelta()
     for item in runs:
         end = item.ended_at if item.ended_at is not None else (now if item.id == run.id else None)
-        if end is not None:
-            total += max(as_utc(end) - as_utc(item.started_at), timedelta())
+        if end is None:
+            continue
+        end = as_utc(end)
+        if until is not None:
+            end = min(end, as_utc(until))
+        total += max(end - as_utc(item.started_at), timedelta())
     return total.total_seconds() / 60
+
+
+def minutes_since_rest(session: Session, run: GameRun, now: datetime | None = None) -> float:
+    """Minutes of play in the run's session since its last "rest" cue, or since the start."""
+    last = session.exec(
+        select(AdaptationLog)
+        .join(GameRun, col(GameRun.id) == col(AdaptationLog.game_run_id))
+        .where(GameRun.session_id == run.session_id, AdaptationLog.cue == "rest")
+        .order_by(col(AdaptationLog.created_at).desc())
+    ).first()
+    played = active_minutes(session, run, now)
+    if last is None:
+        return played
+    return max(0.0, played - active_minutes(session, run, now, until=last.created_at))
 
 
 def _existing(session: Session, run_id: int, trial_no: int) -> AdaptationLog | None:
@@ -252,6 +278,8 @@ def next_step(
         last_trial,
         [PastStep(log.trial_no, log.trial, log.cue) for log in logs],
         active_minutes=active_minutes(session, run, now),
+        minutes_since_rest=minutes_since_rest(session, run, now),
+        rest_every_minutes=float(programmes.programme_for(session, profile).rest_every_minutes),
     )
     engine_store.save(
         session,
@@ -273,6 +301,7 @@ def next_step(
         cue=step.cue,
         trial=trial_json(last_trial) if last_trial else None,
         details=step.details,
+        created_at=now if now is not None else utc_now(),
     )
     session.add(log)
     if replay:

@@ -10,6 +10,7 @@ from sqlmodel import Session, col, select
 from app.engine.base import EngineData
 from app.engine.difficulty import level_of
 from app.models import AdaptationLog, EngineState, PatientProfile
+from app.services import programme as programmes
 from app.schemas.game import AdaptationLogRead
 
 
@@ -70,7 +71,10 @@ def patient_engine_states(session: Session, profile: PatientProfile) -> list[Eng
     """The patient's stored difficulty per game for their current engine, by game id."""
     statement = (
         select(EngineState)
-        .where(EngineState.patient_id == profile.id, EngineState.engine == profile.engine_mode)
+        .where(
+            EngineState.patient_id == profile.id,
+            EngineState.engine == programmes.programme_for(session, profile).engine_mode,
+        )
         .order_by(col(EngineState.game_id))
     )
     return list(session.exec(statement).all())

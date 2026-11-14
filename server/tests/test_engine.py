@@ -25,6 +25,8 @@ from app.models import EngineState, GameSetting, PatientProfile
 from app.services import engine_store
 from app.services.engine_store import WARM_RESTART, warm_restart
 from app.services.game_specs import GameSpec, get_spec, load_specs
+from tests.programme_helpers import set_programme
+from app.services import programme as programmes
 
 
 def spec(game_id: str) -> GameSpec:
@@ -323,12 +325,13 @@ def test_profiles_default_to_l1_with_no_maximum(
     session: Session, patient_headers: Headers
 ) -> None:
     profile = patient(session)
-    assert profile.engine_mode == "L1"
-    assert profile.max_difficulty == {}
-    assert engine_store.max_difficulty(profile, "bloom") == 1.0
-    profile.max_difficulty = {"bloom": 0.4, "grip_hold": "oops"}
-    assert engine_store.max_difficulty(profile, "bloom") == 0.4
-    assert engine_store.max_difficulty(profile, "grip_hold") == 1.0
+    programme = programmes.programme_for(session, profile)
+    assert programme.engine_mode == "L1"
+    assert programme.max_level == {}
+    assert engine_store.max_difficulty(session, profile, "bloom") == 1.0
+    set_programme(session, profile, max_level={"bloom": 4, "grip_hold": "oops"})
+    assert engine_store.max_difficulty(session, profile, "bloom") == 0.4
+    assert engine_store.max_difficulty(session, profile, "grip_hold") == 1.0
 
 
 def test_state_is_kept_between_trials_and_eased_between_sessions(
@@ -359,7 +362,7 @@ def test_each_engine_and_game_has_its_own_state(
     profile = patient(session)
     loaded = engine_store.load(session, profile, "bloom", session_id=1)
     engine_store.save(session, loaded, loaded.state, session_id=1)
-    profile.engine_mode = "L0"
+    set_programme(session, profile, engine_mode="L0")
     loaded = engine_store.load(session, profile, "bloom", session_id=1)
     assert loaded.engine.name == "L0" and loaded.row.id is None
     engine_store.save(session, loaded, loaded.state, session_id=1)
@@ -378,7 +381,7 @@ def test_loading_starts_from_the_admin_defaults_and_the_cap(
     loaded = engine_store.load(session, profile, "grip_hold", session_id=1)
     params, _ = loaded.engine.next_params(loaded.state, loaded.context)
     assert loaded.context.settings["hold_ms"] == 8000
-    profile.max_difficulty = {"grip_hold": 0.2}
+    set_programme(session, profile, max_level={"grip_hold": 2})
     capped = engine_store.load(session, profile, "grip_hold", session_id=1)
     assert all(d <= 0.2 for d in capped.state.d.values())
     with pytest.raises(engine_store.UnknownGameError):
