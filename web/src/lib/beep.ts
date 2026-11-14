@@ -13,17 +13,23 @@ const CHIME_STEP_SECONDS = 0.16;
 
 let audioContext: AudioContext | null = null;
 let muted = false;
+/** The patient's "Sounds" setting (profile); muting on a screen comes on top of it. */
+let soundEnabled = true;
 
 export function setMuted(value: boolean): void {
   muted = value;
 }
 
+export function setSoundEnabled(on: boolean): void {
+  soundEnabled = on;
+}
+
 export function isMuted(): boolean {
-  return muted;
+  return muted || !soundEnabled;
 }
 
 function playTone(hz: number, seconds: number, delaySeconds = 0, volume = BEEP_VOLUME): void {
-  if (!audioContext || muted) return;
+  if (!audioContext || isMuted()) return;
   const oscillator = audioContext.createOscillator();
   const gain = audioContext.createGain();
   const startAt = audioContext.currentTime + delaySeconds;

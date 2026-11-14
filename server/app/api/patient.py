@@ -102,12 +102,10 @@ def latest_calibration(patient: CurrentPatient, session: SessionDep) -> Calibrat
 def update_own_profile(
     payload: OwnProfileUpdate, patient: CurrentPatient, session: SessionDep
 ) -> PatientProfileRead:
-    """The patient's own language (the interface and their feedback reports follow it) and
-    whether numbers use Bengali digits."""
-    if payload.language is not None:
-        patient.language = payload.language
-    if payload.bengali_digits is not None:
-        patient.bengali_digits = payload.bengali_digits
+    """The patient's own settings: language (the interface and their feedback reports follow
+    it), Bengali digits, text size, high contrast, less motion, sounds and spoken instructions."""
+    for name, value in payload.model_dump(exclude_none=True).items():
+        setattr(patient, name, value)
     session.add(patient)
     session.commit()
     session.refresh(patient)

@@ -18,6 +18,13 @@ class PatientProfile(SQLModel, table=True):
     language: str = "en"  # "en" | "bn"
     #: The patient's own setting: numbers in Bengali digits in the Bangla interface.
     bengali_digits: bool = False
+    #: Display settings, the patient's own (Day 17): text size "normal" | "large" | "xlarge",
+    #: a high-contrast theme, less motion, game sounds, and spoken instructions.
+    text_size: str = "normal"
+    high_contrast: bool = False
+    reduce_motion: bool = False
+    sound_on: bool = True
+    voice_on: bool = False
     notes: str | None = None
     #: Sessions per week the patient aims for; the therapist sets it.
     weekly_goal: int = 5

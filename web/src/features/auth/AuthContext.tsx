@@ -4,6 +4,8 @@ import { createContext, Fragment, type ReactNode, useContext, useState } from "r
 import { setBengaliDigits, setLanguage } from "@/i18n";
 import { readStoredLanguage, storeLanguage } from "@/i18n/preference";
 import { api } from "@/lib/api";
+import { setSoundEnabled } from "@/lib/beep";
+import { applyDisplay } from "@/lib/display";
 import type { Language, LoginResponse, Me, PatientProfile, PatientRegister } from "@/types/api";
 
 import { clearToken, getToken, saveToken } from "./storage";
@@ -21,7 +23,13 @@ interface AuthContextValue {
   changeLanguage: (language: Language) => Promise<void>;
   /** Patients only: numbers in Bengali digits in the Bangla interface. */
   changeBengaliDigits: (on: boolean) => Promise<void>;
+  /** Patients only: text size, high contrast, less motion, sounds, spoken instructions. */
+  changeDisplay: (change: DisplayChange) => Promise<void>;
 }
+
+export type DisplayChange = Partial<
+  Pick<PatientProfile, "text_size" | "high_contrast" | "reduce_motion" | "sound_on" | "voice_on">
+>;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -56,9 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const bengaliDigits = profile?.bengali_digits === true;
   setLanguage(language);
   setBengaliDigits(bengaliDigits);
+  // Display settings: the patient's, else the defaults (visitors and admins).
+  applyDisplay({
+    textSize: profile?.text_size ?? "normal",
+    highContrast: profile?.high_contrast === true,
+    reduceMotion: profile?.reduce_motion === true,
+  });
+  setSoundEnabled(profile?.sound_on !== false);
 
   async function updateProfile(
-    change: Partial<Pick<PatientProfile, "language" | "bengali_digits">>,
+    change: Partial<Pick<PatientProfile, "language" | "bengali_digits">> & DisplayChange,
   ) {
     const updated = (await api.patch<PatientProfile>("/patient/profile", change)).data;
     queryClient.setQueryData<Me | null>(meQueryKey(token), (me) =>
@@ -77,6 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function changeBengaliDigits(on: boolean) {
     if (profile) await updateProfile({ bengali_digits: on });
+  }
+
+  async function changeDisplay(change: DisplayChange) {
+    if (profile) await updateProfile(change);
   }
 
   // The new token triggers /auth/me, which also brings the patient's language.
@@ -117,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         language,
         changeLanguage,
         changeBengaliDigits,
+        changeDisplay,
       }}
     >
       {/* The key redraws the whole app when the language or the digits change. */}

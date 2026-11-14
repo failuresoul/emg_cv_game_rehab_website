@@ -15,6 +15,7 @@ import { pathTrace } from "./index";
 import { PATH_TRACE_PARAMS, readParams } from "./params";
 import { placePath } from "./placement";
 import { START_TIMEOUT_MS } from "./traceMachine";
+import { createPathTraceGame } from "./pathTraceGame";
 
 const STEP = 1000 / 60;
 const PARAMS: GameParams = { ...defaultParams(PATH_TRACE_PARAMS), shape_index: 2 };
@@ -74,7 +75,7 @@ function setUp(cursor: (t: number) => Point | null) {
     } as unknown as CompensationMonitor,
     emit: () => {},
   };
-  const game = pathTrace.create(context);
+  const game = createPathTraceGame(context);
   game.start();
   return {
     game,

@@ -88,6 +88,7 @@ This document lists every API route the server provides today, plus the routes r
 | PUT    | `/api/admin/patients/{id}/programme` | `admin`   | Replace the programme, with a reason |
 | GET    | `/api/admin/patients/{id}/programme/history` | `admin` | Every change of the programme |
 | GET    | `/api/patient/programme`             | `patient` | Own programme, read-only, as the browser needs it |
+| PATCH  | `/api/patient/profile`               | `patient` | Own language, digits and display settings |
 | GET, POST | `/api/admin/studies`              | `admin`   | List or create studies (research mode) |
 | GET, PATCH, DELETE | `/api/admin/studies/{id}` | `admin`   | One study; edit it or move its status; delete a draft |
 | POST   | `/api/admin/studies/{id}/participants` | `admin` | Enrol a consenting patient |
@@ -1610,6 +1611,27 @@ Errors: `404`, `422` with a message, such as `"The fewest games per session (5) 
 ### GET /api/admin/patients/{id}/programme/history
 
 Role: `admin`. Newest first: `[{ "id", "field", "before", "after", "reason", "admin_id", "admin_name", "created_at" }]`.
+
+### PATCH /api/patient/profile
+
+Role: `patient` (own). The settings patients change themselves (Day 17); send one or more:
+
+```json
+{ "language": "bn", "bengali_digits": false, "text_size": "large", "high_contrast": true,
+  "reduce_motion": false, "sound_on": true, "voice_on": true }
+```
+
+| Field | Values | Effect |
+| --- | --- | --- |
+| `language` | `en`, `bn` | The interface language; new feedback reports are written in it |
+| `bengali_digits` | boolean (default `false`) | Numbers in Bengali digits (১২৩) in the Bangla interface |
+| `text_size` | `normal`, `large`, `xlarge` | Root font size 18, 21 or 24 px |
+| `high_contrast` | boolean | The high-contrast theme (every text colour at least 7:1) |
+| `reduce_motion` | boolean | Stops animations (the system's "reduce motion" is honoured as well) |
+| `sound_on` | boolean (default `true`) | Beeps and chimes in the warm-up and games |
+| `voice_on` | boolean (default `false`) | Spoken instructions, when the device has a voice for the language |
+
+Response `200`: the profile (also in `/api/auth/me`). `422` for an unknown field or value, or nothing to change. Visitors and admins keep their language in the browser instead.
 
 ### GET /api/patient/programme
 

@@ -41,7 +41,7 @@ export function PatientSessionsTab({ patientId }: { patientId: number }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left">
+      <table className="table-sticky w-full text-left">
         <thead>
           <tr className="border-b border-black/10">
             {COLUMNS.map((column) => (

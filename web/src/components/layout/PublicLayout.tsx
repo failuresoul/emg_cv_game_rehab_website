@@ -5,10 +5,13 @@ import { t } from "@/i18n";
 
 import { Logo } from "./Logo";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { MAIN_ID, SkipLink, useFocusMainOnNavigate } from "@/components/SkipLink";
 
 export function PublicLayout() {
+  useFocusMainOnNavigate();
   return (
     <div className="flex min-h-dvh flex-col">
+      <SkipLink />
       <header className="bg-surface border-b border-black/10">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <Logo />
@@ -23,7 +26,11 @@ export function PublicLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      <main
+        id={MAIN_ID}
+        tabIndex={-1}
+        className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 outline-none"
+      >
         <Outlet />
       </main>
     </div>

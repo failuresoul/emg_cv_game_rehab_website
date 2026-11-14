@@ -32,6 +32,12 @@ export interface PatientProfile {
   language: Language;
   /** The patient's own setting: numbers in Bengali digits in the Bangla interface. */
   bengali_digits?: boolean;
+  /** Display settings, the patient's own (stored on the profile). */
+  text_size?: TextSize;
+  high_contrast?: boolean;
+  reduce_motion?: boolean;
+  sound_on?: boolean;
+  voice_on?: boolean;
   notes: string | null;
   /** Sessions per week the patient aims for; the therapist sets it. */
   weekly_goal: number;
@@ -43,6 +49,8 @@ export interface PatientProfile {
   research_consent_at?: string | null;
   created_at: string;
 }
+
+export type TextSize = "normal" | "large" | "xlarge";
 
 /** L0 fixed settings; L1 the staircase; L2 (Day 13) the model-based engine. */
 export type EngineMode = "L0" | "L1" | "L2";

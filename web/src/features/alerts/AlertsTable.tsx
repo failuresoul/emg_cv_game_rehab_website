@@ -168,7 +168,7 @@ export function AlertsTable({ patientId }: { patientId?: number }) {
       )}
       {alerts.isSuccess && alerts.data.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="table-sticky w-full text-left">
             <caption className="sr-only">{t("alert.tableCaption")}</caption>
             <thead>
               <tr className="border-b border-black/10">

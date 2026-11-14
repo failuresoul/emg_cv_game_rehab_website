@@ -2,7 +2,6 @@ import { Piano } from "lucide-react";
 
 import type { GameDefinition } from "@/games/shared/types";
 
-import { createFingerPianoGame } from "./fingerPianoGame";
 import { FINGER_PIANO_PARAMS, FINGER_PIANO_TRIALS, fingerPianoDefaults } from "./params";
 
 export const fingerPiano: GameDefinition = {
@@ -14,7 +13,7 @@ export const fingerPiano: GameDefinition = {
   params: FINGER_PIANO_PARAMS,
   trialsDefault: FINGER_PIANO_TRIALS,
   estimatedMinutes: 4,
-  create: createFingerPianoGame,
+  load: () => import("./fingerPianoGame").then((module) => module.createFingerPianoGame),
   implemented: true,
   // No reaching: the hand only has to be visible, and only the trunk is checked, as in the warm-up.
   compensationExercise: "thumb_opposition",

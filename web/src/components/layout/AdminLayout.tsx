@@ -35,6 +35,7 @@ function OpenAlertsBadge() {
 }
 import { UserMenu } from "./UserMenu";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { MAIN_ID, SkipLink, useFocusMainOnNavigate } from "@/components/SkipLink";
 
 const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }[] = [
   { to: "/admin", labelKey: "nav.admin.overview", icon: LayoutDashboard, end: true },
@@ -47,9 +48,11 @@ const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?:
 
 export function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  useFocusMainOnNavigate();
 
   return (
     <div className="flex min-h-dvh">
+      <SkipLink />
       {menuOpen && (
         <button
           type="button"
@@ -115,7 +118,7 @@ export function AdminLayout() {
             <UserMenu />
           </div>
         </header>
-        <main className="flex-1 p-4 lg:p-8">
+        <main id={MAIN_ID} tabIndex={-1} className="flex-1 p-4 outline-none lg:p-8">
           <Outlet />
         </main>
         <footer className="border-t border-black/10 px-4 py-4 lg:px-8">

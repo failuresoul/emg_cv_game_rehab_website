@@ -1,8 +1,9 @@
 import clsx from "clsx";
-import { Check } from "lucide-react";
+import { Check, SlidersHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useMatches, useNavigate } from "react-router";
 
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { QueryError } from "@/components/ui/QueryError";
@@ -24,6 +25,8 @@ import {
 import { stopSession } from "@/features/session/stopSession";
 import { GAME_IDS } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
+import { MAIN_ID, SkipLink, useFocusMainOnNavigate } from "@/components/SkipLink";
+import { DisplayControls } from "@/features/display/DisplayControls";
 
 /** Set as `handle` on each session route to name the step in the top bar. */
 export interface SessionRouteHandle {
@@ -133,6 +136,28 @@ function SensorDot() {
   return <EmgStatusDot inUse={readEmgPreference(user?.patient_profile?.id)} />;
 }
 
+/** Quick access to the display settings (text size, contrast, motion, sound, voice). */
+function DisplayButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button
+        variant="ghost"
+        className="text-white"
+        aria-label={t("display.open")}
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
+        <SlidersHorizontal size={22} aria-hidden />
+        <span className="hidden sm:inline">{t("display.button")}</span>
+      </Button>
+      <Modal open={open} title={t("display.title")} onClose={() => setOpen(false)}>
+        <DisplayControls />
+      </Modal>
+    </>
+  );
+}
+
 export function SessionLayout() {
   const matches = useMatches();
   const { pathname } = useLocation();
@@ -153,20 +178,25 @@ export function SessionLayout() {
     [emgEngine],
   );
 
+  // Each step change moves focus to the new step's content.
+  useFocusMainOnNavigate();
+
   return (
     <SessionProvider>
       <div className="bg-session-bg flex min-h-dvh flex-col text-white">
+        <SkipLink />
         <header className="flex flex-col">
           <div className="flex items-center justify-between gap-4 px-4 py-3">
             <p className="text-xl font-semibold">{handle && t(handle.stepKey)}</p>
             <div className="flex items-center gap-2">
               <SensorDot />
+              <DisplayButton />
               <SessionExitButton />
             </div>
           </div>
           <StepBar pathname={pathname} />
         </header>
-        <main className="flex flex-1 flex-col p-4">
+        <main id={MAIN_ID} tabIndex={-1} className="flex flex-1 flex-col p-4 outline-none">
           <SessionContent />
         </main>
         <ResumePrompt />

@@ -10,11 +10,11 @@ export function RepCounterRing({ current, total }: { current: number; total: num
   const share = total > 0 ? Math.min(1, current / total) : 0;
 
   return (
-    <div
-      role="status"
-      aria-label={t("warmup.counter", { current, total })}
-      className="relative mx-auto size-44 shrink-0"
-    >
+    <div className="relative mx-auto size-44 shrink-0">
+      {/* Read out at each new rep: live regions announce their text, not a changed label. */}
+      <span role="status" className="sr-only">
+        {t("warmup.counter", { current, total })}
+      </span>
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden className="size-full -rotate-90">
         <circle
           cx={SIZE / 2}

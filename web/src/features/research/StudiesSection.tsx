@@ -307,7 +307,7 @@ function ProgressTable({ study }: { study: Study }) {
   if (rows.length === 0) return <EmptyState title={t("study.progress.empty")} />;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left">
+      <table className="table-sticky w-full text-left">
         <thead>
           <tr className="border-b border-black/10">
             <th scope="col" className="px-3 py-2">

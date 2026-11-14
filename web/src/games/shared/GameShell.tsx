@@ -7,6 +7,8 @@ import { RemoteProvider } from "@/ai/remoteProvider";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { QueryError } from "@/components/ui/QueryError";
+import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useSession } from "@/features/session/SessionContext";
 import { SessionExitButton } from "@/features/session/SessionExitButton";
@@ -47,6 +49,7 @@ import { type SaveStatus, TrialLogger } from "./trialLogger";
 import type {
   GameContext,
   GameDefinition,
+  GameFactory,
   GameFeedback,
   GameHudItem,
   GameInstance,
@@ -54,6 +57,7 @@ import type {
   GameTracking,
   ParamSpec,
 } from "./types";
+import { useGameFactory } from "./useGameFactory";
 
 const BACKGROUND = "#0B1416";
 const CURSOR_COLOR = "#D9682B";
@@ -191,6 +195,8 @@ function Results({
 
 interface GamePlayProps {
   definition: GameDefinition;
+  /** The game's code, loaded before play starts. */
+  create: GameFactory;
   sessionId: number;
   affectedSide: Side;
   calibration: Calibration | null;
@@ -201,6 +207,7 @@ interface GamePlayProps {
 
 const GamePlay = memo(function GamePlay({
   definition,
+  create,
   sessionId,
   affectedSide,
   calibration: calibrationAtStart,
@@ -484,7 +491,7 @@ const GamePlay = memo(function GamePlay({
       emit: (item) => setFeedback({ ...item, id: ++feedbackId }),
     };
 
-    const game: GameInstance = definition.create(gameContext);
+    const game: GameInstance = create(gameContext);
     let started = false;
     let finished = false;
     const runtime = new GameRuntime(game, {
@@ -664,7 +671,17 @@ const GamePlay = memo(function GamePlay({
       game.destroy();
       runtimeRef.current = null;
     };
-  }, [definition, sessionId, affectedSide, calibration, provider, seed, monitor, emgRecorder]);
+  }, [
+    definition,
+    create,
+    sessionId,
+    affectedSide,
+    calibration,
+    provider,
+    seed,
+    monitor,
+    emgRecorder,
+  ]);
 
   const saveKey = SAVE_KEYS[saveStatus];
 
@@ -817,8 +834,20 @@ export function GameShell({ definition, onContinue, continueKey }: GameShellProp
   const { sessionId, affectedSide, calibration, latestCalibration } = useSession();
   // The game reads frames through subscribeTracking, so nothing here re-renders per frame.
   const { status, retry, subscribeTracking } = useTracking({ keepResult: false });
+  const factory = useGameFactory(definition);
 
   if (status.phase !== "running") return <VisionStatusCard status={status} retry={retry} />;
+  if (factory.state === "loading") {
+    return (
+      <div className="m-auto" role="status" aria-live="polite">
+        <Spinner size={48} />
+        <span className="sr-only">{t("common.loading")}</span>
+      </div>
+    );
+  }
+  if (factory.state === "failed") {
+    return <QueryError onRetry={factory.retry} />;
+  }
   if (sessionId === null || affectedSide === null) {
     return (
       <Card className="m-auto max-w-xl">
@@ -829,6 +858,7 @@ export function GameShell({ definition, onContinue, continueKey }: GameShellProp
   return (
     <GamePlay
       definition={definition}
+      create={factory.create}
       sessionId={sessionId}
       affectedSide={affectedSide}
       calibration={calibration ?? latestCalibration}

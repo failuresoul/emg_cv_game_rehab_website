@@ -36,3 +36,20 @@ def test_only_patients_change_their_own_profile(
 ) -> None:
     assert client.patch(URL, json={"language": "bn"}, headers=admin_headers).status_code == 403
     assert client.patch(URL, json={"language": "bn"}).status_code == 401
+
+
+def test_display_settings_are_saved_on_the_profile(
+    client: TestClient, patient_headers: Headers
+) -> None:
+    me = client.get("/api/auth/me", headers=patient_headers).json()["patient_profile"]
+    assert (me["text_size"], me["high_contrast"], me["reduce_motion"], me["sound_on"], me["voice_on"]) == (
+        "normal", False, False, True, False,
+    )
+    changes = {"text_size": "xlarge", "high_contrast": True, "reduce_motion": True,
+               "sound_on": False, "voice_on": True}
+    response = client.patch(URL, json=changes, headers=patient_headers)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert {key: body[key] for key in changes} == changes
+    assert client.patch(URL, json={"text_size": "huge"}, headers=patient_headers).status_code == 422
+    assert client.patch(URL, json={"sound_on": None}, headers=patient_headers).status_code == 422

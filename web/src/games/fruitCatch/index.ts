@@ -2,7 +2,6 @@ import { Apple } from "lucide-react";
 
 import type { GameDefinition } from "@/games/shared/types";
 
-import { createFruitCatchGame } from "./fruitCatchGame";
 import { FRUIT_CATCH_PARAMS, FRUIT_CATCH_TRIALS } from "./params";
 
 export const fruitCatch: GameDefinition = {
@@ -14,6 +13,6 @@ export const fruitCatch: GameDefinition = {
   params: FRUIT_CATCH_PARAMS,
   trialsDefault: FRUIT_CATCH_TRIALS,
   estimatedMinutes: 4,
-  create: createFruitCatchGame,
+  load: () => import("./fruitCatchGame").then((module) => module.createFruitCatchGame),
   implemented: true,
 };

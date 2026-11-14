@@ -88,3 +88,81 @@
     animation: emg-flow 7s linear infinite;
   }
 }
+
+/* ---- The patient's display settings (lib/display.ts sets these attributes on <html>) ---- */
+
+/* Text size: the root font size, so every rem-based size and spacing follows. */
+html[data-text-size="large"] {
+  font-size: 21px;
+}
+
+html[data-text-size="xlarge"] {
+  font-size: 24px;
+}
+
+/* High contrast: every text colour at least 7:1 on its background (WCAG AAA), stronger lines
+ * and a thicker focus ring. Checked by src/a11y/contrast.test.ts. */
+html[data-contrast="high"] {
+  --color-primary: #003b3b;
+  --color-primary-light: #e3f1f0;
+  --color-accent: #8a3300;
+  --color-success: #0b5a2c;
+  --color-warning: #6b4400;
+  --color-danger: #8a0f0a;
+  --color-info: #0a3c78;
+  --color-ink: #000000;
+  --color-muted: #2e3538;
+  --color-surface: #ffffff;
+  --color-background: #ffffff;
+  --color-session-bg: #000000;
+}
+
+html[data-contrast="high"] :focus-visible {
+  outline-width: 4px;
+}
+
+html[data-contrast="high"] .border-black\/10,
+html[data-contrast="high"] .divide-black\/10 > * {
+  border-color: rgb(0 0 0 / 0.55);
+}
+
+/* Less motion: the patient's setting, or the system's. Animations and transitions stop. */
+html[data-motion="reduce"] *,
+html[data-motion="reduce"] *::before,
+html[data-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html[data-motion="reduce"] {
+  scroll-behavior: auto;
+}
+
+html[data-motion="reduce"] .landing-emg-flow {
+  animation: none;
+}
+
+/* Admin tables on small screens: scroll sideways with the first column kept in view. */
+@media (max-width: 1023px) {
+  .table-sticky th:first-child,
+  .table-sticky td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--color-surface);
+    box-shadow: 1px 0 0 rgb(0 0 0 / 0.1);
+  }
+}

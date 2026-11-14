@@ -54,6 +54,11 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "max_difficulty": "JSON NOT NULL DEFAULT '{}'",
         "research_consent_at": "DATE",
         "bengali_digits": "BOOLEAN NOT NULL DEFAULT 0",
+        "text_size": "VARCHAR NOT NULL DEFAULT 'normal'",
+        "high_contrast": "BOOLEAN NOT NULL DEFAULT 0",
+        "reduce_motion": "BOOLEAN NOT NULL DEFAULT 0",
+        "sound_on": "BOOLEAN NOT NULL DEFAULT 1",
+        "voice_on": "BOOLEAN NOT NULL DEFAULT 0",
     },
     "trial": {
         "metrics_server": "JSON",

@@ -11,6 +11,7 @@ import type { CompensationMonitor } from "@/warmup/compensation";
 import { angleAtHeight, DEFAULT_ELBOW_RANGE } from "./elbowRange";
 import { paintWall } from "./index";
 import { PAINT_WALL_PARAMS } from "./params";
+import { createPaintWallGame } from "./paintWallGame";
 
 const STEP = 1000 / 60;
 const PARAMS: GameParams = defaultParams(PAINT_WALL_PARAMS);
@@ -69,7 +70,7 @@ function setUp(trialsPlanned = 1) {
     } as unknown as CompensationMonitor,
     emit: (feedback) => emitted.push(feedback),
   };
-  const game = paintWall.create(context);
+  const game = createPaintWallGame(context);
   game.start();
   return {
     game,

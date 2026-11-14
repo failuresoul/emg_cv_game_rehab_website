@@ -1,10 +1,8 @@
-import { ArrowLeft, ClipboardCheck } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { Link } from "react-router";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { buttonClasses } from "@/components/ui/buttonStyles";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
@@ -115,11 +113,14 @@ export function AdminReportReviewPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link to="/admin/research" className={buttonClasses("ghost", "md", "-ml-3 self-start")}>
-        <ArrowLeft size={20} aria-hidden />
-        {t("page.admin.research.title")}
-      </Link>
-      <PageHeader title={t("review.title")} description={t("review.intro")} />
+      <PageHeader
+        breadcrumbs={[
+          { label: t("page.admin.research.title"), to: "/admin/research" },
+          { label: t("review.title") },
+        ]}
+        title={t("review.title")}
+        description={t("review.intro")}
+      />
       <CreateSetForm onCreated={setChosen} />
       {sets.isPending && <Skeleton className="h-24 rounded-xl" />}
       {sets.isError && <QueryError onRetry={() => void sets.refetch()} />}

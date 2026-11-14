@@ -3,7 +3,6 @@ import { Paintbrush } from "lucide-react";
 import type { GameDefinition } from "@/games/shared/types";
 
 import { PAINT_WALL_PARAMS, PAINT_WALL_TRIALS, paintWallDefaults } from "./params";
-import { createPaintWallGame } from "./paintWallGame";
 
 export const paintWall: GameDefinition = {
   id: "paint_wall",
@@ -14,7 +13,7 @@ export const paintWall: GameDefinition = {
   params: PAINT_WALL_PARAMS,
   trialsDefault: PAINT_WALL_TRIALS,
   estimatedMinutes: 4,
-  create: createPaintWallGame,
+  load: () => import("./paintWallGame").then((module) => module.createPaintWallGame),
   implemented: true,
   // The elbow moves the brush: the fingertip cursor and the squeeze meter would only distract.
   compensationExercise: "elbow_flexion",

@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import { createBrowserRouter } from "react-router";
 
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -6,15 +7,6 @@ import { PublicLayout } from "@/components/layout/PublicLayout";
 import { SessionLayout, type SessionRouteHandle } from "@/components/layout/SessionLayout";
 import { ErrorPage } from "@/components/ErrorPage";
 import { RequireAuth, RequireRole } from "@/features/auth/guards";
-import { AdminGamesPage } from "@/pages/admin/AdminGamesPage";
-import { AdminOverviewPage } from "@/pages/admin/AdminOverviewPage";
-import { AdminPatientDetailPage } from "@/pages/admin/AdminPatientDetailPage";
-import { AdminPatientsPage } from "@/pages/admin/AdminPatientsPage";
-import { AdminReportReviewPage } from "@/pages/admin/AdminReportReviewPage";
-import { AdminAlertsPage } from "@/pages/admin/AdminAlertsPage";
-import { AdminResearchPage } from "@/pages/admin/AdminResearchPage";
-import { AdminSessionDetailPage } from "@/pages/admin/AdminSessionDetailPage";
-import { AdminSystemPage } from "@/pages/admin/AdminSystemPage";
 import { PatientHistoryPage } from "@/pages/patient/PatientHistoryPage";
 import { PatientHomePage } from "@/pages/patient/PatientHomePage";
 import { PatientProfilePage } from "@/pages/patient/PatientProfilePage";
@@ -30,13 +22,23 @@ import { SignupPage } from "@/pages/public/SignupPage";
 import { SessionCalibratePage } from "@/pages/session/SessionCalibratePage";
 import { SessionCooldownPage } from "@/pages/session/SessionCooldownPage";
 import { SessionEmgPage } from "@/pages/session/SessionEmgPage";
-import { SessionGamePage } from "@/pages/session/SessionGamePage";
 import { SessionPlanPage } from "@/pages/session/SessionPlanPage";
 import { SessionSetupPage } from "@/pages/session/SessionSetupPage";
 import { SessionSummaryPage } from "@/pages/session/SessionSummaryPage";
 import { SessionWarmupPage } from "@/pages/session/SessionWarmupPage";
 
 const step = (stepKey: SessionRouteHandle["stepKey"]): SessionRouteHandle => ({ stepKey });
+
+/**
+ * A page in its own chunk, downloaded the first time it is opened: the admin pages (patients never
+ * need them) and the game page (with every game's code), so the patient's first load is smaller.
+ */
+function page<Name extends string>(
+  load: () => Promise<Record<Name, ComponentType>>,
+  name: Name,
+): () => Promise<{ Component: ComponentType }> {
+  return async () => ({ Component: (await load())[name] });
+}
 
 export const router = createBrowserRouter([
   // Vite replaces DEV with false in a production build, which removes this route and its code.
@@ -119,7 +121,7 @@ export const router = createBrowserRouter([
               },
               {
                 path: "game/:gameId",
-                element: <SessionGamePage />,
+                lazy: page(() => import("@/pages/session/SessionGamePage"), "SessionGamePage"),
                 handle: step("page.session.game.title"),
               },
               {
@@ -143,15 +145,51 @@ export const router = createBrowserRouter([
             path: "/admin",
             element: <AdminLayout />,
             children: [
-              { index: true, element: <AdminOverviewPage /> },
-              { path: "patients", element: <AdminPatientsPage /> },
-              { path: "patients/:id", element: <AdminPatientDetailPage /> },
-              { path: "sessions/:id", element: <AdminSessionDetailPage /> },
-              { path: "games", element: <AdminGamesPage /> },
-              { path: "alerts", element: <AdminAlertsPage /> },
-              { path: "research", element: <AdminResearchPage /> },
-              { path: "research/report-review", element: <AdminReportReviewPage /> },
-              { path: "system", element: <AdminSystemPage /> },
+              {
+                index: true,
+                lazy: page(() => import("@/pages/admin/AdminOverviewPage"), "AdminOverviewPage"),
+              },
+              {
+                path: "patients",
+                lazy: page(() => import("@/pages/admin/AdminPatientsPage"), "AdminPatientsPage"),
+              },
+              {
+                path: "patients/:id",
+                lazy: page(
+                  () => import("@/pages/admin/AdminPatientDetailPage"),
+                  "AdminPatientDetailPage",
+                ),
+              },
+              {
+                path: "sessions/:id",
+                lazy: page(
+                  () => import("@/pages/admin/AdminSessionDetailPage"),
+                  "AdminSessionDetailPage",
+                ),
+              },
+              {
+                path: "games",
+                lazy: page(() => import("@/pages/admin/AdminGamesPage"), "AdminGamesPage"),
+              },
+              {
+                path: "alerts",
+                lazy: page(() => import("@/pages/admin/AdminAlertsPage"), "AdminAlertsPage"),
+              },
+              {
+                path: "research",
+                lazy: page(() => import("@/pages/admin/AdminResearchPage"), "AdminResearchPage"),
+              },
+              {
+                path: "research/report-review",
+                lazy: page(
+                  () => import("@/pages/admin/AdminReportReviewPage"),
+                  "AdminReportReviewPage",
+                ),
+              },
+              {
+                path: "system",
+                lazy: page(() => import("@/pages/admin/AdminSystemPage"), "AdminSystemPage"),
+              },
             ],
           },
         ],

@@ -401,7 +401,11 @@ function WarmupRun({
   const [position, setPosition] = useState(startPosition);
   const [presets, setPresets] = useState<Partial<Record<ExerciseId, ThresholdPreset>>>({});
   const [startAtCountdown, setStartAtCountdown] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(false);
+  // Spoken instructions: the patient's setting, when this device has a voice.
+  const { user: voiceUser } = useAuth();
+  const [voiceOn, setVoiceOn] = useState(
+    () => voiceUser?.patient_profile?.voice_on === true && canSpeak(getLanguage()),
+  );
   const [muted, setMutedState] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState(() => canSpeak(getLanguage()));
   const [resting, setResting] = useState(false);

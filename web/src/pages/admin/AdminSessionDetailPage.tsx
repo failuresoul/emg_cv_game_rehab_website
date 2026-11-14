@@ -1,9 +1,8 @@
 import axios from "axios";
-import { Activity, ArrowLeft, SearchX, Target } from "lucide-react";
+import { Activity, SearchX, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
-import { buttonClasses } from "@/components/ui/buttonStyles";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -96,14 +95,12 @@ export function AdminSessionDetailPage() {
 
   return (
     <>
-      <Link
-        to={`/admin/patients/${data.patient_id}`}
-        className={buttonClasses("ghost", "md", "mb-2 -ml-3")}
-      >
-        <ArrowLeft size={20} aria-hidden />
-        {t("adminSession.backToPatient", { code: data.patient_code })}
-      </Link>
       <PageHeader
+        breadcrumbs={[
+          { label: t("nav.admin.patients"), to: "/admin/patients" },
+          { label: data.patient_code, to: `/admin/patients/${data.patient_id}` },
+          { label: formatDateTime(data.started_at) },
+        ]}
         title={t("page.admin.sessionDetail.title")}
         description={t("adminSession.subtitle", {
           code: data.patient_code,

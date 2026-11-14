@@ -2,7 +2,6 @@ import { Hand } from "lucide-react";
 
 import type { GameDefinition } from "@/games/shared/types";
 
-import { createGripHoldGame } from "./gripHoldGame";
 import { GRIP_HOLD_PARAMS, GRIP_HOLD_TRIALS } from "./params";
 
 export const gripHold: GameDefinition = {
@@ -14,7 +13,7 @@ export const gripHold: GameDefinition = {
   params: GRIP_HOLD_PARAMS,
   trialsDefault: GRIP_HOLD_TRIALS,
   estimatedMinutes: 4,
-  create: createGripHoldGame,
+  load: () => import("./gripHoldGame").then((module) => module.createGripHoldGame),
   implemented: true,
   // No reaching: the hand only has to be visible, and only the trunk is checked.
   compensationExercise: "hand_open_close",

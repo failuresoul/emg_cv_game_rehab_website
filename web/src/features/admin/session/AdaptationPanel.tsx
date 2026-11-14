@@ -26,15 +26,17 @@ import {
   type OverrideKind,
   overrideKinds,
 } from "./adaptation";
+import { CATEGORICAL, DASHES } from "@/lib/chartPalette";
 
 const MUTED = "var(--color-muted)";
 const INK = "var(--color-ink)";
 const AXIS_FONT_SIZE = 16;
-const COMPONENT_COLORS: Record<Component, string> = {
-  spatial: "var(--color-primary)",
-  activation: "var(--color-accent)",
-  speed: "var(--color-info)",
-  precision: "var(--color-success)",
+/** Colour-blind-safe colours, each with its own dash, so the lines differ without colour. */
+const COMPONENT_STYLE: Record<Component, { color: string; dash: string }> = {
+  spatial: { color: CATEGORICAL[0], dash: DASHES[0] },
+  activation: { color: CATEGORICAL[1], dash: DASHES[1] },
+  speed: { color: CATEGORICAL[2], dash: DASHES[2] },
+  precision: { color: CATEGORICAL[3], dash: DASHES[3] },
 };
 /** Colour and dash of each safety flag, so they differ without colour too. */
 const FLAG_STYLE: Record<OverrideKind, { color: string; dash: string }> = {
@@ -75,7 +77,7 @@ function DecisionsTable({ logs }: { logs: readonly AdaptationLogRow[] }) {
       {getLanguage() !== "en" && (
         <p className="text-muted mb-2 text-sm">{t("adminAdaptation.englishNote")}</p>
       )}
-      <table className="w-full text-left">
+      <table className="table-sticky w-full text-left">
         <thead className="bg-surface sticky top-0">
           <tr className="border-b border-black/10">
             {columns.map((key) => (
@@ -211,7 +213,8 @@ export function AdaptationPanel({ logs }: { logs: readonly AdaptationLogRow[] })
                   type="stepAfter"
                   dataKey={component}
                   name={t(COMPONENT_KEYS[component])}
-                  stroke={COMPONENT_COLORS[component]}
+                  stroke={COMPONENT_STYLE[component].color}
+                  strokeDasharray={COMPONENT_STYLE[component].dash}
                   strokeWidth={2}
                   dot={false}
                   isAnimationActive={false}

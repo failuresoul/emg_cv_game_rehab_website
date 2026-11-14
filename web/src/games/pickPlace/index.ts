@@ -3,7 +3,6 @@ import { Grab } from "lucide-react";
 import type { GameDefinition } from "@/games/shared/types";
 
 import { PICK_PLACE_PARAMS, PICK_PLACE_TRIALS } from "./params";
-import { createPickPlaceGame } from "./pickPlaceGame";
 
 export const pickPlace: GameDefinition = {
   id: "pick_place",
@@ -14,7 +13,7 @@ export const pickPlace: GameDefinition = {
   params: PICK_PLACE_PARAMS,
   trialsDefault: PICK_PLACE_TRIALS,
   estimatedMinutes: 4,
-  create: createPickPlaceGame,
+  load: () => import("./pickPlaceGame").then((module) => module.createPickPlaceGame),
   implemented: true,
   // The game draws its own hand, open or closed with the pinch.
   showCursor: false,

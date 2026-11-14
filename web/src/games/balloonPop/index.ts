@@ -2,7 +2,6 @@ import { PartyPopper } from "lucide-react";
 
 import type { GameDefinition } from "@/games/shared/types";
 
-import { createBalloonPopGame } from "./balloonPopGame";
 import { BALLOON_POP_PARAMS, BALLOON_POP_TRIALS } from "./params";
 
 export const balloonPop: GameDefinition = {
@@ -14,6 +13,6 @@ export const balloonPop: GameDefinition = {
   params: BALLOON_POP_PARAMS,
   trialsDefault: BALLOON_POP_TRIALS,
   estimatedMinutes: 4,
-  create: createBalloonPopGame,
+  load: () => import("./balloonPopGame").then((module) => module.createBalloonPopGame),
   implemented: true,
 };

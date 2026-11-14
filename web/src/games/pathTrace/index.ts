@@ -3,7 +3,6 @@ import { Spline } from "lucide-react";
 import type { GameDefinition } from "@/games/shared/types";
 
 import { PATH_TRACE_PARAMS, PATH_TRACE_TRIALS } from "./params";
-import { createPathTraceGame } from "./pathTraceGame";
 
 export const pathTrace: GameDefinition = {
   id: "path_trace",
@@ -14,6 +13,6 @@ export const pathTrace: GameDefinition = {
   params: PATH_TRACE_PARAMS,
   trialsDefault: PATH_TRACE_TRIALS,
   estimatedMinutes: 4,
-  create: createPathTraceGame,
+  load: () => import("./pathTraceGame").then((module) => module.createPathTraceGame),
   implemented: true,
 };

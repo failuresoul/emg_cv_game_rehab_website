@@ -164,7 +164,7 @@ export function GameRunCard({
             )
           )}
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="table-sticky w-full text-left">
               <thead>
                 <tr className="border-b border-black/10">
                   <th scope="col" className="text-muted px-3 py-2 font-semibold whitespace-nowrap">

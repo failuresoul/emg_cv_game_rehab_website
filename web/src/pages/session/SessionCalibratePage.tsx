@@ -13,6 +13,7 @@ import {
   DIRECTION_KEYS,
   DIRECTIONS_DEG,
 } from "@/features/session/calibration";
+import { useAuth } from "@/features/auth/AuthContext";
 import { ReachSweep, STAR_DISTANCE_SW, SWEEP_MS } from "@/features/session/reachSweep";
 import { useSaveCalibration, useSession, useSessionStep } from "@/features/session/SessionContext";
 import { getLanguage, t } from "@/i18n";
@@ -269,7 +270,11 @@ export function SessionCalibratePage() {
   const { sessionId, affectedSide, calibration, latestCalibration } = useSession();
   const [phase, setPhase] = useState<Phase>({ name: "intro" });
   const [device, setDevice] = useState<DeviceInfo>({});
-  const [voiceOn, setVoiceOn] = useState(false);
+  // Spoken instructions: the patient's setting, when this device has a voice.
+  const { user: voiceUser } = useAuth();
+  const [voiceOn, setVoiceOn] = useState(
+    () => voiceUser?.patient_profile?.voice_on === true && canSpeak(getLanguage()),
+  );
   const [voiceAvailable, setVoiceAvailable] = useState(() => canSpeak(getLanguage()));
   const deviceRef = useRef<DeviceInfo>({ browser: browserName(navigator.userAgent) });
   const attempt = phase.name === "intro" ? 0 : phase.attempt;

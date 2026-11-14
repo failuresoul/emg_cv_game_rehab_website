@@ -1,4 +1,4 @@
-import { TrendingUp } from "lucide-react";
+import { LineChart as LineChartIcon, Table as TableIcon, TrendingUp } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -10,7 +10,11 @@ import {
   YAxis,
 } from "recharts";
 
+import { useId, useState } from "react";
+
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { t } from "@/i18n";
 import { formatPlain } from "@/lib/format";
 
 const PRIMARY = "var(--color-primary)";
@@ -49,12 +53,88 @@ export function ProgressChart({
   allowDecimals = true,
   reference,
 }: ProgressChartProps) {
+  const [asTable, setAsTable] = useState(false);
+  const tableId = useId();
   if (points.length === 0) {
     return <EmptyState icon={TrendingUp} title={emptyTitle} />;
   }
+  const show = formatValue ?? ((value: number) => formatPlain(value));
+  const last = points[points.length - 1]!;
+  // What the chart shows, for screen readers: the series, how many points, the latest value.
+  const summary = t("chart.summary", {
+    series: seriesName,
+    n: points.length,
+    latest: show(last.value),
+    when: last.label,
+  });
 
   return (
-    <div className={HEIGHTS[size]}>
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          aria-pressed={asTable}
+          aria-controls={tableId}
+          onClick={() => setAsTable((value) => !value)}
+        >
+          {asTable ? <LineChartIcon size={20} aria-hidden /> : <TableIcon size={20} aria-hidden />}
+          {t(asTable ? "chart.viewChart" : "chart.viewTable")}
+        </Button>
+      </div>
+      {asTable ? (
+        <div id={tableId} className="overflow-x-auto">
+          <table className="w-full text-left">
+            <caption className="sr-only">{seriesName}</caption>
+            <thead>
+              <tr className="border-b border-black/10">
+                <th scope="col" className="px-3 py-2">
+                  {t("chart.column.when")}
+                </th>
+                <th scope="col" className="px-3 py-2">
+                  {seriesName}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/10">
+              {points.map((point, index) => (
+                <tr key={`${point.label}-${index}`}>
+                  <td className="px-3 py-2">{point.label}</td>
+                  <td className="px-3 py-2 tabular-nums">{show(point.value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <ChartBody
+          id={tableId}
+          summary={summary}
+          size={size}
+          points={points}
+          seriesName={seriesName}
+          formatValue={formatValue}
+          yDomain={yDomain}
+          allowDecimals={allowDecimals}
+          reference={reference}
+        />
+      )}
+    </div>
+  );
+}
+
+function ChartBody({
+  id,
+  summary,
+  points,
+  seriesName,
+  size = "md",
+  formatValue,
+  yDomain,
+  allowDecimals = true,
+  reference,
+}: Omit<ProgressChartProps, "emptyTitle"> & { id: string; summary: string }) {
+  return (
+    <div id={id} role="img" aria-label={summary} className={HEIGHTS[size]}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={points} accessibilityLayer margin={CHART_MARGIN}>
           <CartesianGrid vertical={false} stroke={MUTED} strokeOpacity={0.2} />

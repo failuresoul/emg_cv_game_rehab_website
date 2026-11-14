@@ -17,6 +17,7 @@ import { pickPlace } from "./index";
 import { CARRY_DIRECTIONS, PICK_PLACE_PARAMS, readParams } from "./params";
 import { screenBounds } from "./pickPlaceGame";
 import { placePickPlace } from "./placement";
+import { createPickPlaceGame } from "./pickPlaceGame";
 
 const STEP = 1000 / 60;
 const PARAMS: GameParams = defaultParams(PICK_PLACE_PARAMS);
@@ -95,7 +96,7 @@ function setUp(script: Script, trialsPlanned = 1) {
     } as unknown as CompensationMonitor,
     emit: (item) => feedback.push(item),
   };
-  const game = pickPlace.create(context);
+  const game = createPickPlaceGame(context);
   game.start();
   return {
     game,

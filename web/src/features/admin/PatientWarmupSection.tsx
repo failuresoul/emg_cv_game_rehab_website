@@ -127,7 +127,7 @@ function ChartTable({ rows, unit }: { rows: ChartRow[]; unit: (value: number) =>
         {t("adminWarmup.tableView")}
       </summary>
       <div className="overflow-x-auto">
-        <table className="w-full text-left">
+        <table className="table-sticky w-full text-left">
           <thead>
             <tr className="border-b border-black/10">
               {(
@@ -187,7 +187,7 @@ function DecisionsTable({ decisions }: { decisions: Decision[] }) {
   if (decisions.length === 0) return <EmptyState title={t("adminWarmup.noDecisions")} />;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left">
+      <table className="table-sticky w-full text-left">
         <thead>
           <tr className="border-b border-black/10">
             {(

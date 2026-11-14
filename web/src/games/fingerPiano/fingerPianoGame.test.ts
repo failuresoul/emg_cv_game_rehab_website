@@ -12,6 +12,7 @@ import type { CompensationMonitor } from "@/warmup/compensation";
 import { fingerPiano } from "./index";
 import { FALL_MS } from "./melodyMachine";
 import { melodyToParams } from "./params";
+import { createFingerPianoGame } from "./fingerPianoGame";
 
 const STEP = 1000 / 60;
 const MELODY: Finger[] = ["index", "middle", "ring", "little"];
@@ -78,7 +79,7 @@ function setUp(params: GameParams = PARAMS) {
     emit: () => {},
   };
 
-  const game = fingerPiano.create(context);
+  const game = createFingerPianoGame(context);
   game.start();
   return {
     game,

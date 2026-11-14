@@ -194,6 +194,8 @@ export interface GameInstance {
   destroy(): void;
 }
 
+export type GameFactory = (context: GameContext) => GameInstance;
+
 export interface GameDefinition {
   id: GameId;
   nameKey: TranslationKey;
@@ -205,7 +207,8 @@ export interface GameDefinition {
   trialsDefault: number;
   /** About how long a game takes, for the plan. */
   estimatedMinutes: number;
-  create(context: GameContext): GameInstance;
+  /** The game's code, loaded the first time it is played (its own chunk of the build). */
+  load(): Promise<GameFactory>;
   implemented: boolean;
   /**
    * Whose compensation checks the game uses, from the warm-up exercises. Reaching games check

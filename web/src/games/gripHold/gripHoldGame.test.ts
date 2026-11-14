@@ -19,6 +19,7 @@ import type { CompensationMonitor } from "@/warmup/compensation";
 import { OUTCOME_MS } from "./holdMachine";
 import { gripHold } from "./index";
 import { GRIP_HOLD_PARAMS } from "./params";
+import { createGripHoldGame } from "./gripHoldGame";
 
 const STEP = 1000 / 60;
 const PARAMS: GameParams = defaultParams(GRIP_HOLD_PARAMS);
@@ -68,7 +69,7 @@ function setUp(level: (t: number) => number, sourceId: ActivationSourceId = "cv_
     } as unknown as CompensationMonitor,
     emit: (item) => feedback.push(item),
   };
-  const game = gripHold.create(context);
+  const game = createGripHoldGame(context);
   game.start();
   return {
     game,

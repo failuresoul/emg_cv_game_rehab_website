@@ -18,6 +18,7 @@ from app.schemas.session import LastSession, LatestCalibration
 from app.schemas.warmup import LastWarmup
 
 DEFAULT_WEEKLY_GOAL = 5
+TextSize = Literal["normal", "large", "xlarge"]
 WeeklyGoal = Annotated[int, Field(ge=1, le=14, strict=True)]
 
 
@@ -87,11 +88,18 @@ class OwnProfileUpdate(BaseModel):
 
     language: Language | None = None
     bengali_digits: bool | None = None
+    text_size: TextSize | None = None
+    high_contrast: bool | None = None
+    reduce_motion: bool | None = None
+    sound_on: bool | None = None
+    voice_on: bool | None = None
 
     @model_validator(mode="after")
     def something_to_change(self) -> Self:
-        if self.language is None and self.bengali_digits is None:
-            raise ValueError("Send language, bengali_digits or both")
+        if not self.model_fields_set or all(
+            getattr(self, name) is None for name in self.model_fields_set
+        ):
+            raise ValueError("Send at least one setting to change")
         return self
 
 
@@ -108,6 +116,12 @@ class PatientProfileRead(BaseModel):
     language: Language
     #: Numbers in Bengali digits in the Bangla interface (the patient's own setting).
     bengali_digits: bool = False
+    #: Display settings, the patient's own.
+    text_size: TextSize = "normal"
+    high_contrast: bool = False
+    reduce_motion: bool = False
+    sound_on: bool = True
+    voice_on: bool = False
     notes: str | None
     weekly_goal: int
     #: A demo patient with synthetic data, from scripts/seed_demo_data.py.

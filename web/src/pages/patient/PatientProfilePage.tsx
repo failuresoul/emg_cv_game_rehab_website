@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/Switch";
 import { useAuth } from "@/features/auth/AuthContext";
 import { usePatientDashboard } from "@/features/patient/usePatientDashboard";
 import { t, type TranslationKey } from "@/i18n";
+import { DisplayControls } from "@/features/display/DisplayControls";
 
 const CAMERA_TIPS: { textKey: TranslationKey; icon: LucideIcon }[] = [
   { textKey: "patient.profile.tip.distance", icon: Ruler },
@@ -110,6 +111,10 @@ export function PatientProfilePage() {
         <Card>
           <h2 className="mb-4 text-xl font-bold">{t("patient.profile.display")}</h2>
           <DisplaySettings />
+        </Card>
+        <Card>
+          <h2 className="mb-4 text-xl font-bold">{t("display.title")}</h2>
+          <DisplayControls />
         </Card>
         <Card>
           <h2 className="mb-4 text-xl font-bold">{t("patient.profile.cameraTips")}</h2>

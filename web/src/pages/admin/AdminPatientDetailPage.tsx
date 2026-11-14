@@ -100,9 +100,18 @@ function ConfirmStatusModal({
   );
 }
 
-function Detail({ label, children }: { label: string; children: ReactNode }) {
+function Detail({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  // One div per term: the only wrapper a <dl> allows around <dt> and <dd>.
   return (
-    <div>
+    <div className={className}>
       <dt className="text-muted">{label}</dt>
       <dd className="font-medium break-words">{children}</dd>
     </div>
@@ -144,11 +153,9 @@ function OverviewTab({ patient }: { patient: Patient }) {
             ? formatRelativeTime(patient.user.last_login_at)
             : t("patients.neverLoggedIn")}
         </Detail>
-        <div className="sm:col-span-2 xl:col-span-3">
-          <Detail label={t("patientForm.notes")}>
-            <span className="whitespace-pre-wrap">{patient.notes ?? notSet}</span>
-          </Detail>
-        </div>
+        <Detail label={t("patientForm.notes")} className="sm:col-span-2 xl:col-span-3">
+          <span className="whitespace-pre-wrap">{patient.notes ?? notSet}</span>
+        </Detail>
       </dl>
       <div className="mt-6 flex flex-wrap gap-2">
         <Button onClick={() => setEditOpen(true)}>
@@ -203,8 +210,11 @@ export function AdminPatientDetailPage() {
 
   return (
     <>
-      <BackLink />
       <PageHeader
+        breadcrumbs={[
+          { label: t("nav.admin.patients"), to: "/admin/patients" },
+          { label: patient.data.patient_code },
+        ]}
         title={t("patient.headerTitle", {
           code: patient.data.patient_code,
           name: patient.data.user.full_name,

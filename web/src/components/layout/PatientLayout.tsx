@@ -9,6 +9,7 @@ import { t, type TranslationKey } from "@/i18n";
 import { Logo } from "./Logo";
 import { UserMenu } from "./UserMenu";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { MAIN_ID, SkipLink, useFocusMainOnNavigate } from "@/components/SkipLink";
 
 const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }[] = [
   { to: "/patient", labelKey: "nav.patient.home", icon: House, end: true },
@@ -21,9 +22,11 @@ const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?:
 export function PatientLayout() {
   // The home page has its own Start session button: one main action per screen.
   const isHome = useMatch("/patient") !== null;
+  useFocusMainOnNavigate();
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <SkipLink />
       <header className="bg-surface border-b border-black/10">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Logo to="/patient" />
@@ -53,7 +56,11 @@ export function PatientLayout() {
           <UserMenu />
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <main
+        id={MAIN_ID}
+        tabIndex={-1}
+        className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 outline-none"
+      >
         <Outlet />
       </main>
       <footer className="border-t border-black/10">
