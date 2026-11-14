@@ -10,6 +10,7 @@ from app.models.review import ReviewItem, ReviewSet
 from app.models.session import Calibration, Session
 from app.models.session_feedback import SessionFeedback
 from app.models.session_metric import SessionMetric
+from app.models.study import Study, StudyParticipant
 from app.models.user import User
 from app.models.warmup import WarmupResult
 
@@ -30,6 +31,8 @@ __all__ = [
     "Session",
     "SessionFeedback",
     "SessionMetric",
+    "Study",
+    "StudyParticipant",
     "Trial",
     "User",
     "WarmupResult",

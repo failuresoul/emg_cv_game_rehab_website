@@ -310,7 +310,12 @@ const GamePlay = memo(function GamePlay({
   const [warmupAtStart] = useState(warmupResults);
   // The patient's engine as the game began: L0 fixed settings, L1 or L2 from the server.
   const { user } = useAuth();
-  const [engineMode] = useState(() => user?.patient_profile?.engine_mode ?? "L0");
+  const { session: sessionRecord } = useSession();
+  // In a study session (research mode) the server sets the difficulty for every condition, so
+  // the game looks and behaves the same whichever condition it is.
+  const [engineMode] = useState(() =>
+    sessionRecord?.blinded ? "L1" : (user?.patient_profile?.engine_mode ?? "L0"),
+  );
   const provider = useMemo(() => {
     const options = {
       // This game's settings, with the defaults the admin chose for it.

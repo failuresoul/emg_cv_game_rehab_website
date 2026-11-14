@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -64,10 +65,14 @@ class PatientUpdate(BaseModel):
     weekly_goal: WeeklyGoal | None = None
     #: Which engine sets the games' difficulty: L0 fixed, L1 staircase, L2 Bayesian.
     engine_mode: Literal["L0", "L1", "L2"] | None = None
+    #: The date research consent was recorded; null when there is none (or it was withdrawn).
+    research_consent_at: date | None = None
 
     @model_validator(mode="after")
     def reject_null_for_required_fields(self) -> Self:
-        nullable = {"months_since_stroke", "notes"}
+        nullable = {"months_since_stroke", "notes", "research_consent_at"}
+        if self.research_consent_at is not None and self.research_consent_at > date.today():
+            raise ValueError("research_consent_at cannot be in the future")
         for field in self.model_fields_set - nullable:
             if getattr(self, field) is None:
                 raise ValueError(f"{field} cannot be null")
@@ -91,6 +96,8 @@ class PatientProfileRead(BaseModel):
     is_demo: bool = False
     #: Which parameter engine sets the games' difficulty: L0 fixed, L1 staircase, L2 Bayesian.
     engine_mode: Literal["L0", "L1", "L2"] = "L1"
+    #: The date research consent was recorded; null without consent.
+    research_consent_at: date | None = None
     created_at: UtcDatetime
 
 

@@ -107,12 +107,17 @@ def context_for(
 
 
 def load(
-    session: Session, profile: PatientProfile, game_id: str, session_id: int | None
+    session: Session,
+    profile: PatientProfile,
+    game_id: str,
+    session_id: int | None,
+    engine_mode: str | None = None,
 ) -> LoadedEngine:
     """The patient's engine, context and state for a game. A first use starts from the admin's
     defaults; the first use in a new session applies the warm restart. Not saved until save()."""
     assert profile.id is not None
-    engine = get_engine(programmes.programme_for(session, profile).engine_mode)
+    # The run's own engine (a study's condition), else the programme's.
+    engine = get_engine(engine_mode or programmes.programme_for(session, profile).engine_mode)
     context = context_for(session, profile, game_id)
     row = session.exec(
         select(EngineState).where(

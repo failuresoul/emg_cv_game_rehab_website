@@ -86,6 +86,13 @@ This document lists every API route the server provides today, plus the routes r
 | PUT    | `/api/admin/patients/{id}/programme` | `admin`   | Replace the programme, with a reason |
 | GET    | `/api/admin/patients/{id}/programme/history` | `admin` | Every change of the programme |
 | GET    | `/api/patient/programme`             | `patient` | Own programme, read-only, as the browser needs it |
+| GET, POST | `/api/admin/studies`              | `admin`   | List or create studies (research mode) |
+| GET, PATCH, DELETE | `/api/admin/studies/{id}` | `admin`   | One study; edit it or move its status; delete a draft |
+| POST   | `/api/admin/studies/{id}/participants` | `admin` | Enrol a consenting patient |
+| POST   | `/api/admin/studies/{id}/participants/{pid}/withdraw` | `admin` | Withdraw a participant |
+| GET    | `/api/admin/studies/{id}/progress`   | `admin`   | Sessions done per condition, per participant |
+| GET    | `/api/admin/studies/{id}/results`    | `admin`   | Measures per condition with 95% CIs |
+| GET    | `/api/admin/studies/{id}/export.csv` | `admin`   | Every trial of the study, by patient code |
 
 ## Errors
 
@@ -1591,6 +1598,30 @@ Role: `patient` (own). Read-only; there is no way for a patient to change it.
 ```
 
 `enabled_games` leaves out games the Game Library has turned off. No notes and no level limits.
+
+## Research mode: studies (Day 17)
+
+Controlled comparisons of the difficulty engines (`server/app/services/studies.py`). Role: `admin` for every route.
+
+- **Design:** `within_subject` (every participant plays every condition, in an order from a balanced Latin square: n rows for an even number of conditions, the square and its mirror for an odd number; participants take the rows in turn) or `between_subject` (one condition each, from balanced randomisation in permuted blocks seeded by the study's `seed`).
+- **Conditions** are engine modes (`L0`, `L1`, `L2`), 2 or 3 of them. `sessions_per_condition` (1–20) completed sessions each. `games` (1–9) are played by every study session, in order.
+- **Status:** `draft` → `active` → `closed`, forward only. The design (`design`, `conditions`, `sessions_per_condition`, `games`) can change only in a draft without participants (`409` otherwise). Only a draft without participants can be deleted.
+- **While a participant's study is active**, each new session gets the next condition: it is stored on the session (`study_id`, `study_condition`), every game run of the session uses it as its engine (`GameRun.study_id`, `GameRun.condition`), and the plan is the study's games (`locked: true`), the same in every condition. The programme's highest levels and the safety rules still apply. When every condition is done, or after withdrawal or closing, sessions follow the programme again.
+- **Blinding:** patients never receive the condition. Their session has only `blinded: true`; the browser then always lets the server set the difficulty, so the level display, cues and messages are the same in every condition. `/api/auth/me` keeps showing the programme's engine mode.
+
+### Enrolment
+
+`POST /api/admin/studies/{id}/participants` with `{ "patient_id": 3 }` → `201` `{ id, patient_id, patient_code, position, condition_order | assigned_condition, current_index, enrolled_at, withdrawn_at }`. `409` without research consent (`PatientProfile.research_consent_at`, set with `PATCH /api/admin/patients/{id}` `{ "research_consent_at": "2026-11-01" }`, never in the future, `null` to clear), when already in this study or in another draft or active study, or when the study is closed.
+
+`POST .../participants/{pid}/withdraw` sets `withdrawn_at`; the data already collected stays in the results.
+
+### GET /api/admin/studies/{id}/results
+
+Per condition: `participants`, `sessions`, `trials`, and, each as `{ mean, ci_low, ci_high, n }` over participants (a 95% t interval from two participants on): `success_rate`, `challenge_error` (mean |rolling success over 10 trials − 0.7| per run), `time_in_zone` (share of rolling values within 0.6–0.8), `compensation_rate`, `mean_level` (the engine's level after each trial), `enjoyment` and `fatigue` (the questionnaire), `report_rating` (the participants' own ratings of their reports, mean score). Every measure is worked out per participant first. Completed sessions only.
+
+### GET /api/admin/studies/{id}/export.csv
+
+One row per trial of the study's completed sessions: `study_id, design, patient_code, position, condition, session_index, session_id, session_date, run_id, game_id, engine, trial_no, outcome, compensated, level_after, enjoyment_1_5, fatigue_0_10`. Patients appear by code only, never by name or email.
 
 ## Muscle sensor (EMG)
 

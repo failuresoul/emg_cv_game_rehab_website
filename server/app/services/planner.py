@@ -47,7 +47,15 @@ from sqlmodel import Session, col, select
 
 from app.engine.base import EngineData
 from app.engine.l2_bayes import beta_mean
-from app.models import EngineState, GameRun, GameSetting, PatientProfile, SessionFeedback, Trial
+from app.models import (
+    EngineState,
+    GameRun,
+    GameSetting,
+    PatientProfile,
+    SessionFeedback,
+    Study,
+    Trial,
+)
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
 from app.schemas.common import as_utc
@@ -448,14 +456,62 @@ def build_plan(
     )
 
 
+def study_plan(session: Session, study: Study) -> SessionPlan:
+    """A study session's plan: the study's games in its order, each with the Game Library's
+    trials, the same in every condition, and locked. The reasons name the movement only, so
+    nothing tells the patient which condition this is."""
+    settings = {row.game_id: row for row in session.exec(select(GameSetting)).all()}
+    games = []
+    for game_id in study.games:
+        spec = next((s for s in load_specs() if s.id == game_id), None)
+        row = settings.get(game_id)
+        if spec is None or not spec.implemented or (row is not None and not row.enabled):
+            continue
+        trials = effective_trials(spec, row)
+        games.append(
+            PlannedGame(
+                game_id=spec.id,  # type: ignore[arg-type]
+                trials=trials,
+                minutes=round(_minutes(spec, trials), 1),
+                reason_key="keep_practising",
+                reason_params={"movement": MOVEMENT.get(spec.id, "")},
+            )
+        )
+    return SessionPlan(
+        games=games,
+        total_minutes=round(sum(game.minutes for game in games), 1),
+        focus=PlanFocus(movements=[], directions=[]),
+        notes=[],
+        locked=True,
+        version=PLANNER_VERSION,
+        created_at=utc_now(),
+    )
+
+
 def plan_session(session: Session, profile: PatientProfile, record: SessionRecord) -> SessionPlan:
-    """Today's plan for `record`, from the completed sessions before it."""
+    """Today's plan for `record`, from the completed sessions before it; a study session plays
+    the study's games."""
+    if record.study_id is not None:
+        study = session.get(Study, record.study_id)
+        if study is not None:
+            return study_plan(session, study)
     history = load_history(session, profile, record.started_at, inclusive=False)
     return build_plan(session, profile, history, seed=f"{profile.id}:{record.id}")
 
 
 def plan_next(session: Session, profile: PatientProfile, after: SessionRecord) -> SessionPlan:
-    """The plan for the session after `after`, from every completed session up to it."""
+    """The plan for the session after `after`, from every completed session up to it. A
+    patient still in an active study plays its games next."""
+    from app.services import studies
+
+    assert profile.id is not None
+    found = studies.current_participation(session, profile.id)
+    if found is not None:
+        study, participant = found
+        assert study.id is not None
+        done = studies.sessions_done(session, study.id, profile.id)
+        if studies.next_condition(study, participant, done) is not None:
+            return study_plan(session, study)
     history = load_history(session, profile, after.started_at, inclusive=True)
     return build_plan(session, profile, history, seed=f"{profile.id}:after:{after.id}")
 

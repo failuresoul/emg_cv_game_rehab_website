@@ -76,6 +76,7 @@ function PlanList({
   const minutes = chosen.reduce((total, id) => total + minutesOf(id), 0);
   const changed = changedFromPlan(rows, plan);
   const lighter = plan?.notes.some((note) => note.key === "lighter_today") ?? false;
+  const locked = plan?.locked === true;
 
   function start() {
     if (chosen.length === 0) return;
@@ -103,6 +104,12 @@ function PlanList({
         </p>
       )}
 
+      {locked && (
+        <p role="note" className="rounded-xl bg-white/10 px-4 py-3 text-lg">
+          {t("plan.lockedNote")}
+        </p>
+      )}
+
       {rows.length === 0 && <p className="text-lg">{t("plan.noGames")}</p>}
       <ol className="flex flex-col gap-3" aria-label={t("plan.listLabel")}>
         {rows.map((row, index) => {
@@ -118,6 +125,7 @@ function PlanList({
                   id={checkboxId}
                   type="checkbox"
                   checked={row.selected}
+                  disabled={locked}
                   onChange={() =>
                     setRows((current) =>
                       current.map((item) =>
@@ -150,7 +158,7 @@ function PlanList({
                     <span className="mt-1 block">{t(game.descriptionKey)}</span>
                   )}
                 </label>
-                <div className="flex gap-2">
+                <div className={locked ? "hidden" : "flex gap-2"}>
                   <Button
                     variant="secondary"
                     aria-label={t("plan.moveUp", { name })}

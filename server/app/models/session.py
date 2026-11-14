@@ -28,6 +28,15 @@ class Session(SQLModel, table=True):
     needs_review: bool = False
     reviewed_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
     review_note: str | None = None
+    #: Research mode: the study and the condition (an engine mode) this session plays. Set when
+    #: the session starts; never shown to the patient.
+    study_id: int | None = Field(default=None, foreign_key="study.id", index=True)
+    study_condition: str | None = None
+
+    @property
+    def blinded(self) -> bool:
+        """Part of a study: the browser must behave the same in every condition."""
+        return self.study_id is not None
 
 
 class Calibration(SQLModel, table=True):

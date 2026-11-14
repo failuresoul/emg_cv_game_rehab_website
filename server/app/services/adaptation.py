@@ -261,7 +261,9 @@ def next_step(
     if existing is not None:
         return _response(existing)
 
-    loaded = engine_store.load(session, profile, run.game_id, run.session_id)
+    loaded = engine_store.load(
+        session, profile, run.game_id, run.session_id, engine_mode=run.engine
+    )
     before = loaded.state
     logs = list(
         session.exec(

@@ -114,6 +114,10 @@ def start_session(
         ),
         notes=payload.notes if payload else None,
     )
+    # Research mode: the next condition of the patient's active study, if any.
+    from app.services.studies import assign_session
+
+    assign_session(session, record)
     session.add(record)
     session.commit()
     return record, True

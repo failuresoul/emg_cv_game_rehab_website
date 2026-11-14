@@ -37,6 +37,8 @@ export interface PatientProfile {
   is_demo: boolean;
   /** Which parameter engine sets the games' difficulty. Older servers leave it out: L0. */
   engine_mode?: EngineMode;
+  /** The date research consent was recorded (YYYY-MM-DD); null without consent. */
+  research_consent_at?: string | null;
   created_at: string;
 }
 
@@ -105,7 +107,10 @@ export interface PatientCreate {
   weekly_goal?: number;
 }
 
-export type PatientUpdate = Partial<PatientCreate> & { engine_mode?: EngineMode };
+export type PatientUpdate = Partial<PatientCreate> & {
+  engine_mode?: EngineMode;
+  research_consent_at?: string | null;
+};
 
 export type PatientRegister = Omit<PatientCreate, "notes">;
 
@@ -168,6 +173,8 @@ export interface SessionRecord {
   /** Where the patient is, so a refresh or a return resumes there. */
   current_step: SessionStep;
   game_queue: GameQueueState | null;
+  /** Part of a study: the browser behaves the same whatever the condition. */
+  blinded?: boolean;
 }
 
 export interface CalibrationQuality {
@@ -698,6 +705,8 @@ export interface SessionPlan {
   total_minutes: number;
   focus: { movements: string[]; directions: number[] };
   notes: { key: string; params: Record<string, string> }[];
+  /** Research mode: the study's fixed games, which the patient cannot change. */
+  locked?: boolean;
   version: number;
   created_at: string | null;
 }
@@ -759,6 +768,9 @@ export interface AdminSessionDetail extends SessionRecord {
   session_metrics?: SessionMetricRow[];
   /** The muscle sensor's calibration, when the session used the sensor. */
   emg_calibration?: EmgCalibrationRead | null;
+  /** Research mode (admin only): the study and the condition this session played. */
+  study_id?: number | null;
+  study_condition?: EngineMode | null;
 }
 
 export interface AdminRecentSession {
@@ -1342,4 +1354,90 @@ export interface PatientProgramme {
   rest_every_minutes: number;
   emg_default_site: EmgSite | null;
   weekly_goal: number;
+}
+
+// Research mode (server/app/schemas/study.py), admin only
+
+export type StudyDesign = "within_subject" | "between_subject";
+export type StudyStatus = "draft" | "active" | "closed";
+
+export interface StudyCreate {
+  name: string;
+  description?: string | null;
+  design: StudyDesign;
+  conditions: EngineMode[];
+  sessions_per_condition: number;
+  games: GameId[];
+  seed?: number | null;
+}
+
+export type StudyUpdate = Partial<Omit<StudyCreate, "seed">> & { status?: StudyStatus };
+
+export interface Study {
+  id: number;
+  name: string;
+  description: string | null;
+  design: StudyDesign;
+  conditions: EngineMode[];
+  sessions_per_condition: number;
+  games: GameId[];
+  status: StudyStatus;
+  seed: number;
+  participants: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudyParticipant {
+  id: number;
+  patient_id: number;
+  patient_code: string;
+  position: number;
+  condition_order: EngineMode[] | null;
+  assigned_condition: EngineMode | null;
+  current_index: number;
+  enrolled_at: string;
+  withdrawn_at: string | null;
+}
+
+export interface StudyParticipantProgress extends StudyParticipant {
+  sessions_done: Record<string, number>;
+  next_condition: EngineMode | null;
+  complete: boolean;
+}
+
+export interface StudyProgress {
+  study_id: number;
+  sessions_per_condition: number;
+  conditions: EngineMode[];
+  participants: StudyParticipantProgress[];
+}
+
+/** A mean over participants with its 95% interval (null with fewer than two). */
+export interface Estimate {
+  mean: number | null;
+  ci_low: number | null;
+  ci_high: number | null;
+  n: number;
+}
+
+export interface ConditionResult {
+  condition: EngineMode;
+  participants: number;
+  sessions: number;
+  trials: number;
+  success_rate: Estimate;
+  challenge_error: Estimate;
+  time_in_zone: Estimate;
+  compensation_rate: Estimate;
+  mean_level: Estimate;
+  enjoyment: Estimate;
+  fatigue: Estimate;
+  report_rating: Estimate;
+}
+
+export interface StudyResults {
+  study_id: number;
+  design: StudyDesign;
+  conditions: ConditionResult[];
 }

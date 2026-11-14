@@ -110,6 +110,9 @@ class SessionRead(BaseModel):
     notes: str | None
     current_step: SessionStep = "setup"
     game_queue: GameQueueState | None = None
+    #: Part of a study: the browser behaves the same in every condition. The condition itself
+    #: is never sent to the patient.
+    blinded: bool = False
 
 
 class SessionSummary(SessionRead):
@@ -216,6 +219,9 @@ class AdminSessionDetail(SessionRead):
     session_metrics: list[SessionMetricRead] = Field(default_factory=list)
     #: The muscle sensor's calibration, when the session used the sensor.
     emg_calibration: EmgCalibrationRead | None = None
+    #: Research mode (admin only): the study and the condition this session played.
+    study_id: int | None = None
+    study_condition: str | None = None
 
 
 class AdminRecentSession(BaseModel):

@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime
+from sqlalchemy import JSON, Date, DateTime
 from sqlmodel import Field, SQLModel
 
 from app.models.user import utc_now
@@ -27,4 +27,7 @@ class PatientProfile(SQLModel, table=True):
     #: The highest difficulty (0-1) the engine may reach, by game id; a game left out may reach
     #: 1.0. The admin sets it (Day 17).
     max_difficulty: dict[str, Any] = Field(default_factory=dict, sa_type=JSON)
+    #: The date the patient's research consent was recorded; None without consent. Only
+    #: consenting patients can be enrolled in a study.
+    research_consent_at: date | None = Field(default=None, sa_type=Date)
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))

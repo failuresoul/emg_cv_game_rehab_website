@@ -23,6 +23,9 @@ class GameRun(SQLModel, table=True):
     trials_done: int = 0
     score: float | None = None
     summary: dict[str, Any] | None = Field(default=None, sa_type=JSON)
+    #: Research mode: the study and condition the run was played in.
+    study_id: int | None = Field(default=None, foreign_key="study.id", index=True)
+    condition: str | None = None
 
 
 class Trial(SQLModel, table=True):

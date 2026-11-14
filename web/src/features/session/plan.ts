@@ -86,6 +86,8 @@ export function reasonText(game: Pick<PlannedGame, "reason_key" | "reason_params
  * available game unticked. Games the plan names that are not available are left out. */
 export function planRows(plan: SessionPlan, available: readonly GameId[]): PlanRow[] {
   const planned = plan.games.map((game) => game.game_id).filter((id) => available.includes(id));
+  // A locked plan (research mode) is played as it is.
+  if (plan.locked) return planned.map((id) => ({ id, selected: true }));
   return [
     ...planned.map((id) => ({ id, selected: true })),
     ...available.filter((id) => !planned.includes(id)).map((id) => ({ id, selected: false })),

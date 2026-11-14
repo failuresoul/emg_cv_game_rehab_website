@@ -15,6 +15,7 @@ from app.schemas.game import (
 from app.schemas.game_setting import PatientGameSetting
 from app.services import game_settings, games, sessions
 from app.services import programme as programmes
+from app.services import studies
 
 router = APIRouter(tags=["games"])
 
@@ -46,7 +47,10 @@ def list_game_settings(session: SessionDep, patient: CurrentPatient) -> list[Pat
     """The games this patient may play (the Game Library's, within the patient's programme),
     with the starting defaults and trials the admin set."""
     programme = programmes.programme_for(session, patient)
-    return game_settings.patient_settings(session, allowed=programme.enabled_games)
+    assert patient.id is not None
+    # A study's games are played whatever the programme says.
+    allowed = {*programme.enabled_games, *studies.study_games_for(session, patient.id)}
+    return game_settings.patient_settings(session, allowed=allowed)
 
 
 @router.post("/sessions/{session_id}/games", status_code=status.HTTP_201_CREATED)

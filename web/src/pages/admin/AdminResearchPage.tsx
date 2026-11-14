@@ -5,14 +5,21 @@ import { buttonClasses } from "@/components/ui/buttonStyles";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ExportButton } from "@/features/admin/ExportButton";
+import { ConsentCard } from "@/features/research/ConsentCard";
+import { StudiesSection } from "@/features/research/StudiesSection";
 import { t } from "@/i18n";
 
-/** Data for analysis: CSV exports with patients only by their code. */
+/** Research mode (studies comparing the engine conditions), research consent, and data for
+ * analysis: CSV exports with patients only by their code. */
 export function AdminResearchPage() {
   return (
     <>
       <PageHeader title={t("page.admin.research.title")} description={t("research.intro")} />
-      <Card className="flex flex-col gap-3">
+      <StudiesSection />
+      <div className="mt-4">
+        <ConsentCard />
+      </div>
+      <Card className="mt-4 flex flex-col gap-3">
         <div className="flex items-start gap-3">
           <Table size={28} aria-hidden className="text-primary shrink-0" />
           <div>

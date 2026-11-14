@@ -36,6 +36,8 @@ class SessionPlan(BaseModel):
     total_minutes: float
     focus: PlanFocus
     notes: list[PlanNote]
+    #: Research mode: the study's fixed games, which the patient cannot change.
+    locked: bool = False
     #: The planner's version, so stored plans can be told apart if the rules change.
     version: int = 1
     created_at: datetime | None = None

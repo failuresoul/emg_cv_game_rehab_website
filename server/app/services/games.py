@@ -76,7 +76,12 @@ def start_run(session: Session, record: SessionRecord, payload: GameRunStart) ->
     run = GameRun(**payload.model_dump(), session_id=record.id)
     # The engine is the patient's, whatever the browser says.
     profile = session.get(PatientProfile, record.patient_id)
-    if profile is not None:
+    if record.study_condition is not None:
+        # Research mode: the session's condition replaces the programme's engine.
+        run.engine = record.study_condition
+        run.study_id = record.study_id
+        run.condition = record.study_condition
+    elif profile is not None:
         run.engine = programmes.programme_for(session, profile).engine_mode
     session.add(run)
     session.commit()
@@ -225,4 +230,6 @@ def get_admin_session_detail(session: Session, record: SessionRecord) -> AdminSe
         emg_calibration=(
             EmgCalibrationRead.model_validate(emg_calibration) if emg_calibration else None
         ),
+        study_id=record.study_id,
+        study_condition=record.study_condition,
     )
