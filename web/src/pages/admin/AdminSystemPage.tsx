@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { type Institution, project } from "@/config/project";
 import { LlmHealthCard } from "@/features/feedback/LlmHealthCard";
 import { t } from "@/i18n";
+import { countryText } from "@/config/projectText";
 
 function InstitutionCard({ title, institution }: { title: string; institution: Institution }) {
   return (
@@ -21,7 +22,7 @@ function InstitutionCard({ title, institution }: { title: string; institution: I
           </>
         )}
         <dt className="sr-only">{t("adminSystem.country")}</dt>
-        <dd className="text-muted">{institution.country}</dd>
+        <dd className="text-muted">{countryText(institution.country)}</dd>
       </dl>
     </Card>
   );

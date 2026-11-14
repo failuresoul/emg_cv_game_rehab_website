@@ -16,6 +16,8 @@ class PatientProfile(SQLModel, table=True):
     age_band: str  # "18-29" | "30-39" | "40-49" | "50-59" | "60-69" | "70+"
     months_since_stroke: int | None = None
     language: str = "en"  # "en" | "bn"
+    #: The patient's own setting: numbers in Bengali digits in the Bangla interface.
+    bengali_digits: bool = False
     notes: str | None = None
     #: Sessions per week the patient aims for; the therapist sets it.
     weekly_goal: int = 5

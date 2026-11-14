@@ -36,6 +36,11 @@ export function formatNumber(value: number, digits = 2): string {
   }).format(value);
 }
 
+/** A number as it comes, up to `maxDigits` decimals, in the locale's digits (chart axes). */
+export function formatPlain(value: number, maxDigits = 2): string {
+  return new Intl.NumberFormat(getLocale(), { maximumFractionDigits: maxDigits }).format(value);
+}
+
 /** Always shows the sign, so that a difference reads clearly. */
 export function formatDifference(value: number, digits = 2): string {
   return new Intl.NumberFormat(getLocale(), {

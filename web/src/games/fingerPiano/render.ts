@@ -4,6 +4,7 @@ import type { Point } from "@/vision/geometry";
 import { HAND_KNUCKLES, OPEN_TIPS } from "@/warmup/exercises";
 
 import { FALL_MS } from "./melodyMachine";
+import { CANVAS_FONT_FAMILY } from "@/lib/canvasFont";
 
 /** A calm night-blue room, dark enough for the white top bar and the coloured notes. */
 const BACKGROUND = "#17263A";
@@ -95,7 +96,7 @@ export function drawLanes(
   labels: Partial<Record<Finger, string>>,
 ) {
   const { laneWidth, topY, hitY } = layout;
-  context.font = `bold ${LABEL_FONT_PX}px system-ui, sans-serif`;
+  context.font = `bold ${LABEL_FONT_PX}px ${CANVAS_FONT_FAMILY}`;
   context.textAlign = "center";
   context.textBaseline = "top";
   for (const [finger, x] of Object.entries(layout.laneX) as [Finger, number][]) {

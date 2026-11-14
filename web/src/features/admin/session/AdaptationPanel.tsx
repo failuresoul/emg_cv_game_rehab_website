@@ -11,7 +11,7 @@ import {
 } from "recharts";
 
 import { Badge } from "@/components/ui/Badge";
-import { t } from "@/i18n";
+import { getLanguage, t } from "@/i18n";
 import { formatNumber } from "@/lib/format";
 import type { AdaptationLogRow } from "@/types/api";
 
@@ -72,6 +72,9 @@ function DecisionsTable({ logs }: { logs: readonly AdaptationLogRow[] }) {
   ] as const;
   return (
     <div className="max-h-96 overflow-auto">
+      {getLanguage() !== "en" && (
+        <p className="text-muted mb-2 text-sm">{t("adminAdaptation.englishNote")}</p>
+      )}
       <table className="w-full text-left">
         <thead className="bg-surface sticky top-0">
           <tr className="border-b border-black/10">
@@ -93,7 +96,9 @@ function DecisionsTable({ logs }: { logs: readonly AdaptationLogRow[] }) {
                 {log.trial_no === 0 ? t("adminAdaptation.start") : formatNumber(log.trial_no, 0)}
               </th>
               <td className="px-3 py-2 tabular-nums">{formatNumber(log.level, 0)}</td>
-              <td className="px-3 py-2">{log.decision}</td>
+              <td className="px-3 py-2" lang="en">
+                {log.decision}
+              </td>
               <td className="px-3 py-2">
                 {log.safety_override ? (
                   <span className="flex flex-col gap-1">
@@ -104,7 +109,9 @@ function DecisionsTable({ logs }: { logs: readonly AdaptationLogRow[] }) {
                         </Badge>
                       ))}
                     </span>
-                    <span className="text-muted text-base">{log.safety_override}</span>
+                    <span className="text-muted text-base" lang="en">
+                      {log.safety_override}
+                    </span>
                   </span>
                 ) : (
                   dash

@@ -44,6 +44,29 @@
   :focus-visible {
     @apply outline-accent outline-3 outline-offset-2;
   }
+
+  /* Bengali script has tall marks above and below the line (matras, conjuncts): more line height
+   * in the Bangla interface, and on any Bangla text inside the English one (a report, a name). */
+  :root:lang(bn),
+  :lang(bn) {
+    --text-xs--line-height: 1.6;
+    --text-sm--line-height: 1.65;
+    --text-base--line-height: 1.75;
+    --text-lg--line-height: 1.75;
+    --text-xl--line-height: 1.6;
+    --text-2xl--line-height: 1.5;
+    --text-3xl--line-height: 1.45;
+    --text-4xl--line-height: 1.4;
+  }
+
+  :root:lang(bn) body {
+    line-height: 1.75;
+  }
+
+  /* Leading-tight headings would clip Bengali marks; give them room. */
+  :lang(bn) .leading-tight {
+    line-height: 1.4;
+  }
 }
 
 /* The landing page's forearm EMG trace scrolls gently; it stays still for reduced motion. */

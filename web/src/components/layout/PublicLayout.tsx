@@ -4,6 +4,7 @@ import { buttonClasses } from "@/components/ui/buttonStyles";
 import { t } from "@/i18n";
 
 import { Logo } from "./Logo";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 
 export function PublicLayout() {
   return (
@@ -11,7 +12,8 @@ export function PublicLayout() {
       <header className="bg-surface border-b border-black/10">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <Logo />
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <LanguageSwitch />
             <Link to="/login" className={buttonClasses("ghost")}>
               {t("nav.login")}
             </Link>

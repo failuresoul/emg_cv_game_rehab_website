@@ -16,6 +16,8 @@ import { useAuth } from "@/features/auth/AuthContext";
 import { AuthLoading, HOME_PATH } from "@/features/auth/guards";
 import { t } from "@/i18n";
 import { SILENT } from "@/lib/apiErrors";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { taglineText } from "@/config/projectText";
 
 function errorMessage(error: unknown): string {
   const invalid = axios.isAxiosError(error) && error.response?.status === 401;
@@ -51,10 +53,11 @@ export function LoginPage() {
 
   return (
     <Card className="mx-auto max-w-md">
+      <LanguageSwitch className="mb-2 justify-end" />
       <div className="mb-4 flex flex-col items-center gap-2 text-center">
         <LogoMark size={64} />
         <p className="text-primary text-2xl font-bold">{project.name}</p>
-        <p className="text-muted">{project.tagline}</p>
+        <p className="text-muted">{taglineText()}</p>
       </div>
       <PageHeader title={t("page.public.login.title")} />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">

@@ -16,6 +16,7 @@ vi.mock("./UserMenu", () => ({ UserMenu: () => null }));
 vi.mock("@/features/session/StartSessionButton", () => ({ StartSessionButton: () => null }));
 vi.mock("@/features/auth/AuthContext", () => ({
   useAuth: () => ({ user: null, isLoading: false, login: vi.fn() }),
+  useOptionalAuth: () => null,
 }));
 
 const sessionLayoutSource = import.meta.glob<string>("./SessionLayout.tsx", {

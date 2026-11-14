@@ -6,6 +6,7 @@ import { project } from "@/config/project";
 import { t, type TranslationKey } from "@/i18n";
 
 import { ACCENT_TEXT, Container, SECTION_IDS } from "./shared";
+import { countryText } from "@/config/projectText";
 
 const AIMS: { icon: LucideIcon; tint: string; color: string; key: string }[] = [
   { icon: ScanEye, tint: "bg-primary-light", color: "text-primary", key: "sensing" },
@@ -48,12 +49,12 @@ export function Research() {
             </h2>
             <dl className="flex flex-col gap-5">
               <MetaRow label={t("landing.research.institution")}>
-                {institution.department}, {institution.name}, {institution.country}
+                {institution.department}, {institution.name}, {countryText(institution.country)}
               </MetaRow>
               <MetaRow label={t("landing.research.collaboration")}>
                 {t("landing.research.collaborationText", {
                   name: collaborator.name,
-                  country: collaborator.country,
+                  country: countryText(collaborator.country),
                 })}
               </MetaRow>
               <MetaRow label={t("landing.research.supervisedBy")}>

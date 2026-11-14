@@ -3,6 +3,7 @@ import { project } from "@/config/project";
 import { t } from "@/i18n";
 
 import { Container } from "./shared";
+import { countryText } from "@/config/projectText";
 
 function LogoTile({ which }: { which: "institution" | "collaborator" }) {
   return (
@@ -40,7 +41,7 @@ export function CollaborationCard({ titleId = "collab-title" }: { titleId?: stri
             department: project.institution.department ?? "",
             institution: project.institution.shortName,
             collaborator: project.collaborator.name,
-            country: project.collaborator.country,
+            country: countryText(project.collaborator.country),
           })}
         </p>
       </div>

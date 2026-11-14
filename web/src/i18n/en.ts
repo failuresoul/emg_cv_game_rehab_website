@@ -1,3 +1,6 @@
+// English values of the project's descriptive words come from config/project.ts itself.
+import { project } from "@/config/project";
+
 export const en = {
   "common.close": "Close",
   "common.loading": "Loading",
@@ -2009,4 +2012,25 @@ export const en = {
   "alert.count.medium": "Medium: {n}",
   "alert.count.low": "Low: {n}",
   "alert.viewAll": "All alerts",
+  "languageSwitch.label": "Language",
+  "languageSwitch.en": "English",
+  "languageSwitch.bn": "বাংলা",
+  "languageSwitch.error": "Could not change the language. Please try again.",
+  "patient.profile.display": "Language and numbers",
+  "patient.profile.language": "Language",
+  "patient.profile.languageHint": "The website and your feedback reports use this language.",
+  "patient.profile.bengaliDigits": "Show numbers in Bengali digits",
+  "patient.profile.bengaliDigitsHint": "For example ১২৩ instead of 123.",
+  "patient.profile.bengaliDigitsOnlyBn": "Used when the website is in Bangla.",
+  "patient.profile.settingError": "The setting could not be saved. Please try again.",
+  "emgCheck.ok": "OK",
+  "adminAdaptation.englishNote":
+    "The engine's reasons are recorded in English, the same for every language, for research.",
+  "landing.preview.mvcUnit": "%MVC",
+  "project.tagline": project.tagline,
+  "project.expansion": project.expansion,
+  "project.country.bangladesh": "Bangladesh",
+  "project.country.australia": "Australia",
+  "project.role.supervisor": "Supervisor",
+  "project.role.developerResearcher": "Developer & Researcher",
 } as const;

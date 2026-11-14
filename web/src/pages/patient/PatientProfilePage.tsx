@@ -1,9 +1,13 @@
 import { Hand, Image, Lightbulb, type LucideIcon, Ruler } from "lucide-react";
+import { useState } from "react";
 
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { QueryError } from "@/components/ui/QueryError";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Switch } from "@/components/ui/Switch";
+import { useAuth } from "@/features/auth/AuthContext";
 import { usePatientDashboard } from "@/features/patient/usePatientDashboard";
 import { t, type TranslationKey } from "@/i18n";
 
@@ -45,6 +49,56 @@ function Details() {
   );
 }
 
+/** Language and digits: saved to the profile, so reports and every page follow them. */
+function DisplaySettings() {
+  const { user, language, changeBengaliDigits } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const digits = user?.patient_profile?.bengali_digits === true;
+
+  async function toggle(on: boolean) {
+    setSaving(true);
+    setFailed(false);
+    try {
+      await changeBengaliDigits(on);
+    } catch {
+      setFailed(true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <h3 className="font-semibold">{t("patient.profile.language")}</h3>
+        <p className="text-muted">{t("patient.profile.languageHint")}</p>
+        <LanguageSwitch />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Switch
+          checked={digits}
+          disabled={saving}
+          label={t("patient.profile.bengaliDigits")}
+          onChange={(on) => void toggle(on)}
+        />
+        <p className="text-muted">
+          {t(
+            language === "bn"
+              ? "patient.profile.bengaliDigitsHint"
+              : "patient.profile.bengaliDigitsOnlyBn",
+          )}
+        </p>
+        {failed && (
+          <p role="alert" className="text-danger font-medium">
+            {t("patient.profile.settingError")}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function PatientProfilePage() {
   return (
     <>
@@ -52,6 +106,10 @@ export function PatientProfilePage() {
       <div className="flex flex-col gap-4">
         <Card>
           <Details />
+        </Card>
+        <Card>
+          <h2 className="mb-4 text-xl font-bold">{t("patient.profile.display")}</h2>
+          <DisplaySettings />
         </Card>
         <Card>
           <h2 className="mb-4 text-xl font-bold">{t("patient.profile.cameraTips")}</h2>

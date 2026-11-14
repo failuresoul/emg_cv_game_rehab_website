@@ -5,6 +5,7 @@ import { project } from "@/config/project";
 import { t } from "@/i18n";
 
 import { ABOUT_HREF, Container, PageLink } from "./shared";
+import { countryText, taglineText } from "@/config/projectText";
 
 /** Dark footer. The logos are written as names: the KUET crest loses its lettering when made
  * monochrome with a CSS filter, so neither logo is drawn here. No version number. */
@@ -23,7 +24,7 @@ export function LandingFooter() {
                 <span className="block text-[1.2rem] font-extrabold text-white">
                   {project.name}
                 </span>
-                <span className="block text-[0.8rem]">{project.tagline}</span>
+                <span className="block text-[0.8rem]">{taglineText()}</span>
               </span>
             </div>
             <p className="mt-5 flex flex-wrap items-center gap-2 text-[0.8rem] font-semibold tracking-wide text-[#D5E4E2]">
@@ -41,12 +42,12 @@ export function LandingFooter() {
               {t("landing.footer.research")}
             </h2>
             <p>
-              {institution.department}, {institution.name}, {institution.country}
+              {institution.department}, {institution.name}, {countryText(institution.country)}
             </p>
             <p className="mt-2">
               {t("landing.research.collaborationText", {
                 name: collaborator.name,
-                country: collaborator.country,
+                country: countryText(collaborator.country),
               })}
             </p>
           </div>

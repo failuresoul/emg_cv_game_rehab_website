@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "format": "prettier --write .",
     "test": "vitest run",
-    "export:specs": "node scripts/export-specs.mjs"
+    "export:specs": "node scripts/export-specs.mjs",
+    "i18n:check": "vitest run src/i18n"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.2.0",

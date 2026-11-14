@@ -1,3 +1,6 @@
+// Needs review by a native speaker: every Bangla string below was written for this project and
+// has not yet been checked by a native Bangla speaker (see docs, Day 17). Keep "MuVi Rehab" and
+// the names from config/project.ts in Latin letters.
 import type { TranslationKey } from "./index";
 
 export const bn: Record<TranslationKey, string> = {
@@ -1996,4 +1999,25 @@ export const bn: Record<TranslationKey, string> = {
   "alert.count.medium": "মাঝারি: {n}",
   "alert.count.low": "নিম্ন: {n}",
   "alert.viewAll": "সব সতর্কবার্তা",
+  "languageSwitch.label": "ভাষা",
+  "languageSwitch.en": "English",
+  "languageSwitch.bn": "বাংলা",
+  "languageSwitch.error": "ভাষা বদলানো যায়নি। আবার চেষ্টা করুন।",
+  "patient.profile.display": "ভাষা ও সংখ্যা",
+  "patient.profile.language": "ভাষা",
+  "patient.profile.languageHint": "ওয়েবসাইট ও আপনার প্রতিবেদন এই ভাষায় দেখানো হয়।",
+  "patient.profile.bengaliDigits": "সংখ্যা বাংলা অঙ্কে দেখান",
+  "patient.profile.bengaliDigitsHint": "যেমন 123-এর বদলে ১২৩।",
+  "patient.profile.bengaliDigitsOnlyBn": "ওয়েবসাইট বাংলায় থাকলে এটি কাজ করে।",
+  "patient.profile.settingError": "সেটিং সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
+  "emgCheck.ok": "ঠিক আছে",
+  "adminAdaptation.englishNote":
+    "গবেষণার জন্য ইঞ্জিনের কারণগুলো সব ভাষায় একইভাবে ইংরেজিতে লেখা থাকে।",
+  "landing.preview.mvcUnit": "%MVC",
+  "project.tagline": "স্ট্রোকের পরে ঘরে বসে পুনর্বাসন, পেশির সংকেত (EMG) ও ক্যামেরার সাহায্যে",
+  "project.expansion": "পেশি + দৃষ্টি পুনর্বাসন",
+  "project.country.bangladesh": "বাংলাদেশ",
+  "project.country.australia": "অস্ট্রেলিয়া",
+  "project.role.supervisor": "তত্ত্বাবধায়ক",
+  "project.role.developerResearcher": "ডেভেলপার ও গবেষক",
 };

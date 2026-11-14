@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { t, type TranslationKey } from "@/i18n";
 import { api } from "@/lib/api";
+import { formatNumber } from "@/lib/format";
 import { SILENT } from "@/lib/apiErrors";
 import type {
   ConditionResult,
@@ -239,7 +240,7 @@ export function resultBars(results: StudyResults, metric: ResultMetric): ResultB
 export function formatResult(metric: ResultMetric, value: number | null): string {
   if (value === null) return "–";
   const digits = metric.percent ? 0 : metric.key === "challenge_error" ? 2 : 1;
-  const text = value.toFixed(digits);
+  const text = formatNumber(value, digits);
   return metric.percent ? t("measure.percent", { value: text }) : text;
 }
 

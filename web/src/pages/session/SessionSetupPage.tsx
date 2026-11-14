@@ -9,6 +9,7 @@ import { readEmgPreference, writeEmgPreference } from "@/emg/preference";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useSessionStep } from "@/features/session/SessionContext";
 import { t, type TranslationKey } from "@/i18n";
+import { formatNumber } from "@/lib/format";
 import type { Side } from "@/types/api";
 import { evaluateSetupChecks, type SetupChecks } from "@/vision/setupChecks";
 import { SkeletonCanvas } from "@/vision/SkeletonCanvas";
@@ -79,10 +80,13 @@ function TrackingInfo({ tracking }: { tracking: TrackingState | null }) {
   const rows: { labelKey: TranslationKey; value: string }[] = [
     {
       labelKey: "setup.debug.shoulderWidth",
-      value: tracking?.shoulderWidthPx?.toFixed(1) ?? notAvailable,
+      value:
+        tracking?.shoulderWidthPx != null
+          ? formatNumber(tracking.shoulderWidthPx, 1)
+          : notAvailable,
     },
-    { labelKey: "setup.debug.wristX", value: wrist?.x.toFixed(2) ?? notAvailable },
-    { labelKey: "setup.debug.wristY", value: wrist?.y.toFixed(2) ?? notAvailable },
+    { labelKey: "setup.debug.wristX", value: wrist ? formatNumber(wrist.x, 2) : notAvailable },
+    { labelKey: "setup.debug.wristY", value: wrist ? formatNumber(wrist.y, 2) : notAvailable },
   ];
 
   return (

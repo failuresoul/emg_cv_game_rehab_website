@@ -4,11 +4,16 @@ import { isMuted } from "./beep";
 
 export const SPEECH_LANGUAGES: Record<Language, string> = { en: "en-US", bn: "bn-BD" };
 
+/** The voices of a language, an exact en-US or bn-BD voice first (an Indian Bangla voice reads
+ * Bangladeshi Bangla less naturally, so it comes after). */
 export function voicesFor(language: Language): SpeechSynthesisVoice[] {
   const prefix = language === "bn" ? "bn" : "en";
+  const exact = SPEECH_LANGUAGES[language].toLowerCase();
+  const normal = (voice: SpeechSynthesisVoice) => voice.lang.toLowerCase().replace("_", "-");
   return window.speechSynthesis
     .getVoices()
-    .filter((voice) => voice.lang.toLowerCase().startsWith(prefix));
+    .filter((voice) => normal(voice).startsWith(prefix))
+    .sort((a, b) => Number(normal(b) === exact) - Number(normal(a) === exact));
 }
 
 /**

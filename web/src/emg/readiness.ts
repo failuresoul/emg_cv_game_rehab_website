@@ -4,7 +4,8 @@
  * this decides.
  */
 
-import type { TranslationKey } from "@/i18n";
+import { t, type TranslationKey } from "@/i18n";
+import { formatNumber } from "@/lib/format";
 
 import type { EmgEngine, EmgStatus } from "./engine";
 import { OnsetDetector, SATURATION_MV, windowStats } from "./processing";
@@ -84,7 +85,7 @@ function result(id: CheckId, pass: boolean, value: string | null): CheckResult {
   return { id, pass, value, ...LABELS[id] };
 }
 
-const mv = (value: number) => `${Math.round(value)} mV`;
+const mv = (value: number) => `${formatNumber(Math.round(value), 0)} mV`;
 
 export function evaluateReadiness(input: ReadinessInput): CheckResult[] {
   const { ping } = input;
@@ -104,22 +105,26 @@ export function evaluateReadiness(input: ReadinessInput): CheckResult[] {
     result(
       "rate",
       streaming && input.rateHz! >= READINESS.minRateHz && input.rateHz! <= READINESS.maxRateHz,
-      input.rateHz === null ? null : `${Math.round(input.rateHz)}/s`,
+      input.rateHz === null ? null : `${formatNumber(Math.round(input.rateHz), 0)}/s`,
     ),
     result(
       "gaps",
       streaming && input.gapsPct !== null && input.gapsPct < READINESS.maxGapsPct,
-      input.gapsPct === null ? null : `${input.gapsPct.toFixed(1)}%`,
+      input.gapsPct === null ? null : `${formatNumber(input.gapsPct, 1)}%`,
     ),
     result(
       "contact",
       streaming && input.contactSdMv !== null && input.contactSdMv > READINESS.minContactSdMv,
-      input.contactSdMv === null ? null : `SD ${input.contactSdMv.toFixed(1)} mV`,
+      input.contactSdMv === null ? null : `SD ${formatNumber(input.contactSdMv, 1)} mV`,
     ),
     result(
       "saturation",
       streaming && input.saturated === false,
-      input.saturated === null ? null : input.saturated ? "≥ 3000 mV" : "OK",
+      input.saturated === null
+        ? null
+        : input.saturated
+          ? `≥ ${formatNumber(SATURATION_MV, 0)} mV`
+          : t("emgCheck.ok"),
     ),
     result(
       "relaxed",
@@ -127,12 +132,14 @@ export function evaluateReadiness(input: ReadinessInput): CheckResult[] {
         input.relaxed !== null &&
         input.relaxed.sd <= READINESS.relaxedMaxSdMv &&
         input.relaxed.mean <= READINESS.relaxedMaxMeanMv,
-      input.relaxed === null ? null : `${mv(input.relaxed.mean)} ± ${input.relaxed.sd.toFixed(0)}`,
+      input.relaxed === null
+        ? null
+        : `${mv(input.relaxed.mean)} ± ${formatNumber(input.relaxed.sd, 0)}`,
     ),
     result(
       "squeeze",
       input.squeeze?.pass === true,
-      input.squeeze === null ? null : `${input.squeeze.ratio.toFixed(1)}×`,
+      input.squeeze === null ? null : `${formatNumber(input.squeeze.ratio, 1)}×`,
     ),
   ];
 }

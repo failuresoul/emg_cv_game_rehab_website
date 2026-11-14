@@ -11,6 +11,7 @@ import {
 } from "recharts";
 
 import { EmptyState } from "@/components/ui/EmptyState";
+import { formatPlain } from "@/lib/format";
 
 const PRIMARY = "var(--color-primary)";
 const MUTED = "var(--color-muted)";
@@ -72,11 +73,11 @@ export function ProgressChart({
             axisLine={false}
             domain={yDomain}
             allowDecimals={allowDecimals}
-            tickFormatter={formatValue}
+            tickFormatter={formatValue ?? ((value: number) => formatPlain(value))}
           />
           <Tooltip
             formatter={(value) =>
-              formatValue && typeof value === "number" ? formatValue(value) : String(value)
+              typeof value === "number" ? (formatValue ?? formatPlain)(value) : String(value)
             }
           />
           {reference && (

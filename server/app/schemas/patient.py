@@ -80,6 +80,21 @@ class PatientUpdate(BaseModel):
         return self
 
 
+class OwnProfileUpdate(BaseModel):
+    """What patients change themselves: the interface language (reports follow it) and digits."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    language: Language | None = None
+    bengali_digits: bool | None = None
+
+    @model_validator(mode="after")
+    def something_to_change(self) -> Self:
+        if self.language is None and self.bengali_digits is None:
+            raise ValueError("Send language, bengali_digits or both")
+        return self
+
+
 class PatientProfileRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -91,6 +106,8 @@ class PatientProfileRead(BaseModel):
     age_band: AgeBand
     months_since_stroke: int | None
     language: Language
+    #: Numbers in Bengali digits in the Bangla interface (the patient's own setting).
+    bengali_digits: bool = False
     notes: str | None
     weekly_goal: int
     #: A demo patient with synthetic data, from scripts/seed_demo_data.py.

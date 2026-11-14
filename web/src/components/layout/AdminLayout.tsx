@@ -34,6 +34,7 @@ function OpenAlertsBadge() {
   );
 }
 import { UserMenu } from "./UserMenu";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 
 const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }[] = [
   { to: "/admin", labelKey: "nav.admin.overview", icon: LayoutDashboard, end: true },
@@ -109,7 +110,8 @@ export function AdminLayout() {
           >
             <Menu size={24} aria-hidden />
           </Button>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            <LanguageSwitch />
             <UserMenu />
           </div>
         </header>

@@ -53,6 +53,7 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "engine_mode": "VARCHAR NOT NULL DEFAULT 'L1'",
         "max_difficulty": "JSON NOT NULL DEFAULT '{}'",
         "research_consent_at": "DATE",
+        "bengali_digits": "BOOLEAN NOT NULL DEFAULT 0",
     },
     "trial": {
         "metrics_server": "JSON",

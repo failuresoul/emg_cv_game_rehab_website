@@ -3,7 +3,12 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import CurrentPatient, SessionDep, TzOffset
-from app.schemas.patient import PatientDashboard, TodayPlanStep
+from app.schemas.patient import (
+    OwnProfileUpdate,
+    PatientDashboard,
+    PatientProfileRead,
+    TodayPlanStep,
+)
 from app.schemas.programme import PatientProgrammeRead
 from app.schemas.emg import EmgCalibrationRead
 from app.schemas.metrics import MetricSeries
@@ -91,6 +96,22 @@ def latest_calibration(patient: CurrentPatient, session: SessionDep) -> Calibrat
     if calibration is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No calibration yet")
     return CalibrationRead.model_validate(calibration)
+
+
+@router.patch("/profile")
+def update_own_profile(
+    payload: OwnProfileUpdate, patient: CurrentPatient, session: SessionDep
+) -> PatientProfileRead:
+    """The patient's own language (the interface and their feedback reports follow it) and
+    whether numbers use Bengali digits."""
+    if payload.language is not None:
+        patient.language = payload.language
+    if payload.bengali_digits is not None:
+        patient.bengali_digits = payload.bengali_digits
+    session.add(patient)
+    session.commit()
+    session.refresh(patient)
+    return patients.profile_read(session, patient)
 
 
 @router.get("/programme")

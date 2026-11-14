@@ -5,6 +5,7 @@ import { type Person, project } from "@/config/project";
 import { t } from "@/i18n";
 
 import { Container, SECTION_IDS, SectionHeader } from "./shared";
+import { roleText } from "@/config/projectText";
 
 const PHOTO = 160;
 
@@ -33,7 +34,7 @@ function PersonCard({ person, tone }: { person: Person; tone: "primary" | "accen
           tone === "primary" ? "bg-primary-light text-primary" : "bg-[#FCEFE6] text-[#9C4515]",
         )}
       >
-        {person.role}
+        {roleText(person.role)}
       </p>
       <p className="text-muted text-[0.88rem]">{person.affiliation}</p>
     </li>

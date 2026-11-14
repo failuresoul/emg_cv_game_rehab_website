@@ -7,6 +7,7 @@ import type { Side } from "@/types/api";
 import { type BodyFrame, fromBodyFrame, type Point } from "./geometry";
 import { isLandmarkVisible, POSE } from "./landmarks";
 import type { VisionResult } from "./visionEngine";
+import { CANVAS_FONT_FAMILY } from "@/lib/canvasFont";
 
 const WIDTH = 640;
 const HEIGHT = 480;
@@ -18,7 +19,7 @@ const POINT_RADIUS = 5;
 const X_AXIS_COLOR = "#F2C94C";
 const Y_AXIS_COLOR = "#56CCF2";
 const AXIS_LINE_WIDTH = 4;
-const AXIS_FONT = "bold 22px sans-serif";
+const AXIS_FONT = `bold 22px ${CANVAS_FONT_FAMILY}`;
 const AXIS_LABEL_OFFSET = 6;
 const HIGHLIGHT_COLOR = "#F2C94C";
 const HIGHLIGHT_LINE_WIDTH = 12;

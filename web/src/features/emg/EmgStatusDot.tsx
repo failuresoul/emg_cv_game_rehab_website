@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useEmgStatus } from "@/emg/EmgProvider";
 import { EMG_ERROR_KEYS } from "@/emg/messages";
 import { t, type TranslationKey } from "@/i18n";
+import { formatNumber } from "@/lib/format";
 
 export type DotState = "on" | "paused" | "off";
 
@@ -47,23 +48,28 @@ export function EmgStatusDot({ inUse }: { inUse: boolean }) {
     { key: "emgDot.firmware", value: status.firmwareVersion ?? "–", ok: null },
     {
       key: "emgCheck.rate",
-      value: status.sampleRate === null ? "–" : `${status.sampleRate}/s`,
+      value: status.sampleRate === null ? "–" : `${formatNumber(status.sampleRate, 0)}/s`,
       ok: status.sampleRate !== null,
     },
-    { key: "emgCheck.gaps", value: `${status.gapsPct}%`, ok: status.gapsPct < 0.5 },
+    {
+      key: "emgCheck.gaps",
+      value: `${formatNumber(status.gapsPct, 1)}%`,
+      ok: status.gapsPct < 0.5,
+    },
     {
       key: "emgCheck.contact",
-      value: status.electrodeOff ? t("emgDot.flat") : "OK",
+      value: status.electrodeOff ? t("emgDot.flat") : t("emgCheck.ok"),
       ok: !status.electrodeOff,
     },
     {
       key: "emgCheck.saturation",
-      value: status.saturation ? "≥ 3000 mV" : "OK",
+      value: status.saturation ? "≥ 3000 mV" : t("emgCheck.ok"),
       ok: !status.saturation,
     },
     {
       key: "emgDot.level",
-      value: status.percentMvc === null ? "–" : `${Math.round(status.percentMvc)}% MVC`,
+      value:
+        status.percentMvc === null ? "–" : `${formatNumber(Math.round(status.percentMvc), 0)}% MVC`,
       ok: null,
     },
   ];

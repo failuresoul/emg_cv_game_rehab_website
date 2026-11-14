@@ -30,6 +30,8 @@ export interface PatientProfile {
   age_band: AgeBand;
   months_since_stroke: number | null;
   language: Language;
+  /** The patient's own setting: numbers in Bengali digits in the Bangla interface. */
+  bengali_digits?: boolean;
   notes: string | null;
   /** Sessions per week the patient aims for; the therapist sets it. */
   weekly_goal: number;

@@ -8,6 +8,7 @@ import { t, type TranslationKey } from "@/i18n";
 
 import { Logo } from "./Logo";
 import { UserMenu } from "./UserMenu";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 
 const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }[] = [
   { to: "/patient", labelKey: "nav.patient.home", icon: House, end: true },
@@ -48,6 +49,7 @@ export function PatientLayout() {
             ))}
           </nav>
           {!isHome && <StartSessionButton compact />}
+          <LanguageSwitch />
           <UserMenu />
         </div>
       </header>

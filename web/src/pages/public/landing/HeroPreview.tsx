@@ -158,7 +158,7 @@ function LevelCard() {
           6
         </text>
       </svg>
-      <div className="leading-tight whitespace-nowrap">
+      <div className="leading-tight">
         <span className="text-primary block text-[0.65rem] font-bold tracking-[0.08em] uppercase">
           {t("landing.preview.level", { n: 6 })}
         </span>
@@ -181,7 +181,10 @@ function EmgCard() {
         </span>
       </div>
       <p className="text-[1.5rem] leading-tight font-extrabold">
-        42<span className="text-muted ml-1 text-[0.8rem] font-semibold">%MVC</span>
+        42
+        <span className="text-muted ml-1 text-[0.8rem] font-semibold">
+          {t("landing.preview.mvcUnit")}
+        </span>
       </p>
       <svg viewBox="0 0 270 70" className="mt-1 block h-auto w-full" aria-hidden focusable="false">
         <defs>

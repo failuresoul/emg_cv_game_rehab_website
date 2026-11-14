@@ -9,6 +9,8 @@ import { project } from "@/config/project";
 import { t, type TranslationKey } from "@/i18n";
 
 import { ABOUT_HREF, Container, PageLink, SECTION_IDS } from "./shared";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { expansionText } from "@/config/projectText";
 
 const LINKS: { href: string; labelKey: TranslationKey }[] = [
   { href: `#${SECTION_IDS.how}`, labelKey: "landing.nav.how" },
@@ -65,7 +67,7 @@ export function LandingNavbar() {
                 {project.name}
               </span>
               <span className="text-muted hidden text-[0.65rem] font-semibold tracking-[0.08em] uppercase sm:block">
-                {project.expansion}
+                {expansionText()}
               </span>
             </span>
           </Link>
@@ -82,13 +84,10 @@ export function LandingNavbar() {
               </li>
             ))}
           </ul>
+          <LanguageSwitch className="ml-auto lg:ml-4" />
           <Link
             to="/login"
-            className={buttonClasses(
-              "primary",
-              "md",
-              "ml-auto hidden rounded-xl sm:inline-flex lg:ml-4",
-            )}
+            className={buttonClasses("primary", "md", "hidden rounded-xl sm:inline-flex")}
           >
             {t("landing.login")}
             <ArrowRight size={20} aria-hidden />
@@ -100,7 +99,7 @@ export function LandingNavbar() {
             aria-controls={MENU_ID}
             aria-label={t(open ? "landing.nav.close" : "landing.nav.menu")}
             onClick={() => setOpen((value) => !value)}
-            className="text-ink hover:bg-primary-light ml-auto inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg sm:ml-2 lg:hidden"
+            className="text-ink hover:bg-primary-light inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg sm:ml-2 lg:hidden"
           >
             {open ? <X size={26} aria-hidden /> : <Menu size={26} aria-hidden />}
           </button>

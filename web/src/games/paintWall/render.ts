@@ -1,4 +1,5 @@
 import type { Coat } from "./stripeMachine";
+import { CANVAS_FONT_FAMILY } from "@/lib/canvasFont";
 
 /** A dark room around a light, warm wall; the paint and the dark text both stand out on it. */
 const ROOM = "#1E2E33";
@@ -139,7 +140,7 @@ export function drawBrush(
 /** Text such as "2 / 3", centred above the stripe, in dark ink on the wall. */
 export function drawCounter(context: CanvasRenderingContext2D, rect: Rect, text: string) {
   context.save();
-  context.font = `bold ${COUNTER_FONT_PX}px system-ui, sans-serif`;
+  context.font = `bold ${COUNTER_FONT_PX}px ${CANVAS_FONT_FAMILY}`;
   context.textAlign = "center";
   context.textBaseline = "top";
   context.fillStyle = INK;
