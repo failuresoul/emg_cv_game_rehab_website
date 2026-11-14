@@ -13,7 +13,7 @@ from app.schemas.patient import (
     PatientUserRead,
 )
 from app.services import programme as programmes
-from app.services.session_feedback import count_open_alerts
+from app.services import alerts
 from app.services.sessions import count_sessions_today
 from app.services.users import get_user_by_email
 
@@ -167,9 +167,11 @@ def get_stats(session: Session) -> AdminStats:
         .select_from(User)
         .where(User.role == "patient", col(User.is_active).is_(True))
     ).one()
+    counts = alerts.counts(session)
     return AdminStats(
         total_patients=total,
         active_patients=active,
         sessions_today=count_sessions_today(session),
-        open_alerts=count_open_alerts(session),
+        open_alerts=counts.open,
+        alerts=counts,
     )

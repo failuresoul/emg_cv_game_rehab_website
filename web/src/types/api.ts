@@ -119,6 +119,8 @@ export interface AdminStats {
   active_patients: number;
   sessions_today: number;
   open_alerts: number;
+  /** Alerts needing attention, by severity (open), and acknowledged ones. */
+  alerts?: AlertCounts;
 }
 
 export interface TodayPlanStep {
@@ -806,16 +808,51 @@ export interface SessionFeedback extends SessionFeedbackCreate {
   needs_review: boolean;
 }
 
-/** A session whose questionnaire raised a safety flag. */
-export interface AdminAlert {
-  session_id: number;
-  patient_id: number;
-  patient_code: string;
-  date: string;
-  flags: SafetyFlag[];
-  reviewed: boolean;
-  reviewed_at: string | null;
-  review_note: string | null;
+// Unified alerts (server/app/schemas/alert.py), admin only
+
+export type AlertType =
+  | "pain"
+  | "new_symptoms"
+  | "high_fatigue"
+  | "sharp_decline"
+  | "missed_sessions"
+  | "repeated_device_problems"
+  | "llm_fallback_rate";
+export type AlertSeverity = "high" | "medium" | "low";
+export type AlertStatus = "open" | "acknowledged" | "resolved";
+
+export interface Alert {
+  id: number;
+  /** Null for a system alert (llm_fallback_rate). */
+  patient_id: number | null;
+  patient_code: string | null;
+  session_id: number | null;
+  type: AlertType;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  details: Record<string, unknown>;
+  created_at: string;
+  acknowledged_by: number | null;
+  acknowledged_at: string | null;
+  resolved_by: number | null;
+  resolved_at: string | null;
+  note: string | null;
+}
+
+export interface AlertFilters {
+  status?: AlertStatus[];
+  type?: AlertType[];
+  severity?: AlertSeverity[];
+  patient?: number;
+  session_id?: number;
+}
+
+export interface AlertCounts {
+  open: number;
+  open_high: number;
+  open_medium: number;
+  open_low: number;
+  acknowledged: number;
 }
 
 export interface CalendarDay {

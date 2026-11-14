@@ -14,6 +14,7 @@ from app.api import engine as engine_api
 from app.core.config import settings
 from app.core.db import create_db_and_tables, engine
 from app.feedback.jobs import report_jobs, warm_up_quietly
+from app.services import alerts
 from app.services.users import ensure_admin
 
 
@@ -22,6 +23,9 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     create_db_and_tables()
     with Session(engine) as session:
         ensure_admin(session)
+    # The daily alert checks (missed sessions, the template rate); they also run when the admin
+    # overview loads.
+    alerts.quietly(alerts.daily_checks, engine)
     # Feedback reports: one worker, and any jobs a stop left unfinished.
     await report_jobs.start()
     # Load the local model in the background; the server never waits for it. If Ollama is

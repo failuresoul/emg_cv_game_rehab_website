@@ -43,24 +43,3 @@ class SessionFeedbackRead(BaseModel):
     created_at: UtcDatetime
     flags: list[SafetyFlag]
     needs_review: bool
-
-
-class AlertReview(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    note: ReviewNote | None = None
-
-    _note = field_validator("note")(_blank_to_none)
-
-
-class AdminAlert(BaseModel):
-    """A session whose questionnaire raised a safety flag."""
-
-    session_id: int
-    patient_id: int
-    patient_code: str
-    date: UtcDatetime
-    flags: list[SafetyFlag]
-    reviewed: bool
-    reviewed_at: UtcDatetime | None
-    review_note: str | None

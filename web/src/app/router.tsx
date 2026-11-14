@@ -11,6 +11,7 @@ import { AdminOverviewPage } from "@/pages/admin/AdminOverviewPage";
 import { AdminPatientDetailPage } from "@/pages/admin/AdminPatientDetailPage";
 import { AdminPatientsPage } from "@/pages/admin/AdminPatientsPage";
 import { AdminReportReviewPage } from "@/pages/admin/AdminReportReviewPage";
+import { AdminAlertsPage } from "@/pages/admin/AdminAlertsPage";
 import { AdminResearchPage } from "@/pages/admin/AdminResearchPage";
 import { AdminSessionDetailPage } from "@/pages/admin/AdminSessionDetailPage";
 import { AdminSystemPage } from "@/pages/admin/AdminSystemPage";
@@ -147,6 +148,7 @@ export const router = createBrowserRouter([
               { path: "patients/:id", element: <AdminPatientDetailPage /> },
               { path: "sessions/:id", element: <AdminSessionDetailPage /> },
               { path: "games", element: <AdminGamesPage /> },
+              { path: "alerts", element: <AdminAlertsPage /> },
               { path: "research", element: <AdminResearchPage /> },
               { path: "research/report-review", element: <AdminReportReviewPage /> },
               { path: "system", element: <AdminSystemPage /> },

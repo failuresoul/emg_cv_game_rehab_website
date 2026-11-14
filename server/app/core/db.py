@@ -96,6 +96,10 @@ def create_db_and_tables(target: Engine | None = None) -> None:
     from app.services.programme import migrate_programmes
 
     migrate_programmes(target)
+    # Day 17: the questionnaire's safety flags as Alert rows.
+    from app.services.alerts import migrate_session_flags
+
+    migrate_session_flags(target)
 
 
 def get_session() -> Generator[Session, None, None]:

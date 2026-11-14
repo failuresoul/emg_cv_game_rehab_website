@@ -1047,28 +1047,41 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         require(len(body["calendar"]) == 28, "the calendar does not have 28 days")
 
     def admin_sees_alert() -> None:
-        params = {"reviewed": "false"}
+        params = {"status": "open", "type": "pain"}
         body = expect(client.get("/api/admin/alerts", params=params, headers=bearer("admin")), 200)
         alert = next((item for item in body if item["session_id"] == state["session_id"]), None)
         require(alert is not None, "the pain alert is not listed")
-        require(alert["flags"] == ["pain"], f"the alert's flags are {alert['flags']}")
+        require(alert["severity"] == "high", f"the alert's severity is {alert['severity']}")
+        require(alert["patient_code"] == state["patient_code"], "the alert has another patient")
+        state["alert_id"] = alert["id"]
         stats = expect(client.get("/api/admin/stats", headers=bearer("admin")), 200)
         require(stats["open_alerts"] >= 1, "open_alerts does not count the alert")
+        require(stats["alerts"]["open_high"] >= 1, "the high alerts are not counted")
         state["open_alerts"] = stats["open_alerts"]
 
     def admin_reviews_alert() -> None:
-        url = f"/api/admin/alerts/{state['session_id']}/review"
+        url = f"/api/admin/alerts/{state['alert_id']}/acknowledge"
+        body = expect(client.post(url, json={"note": "Smoke test: seen"}, headers=bearer("admin")), 200)
+        require(body["status"] == "acknowledged", "the alert is not acknowledged")
+        url = f"/api/admin/alerts/{state['alert_id']}/resolve"
         note = {"note": "Smoke test: reviewed"}
         body = expect(client.post(url, json=note, headers=bearer("admin")), 200)
-        require(body["reviewed"] is True, "the alert is not reviewed")
-        params = {"reviewed": "false"}
+        require(body["status"] == "resolved", "the alert is not resolved")
+        again = client.post(url, json=note, headers=bearer("admin"))
+        require(again.status_code == 409, "a resolved alert was resolved again")
+        params = {"status": "open", "type": "pain"}
         open_alerts = expect(
             client.get("/api/admin/alerts", params=params, headers=bearer("admin")), 200
         )
         require(
             all(item["session_id"] != state["session_id"] for item in open_alerts),
-            "the reviewed alert is still open",
+            "the resolved alert is still open",
         )
+        detail = expect(
+            client.get(f"/api/admin/sessions/{state['session_id']}", headers=bearer("admin")), 200
+        )
+        require(detail["reviewed_at"] is not None, "the session is not marked reviewed")
+        require(detail["review_note"] == "Smoke test: reviewed", "the session lost the note")
         stats = expect(client.get("/api/admin/stats", headers=bearer("admin")), 200)
         expected = state["open_alerts"] - 1
         require(stats["open_alerts"] == expected, f"open_alerts is {stats['open_alerts']}")
@@ -1656,7 +1669,7 @@ def run_smoke(client: HttpClient, admin_email: str, admin_password: str) -> bool
         ("Admin downloads the patient's metrics CSV", export_patient_metrics),
         ("Admin downloads all trials as CSV", export_all_trials),
         ("Admin sees the pain alert", admin_sees_alert),
-        ("Admin marks the alert reviewed", admin_reviews_alert),
+        ("Admin acknowledges and resolves the alert", admin_reviews_alert),
         ("Patient starts a second session for the adaptive engine", engine_session),
         ("Engine: 12 successes raise the level, 8 failures lower it", engine_staircase),
         ("Engine: a decision is logged at the start and after each trial", engine_log_rows),

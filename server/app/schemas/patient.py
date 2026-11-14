@@ -13,6 +13,7 @@ from app.schemas.common import (
     Side,
     UtcDatetime,
 )
+from app.schemas.alert import AlertCounts
 from app.schemas.session import LastSession, LatestCalibration
 from app.schemas.warmup import LastWarmup
 
@@ -118,7 +119,9 @@ class AdminStats(BaseModel):
     total_patients: int
     active_patients: int
     sessions_today: int = 0
+    #: Alerts with status "open".
     open_alerts: int = 0
+    alerts: AlertCounts = Field(default_factory=AlertCounts)
 
 
 class TodayPlanStep(BaseModel):

@@ -5,7 +5,8 @@ import { api } from "@/lib/api";
 import { SILENT } from "@/lib/apiErrors";
 import { GAME_SETTINGS_KEY } from "@/features/games/gameSettings";
 import type {
-  AdminAlert,
+  Alert,
+  AlertFilters,
   AdminGameSetting,
   AdminCalibration,
   AdminRecentSession,
@@ -113,25 +114,51 @@ export function useAdminSession(id: string) {
   });
 }
 
-/** Sessions whose questionnaire raised a safety flag, newest first. */
-export function useAlerts(reviewed?: boolean) {
+/** Alerts, newest first, with the given filters (each list may hold several values). */
+export function useAlerts(filters: AlertFilters = {}) {
   return useQuery({
-    queryKey: [ADMIN_KEY, "alerts", reviewed ?? "all"],
-    queryFn: async () => {
-      const params = reviewed === undefined ? undefined : { reviewed };
-      return (await api.get<AdminAlert[]>("/admin/alerts", { params })).data;
-    },
+    queryKey: [ADMIN_KEY, "alerts", filters],
+    queryFn: async () =>
+      (
+        await api.get<Alert[]>("/admin/alerts", {
+          params: filters,
+          // Repeated keys (?status=open&status=acknowledged), as the server reads them.
+          paramsSerializer: { indexes: null },
+        })
+      ).data,
+    placeholderData: keepPreviousData,
   });
 }
 
-/** Refreshes the alerts, the open-alerts count and the session page, even after a failure:
- * another admin may have reviewed the alert first. */
+/** Acknowledge or resolve one alert, with a note. Refreshes the alerts and counts even after a
+ * failure: another admin may have dealt with it first. */
+export function useAlertAction() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      action,
+      note,
+    }: {
+      id: number;
+      action: "acknowledge" | "resolve";
+      note: string;
+    }) => {
+      const body = { note: note.trim() === "" ? null : note.trim() };
+      return (await api.post<Alert>(`/admin/alerts/${id}/${action}`, body)).data;
+    },
+    meta: SILENT,
+    onSettled: invalidate,
+  });
+}
+
+/** The session page's "Mark reviewed": resolves every unresolved alert of the session. */
 export function useReviewAlert() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
     mutationFn: async ({ sessionId, note }: { sessionId: number; note: string }) => {
       const body = { note: note.trim() === "" ? null : note.trim() };
-      return (await api.post<AdminAlert>(`/admin/alerts/${sessionId}/review`, body)).data;
+      return (await api.post<Alert[]>(`/admin/sessions/${sessionId}/alerts/resolve`, body)).data;
     },
     onSettled: invalidate,
   });

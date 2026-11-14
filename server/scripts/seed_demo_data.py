@@ -36,6 +36,7 @@ from sqlmodel import Session, col, select
 
 from app.core.db import create_db_and_tables, engine
 from app.models import (
+    Alert,
     Calibration,
     GameRun,
     PatientProfile,
@@ -57,6 +58,7 @@ from app.schemas.patient import PatientCreate
 from app.schemas.session import DIRECTIONS_DEG, CalibrationCreate
 from app.schemas.session_feedback import SessionFeedbackCreate
 from app.schemas.warmup import ExerciseId, WarmupResultCreate
+from app.services import alerts
 from app.services import programme as programmes
 from app.engine.trial_summary import last_trial
 from app.schemas.common import as_utc
@@ -1468,6 +1470,7 @@ def clear_demo_data(session: Session) -> int:
     _delete(session, delete(SessionMetric).where(col(SessionMetric.session_id).in_(session_ids)))
     _delete(session, delete(SessionRecord).where(col(SessionRecord.id).in_(session_ids)))
     _delete(session, delete(EngineState).where(col(EngineState.patient_id).in_(profile_ids)))
+    _delete(session, delete(Alert).where(col(Alert.patient_id).in_(profile_ids)))
     _delete(
         session, delete(ProgrammeChange).where(col(ProgrammeChange.patient_id).in_(profile_ids))
     )
@@ -1614,6 +1617,8 @@ def seed_demo_data(
         session.commit()
         compute_demo_metrics(session, profile)
         logins.append((demo.email, password))
+    # The demo sessions' safety flags as alerts, like a real questionnaire's.
+    alerts.migrate_session_flags(session)
     return logins
 
 

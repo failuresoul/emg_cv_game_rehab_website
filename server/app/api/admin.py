@@ -20,8 +20,9 @@ from app.schemas.session import (
     SessionSummary,
 )
 from app.schemas.progress import PatientProgress
-from app.schemas.session_feedback import AdminAlert, AlertReview
+from app.schemas.alert import AlertAction, AlertRead, AlertSeverity, AlertStatus, AlertType
 from app.schemas.warmup import AdminWarmupHistory, ExerciseId
+from app.services import alerts
 from app.services import programme as programmes
 from app.services import (
     emg,
@@ -237,31 +238,77 @@ def get_session_detail(session_id: int, session: SessionDep) -> AdminSessionDeta
 
 
 @router.get("/alerts")
-def list_alerts(session: SessionDep, reviewed: bool | None = None) -> list[AdminAlert]:
-    """Sessions whose questionnaire raised a safety flag, newest first."""
-    return session_feedback.list_alerts(session, reviewed)
+def list_alerts(
+    session: SessionDep,
+    status_: Annotated[list[AlertStatus] | None, Query(alias="status")] = None,
+    type_: Annotated[list[AlertType] | None, Query(alias="type")] = None,
+    severity: Annotated[list[AlertSeverity] | None, Query()] = None,
+    patient: int | None = None,
+    session_id: int | None = None,
+) -> list[AlertRead]:
+    """Every alert, newest first. Each filter may be repeated (?status=open&status=acknowledged)."""
+    found = alerts.list_alerts(
+        session,
+        status=status_,
+        type=type_,
+        severity=severity,
+        patient_id=patient,
+        session_id=session_id,
+    )
+    return alerts.to_reads(session, found)
 
 
-@router.post("/alerts/{session_id}/review")
-def review_alert(
-    session_id: int, session: SessionDep, payload: AlertReview | None = None
-) -> AdminAlert:
+def _alert_action(
+    session: SessionDep, alert_id: int, admin: User, payload: AlertAction | None, resolve: bool
+) -> AlertRead:
     try:
-        return session_feedback.review_alert(
-            session, session_id, payload.note if payload else None
-        )
-    except session_feedback.AlertNotFoundError:
+        alert = alerts.get(session, alert_id)
+        note = payload.note if payload else None
+        if resolve:
+            alert = alerts.resolve(session, alert, admin.id, note)
+        else:
+            alert = alerts.acknowledge(session, alert, admin.id, note)
+    except alerts.AlertNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found") from None
+    except alerts.AlertStateError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from None
+    return alerts.to_reads(session, [alert])[0]
+
+
+@router.post("/alerts/{alert_id}/acknowledge")
+def acknowledge_alert(
+    alert_id: int, session: SessionDep, admin: CurrentAdmin, payload: AlertAction | None = None
+) -> AlertRead:
+    """Open -> acknowledged (seen, being dealt with), with an optional note."""
+    return _alert_action(session, alert_id, admin, payload, resolve=False)
+
+
+@router.post("/alerts/{alert_id}/resolve")
+def resolve_alert(
+    alert_id: int, session: SessionDep, admin: CurrentAdmin, payload: AlertAction | None = None
+) -> AlertRead:
+    """Open or acknowledged -> resolved (final), with an optional note."""
+    return _alert_action(session, alert_id, admin, payload, resolve=True)
+
+
+@router.post("/sessions/{session_id}/alerts/resolve")
+def resolve_session_alerts(
+    session_id: int, session: SessionDep, admin: CurrentAdmin, payload: AlertAction | None = None
+) -> list[AlertRead]:
+    """Resolves every unresolved alert of a session (the session page's "Mark reviewed")."""
+    try:
+        resolved = alerts.resolve_session(session, session_id, admin.id, payload.note if payload else None)
+    except alerts.AlertNotFoundError:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="No unresolved alerts for this session"
         ) from None
-    except session_feedback.AlreadyReviewedError:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Alert already reviewed"
-        ) from None
+    return alerts.to_reads(session, resolved)
 
 
 @router.get("/stats")
 def stats(session: SessionDep) -> AdminStats:
+    """The overview's counts. Loading the overview also runs the daily alert checks."""
+    alerts.quietly(alerts.daily_checks, session)
     return patients.get_stats(session)
 
 

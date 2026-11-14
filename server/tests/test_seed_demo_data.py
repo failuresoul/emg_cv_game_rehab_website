@@ -696,9 +696,12 @@ def test_dashboards_read_the_demo_data(
         "Demo Rahim",
         "Demo Salma",
     ]
-    alerts = client.get("/api/admin/alerts?reviewed=false", headers=admin_headers).json()
-    assert len(alerts) == 1
-    assert client.get("/api/admin/stats", headers=admin_headers).json()["open_alerts"] == 1
+    # One unreviewed pain alert (Salma); the overview may add missed-session alerts.
+    query = "?status=open&type=pain&type=new_symptoms&type=high_fatigue"
+    alerts = client.get(f"/api/admin/alerts{query}", headers=admin_headers).json()
+    assert len(alerts) == 1 and alerts[0]["type"] == "pain"
+    stats = client.get("/api/admin/stats", headers=admin_headers).json()
+    assert stats["alerts"]["open_high"] >= 1
     detail = client.get(f"/api/admin/sessions/{series[-1]['session_id']}", headers=admin_headers)
     assert detail.status_code == 200
     assert len(detail.json()["games"][0]["trials"]) == 20

@@ -8,13 +8,12 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatCard } from "@/components/ui/StatCard";
-import { useAlerts, usePatients, useRecentSessions, useStats } from "@/features/admin/hooks";
+import { usePatients, useRecentSessions, useStats } from "@/features/admin/hooks";
 import { AddPatientModal } from "@/features/admin/PatientModals";
+import { AlertsOverviewCard } from "@/features/alerts/AlertsOverviewCard";
 import { PatientStatusBadge } from "@/features/admin/PatientStatusBadge";
-import { type AlertToReview, ReviewAlertModal } from "@/features/admin/ReviewAlertModal";
 import { QueryError } from "@/components/ui/QueryError";
 import { totalScore } from "@/features/games/results";
-import { SafetyFlagBadges } from "@/features/session/SafetyFlagBadges";
 import { SessionStatusBadge } from "@/features/session/SessionStatusBadge";
 import { t } from "@/i18n";
 import { formatDateTime, formatNumber } from "@/lib/format";
@@ -106,60 +105,6 @@ function RecentPatients() {
   );
 }
 
-function Alerts() {
-  const alerts = useAlerts(false);
-  const [reviewing, setReviewing] = useState<AlertToReview | null>(null);
-
-  if (alerts.isPending) {
-    return (
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 3 }, (_, index) => (
-          <Skeleton key={index} className="h-11" />
-        ))}
-      </div>
-    );
-  }
-  if (alerts.isError) return <QueryError onRetry={() => void alerts.refetch()} />;
-  if (alerts.data.length === 0) {
-    return <EmptyState icon={BellRing} title={t("admin.alerts.empty")} />;
-  }
-
-  return (
-    <>
-      <ul className="divide-y divide-black/10">
-        {alerts.data.map((alert) => (
-          <li key={alert.session_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
-            <Link
-              to={`/admin/sessions/${alert.session_id}`}
-              className="hover:bg-primary-light -ml-2 flex min-h-11 items-center gap-3 rounded-lg px-2"
-            >
-              <span className="text-primary font-semibold">{alert.patient_code}</span>
-              <span className="text-muted whitespace-nowrap">{formatDateTime(alert.date)}</span>
-            </Link>
-            <div className="min-w-0 flex-1">
-              <SafetyFlagBadges flags={alert.flags} />
-            </div>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                setReviewing({
-                  sessionId: alert.session_id,
-                  patientCode: alert.patient_code,
-                  date: alert.date,
-                  flags: alert.flags,
-                })
-              }
-            >
-              {t("admin.alerts.markReviewed")}
-            </Button>
-          </li>
-        ))}
-      </ul>
-      <ReviewAlertModal alert={reviewing} onClose={() => setReviewing(null)} />
-    </>
-  );
-}
-
 function RecentSessions() {
   const sessions = useRecentSessions(RECENT_SESSION_COUNT);
 
@@ -231,7 +176,7 @@ export function AdminOverviewPage() {
         </Card>
         <Card>
           <h2 className="mb-3 text-xl font-bold">{t("admin.alerts")}</h2>
-          <Alerts />
+          <AlertsOverviewCard />
         </Card>
         <Card className="xl:col-span-2">
           <h2 className="mb-3 text-xl font-bold">{t("admin.recentSessions")}</h2>

@@ -171,6 +171,11 @@ def end_session(session: Session, record: SessionRecord, status: str) -> Session
         # The session's summary of every catalogue measure (never fails the request).
         session_metrics.compute_quietly(session, record.id)
         session.refresh(record)
+        # A sharp decline, or a third session in a row with device problems.
+        from app.services import alerts
+
+        alerts.after_session_end(session, record)
+        session.refresh(record)
     return record
 
 

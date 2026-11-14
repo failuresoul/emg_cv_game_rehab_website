@@ -295,6 +295,7 @@ def test_stats(
         "active_patients": 1,
         "sessions_today": 0,
         "open_alerts": 0,
+        "alerts": {"open": 0, "open_high": 0, "open_medium": 0, "open_low": 0, "acknowledged": 0},
     }
 
 

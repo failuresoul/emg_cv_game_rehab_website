@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import {
+  BellRing,
   FlaskConical,
   Gamepad2,
   LayoutDashboard,
@@ -16,12 +17,28 @@ import { CreditLine } from "@/components/brand/CreditLine";
 import { Button } from "@/components/ui/Button";
 import { t, type TranslationKey } from "@/i18n";
 
+import { useStats } from "@/features/admin/hooks";
+
 import { Logo } from "./Logo";
+
+/** The number of open alerts beside "Alerts"; nothing when there are none. */
+function OpenAlertsBadge() {
+  const stats = useStats();
+  const open = stats.data?.open_alerts ?? 0;
+  if (open === 0) return null;
+  return (
+    <span className="bg-danger ml-auto rounded-full px-2 py-0.5 text-sm font-bold text-white tabular-nums">
+      <span aria-hidden>{open}</span>
+      <span className="sr-only">{t("nav.admin.openAlerts", { n: open })}</span>
+    </span>
+  );
+}
 import { UserMenu } from "./UserMenu";
 
 const NAV_ITEMS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }[] = [
   { to: "/admin", labelKey: "nav.admin.overview", icon: LayoutDashboard, end: true },
   { to: "/admin/patients", labelKey: "nav.admin.patients", icon: Users },
+  { to: "/admin/alerts", labelKey: "nav.admin.alerts", icon: BellRing },
   { to: "/admin/games", labelKey: "nav.admin.games", icon: Gamepad2 },
   { to: "/admin/research", labelKey: "nav.admin.research", icon: FlaskConical },
   { to: "/admin/system", labelKey: "nav.admin.system", icon: Settings },
@@ -75,6 +92,7 @@ export function AdminLayout() {
             >
               <Icon size={22} aria-hidden />
               {t(labelKey)}
+              {to === "/admin/alerts" && <OpenAlertsBadge />}
             </NavLink>
           ))}
         </nav>

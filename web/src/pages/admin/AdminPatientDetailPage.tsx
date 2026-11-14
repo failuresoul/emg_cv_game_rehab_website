@@ -8,6 +8,7 @@ import { buttonClasses } from "@/components/ui/buttonStyles";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProgrammeTab } from "@/features/admin/programme/ProgrammeTab";
+import { AlertsTable } from "@/features/alerts/AlertsTable";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -36,6 +37,7 @@ const TABS: { id: string; labelKey: TranslationKey }[] = [
   { id: "progress", labelKey: "patient.tab.progress" },
   { id: "programme", labelKey: "patient.tab.programme" },
   { id: "reports", labelKey: "patient.tab.reports" },
+  { id: "alerts", labelKey: "patient.tab.alerts" },
 ];
 
 function BackLink() {
@@ -231,6 +233,7 @@ export function AdminPatientDetailPage() {
           {tab === "progress" && <PatientProgressTab patient={patient.data} />}
           {tab === "reports" && <AdminReportsTab patientId={patient.data.id} />}
           {tab === "programme" && <ProgrammeTab patientId={patient.data.id} />}
+          {tab === "alerts" && <AlertsTable patientId={patient.data.id} />}
         </Tabs>
       </Card>
     </>

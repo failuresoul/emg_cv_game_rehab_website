@@ -62,8 +62,10 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/admin/sessions/{id}`           | `admin`   | One session with every trial    |
 | POST   | `/api/sessions/{id}/questionnaire`   | `patient` | Save the cool-down questionnaire |
 | GET    | `/api/sessions/{id}/questionnaire`   | `patient` | Get the cool-down questionnaire |
-| GET    | `/api/admin/alerts`                  | `admin`   | Sessions with safety flags      |
-| POST   | `/api/admin/alerts/{session_id}/review` | `admin` | Mark an alert as reviewed      |
+| GET    | `/api/admin/alerts`                  | `admin`   | Every alert, with filters       |
+| POST   | `/api/admin/alerts/{id}/acknowledge` | `admin`   | Acknowledge an alert, with a note |
+| POST   | `/api/admin/alerts/{id}/resolve`     | `admin`   | Resolve an alert, with a note   |
+| POST   | `/api/admin/sessions/{id}/alerts/resolve` | `admin` | Resolve every alert of a session |
 | GET    | `/api/patient/progress`              | `patient` | Streak, week, calendar and trends |
 | GET    | `/api/admin/patients/{id}/progress`  | `admin`   | A patient's progress, as above  |
 | GET    | `/api/sessions/{id}/summary`         | `patient` | End-of-session summary with comparisons |
@@ -1182,36 +1184,63 @@ Role: `patient`, own session only.
 
 Response `200`: as for the POST. Errors: `404` for a missing or another patient's session, or when the questionnaire was not submitted (`Questionnaire not submitted`).
 
+### Alerts (Day 17)
+
+One `Alert` row per cause (`server/app/services/alerts.py`). Every generator is idempotent: an alert's cause is unique, so a cause never raises two alerts.
+
+| Type | Severity | Raised when |
+| --- | --- | --- |
+| `pain`, `new_symptoms` | high | The questionnaire's safety flag (pain 4 or more, or new symptoms), once per session |
+| `high_fatigue` | medium | Fatigue 8 or more, once per session |
+| `sharp_decline` | high | The feedback module's red-flag rule (3 key measures 2 MDC or more worse) when the session ends |
+| `missed_sessions` | low | An active patient with a weekly goal has had no completed session for 4 days or more; once per "last session". Checked when the server starts and when the admin overview loads (`GET /api/admin/stats`) |
+| `repeated_device_problems` | low | 3 finished sessions in a row with a device problem: the session or a game stopped early, the muscle sensor paused in a game it drove, or the camera below 15 fps; once per streak |
+| `llm_fallback_rate` | low | System-wide (`patient_id` null): more than 30% of the last 10 finished reports used the template; one unresolved at a time |
+
+Questionnaire flags from before Day 17 were copied into alerts when the server first started; a session already reviewed gave resolved alerts with its note.
+
 ### GET /api/admin/alerts
 
-Role: `admin`. Query: `reviewed` (optional) — `false` for open alerts only, `true` for reviewed ones only; leave it out for both.
-
-Response `200`: sessions with `needs_review`, newest first.
+Role: `admin`. Query, each optional and repeatable (`?status=open&status=acknowledged`): `status` (`open`, `acknowledged`, `resolved`), `type`, `severity` (`high`, `medium`, `low`), `patient` (profile id), `session_id`. Newest first.
 
 ```json
 [
   {
-    "session_id": 12,
+    "id": 7,
     "patient_id": 3,
     "patient_code": "P003",
-    "date": "2026-11-10T10:00:00Z",
-    "flags": ["pain", "high_fatigue"],
-    "reviewed": false,
-    "reviewed_at": null,
-    "review_note": null
+    "session_id": 12,
+    "type": "pain",
+    "severity": "high",
+    "status": "open",
+    "details": { "pain_0_10": 7, "fatigue_0_10": 4, "new_symptoms": false },
+    "created_at": "2026-11-10T10:30:00Z",
+    "acknowledged_by": null,
+    "acknowledged_at": null,
+    "resolved_by": null,
+    "resolved_at": null,
+    "note": null
   }
 ]
 ```
 
-`date` is when the session started.
+Patients appear by code only.
 
-### POST /api/admin/alerts/{session_id}/review
+### POST /api/admin/alerts/{id}/acknowledge and /resolve
 
-Role: `admin`. The body is optional: `{ "note": "Called the patient" }`. The note is trimmed, at most 500 characters, and a blank note is saved as `null`.
+Role: `admin`. The body is optional: `{ "note": "Called the patient" }` (trimmed, at most 500 characters; blank keeps the earlier note). `open` → `acknowledged` → `resolved`; `open` → `resolved` directly; `resolved` is final. Each records who and when. Response `200`: the alert.
 
-Response `200`: the alert, as in `GET /api/admin/alerts`, with `reviewed` set to `true`.
+Errors: `404`, `409` (an acknowledged alert acknowledged again, or a resolved one changed), `422` for a note that is too long.
 
-Errors: `404` (`Alert not found`) for a missing session or one without `needs_review`, `409` (`Alert already reviewed`), `422` for a note that is too long.
+When the last unresolved questionnaire alert of a session is resolved, the session is marked reviewed (`reviewed_at`, `review_note`).
+
+### POST /api/admin/sessions/{id}/alerts/resolve
+
+Role: `admin`. Resolves every unresolved alert of the session with the note (the session page's "Mark reviewed"). Response `200`: the alerts resolved. `404` when there are none.
+
+### Counts
+
+`GET /api/admin/stats` has `open_alerts` (status `open`) and `alerts`: `{ "open", "open_high", "open_medium", "open_low", "acknowledged" }`.
 
 ## Progress and the session summary
 

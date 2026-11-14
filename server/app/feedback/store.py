@@ -144,6 +144,10 @@ def finish(db: Session, report: LlmReport, result: ReportResult, facts: dict[str
     report.finished_at = utc_now()
     db.add(report)
     db.commit()
+    # Too many template reports in a row is a system alert.
+    from app.services import alerts
+
+    alerts.quietly(alerts.llm_fallback_alert, db)
 
 
 def run_report(
