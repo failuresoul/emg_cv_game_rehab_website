@@ -46,6 +46,29 @@ function changeText(unit: string, change: number | null): string {
   return t(worded.key, worded.params);
 }
 
+/** Whether the MDC behind a change was measured (pilot, n=1) or is a placeholder. */
+export function MdcSourceBadge({ row }: { row: MetricChange }) {
+  if (!row.mdc_source) return null;
+  const measured = row.mdc_source === "measured";
+  const tip = measured
+    ? t("adminMetrics.mdc.measuredTip", {
+        visits: row.mdc_visits ?? 0,
+        n: row.mdc_participants ?? 1,
+        date: row.mdc_generated_at ? formatDate(row.mdc_generated_at) : "",
+      })
+    : t("adminMetrics.mdc.provisionalTip");
+  return (
+    <span title={tip} className="ml-2 inline-block align-middle">
+      <Badge variant={measured ? "success" : "warning"}>
+        {measured
+          ? t("adminMetrics.mdc.measured", { n: row.mdc_participants ?? 1 })
+          : t("adminMetrics.mdc.provisional")}
+      </Badge>
+      <span className="sr-only">{tip}</span>
+    </span>
+  );
+}
+
 function MetricsTable({ rows }: { rows: MetricChange[] }) {
   const columns = [
     "adminMetrics.column.metric",
@@ -94,6 +117,7 @@ function MetricsTable({ rows }: { rows: MetricChange[] }) {
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap tabular-nums">
                   {row.change_mdc === null ? dash : formatNumber(row.change_mdc, 2)}
+                  <MdcSourceBadge row={row} />
                 </td>
                 <td className="px-3 py-2">
                   <Badge variant={style.tone}>{t(style.labelKey)}</Badge>

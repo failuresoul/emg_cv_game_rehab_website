@@ -59,13 +59,13 @@ You need a phone clinometer app (a level or angle app). Hold or strap the phone 
 
 **First result (2026-11-17, `shadik_full.json`, right side, standard targets):**
 
-| Exercise | Counted | Scripted | Measured range | Targets (rest / target) |
-| --- | --- | --- | --- | --- |
-| Shoulder flexion | 0 | 3 | 45°–104° | 30° / 90° |
-| Shoulder abduction | 0 | 3 | 68°–115° | 30° / 80° |
-| Elbow | 0 | 10 | 66°–157° | 140° / 70° |
-| Hand open and close | 7 | 10 | 0.75–1.68 | 1.2 / 1.6 |
-| Thumb opposition (rounds) | 0 | 2 | 0.15–0.89 | 0.25 / 0.40 |
+| Exercise                  | Counted | Scripted | Measured range | Targets (rest / target) |
+| ------------------------- | ------- | -------- | -------------- | ----------------------- |
+| Shoulder flexion          | 0       | 3        | 45°–104°       | 30° / 90°               |
+| Shoulder abduction        | 0       | 3        | 68°–115°       | 30° / 80°               |
+| Elbow                     | 0       | 10       | 66°–157°       | 140° / 70°              |
+| Hand open and close       | 7       | 10       | 0.75–1.68      | 1.2 / 1.6               |
+| Thumb opposition (rounds) | 0       | 2        | 0.15–0.89      | 0.25 / 0.40             |
 
 **Why:**
 

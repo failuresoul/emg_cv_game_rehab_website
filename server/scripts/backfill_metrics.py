@@ -8,6 +8,11 @@ Run from server/ with the virtual environment active:
 For each session it recomputes every trial's server measures from the RAW data
 (Trial.metrics_server and data_quality), then the session's catalogue measures (SessionMetric),
 replacing any computed before. Running it again gives the same result. It prints a short report.
+
+Then it recomputes every patient's metric statuses (improved, no detectable change, worse)
+against the current MDCs (app/core/mdc.py: measured from the validation's mdc.json, or
+provisional) and reports them, with each MDC's source. Statuses are not stored: the admin's
+Metrics page and the reports compute them on reading, so this shows what they now say.
 """
 
 import argparse
@@ -80,6 +85,30 @@ def backfill(session: Session, session_ids: Sequence[int] | None = None) -> Back
     return report
 
 
+def status_report(session: Session) -> list[str]:
+    """Each MDC's source, any measured value refused and why, and every patient's statuses."""
+    from app.core import mdc
+    from app.models import PatientProfile
+    from app.services.progress import patient_metrics
+
+    measured = mdc.table()
+    lines = [f"MDC file: {measured.path} ({len(measured.measured)} measured)"]
+    for metric_id in sorted(mdc.PROVISIONAL_MDC):
+        info = mdc.mdc_info(metric_id)
+        assert info is not None
+        detail = f"measured (n={info.participants}, {info.visits} visits)" if info.source == "measured" else "provisional"
+        lines.append(f"  {metric_id}: {info.value:g} {detail}")
+    for metric_id, reason in sorted(measured.rejected.items()):
+        lines.append(f"  not used {metric_id}: {reason}")
+    counts: Counter[str] = Counter()
+    for profile in session.exec(select(PatientProfile)).all():
+        assert profile.id is not None
+        for change in patient_metrics(session, profile.id).metrics:
+            counts[change.status] += 1
+    lines.append("Statuses now: " + (", ".join(f"{status} {n}" for status, n in sorted(counts.items())) or "none"))
+    return lines
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--session-id", type=int, help="only this session, whatever its status")
@@ -89,7 +118,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     with Session(engine) as session:
         ids = None if args.session_id is None else [args.session_id]
         report = backfill(session, ids)
-    for line in report.lines():
+        statuses = status_report(session)
+    for line in [*report.lines(), *statuses]:
         print(line)
     return 1 if report.failed else 0
 

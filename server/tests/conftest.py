@@ -10,6 +10,8 @@ os.environ["ADMIN_PASSWORD"] = "test-password"
 os.environ["ADMIN_NAME"] = "Test Admin"
 # Tests never call a real model.
 os.environ["LLM_PROVIDER"] = "mock"
+# Nor read a measured MDC file that may be in the repository (tests/test_mdc.py writes its own).
+os.environ["MDC_PATH"] = "__no_mdc_file_in_tests__.json"
 
 import httpx
 import pytest

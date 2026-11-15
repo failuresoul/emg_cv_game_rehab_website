@@ -336,7 +336,7 @@ def analyse(inputs: dict[str, Rows | None], paths: dict[str, Path], out: Path, l
         "label": label or "REAL DATA",
         "generated_at": summary["generated_at"],
         "source": summary["inputs"]["repeatability"],
-        "metrics": {metric: {"mdc95": row["mdc95"], "sem": row["sem"], "visits": row["visits"]}
+        "metrics": {metric: {"mdc95": row["mdc95"], "sem": row["sem"], "visits": row["visits"], "participants": 1}
                     for metric, row in (results.items() if status == "DONE" else [])},
     }
     (out / "mdc.json").write_text(json.dumps(mdc, indent=2, ensure_ascii=False), encoding="utf-8")

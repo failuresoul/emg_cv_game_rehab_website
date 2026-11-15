@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     GAME_SPECS_PATH: str = ""
     # The measures MotionLab reports. Empty: shared/metrics-catalog.json in the repository.
     METRICS_CATALOG_PATH: str = ""
+    # The measured MDCs (Day 19). Empty: analysis/results/validation/mdc.json, if it exists.
+    MDC_PATH: str = ""
     # The fixed safety notices. Empty: shared/safety-notices.json in the repository.
     SAFETY_NOTICES_PATH: str = ""
     # Minutes of active game play after which the games suggest finishing soon, then finishing.

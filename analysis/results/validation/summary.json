@@ -1,7 +1,7 @@
 {
   "label": "REAL DATA",
-  "generated_at": "2026-11-15T19:43:11+00:00",
-  "git_commit": "1b2e511",
+  "generated_at": "2026-11-15T20:01:38+00:00",
+  "git_commit": "0c25fcc",
   "inputs": {
     "latency_manual": {
       "file": "latency_manual.csv",

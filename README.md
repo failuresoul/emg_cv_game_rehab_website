@@ -45,6 +45,21 @@ Webcam video never leaves the browser. Personal feedback reports, adaptive diffi
 - [10-minute demo script](docs/demo-script.md)
 - [API contract](docs/api-contract.md) and [day logs](docs/day-logs/README.md)
 
+## Documentation
+
+| Document | What it covers |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Components, data flow and a session, as diagrams; privacy and safety |
+| [Data dictionary](docs/data-dictionary.md) | Every table and field, the metric catalogue, the facts schema (generated) |
+| [Methods (draft)](docs/methods-draft.md) | An academic Methods section, with the places that need your input |
+| [Validation](docs/validation.md) | The pilot validation protocol, results and limitations |
+| [Results summary](docs/results-summary.md) | Every number, labelled pilot, simulation, engineering or PENDING, with its source (generated) |
+| [The adaptive engine](docs/ai-engine.md) | Engines L0-L2, the safety layer, the planner, the feedback pipeline |
+| [Simulation results](docs/simulation-results.md), [LLM evaluation](docs/llm-evaluation.md) | The engine simulation; the feedback reports' evaluation |
+| [Testing](docs/testing.md), [Performance](docs/performance.md), [Security](docs/security.md) | How the system is tested, and the results |
+| [Pending manual checks](docs/pending-manual-checks.md) | The validation session and other checks that need a person |
+| [Session facts](docs/session-facts.md) | What the feedback model reads |
+
 ## Hardware: the muscle sensor (optional)
 
 From Day 16 (not yet in a release), a session can also use a muscle sensor: an **Advancer Muscle Sensor V3.0** read by an **ESP32 DevKit V1** at 500 samples per second, connected to the laptop by USB and read by the browser over Web Serial (Chrome or Edge). Each session uses one electrode site: the forearm **flexors** drive the grip level in Reach and squeeze and Grip and hold, or the **extensors** drive hand opening in Bloom. If the sensor pauses (unplugged, an electrode off), the games carry on with the webcam and switch back when it recovers. Without the sensor, everything works on the webcam as before.

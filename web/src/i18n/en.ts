@@ -2066,4 +2066,10 @@ export const en = {
   "repeatability.error": "We could not save the visit. Please try again.",
   "repeatability.export": "Download repeatability CSV",
   "repeatability.finish": "Finish the visit",
+  "adminMetrics.mdc.measured": "measured (n={n}, pilot)",
+  "adminMetrics.mdc.provisional": "provisional",
+  "adminMetrics.mdc.measuredTip":
+    "MDC measured from {visits} repeatability visits of {n} participant ({date}). A pilot value: one healthy person's session-to-session noise.",
+  "adminMetrics.mdc.provisionalTip":
+    "This MDC is a placeholder until it is measured from repeatability visits.",
 } as const;

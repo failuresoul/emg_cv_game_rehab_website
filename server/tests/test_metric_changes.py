@@ -1,12 +1,12 @@
 import pytest
 
-from app.core.mdc import MDC, PROVISIONAL, mdc_for
+from app.core.mdc import MDC, mdc_for, mdc_info
 from app.services.metrics_catalog import load_catalog
 from app.services.progress import judge_change, signed_change
 
 
 def test_every_catalogue_measure_has_a_provisional_mdc() -> None:
-    assert PROVISIONAL is True
+    assert all(mdc_info(metric_id).source == "provisional" for metric_id in MDC)  # type: ignore[union-attr]
     for metric in load_catalog():
         assert mdc_for(metric.id) is not None and mdc_for(metric.id) > 0  # type: ignore[operator]
     assert MDC["K6"] == 150 and MDC["K7"] == 0.05 and MDC["K8"] == 0.3

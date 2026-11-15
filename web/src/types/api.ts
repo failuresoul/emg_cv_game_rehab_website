@@ -1085,6 +1085,11 @@ export interface MetricChange {
   mdc: number | null;
   /** True while the MDC is a placeholder. */
   provisional: boolean;
+  /** Where the MDC comes from (Day 19): measured in the validation, or a placeholder. */
+  mdc_source?: "measured" | "provisional" | null;
+  mdc_participants?: number | null;
+  mdc_visits?: number | null;
+  mdc_generated_at?: string | null;
   n_sessions: number;
 }
 

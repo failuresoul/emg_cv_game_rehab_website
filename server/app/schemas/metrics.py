@@ -59,8 +59,14 @@ class MetricChange(BaseModel):
     change_mdc: float | None
     status: MetricStatus
     mdc: float | None
-    #: True while the MDC is a placeholder (until measured, Day 19).
+    #: True while the MDC is a placeholder; false once measured (Day 19).
     provisional: bool
+    #: "measured" (from the validation's mdc.json) or "provisional"; None without an MDC.
+    mdc_source: Literal["measured", "provisional"] | None = None
+    #: Measured only: participants and visits behind it, and when it was computed.
+    mdc_participants: int | None = None
+    mdc_visits: int | None = None
+    mdc_generated_at: str | None = None
     #: Completed sessions with the measure.
     n_sessions: int
 

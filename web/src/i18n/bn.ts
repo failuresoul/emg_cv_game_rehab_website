@@ -2052,4 +2052,10 @@ export const bn: Record<TranslationKey, string> = {
   "repeatability.error": "পরিদর্শনটি সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
   "repeatability.export": "পুনরাবৃত্তির CSV ডাউনলোড করুন",
   "repeatability.finish": "পরিদর্শন শেষ করুন",
+  "adminMetrics.mdc.measured": "মাপা হয়েছে (n={n}, পাইলট)",
+  "adminMetrics.mdc.provisional": "অস্থায়ী",
+  "adminMetrics.mdc.measuredTip":
+    "{n} জন অংশগ্রহণকারীর {visits}টি পুনরাবৃত্তি পরিদর্শন থেকে মাপা MDC ({date})। পাইলট মান: একজন সুস্থ মানুষের সেশন থেকে সেশনের পার্থক্য।",
+  "adminMetrics.mdc.provisionalTip":
+    "পুনরাবৃত্তি পরিদর্শন থেকে মাপা না হওয়া পর্যন্ত এই MDC একটি অস্থায়ী মান।",
 };

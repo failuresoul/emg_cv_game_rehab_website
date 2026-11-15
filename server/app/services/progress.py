@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import ColumnElement, case, func
 from sqlmodel import Session, and_, col, or_, select
 
-from app.core.mdc import PROVISIONAL, mdc_for
+from app.core.mdc import any_provisional, mdc_for, mdc_info
 from app.models import Calibration, GameRun, PatientProfile, SessionMetric, Trial, WarmupResult
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
@@ -549,6 +549,7 @@ def metric_change(series: MetricSeries) -> MetricChange:
     result = judge_change(
         series.metric_id, series.better_when, [point.value for point in series.points]
     )
+    info = mdc_info(series.metric_id)
     return MetricChange(
         metric_id=series.metric_id,
         game_id=series.game_id,
@@ -560,8 +561,12 @@ def metric_change(series: MetricSeries) -> MetricChange:
         change=result.change,
         change_mdc=result.change_mdc,
         status=result.status,
-        mdc=mdc_for(series.metric_id),
-        provisional=PROVISIONAL,
+        mdc=info.value if info else None,
+        provisional=info is None or info.source == "provisional",
+        mdc_source=info.source if info else None,
+        mdc_participants=info.participants if info else None,
+        mdc_visits=info.visits if info else None,
+        mdc_generated_at=info.generated_at if info else None,
         n_sessions=len(series.points),
     )
 
@@ -572,5 +577,5 @@ def patient_metrics(session: Session, patient_id: int) -> PatientMetrics:
     return PatientMetrics(
         metrics=[metric_change(item) for item in series],
         series=series,
-        mdc_provisional=PROVISIONAL,
+        mdc_provisional=any_provisional([item.metric_id for item in series]) if series else True,
     )
