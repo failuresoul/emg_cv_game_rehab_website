@@ -116,7 +116,7 @@ def patient_metrics_csv(session: Session, profile: PatientProfile) -> str:
     return _write(METRIC_COLUMNS, rows)
 
 
-def trials_csv(session: Session) -> str:
+def trials_csv(session: Session, include_demo: bool = False) -> str:
     """Every trial of every patient, one row each, by patient code, session and trial number.
 
     The server's measures (Trial.metrics_server) are spread into server_<measure> columns, one
@@ -134,6 +134,9 @@ def trials_csv(session: Session) -> str:
             col(Trial.trial_no),
         )
     )
+    # Demo patients' synthetic data stays out of research exports unless asked for (Day 20).
+    if not include_demo:
+        statement = statement.where(col(PatientProfile.is_demo).is_(False))
     rows: list[dict[str, Any]] = []
     measures: set[str] = set()
     for trial, run, record, profile in session.exec(statement).all():

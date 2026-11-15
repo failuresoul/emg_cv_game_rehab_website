@@ -1,0 +1,5 @@
+# Builds use ./server and ./web as their contexts (each with its own .dockerignore).
+**/node_modules
+**/.venv
+data
+analysis/results

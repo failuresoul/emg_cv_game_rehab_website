@@ -213,28 +213,24 @@ Code changes reload automatically. Stop any local `uvicorn` or `npm run dev` fir
 
 | Task                 | Command                                                 |
 | -------------------- | ------------------------------------------------------- |
-| Start                | `docker compose up --build`, then <http://localhost:5173> |
-| Seed demo patients   | `docker compose exec server python scripts/seed_demo.py` |
-| Seed demo data       | `docker compose exec server python scripts/seed_demo_data.py` |
-| Follow server logs   | `docker compose logs -f server`                         |
-| Stop                 | `docker compose down`                                   |
+| Start                | `docker compose -f docker-compose.dev.yml up --build`, then <http://localhost:5173> |
+| Seed demo patients   | `docker compose -f docker-compose.dev.yml exec server python scripts/seed_demo.py` |
+| Seed demo data       | `docker compose -f docker-compose.dev.yml exec server python scripts/seed_demo_data.py` |
+| Follow server logs   | `docker compose -f docker-compose.dev.yml logs -f server`                         |
+| Stop                 | `docker compose -f docker-compose.dev.yml down`         |
 
 Seed from a second terminal while the app is running, and save the passwords it prints.
 
-If you add a dependency to `requirements.txt` or `package.json`, restart with `docker compose up --build`. For a new frontend dependency, also add `-V` so that Docker rebuilds the `node_modules` volume.
+If you add a dependency to `requirements.txt` or `package.json`, restart with `docker compose -f docker-compose.dev.yml up --build`. For a new frontend dependency, also add `-V` so that Docker rebuilds the `node_modules` volume.
 
-### Production-like
-
-```sh
-docker compose -f docker-compose.prod.yml up --build -d
-```
-
-Then open <http://localhost:8080>. The containers restart automatically until you stop them:
+### Release (1.0)
 
 ```sh
-docker compose -f docker-compose.prod.yml down
+docker compose --profile ollama up --build -d
 ```
+
+Then open <http://localhost:8080>. The containers restart automatically until you stop them (`docker compose down`). The release runs with `APP_ENV=production`: set a real admin password and JWT secret in `server/.env` first. See [docs/install.md](docs/install.md) for the GPU profile, host Ollama, the no-model option, `scripts/start.ps1` and backups.
 
 ### Reset the data
 
-Local runs and both Docker setups share one database, `data/motionlab.db`. To start again, stop the app and delete that file. The admin is created again on the next start, and you can then seed the demo patients again.
+Local runs and the development Docker setup share one database, `data/motionlab.db`; the release keeps its own in the `muvi-data` volume. To start again, stop the app and delete that file. The admin is created again on the next start, and you can then seed the demo patients again.

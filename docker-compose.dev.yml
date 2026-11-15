@@ -1,5 +1,5 @@
-# Production-like: docker compose -f docker-compose.prod.yml up --build -d
-name: motionlab-prod
+# Development: docker compose -f docker-compose.dev.yml up --build
+name: motionlab
 
 services:
   server:
@@ -10,19 +10,28 @@ services:
       GAME_SPECS_PATH: /shared/game-specs.json
       METRICS_CATALOG_PATH: /shared/metrics-catalog.json
       SAFETY_NOTICES_PATH: /shared/safety-notices.json
+      WATCHFILES_FORCE_POLLING: "true"
     volumes:
+      - ./server/app:/app/app
       - ./data:/data
       # The game settings exported by the web app (npm run export:specs).
       - ./shared:/shared:ro
-    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
 
   web:
     build:
       context: ./web
-      target: prod
+      target: dev
+    environment:
+      VITE_API_TARGET: http://server:8000
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
     ports:
-      - "8080:80"
+      - "5173:5173"
     depends_on:
       server:
         condition: service_healthy
-    restart: unless-stopped

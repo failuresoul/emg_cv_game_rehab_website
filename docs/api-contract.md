@@ -25,6 +25,7 @@ This document lists every API route the server provides today, plus the routes r
 | Method | Path                                 | Role      | Purpose                         |
 | ------ | ------------------------------------ | --------- | ------------------------------- |
 | GET    | `/api/health`                        | Public    | Check that the server is up     |
+| GET    | `/api/version`                       | Public    | The release version and environment |
 | POST   | `/api/auth/login`                    | Public    | Log in                          |
 | POST   | `/api/auth/register`                 | Public    | Create a patient account        |
 | GET    | `/api/auth/me`                       | Any user  | Get the logged-in user          |

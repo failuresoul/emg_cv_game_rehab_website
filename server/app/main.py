@@ -11,7 +11,7 @@ from sqlmodel import Session
 from app import __version__
 from app.api import admin, auth, feedback, games, health, patient, review, sessions, studies
 from app.api import engine as engine_api
-from app.core.config import settings
+from app.core.config import production_problems, settings
 from app.core import hardening
 from app.core.db import create_db_and_tables, engine
 from app.feedback.jobs import report_jobs, warm_up_quietly
@@ -21,6 +21,10 @@ from app.services.users import ensure_admin
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    # Production never starts with a default admin password or JWT secret (Day 20).
+    problems = production_problems(settings)
+    if problems:
+        raise RuntimeError("Refusing to start in production: " + "; ".join(problems))
     create_db_and_tables()
     with Session(engine) as session:
         ensure_admin(session)

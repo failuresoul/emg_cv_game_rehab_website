@@ -1,9 +1,10 @@
-"""Create two demo patients with two weeks of synthetic sessions, for showing the dashboards.
+"""Create two demo patients with four weeks of synthetic sessions, for showing the dashboards.
 
 Run from server/ with the virtual environment active:
 
     python scripts/seed_demo_data.py          # remove old demo patients, then create them again
     python scripts/seed_demo_data.py --clear  # only remove demo patients and all their data
+    python scripts/seed_demo_data.py --reset  # the same as no option: remove, then create again
 
 Only patients marked is_demo are ever removed. The data comes from a fixed random seed, so it is
 the same every time; only the dates follow today's date and the passwords are new on every run.
@@ -129,7 +130,7 @@ DEMO_PATIENTS = (
         dominant_side="right",
         age_band="60-69",
         months_since_stroke=5,
-        days_ago=(13, 11, 9, 8, 6, 4, 2, 0),
+        days_ago=(27, 25, 23, 20, 18, 16, 13, 11, 9, 8, 6, 4, 2, 0),
         improvement=1.0,
     ),
     DemoPatient(
@@ -139,7 +140,7 @@ DEMO_PATIENTS = (
         dominant_side="right",
         age_band="50-59",
         months_since_stroke=9,
-        days_ago=(13, 10, 8, 5, 3, 1),
+        days_ago=(27, 24, 21, 17, 13, 10, 8, 5, 3, 1),
         improvement=0.4,
         pain_session=3,
         tiring_sessions=(2, 4),
@@ -1616,6 +1617,7 @@ def seed_demo_data(
             _add_session(session, rng, profile, demo, index, started_at, histories)
         session.commit()
         compute_demo_metrics(session, profile)
+        write_demo_reports(session, profile)
         logins.append((demo.email, password))
     # The demo sessions' safety flags as alerts, like a real questionnaire's.
     alerts.migrate_session_flags(session)
@@ -1699,6 +1701,22 @@ def store_plan(session: Session, profile: PatientProfile, record: SessionRecord)
     session.add(record)
 
 
+def write_demo_reports(session: Session, profile: PatientProfile) -> None:
+    """A feedback report for each demo session, from its facts, with the template (no model is
+    needed, and the reports are marked as the template's): the demo's reports page and the
+    admin's report pages have something to show."""
+    from app.feedback import store
+    from app.feedback.llm import MockProvider
+
+    statement = select(SessionRecord.id).where(SessionRecord.patient_id == profile.id)
+    for session_id in session.exec(statement).all():
+        assert session_id is not None
+        report, _ = store.request_report(session, session_id, profile.language)
+        assert report.id is not None
+        # The plain mock's answer is never a valid report, so every report is the template's.
+        store.run_report(session, report.id, MockProvider(), end_wait_s=0, deadline_s=60)
+
+
 def compute_demo_metrics(session: Session, profile: PatientProfile) -> None:
     """The plan, the difficulty engine's decisions, the server's trial measures and each
     session's catalogue measures, as a real session's are while playing and when it ends."""
@@ -1720,6 +1738,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
         "--clear", action="store_true", help="only remove demo patients and all their data"
+    )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="remove the demo patients and create them again, with new passwords (the default)",
     )
     args = parser.parse_args(argv)
 

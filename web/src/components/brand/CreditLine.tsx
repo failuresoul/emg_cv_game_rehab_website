@@ -18,6 +18,7 @@ export function CreditLine({ className }: { className?: string }) {
   return (
     <p className={clsx("text-muted text-[0.8rem]", className)} data-testid="credit-line">
       {creditText()}
+      <span data-testid="app-version-footer"> · v{project.version}</span>
     </p>
   );
 }

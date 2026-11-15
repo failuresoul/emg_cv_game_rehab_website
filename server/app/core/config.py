@@ -79,4 +79,29 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
 
+#: Values from .env.example and the tests: never acceptable in production.
+DEFAULT_ADMIN_PASSWORDS = {
+    "replace-with-a-strong-password", "admin", "password", "changeme", "test-password",
+    "e2e-admin-password",
+}
+MIN_ADMIN_PASSWORD = 12
+MIN_JWT_SECRET = 32
+
+
+def production_problems(config: "Settings") -> list[str]:
+    """Why these settings must not run in production (empty when they may). With
+    APP_ENV=production the server refuses to start until every problem is fixed."""
+    if config.APP_ENV != "production":
+        return []
+    problems = []
+    if config.ADMIN_PASSWORD in DEFAULT_ADMIN_PASSWORDS or len(config.ADMIN_PASSWORD) < MIN_ADMIN_PASSWORD:
+        problems.append(f"ADMIN_PASSWORD is a default or shorter than {MIN_ADMIN_PASSWORD} characters")
+    secret = config.JWT_SECRET
+    if "replace" in secret.lower() or len(secret) < MIN_JWT_SECRET or len(set(secret)) < 10:
+        problems.append(f"JWT_SECRET is a placeholder or shorter than {MIN_JWT_SECRET} characters")
+    if config.LLM_PROVIDER not in {"ollama", "mock"}:
+        problems.append("LLM_PROVIDER must be ollama or mock")
+    return problems
+
+
 settings = Settings()

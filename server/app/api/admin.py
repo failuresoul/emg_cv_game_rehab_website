@@ -426,6 +426,7 @@ def export_repeatability(patient_id: int, session: SessionDep) -> Response:
 
 
 @router.get("/export/trials.csv", response_class=Response)
-def export_trials(session: SessionDep) -> Response:
-    """Every trial of every patient, one row each, by patient code only."""
-    return _csv(exports.trials_csv(session), "muvi-rehab-trials.csv")
+def export_trials(session: SessionDep, include_demo: bool = False) -> Response:
+    """Every trial of every patient, one row each, by patient code only. Demo patients'
+    synthetic data is left out unless include_demo=true."""
+    return _csv(exports.trials_csv(session, include_demo), "muvi-rehab-trials.csv")

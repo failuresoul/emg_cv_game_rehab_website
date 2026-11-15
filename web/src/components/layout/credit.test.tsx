@@ -47,6 +47,7 @@ describe("credit line", () => {
       const footer = html.slice(html.indexOf("<footer"));
       expect(footer).toContain('data-testid="credit-line"');
       expect(decode(footer)).toContain(creditText());
+      expect(decode(footer)).toContain(`v${project.version}`);
     }
   });
 

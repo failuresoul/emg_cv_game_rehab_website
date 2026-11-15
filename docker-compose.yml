@@ -1,37 +1,80 @@
-# Development: docker compose up --build
-name: motionlab
+# MuVi Rehab 1.0 (release): docker compose up --build -d, then http://localhost:8080
+#
+# The feedback model, choose one:
+#   docker compose --profile ollama up -d      Ollama in Docker on the CPU, pulls the model once
+#   docker compose --profile gpu up -d         the same on an NVIDIA GPU (Docker Desktop, WSL 2)
+#   OLLAMA_URL=http://host.docker.internal:11434 in .env, no profile: the Ollama app on this computer
+#   LLM_PROVIDER=mock in .env, no profile: no model; reports use the template
+# Settings come from server/.env (copy server/.env.example) and, for this file, from .env next
+# to it. Development instead: docker compose -f docker-compose.dev.yml up --build
+name: muvi-rehab
+
+x-ollama: &ollama
+  image: ollama/ollama:${OLLAMA_VERSION:-latest}
+  volumes:
+    - ollama-models:/root/.ollama
+  restart: unless-stopped
+  networks:
+    default:
+      aliases: [ollama]
 
 services:
   server:
     build: ./server
     env_file: server/.env
     environment:
+      APP_ENV: ${APP_ENV:-production}
       DATABASE_URL: sqlite:////data/motionlab.db
       GAME_SPECS_PATH: /shared/game-specs.json
       METRICS_CATALOG_PATH: /shared/metrics-catalog.json
       SAFETY_NOTICES_PATH: /shared/safety-notices.json
-      WATCHFILES_FORCE_POLLING: "true"
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      LLM_MODEL: ${LLM_MODEL:-qwen3.5:4b}
     volumes:
-      - ./server/app:/app/app
-      - ./data:/data
-      # The game settings exported by the web app (npm run export:specs).
+      - muvi-data:/data
       - ./shared:/shared:ro
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    ports:
-      - "8000:8000"
+    extra_hosts:
+      # So OLLAMA_URL=http://host.docker.internal:11434 reaches Ollama on this computer.
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
 
   web:
     build:
       context: ./web
-      target: dev
-    environment:
-      VITE_API_TARGET: http://server:8000
-      CHOKIDAR_USEPOLLING: "true"
-    volumes:
-      - ./web:/app
-      - /app/node_modules
+      target: prod
     ports:
-      - "5173:5173"
+      - "${WEB_PORT:-8080}:8080"
     depends_on:
       server:
         condition: service_healthy
+    restart: unless-stopped
+
+  ollama:
+    <<: *ollama
+    profiles: ["ollama"]
+
+  ollama-gpu:
+    <<: *ollama
+    profiles: ["gpu"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Pulls the model once (docs/llm-model-choice.md), then exits.
+  ollama-pull:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    profiles: ["ollama", "gpu"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "until ollama list >/dev/null 2>&1; do sleep 2; done; ollama pull ${LLM_MODEL:-qwen3.5:4b}"]
+    restart: "no"
+
+volumes:
+  muvi-data:
+  ollama-models:

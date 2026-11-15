@@ -113,7 +113,7 @@ def test_reset_gives_a_fresh_database_with_the_admin_and_demo_patients(
         "demo.salma@example.com",
     ]
     assert session.exec(select(User).where(User.email == "left.over@example.com")).first() is None
-    assert session.exec(select(func.count()).select_from(SessionRecord)).one() == 14
+    assert session.exec(select(func.count()).select_from(SessionRecord)).one() == 24
 
     for patient in body["patients"]:
         assert patient["password"] == testing.DEFAULT_PATIENT_PASSWORD

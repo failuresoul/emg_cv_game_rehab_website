@@ -405,7 +405,7 @@ def test_seed_creates_two_demo_patients_with_full_sessions(session: Session) -> 
     for email, password in logins:
         assert authenticate(session, email, password) is not None
 
-    expected = {"left": 8, "right": 6}
+    expected = {"left": 14, "right": 10}
     for side, profile in profiles.items():
         records = session.exec(
             select(SessionRecord).where(SessionRecord.patient_id == profile.id)
@@ -413,17 +413,17 @@ def test_seed_creates_two_demo_patients_with_full_sessions(session: Session) -> 
         assert len(records) == expected[side]
         for record in records:
             started = record.started_at.replace(tzinfo=UTC)
-            assert NOW - timedelta(days=14) <= started <= NOW
+            assert NOW - timedelta(days=28) <= started <= NOW
             assert record.status == "completed"
             assert record.ended_at is not None
             assert record.current_step == "summary"
-    assert count(session, Calibration) == 14
-    assert count(session, WarmupResult) == 14 * 6
-    assert count(session, GameRun) == 14 * 9
+    assert count(session, Calibration) == 24
+    assert count(session, WarmupResult) == 24 * 6
+    assert count(session, GameRun) == 24 * 9
     # 20 trials for each reaching game, 15 flowers, 12 melodies, 10 traces, 8 stripes, 12
     # objects and 8 holds.
-    assert count(session, Trial) == 14 * (3 * 20 + 15 + 12 + 10 + 8 + 12 + 8)
-    assert count(session, SessionFeedback) == 14
+    assert count(session, Trial) == 24 * (3 * 20 + 15 + 12 + 10 + 8 + 12 + 8)
+    assert count(session, SessionFeedback) == 24
 
 
 def test_salma_has_exactly_one_unreviewed_pain_alert(session: Session) -> None:
@@ -517,7 +517,7 @@ def test_demo_sessions_have_plans_with_reasons_and_overrides(session: Session) -
     demo.seed_demo_data(session, now=NOW)
 
     records = session.exec(select(SessionRecord)).all()
-    assert len(records) == 14
+    assert len(records) == 24
     reasons: set[str] = set()
     lighter = 0
     for record in records:
@@ -613,7 +613,7 @@ def test_running_without_options_recreates(
 
     session.expire_all()
     assert len(demo_profiles(session)) == 2
-    assert count(session, SessionRecord) == 14
+    assert count(session, SessionRecord) == 24
     output = capsys.readouterr().out
     assert "demo.rahim@example.com" in output
     assert "demo.salma@example.com" in output
@@ -648,7 +648,7 @@ def test_dashboards_read_the_demo_data(
     headers = {"Authorization": f"Bearer {rahim}"}
 
     progress = client.get("/api/patient/progress", headers=headers).json()
-    assert len(progress["series"]) == 8
+    assert len(progress["series"]) == 14
     series = progress["series"]
     assert series[-1]["hull_area_sw2"] > series[0]["hull_area_sw2"]
     assert series[-1]["game_success_rate"] > series[0]["game_success_rate"]
@@ -705,3 +705,29 @@ def test_dashboards_read_the_demo_data(
     detail = client.get(f"/api/admin/sessions/{series[-1]['session_id']}", headers=admin_headers)
     assert detail.status_code == 200
     assert len(detail.json()["games"][0]["trials"]) == 20
+
+
+def test_every_demo_session_has_a_template_report(session: Session) -> None:
+    from app.models import LlmReport
+
+    demo.seed_demo_data(session, now=NOW)
+    reports = session.exec(select(LlmReport)).all()
+    assert len(reports) == 24
+    assert {report.status for report in reports} == {"fallback"}
+    assert all(report.fallback_used for report in reports)
+
+
+def test_demo_trials_stay_out_of_the_research_export(session: Session) -> None:
+    from app.services.exports import trials_csv
+
+    demo.seed_demo_data(session, now=NOW)
+    assert trials_csv(session).strip().count("\n") == 0  # the header only
+    assert trials_csv(session, include_demo=True).count("\n") > 100
+
+
+def test_reset_is_a_clear_and_a_new_seed(
+    session: Session, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(demo, "engine", session.get_bind())
+    assert demo.main(["--reset"]) == 0
+    assert "Demo patients created" in capsys.readouterr().out
