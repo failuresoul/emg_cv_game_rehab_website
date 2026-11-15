@@ -23,6 +23,13 @@ interface Window {
       unplug(): void;
       replug(): Promise<void>;
     };
+    perf: {
+      report(): Record<
+        string,
+        { frames: number; meanMs: number; p95Ms: number; maxMs: number; fps: number }
+      >;
+      reset(): void;
+    };
     i18n: {
       values(language: "en" | "bn"): Record<string, string>;
       language(): string;

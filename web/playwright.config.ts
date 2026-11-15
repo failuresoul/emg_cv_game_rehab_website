@@ -53,7 +53,15 @@ export default defineConfig<TestOptions>({
   projects: [
     {
       name: "fast",
+      testIgnore: "perf.spec.ts",
       use: { testSettings: FAST_SETTINGS },
+    },
+    {
+      // npm run e2e:perf: the frame budget of every game (analysis/results/perf_frames.json).
+      name: "perf",
+      testMatch: "perf.spec.ts",
+      retries: 0,
+      use: { testSettings: {} },
     },
     {
       name: "full",

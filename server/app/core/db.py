@@ -80,6 +80,27 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
 }
 
 
+#: Indexes added after their table was first created (Day 18, from the load test's queries):
+#: a patient's sessions newest first, game runs in order, and the review items' lookups.
+#: CREATE INDEX IF NOT EXISTS works the same on a new and an old database (SQLite and PostgreSQL).
+ADDED_INDEXES: dict[str, tuple[str, tuple[str, ...]]] = {
+    "ix_session_patient_started": ("session", ("patient_id", "started_at")),
+    "ix_gamerun_session_started": ("gamerun", ("session_id", "started_at")),
+    "ix_reviewitem_session_id": ("reviewitem", ("session_id",)),
+    "ix_reviewitem_report_id": ("reviewitem", ("report_id",)),
+}
+
+
+def add_missing_indexes(target: Engine) -> None:
+    tables = set(inspect(target).get_table_names())
+    with target.begin() as connection:
+        for name, (table, columns) in ADDED_INDEXES.items():
+            if table not in tables:
+                continue
+            listed = ", ".join(f'"{column}"' for column in columns)
+            connection.execute(text(f'CREATE INDEX IF NOT EXISTS {name} ON "{table}" ({listed})'))
+
+
 def add_missing_columns(target: Engine) -> None:
     inspector = inspect(target)
     tables = set(inspector.get_table_names())
@@ -98,6 +119,7 @@ def create_db_and_tables(target: Engine | None = None) -> None:
     target = target or engine
     SQLModel.metadata.create_all(target)
     add_missing_columns(target)
+    add_missing_indexes(target)
     # Day 17: each patient's programme, from the old profile fields where there is none yet.
     from app.services.programme import migrate_programmes
 

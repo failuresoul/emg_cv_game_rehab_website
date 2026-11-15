@@ -45,11 +45,26 @@ export interface MuviTestApi {
     unplug(): void;
     replug(): Promise<void>;
   };
+  /** The game loop's time per frame (update and render), per game. */
+  perf: {
+    record(gameId: string, frameMs: number, wallMs: number): void;
+    report(): Record<string, FrameReport>;
+    reset(): void;
+  };
   i18n: {
     /** Every string of a language, by key. */
     values(language: "en" | "bn"): Record<string, string>;
     language(): string;
   };
+}
+
+export interface FrameReport {
+  frames: number;
+  meanMs: number;
+  p95Ms: number;
+  maxMs: number;
+  /** Frames a second the loop ran at (from the frames' own times). */
+  fps: number;
 }
 
 declare global {

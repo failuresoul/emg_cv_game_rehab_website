@@ -96,6 +96,23 @@ This document lists every API route the server provides today, plus the routes r
 | GET    | `/api/admin/studies/{id}/progress`   | `admin`   | Sessions done per condition, per participant |
 | GET    | `/api/admin/studies/{id}/results`    | `admin`   | Measures per condition with 95% CIs |
 | GET    | `/api/admin/studies/{id}/export.csv` | `admin`   | Every trial of the study, by patient code |
+| POST   | `/api/sessions/{id}/feedback`        | owner     | Ask for the session's feedback report (a job) |
+| GET    | `/api/sessions/{id}/feedback`        | owner or `admin` | The session's current report in a language |
+| GET    | `/api/feedback/jobs/{id}`            | owner or `admin` | A report job's status and, once finished, the report |
+| GET    | `/api/patient/reports`               | `patient` | Own reports, newest first       |
+| POST   | `/api/feedback/{id}/ratings`         | owner or `admin` | Rate a finished report (once per person) |
+| GET    | `/api/feedback/health`               | Any user  | Whether reports use the model now or the template |
+| GET    | `/api/admin/patients/{id}/reports`   | `admin`   | Every version of a patient's reports |
+| GET    | `/api/admin/reports`                 | `admin`   | Recent reports of every patient, with filters |
+| GET    | `/api/admin/reports/{id}`            | `admin`   | One report: facts, candidates, validation, raw output |
+| GET    | `/api/admin/reports/{id}/ratings`    | `admin`   | Every rating of a report        |
+| GET, POST | `/api/admin/review-sets`          | `admin`   | List or create blind report-review sets |
+| GET    | `/api/admin/review-sets/{id}`        | `admin`   | One review set                  |
+| GET    | `/api/admin/review-sets/{id}/items`  | `admin`   | The set's items, shuffled, by code only |
+| GET    | `/api/admin/review-sets/{id}/items/{code}` | `admin` | One item, blind: facts sheet, notices and patient text |
+| POST   | `/api/admin/review-sets/{id}/items/{code}/rating` | `admin` | Rate an item with the rubric (once per rater) |
+| GET    | `/api/admin/review-sets/{id}/results` | `admin`  | Means per version and dimension, unsafe share, agreement |
+| GET    | `/api/admin/review-sets/{id}/export.csv` | `admin` | Every rating with its item's version |
 
 ## Errors
 

@@ -1,0 +1,105 @@
+{
+  "engine_next": {
+    "L1": {
+      "n": 1000,
+      "mean_ms": 18.1,
+      "p50_ms": 17.85,
+      "p95_ms": 21.54,
+      "max_ms": 111.25
+    },
+    "L2": {
+      "n": 1000,
+      "mean_ms": 19.0,
+      "p50_ms": 18.57,
+      "p95_ms": 23.85,
+      "max_ms": 110.78
+    }
+  },
+  "report": {
+    "n": 5,
+    "mean_ms": 60.54,
+    "p50_ms": 59.52,
+    "p95_ms": 69.36,
+    "max_ms": 69.36,
+    "statuses": [
+      "done"
+    ]
+  },
+  "load": {
+    "patients": 10,
+    "seconds": 304.7,
+    "requests": 11890,
+    "trials": 5000,
+    "runs": 500,
+    "sessions": 130,
+    "errors": 0,
+    "error_rate": 0.0,
+    "requests_per_second": 39.0,
+    "all": {
+      "n": 11890,
+      "mean_ms": 40.86,
+      "p50_ms": 18.94,
+      "p95_ms": 139.9,
+      "max_ms": 1611.1
+    },
+    "by_route": {
+      "GET dashboard": {
+        "n": 500,
+        "mean_ms": 36.17,
+        "p50_ms": 14.35,
+        "p95_ms": 146.73,
+        "max_ms": 384.94
+      },
+      "POST /api/engine/next": {
+        "n": 5000,
+        "mean_ms": 44.58,
+        "p50_ms": 22.42,
+        "p95_ms": 146.32,
+        "max_ms": 647.85
+      },
+      "POST /api/sessions": {
+        "n": 130,
+        "mean_ms": 124.9,
+        "p50_ms": 31.5,
+        "p95_ms": 620.45,
+        "max_ms": 1611.1
+      },
+      "POST calibration": {
+        "n": 130,
+        "mean_ms": 34.23,
+        "p50_ms": 12.53,
+        "p95_ms": 117.17,
+        "max_ms": 460.83
+      },
+      "POST game end": {
+        "n": 500,
+        "mean_ms": 89.54,
+        "p50_ms": 65.72,
+        "p95_ms": 239.83,
+        "max_ms": 406.79
+      },
+      "POST game run": {
+        "n": 500,
+        "mean_ms": 54.02,
+        "p50_ms": 26.19,
+        "p95_ms": 183.26,
+        "max_ms": 433.71
+      },
+      "POST session end": {
+        "n": 130,
+        "mean_ms": 244.27,
+        "p50_ms": 198.35,
+        "p95_ms": 538.75,
+        "max_ms": 761.06
+      },
+      "POST trials": {
+        "n": 5000,
+        "mean_ms": 24.14,
+        "p50_ms": 13.62,
+        "p95_ms": 75.57,
+        "max_ms": 380.05
+      }
+    },
+    "errors_by_route": {}
+  }
+}

@@ -14,6 +14,7 @@
     "i18n:check": "vitest run src/i18n",
     "e2e": "playwright test --project=fast",
     "e2e:full": "playwright test --project=full",
+    "e2e:perf": "playwright test --project=perf",
     "fixtures:landmarks": "node scripts/make-landmark-fixture.mjs"
   },
   "dependencies": {
@@ -36,6 +37,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",

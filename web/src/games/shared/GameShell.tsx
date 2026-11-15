@@ -586,6 +586,7 @@ const GamePlay = memo(function GamePlay({
     };
     const loop = (wallMs: number) => {
       if (stopped) return;
+      const frameStart = performance.now();
       const tracking = trackingRef.current;
       frameInput.handPresent = tracking?.handPresent ?? false;
       frameInput.hidden = document.hidden;
@@ -653,6 +654,10 @@ const GamePlay = memo(function GamePlay({
             ? current
             : next,
         );
+      }
+      // Test mode only (removed from other builds): this frame's update and render time.
+      if (import.meta.env.DEV && import.meta.env.VITE_TEST_MODE === "true") {
+        window.__muviTest?.perf.record(definition.id, performance.now() - frameStart, wallMs);
       }
       frameId = requestAnimationFrame(loop);
     };
