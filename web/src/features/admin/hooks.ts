@@ -197,6 +197,16 @@ export function useSetPatientActive(id: number) {
   });
 }
 
+/** Marks the patient's next session as repeatability visit 1-3, or cancels it (null). */
+export function usePlanRepeatabilityVisit(id: number) {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: async (visit: 1 | 2 | 3 | null) =>
+      (await api.post<Patient>(`/admin/patients/${id}/repeatability-visit`, { visit })).data,
+    onSuccess: invalidate,
+  });
+}
+
 /** Every game's spec with the admin's setting. */
 export function useAdminGames() {
   return useQuery({

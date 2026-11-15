@@ -1,0 +1,112 @@
+{
+  "label": "REAL DATA",
+  "generated_at": "2026-11-15T19:43:11+00:00",
+  "git_commit": "1b2e511",
+  "inputs": {
+    "latency_manual": {
+      "file": "latency_manual.csv",
+      "present": false
+    },
+    "latency_software": {
+      "file": "latency_software.csv",
+      "present": false
+    },
+    "angles": {
+      "file": "angles.csv",
+      "present": false
+    },
+    "repeatability": {
+      "file": "repeatability.csv",
+      "present": false
+    },
+    "rep_accuracy": {
+      "file": "rep_accuracy.csv",
+      "present": true,
+      "rows": 5,
+      "sha256": "0fe7d475ce10655e5306988c7952c052f250dda665858c597be62b0e9d66a4e1"
+    }
+  },
+  "sections": {
+    "latency": {
+      "status": "PENDING",
+      "reason": "No latency_manual.csv or latency_software.csv yet (see /dev/latency)."
+    },
+    "angles": {
+      "status": "PENDING",
+      "reason": "No angles.csv yet (see /dev/angle-validation)."
+    },
+    "repeatability": {
+      "status": "PENDING",
+      "reason": "No repeatability.csv yet (Admin > patient > Repeatability visit, 3 visits)."
+    },
+    "rep_accuracy": {
+      "status": "DONE",
+      "results": {
+        "by_exercise": [
+          {
+            "exercise": "shoulder_flexion",
+            "scripted": 3,
+            "counted": 0,
+            "error": -3,
+            "accuracy_percent": 0.0,
+            "min_value": 45.14,
+            "max_value": 103.64,
+            "low": 30.0,
+            "high": 90.0
+          },
+          {
+            "exercise": "shoulder_abduction",
+            "scripted": 3,
+            "counted": 0,
+            "error": -3,
+            "accuracy_percent": 0.0,
+            "min_value": 68.1,
+            "max_value": 114.73,
+            "low": 30.0,
+            "high": 80.0
+          },
+          {
+            "exercise": "elbow_flexion",
+            "scripted": 10,
+            "counted": 0,
+            "error": -10,
+            "accuracy_percent": 0.0,
+            "min_value": 66.35,
+            "max_value": 156.81,
+            "low": 70.0,
+            "high": 140.0
+          },
+          {
+            "exercise": "hand_open_close",
+            "scripted": 10,
+            "counted": 7,
+            "error": -3,
+            "accuracy_percent": 70.0,
+            "min_value": 0.75,
+            "max_value": 1.68,
+            "low": 1.2,
+            "high": 1.6
+          },
+          {
+            "exercise": "thumb_opposition",
+            "scripted": 2,
+            "counted": 0,
+            "error": -2,
+            "accuracy_percent": 0.0,
+            "min_value": 0.15,
+            "max_value": 0.89,
+            "low": 0.25,
+            "high": 0.4
+          }
+        ],
+        "scripted_total": 28,
+        "absolute_error_total": 21,
+        "overall_accuracy_percent": 25.0
+      }
+    }
+  },
+  "figures": [
+    "rep_accuracy.png",
+    "rep_accuracy.svg"
+  ]
+}

@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Tabs } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
-import { usePatient, useSetPatientActive } from "@/features/admin/hooks";
+import { usePatient, usePlanRepeatabilityVisit, useSetPatientActive } from "@/features/admin/hooks";
 import { DemoBadge } from "@/features/admin/DemoBadge";
 import { EditPatientModal } from "@/features/admin/PatientModals";
 import { ExportButton } from "@/features/admin/ExportButton";
@@ -169,11 +169,70 @@ function OverviewTab({ patient }: { patient: Patient }) {
           {t(patient.user.is_active ? "patient.deactivate" : "patient.activate")}
         </Button>
       </div>
+      <RepeatabilityVisit patient={patient} />
       <EditPatientModal patient={patient} open={editOpen} onClose={() => setEditOpen(false)} />
       {confirmOpen && (
         <ConfirmStatusModal patient={patient} open onClose={() => setConfirmOpen(false)} />
       )}
     </>
+  );
+}
+
+/** Repeatability visits (Day 19): mark the next session as visit 1, 2 or 3, and export them. */
+function RepeatabilityVisit({ patient }: { patient: Patient }) {
+  const plan = usePlanRepeatabilityVisit(patient.id);
+  const showToast = useToast();
+  const [open, setOpen] = useState(false);
+  const next = patient.repeatability_next_visit ?? null;
+  const choose = (visit: 1 | 2 | 3 | null) =>
+    plan.mutate(visit, {
+      onSuccess: () => {
+        showToast(
+          "success",
+          t(visit ? "repeatability.planned" : "repeatability.cancelled", { n: visit ?? 0 }),
+        );
+        setOpen(false);
+      },
+    });
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2">
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        {t("repeatability.button")}
+      </Button>
+      {next !== null && (
+        <p className="text-primary font-semibold">{t("repeatability.next", { n: next })}</p>
+      )}
+      <ExportButton
+        path={`/admin/patients/${patient.id}/repeatability.csv`}
+        filename={`${patient.patient_code}-repeatability.csv`}
+        labelKey="repeatability.export"
+      />
+      <Modal open={open} title={t("repeatability.title")} onClose={() => setOpen(false)}>
+        <p>{t("repeatability.intro")}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {([1, 2, 3] as const).map((visit) => (
+            <Button
+              key={visit}
+              variant={next === visit ? "primary" : "secondary"}
+              loading={plan.isPending && plan.variables === visit}
+              onClick={() => choose(visit)}
+            >
+              {t("repeatability.visit", { n: visit })}
+            </Button>
+          ))}
+          {next !== null && (
+            <Button variant="ghost" onClick={() => choose(null)}>
+              {t("repeatability.cancel")}
+            </Button>
+          )}
+        </div>
+        {plan.isError && (
+          <p role="alert" className="text-danger mt-3 font-medium">
+            {t("repeatability.error")}
+          </p>
+        )}
+      </Modal>
+    </div>
   );
 }
 

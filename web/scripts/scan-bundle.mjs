@@ -19,7 +19,7 @@ const PATTERNS = [
   ["test-mode code", /__muviTest|muvi-test-settings|muvi-landmarks|startTestReplay/],
   [
     "developer pages and test routes",
-    /dev\/exercise-lab|dev\/emg-lab|dev\/record-guide|__dev\/save-landmarks|\/api\/test\/|Guided landmark recording|Exercise Lab/,
+    /dev\/exercise-lab|dev\/emg-lab|dev\/record-guide|dev\/latency|dev\/angle-validation|__dev\/save-landmarks|\/api\/test\/|Guided landmark recording|Exercise Lab/,
   ],
   ["source map", /sourceMappingURL=/],
 ];

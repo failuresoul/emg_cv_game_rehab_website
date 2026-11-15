@@ -53,6 +53,9 @@ export interface VisionResult {
   delegate: VisionDelegate;
   /** Average brightness of the frame, 0-255. Stays in the browser, like the frame itself. */
   brightness: number | null;
+  /** When the landmarks were ready (performance.now()); timestamp is when the frame was read.
+   * For the latency check (/dev/latency). */
+  detectedAt?: number;
   /** The camera's actual size, which may differ from the size requested. */
   frameWidth: number;
   frameHeight: number;
@@ -343,6 +346,7 @@ class VisionEngine {
           fps,
           delegate: tasks.delegate,
           brightness,
+          detectedAt: performance.now(),
           frameWidth: video.videoWidth,
           frameHeight: video.videoHeight,
         };

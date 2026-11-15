@@ -80,6 +80,8 @@ This document lists every API route the server provides today, plus the routes r
 | POST   | `/api/sessions/{id}/plan/override`   | `patient` | Record the patient's changes to the plan |
 | POST   | `/api/admin/metrics/recompute`       | `admin`   | Recompute server trial and session measures |
 | GET    | `/api/admin/patients/{id}/export.csv` | `admin`  | One patient's session measures as CSV |
+| POST   | `/api/admin/patients/{id}/repeatability-visit` | `admin` | Mark the next session as repeatability visit 1-3 (`{"visit": 1}`, or `null` to cancel) |
+| GET    | `/api/admin/patients/{id}/repeatability.csv` | `admin` | The repeatability visits' session measures: `visit,metric_id,value` |
 | GET    | `/api/admin/export/trials.csv`       | `admin`   | Every trial as CSV, by patient code |
 | POST   | `/api/engine/next`                   | `patient` | The next trial's settings from the adaptive engine |
 | GET    | `/api/admin/patients/{id}/levels`    | `admin`   | A patient's engine mode and level per game |

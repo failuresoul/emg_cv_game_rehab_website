@@ -47,6 +47,8 @@ export interface PatientProfile {
   engine_mode?: EngineMode;
   /** The date research consent was recorded (YYYY-MM-DD); null without consent. */
   research_consent_at?: string | null;
+  /** The next session is this repeatability visit (1-3); null when none is planned. */
+  repeatability_next_visit?: number | null;
   created_at: string;
 }
 
@@ -188,6 +190,9 @@ export interface SessionRecord {
   game_queue: GameQueueState | null;
   /** Part of a study: the browser behaves the same whatever the condition. */
   blinded?: boolean;
+  /** A repeatability visit (1-3): the six warm-up exercises with the standard targets, then it
+   * ends (Day 19). */
+  repeatability_visit?: number | null;
 }
 
 export interface CalibrationQuality {

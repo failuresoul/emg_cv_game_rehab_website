@@ -118,6 +118,12 @@ def start_session(
     from app.services.studies import assign_session
 
     assign_session(session, record)
+    # A repeatability visit the admin planned (Day 19): this session is it.
+    profile = session.get(PatientProfile, patient_id)
+    if profile is not None and profile.repeatability_next_visit is not None:
+        record.repeatability_visit = profile.repeatability_next_visit
+        profile.repeatability_next_visit = None
+        session.add(profile)
     session.add(record)
     session.commit()
     return record, True

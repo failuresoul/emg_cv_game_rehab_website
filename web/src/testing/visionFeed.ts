@@ -194,6 +194,7 @@ export class ReplayRunner {
       fps: this.fps,
       delegate: "GPU",
       brightness: frame.brightness,
+      detectedAt: timestamp,
       frameWidth: source.frameWidth,
       frameHeight: source.frameHeight,
     });

@@ -113,6 +113,8 @@ class SessionRead(BaseModel):
     #: Part of a study: the browser behaves the same in every condition. The condition itself
     #: is never sent to the patient.
     blinded: bool = False
+    #: A repeatability visit (1-3): warm-up only, standard targets (Day 19).
+    repeatability_visit: int | None = None
 
 
 class SessionSummary(SessionRead):

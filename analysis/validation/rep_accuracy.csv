@@ -1,0 +1,6 @@
+marker,exercise,scripted,counted,partial,error,frames,frames_with_measure,min_value,max_value,low,high,recording
+raise_forward,shoulder_flexion,3,0,0,-3,329,329,45.14,103.64,30,90,shadik_full.json
+raise_sideways,shoulder_abduction,3,0,0,-3,379,379,68.1,114.73,30,80,shadik_full.json
+elbow,elbow_flexion,10,0,7,-10,945,868,66.35,156.81,70,140,shadik_full.json
+hand_open_close,hand_open_close,10,7,0,-3,499,438,0.75,1.68,1.2,1.6,shadik_full.json
+thumb_touch,thumb_opposition,2,0,0,-2,309,284,0.15,0.89,0.25,0.4,shadik_full.json

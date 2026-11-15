@@ -32,6 +32,10 @@ class Session(SQLModel, table=True):
     #: the session starts; never shown to the patient.
     study_id: int | None = Field(default=None, foreign_key="study.id", index=True)
     study_condition: str | None = None
+    #: A repeatability visit (Day 19): 1, 2 or 3, set when the session starts from the
+    #: patient's next visit. The session is the camera check, calibration and the six warm-up
+    #: exercises with the standard targets, then it ends.
+    repeatability_visit: int | None = None
 
     @property
     def blinded(self) -> bool:

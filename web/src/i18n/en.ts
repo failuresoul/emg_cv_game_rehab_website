@@ -2054,4 +2054,16 @@ export const en = {
   "chart.viewChart": "View as chart",
   "chart.column.when": "When",
   "chart.summary": "{series}: {n} points, latest {latest} ({when})",
+  "repeatability.button": "Repeatability visit",
+  "repeatability.title": "Repeatability visit",
+  "repeatability.intro":
+    "The patient's next session becomes this visit: the camera check, calibration and all six warm-up exercises with the standard targets, then it ends. Run three visits on different days to measure how repeatable the measures are.",
+  "repeatability.visit": "Visit {n}",
+  "repeatability.next": "Next session: repeatability visit {n}",
+  "repeatability.cancel": "Cancel the planned visit",
+  "repeatability.planned": "The next session is repeatability visit {n}.",
+  "repeatability.cancelled": "The planned visit was cancelled.",
+  "repeatability.error": "We could not save the visit. Please try again.",
+  "repeatability.export": "Download repeatability CSV",
+  "repeatability.finish": "Finish the visit",
 } as const;

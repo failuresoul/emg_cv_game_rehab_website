@@ -25,7 +25,7 @@ import {
   usePatientProgramme,
   warmupOrder,
 } from "@/features/programme/patientProgramme";
-import { useSession, useSessionStep } from "@/features/session/SessionContext";
+import { useEndSession, useSession, useSessionStep } from "@/features/session/SessionContext";
 import { firstUnfinished } from "@/features/session/sessionSteps";
 import { getLanguage, t, type TranslationKey } from "@/i18n";
 import { playBeep, playChime, playTick, prepareAudio, setMuted } from "@/lib/beep";
@@ -523,9 +523,15 @@ function Warmup({
   saved: readonly WarmupResult[];
   programme: PatientProgramme | null;
 }) {
+  // A repeatability visit (Day 19): every exercise with the standard targets, whatever the
+  // programme or the patient's history, so the visits can be compared.
+  const visit = useSession().session?.repeatability_visit ?? null;
   // Fixed on arrival, so a programme changed during the warm-up does not move it.
-  const [order] = useState(() => warmupOrder(EXERCISE_ORDER, programme));
-  const [forcedPreset] = useState(() => forcedWarmupPreset(programme));
+  const [order] = useState(() => (visit ? EXERCISE_ORDER : warmupOrder(EXERCISE_ORDER, programme)));
+  const [forcedPreset] = useState<ThresholdPreset | null>(() =>
+    visit ? "standard" : forcedWarmupPreset(programme),
+  );
+  const endSession = useEndSession();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { sessionId, warmupResults, addWarmupResult } = useSession();
@@ -665,9 +671,24 @@ function Warmup({
           </>
         )}
       </div>
-      <Button size="lg" onClick={() => void navigate("/session/plan")}>
-        {t("warmup.complete.continue")}
-      </Button>
+      {visit && sessionId !== null ? (
+        <Button
+          size="lg"
+          loading={endSession.isPending}
+          onClick={() =>
+            endSession.mutate(
+              { sessionId, status: "completed" },
+              { onSuccess: () => void navigate("/session/summary") },
+            )
+          }
+        >
+          {t("repeatability.finish")}
+        </Button>
+      ) : (
+        <Button size="lg" onClick={() => void navigate("/session/plan")}>
+          {t("warmup.complete.continue")}
+        </Button>
+      )}
     </Card>
   );
 }

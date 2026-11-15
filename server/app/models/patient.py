@@ -39,4 +39,6 @@ class PatientProfile(SQLModel, table=True):
     #: The date the patient's research consent was recorded; None without consent. Only
     #: consenting patients can be enrolled in a study.
     research_consent_at: date | None = Field(default=None, sa_type=Date)
+    #: The admin marked the patient's next session as repeatability visit 1, 2 or 3 (Day 19).
+    repeatability_next_visit: int | None = None
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))

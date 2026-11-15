@@ -51,6 +51,18 @@ export const router = createBrowserRouter([
           }),
         },
         {
+          path: "/dev/latency",
+          lazy: async () => ({
+            Component: (await import("@/dev/validation/LatencyPage")).LatencyPage,
+          }),
+        },
+        {
+          path: "/dev/angle-validation",
+          lazy: async () => ({
+            Component: (await import("@/dev/validation/AngleValidationPage")).AngleValidationPage,
+          }),
+        },
+        {
           path: "/dev/record-guide",
           lazy: async () => ({
             Component: (await import("@/dev/recordGuide/RecordGuidePage")).RecordGuidePage,

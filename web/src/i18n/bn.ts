@@ -2040,4 +2040,16 @@ export const bn: Record<TranslationKey, string> = {
   "chart.viewChart": "চার্ট হিসেবে দেখুন",
   "chart.column.when": "কখন",
   "chart.summary": "{series}: {n}টি বিন্দু, সর্বশেষ {latest} ({when})",
+  "repeatability.button": "পুনরাবৃত্তি পরিদর্শন",
+  "repeatability.title": "পুনরাবৃত্তি পরিদর্শন",
+  "repeatability.intro":
+    "রোগীর পরের সেশনটি এই পরিদর্শন হবে: ক্যামেরা পরীক্ষা, ক্যালিব্রেশন এবং আদর্শ লক্ষ্যসহ ছয়টি ওয়ার্ম-আপ ব্যায়াম, তারপর এটি শেষ হবে। মাপগুলো কতটা পুনরাবৃত্তিযোগ্য তা মাপতে আলাদা দিনে তিনটি পরিদর্শন করুন।",
+  "repeatability.visit": "পরিদর্শন {n}",
+  "repeatability.next": "পরের সেশন: পুনরাবৃত্তি পরিদর্শন {n}",
+  "repeatability.cancel": "পরিকল্পিত পরিদর্শন বাতিল করুন",
+  "repeatability.planned": "পরের সেশনটি পুনরাবৃত্তি পরিদর্শন {n}।",
+  "repeatability.cancelled": "পরিকল্পিত পরিদর্শন বাতিল করা হয়েছে।",
+  "repeatability.error": "পরিদর্শনটি সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
+  "repeatability.export": "পুনরাবৃত্তির CSV ডাউনলোড করুন",
+  "repeatability.finish": "পরিদর্শন শেষ করুন",
 };

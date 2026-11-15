@@ -130,6 +130,8 @@ class PatientProfileRead(BaseModel):
     engine_mode: Literal["L0", "L1", "L2"] = "L1"
     #: The date research consent was recorded; null without consent.
     research_consent_at: date | None = None
+    #: The next session is this repeatability visit (1-3); null when none is planned.
+    repeatability_next_visit: int | None = None
     created_at: UtcDatetime
 
 

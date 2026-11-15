@@ -62,6 +62,7 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "plan_overrides": "JSON NOT NULL DEFAULT '[]'",
         "study_id": "INTEGER",
         "study_condition": "VARCHAR",
+        "repeatability_visit": "INTEGER",
     },
     "gamerun": {
         "study_id": "INTEGER",
@@ -73,6 +74,7 @@ ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "engine_mode": "VARCHAR NOT NULL DEFAULT 'L1'",
         "max_difficulty": "JSON NOT NULL DEFAULT '{}'",
         "research_consent_at": "DATE",
+        "repeatability_next_visit": "INTEGER",
         "bengali_digits": "BOOLEAN NOT NULL DEFAULT 0",
         "text_size": "VARCHAR NOT NULL DEFAULT 'normal'",
         "high_contrast": "BOOLEAN NOT NULL DEFAULT 0",

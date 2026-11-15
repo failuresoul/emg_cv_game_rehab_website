@@ -1,10 +1,11 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from pydantic import BaseModel, ConfigDict
 from sqlmodel import col, select
 
 from app.api.deps import SessionDep, TzOffset, require_admin
-from app.models import PatientProfile, User
+from app.models import PatientProfile, SessionMetric, User
 from app.models import Session as SessionRecord
 from app.schemas.emg import EmgCalibrationRead
 from app.schemas.game import MetricsRecomputeRead
@@ -383,6 +384,45 @@ def export_patient_metrics(patient_id: int, session: SessionDep) -> Response:
     profile, _ = _get_patient_or_404(session, patient_id)
     content = exports.patient_metrics_csv(session, profile)
     return _csv(content, f"{profile.patient_code}-metrics.csv")
+
+
+class RepeatabilityVisit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    #: The next session's visit number, or null to cancel a planned visit.
+    visit: Literal[1, 2, 3] | None
+
+
+@router.post("/patients/{patient_id}/repeatability-visit")
+def plan_repeatability_visit(
+    patient_id: int, payload: RepeatabilityVisit, session: SessionDep
+) -> PatientRead:
+    """Marks the patient's next session as repeatability visit 1, 2 or 3 (Day 19): the camera
+    check, calibration and all six warm-up exercises with the standard targets, then it ends."""
+    profile, user = _get_patient_or_404(session, patient_id)
+    profile.repeatability_next_visit = payload.visit
+    session.add(profile)
+    session.commit()
+    session.refresh(profile)
+    return patients.to_patient_read(session, profile, user)
+
+
+@router.get("/patients/{patient_id}/repeatability.csv", response_class=Response)
+def export_repeatability(patient_id: int, session: SessionDep) -> Response:
+    """The completed repeatability visits' session measures: visit, metric_id, value (for
+    analysis/validation/run_validation.py)."""
+    profile, _ = _get_patient_or_404(session, patient_id)
+    rows = session.exec(
+        select(SessionRecord.repeatability_visit, SessionMetric.metric_id, SessionMetric.value)
+        .join(SessionMetric, col(SessionMetric.session_id) == col(SessionRecord.id))
+        .where(SessionRecord.patient_id == profile.id)
+        .where(col(SessionRecord.repeatability_visit).is_not(None))
+        .where(SessionRecord.status == "completed")
+        .where(col(SessionMetric.game_id).is_(None))
+        .order_by(col(SessionRecord.repeatability_visit), col(SessionMetric.metric_id))
+    ).all()
+    lines = ["visit,metric_id,value"] + [f"{visit},{metric},{value:.6g}" for visit, metric, value in rows]
+    return _csv("\n".join(lines) + "\n", f"{profile.patient_code}-repeatability.csv")
 
 
 @router.get("/export/trials.csv", response_class=Response)
