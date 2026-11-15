@@ -4,6 +4,35 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 18)
+
+- **Testing without hardware:**
+  - **Camera:** replayed landmark recordings and synthetic movements (test mode only).
+  - **Recorders:** a landmark recorder and the guided recorder (`/dev/record-guide`).
+  - **Test hooks:** `window.__muviTest`.
+  - **Server routes:** `APP_ENV=test` adds `/api/test/reset`, `/seed-session` and `/llm`.
+- **Playwright end-to-end suites:** auth, admin, patient session, EMG, resilience, Bangla, research and privacy, plus smoke, the recorder and perf. `npm run e2e` (fast), `e2e:full` and `e2e:perf`; `scripts/check.ps1 -E2E`.
+- **Contract and performance:**
+  - an API contract test against `docs/api-contract.md`;
+  - the performance scripts (`analysis/perf/api_perf.py`) and `docs/performance.md`;
+  - web coverage with `@vitest/coverage-v8`.
+- **Security:** see `docs/security.md`:
+  - login rate limit (5 failures per email per 15 minutes);
+  - request limits (8 MB, 32 levels of JSON);
+  - security headers and a Content-Security-Policy (`npm run check:csp`);
+  - a bundle secrets scan (`npm run scan:bundle`);
+  - safe error answers;
+  - a SQLite busy timeout and WAL.
+- **Database:** indexes on sessions by patient and start time, game runs by session, and review items.
+- **Docs:** `docs/testing.md`, `docs/performance.md` and `docs/security.md`.
+
+### Fixed (Day 18)
+
+- **Mock reports:** the mock model's reports failed validation; on the test server they are now valid.
+- **Simulated sensor:** its resting signal read as "electrode off", so calibration always failed. It now has a slow resting wander.
+- **Vision engine:** a cancelled test-mode start could leave it on "Waiting for your camera".
+- **API contract:** 18 feedback and review routes were missing from the document.
+
 ### Added (Day 17)
 
 - **Per-patient programme** (Admin → patient → Programme; `PatientProgramme`, `ProgrammeChange`):

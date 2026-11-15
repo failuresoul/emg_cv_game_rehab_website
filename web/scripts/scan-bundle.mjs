@@ -17,6 +17,10 @@ const PATTERNS = [
   ["password value", /password["']?\s*[:=]\s*["'][^"'\s]{8,}["']/i],
   ["test password", /e2e-admin-password|e2e-patient-password|test-password/],
   ["test-mode code", /__muviTest|muvi-test-settings|muvi-landmarks|startTestReplay/],
+  [
+    "developer pages and test routes",
+    /dev\/exercise-lab|dev\/emg-lab|dev\/record-guide|__dev\/save-landmarks|\/api\/test\/|Guided landmark recording|Exercise Lab/,
+  ],
   ["source map", /sourceMappingURL=/],
 ];
 
