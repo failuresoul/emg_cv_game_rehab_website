@@ -51,6 +51,12 @@ export const router = createBrowserRouter([
           }),
         },
         {
+          path: "/dev/record-guide",
+          lazy: async () => ({
+            Component: (await import("@/dev/recordGuide/RecordGuidePage")).RecordGuidePage,
+          }),
+        },
+        {
           path: "/dev/emg-lab",
           lazy: async () => ({
             Component: (await import("@/dev/EmgLabPage")).EmgLabPage,

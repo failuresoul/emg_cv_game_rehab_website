@@ -44,7 +44,18 @@ export interface LandmarkRecording {
   frameWidth: number;
   frameHeight: number;
   recordedAt: string;
+  /** Named parts of the recording (the guided recorder's steps), in ms like the frames' t. */
+  markers?: RecordingMarker[];
+  /** True if every second frame was left out to keep the file small. */
+  thinned?: boolean;
   frames: RecordedFrame[];
+}
+
+export interface RecordingMarker {
+  id: string;
+  name: string;
+  start: number;
+  end: number;
 }
 
 const r4 = (n: number): number => Math.round(n * 10_000) / 10_000;
@@ -113,10 +124,15 @@ export function parseRecording(value: unknown): LandmarkRecording {
 /** Collects the engine's results while recording, then gives the recording. */
 export class LandmarkRecorder {
   private frames: RecordedFrame[] = [];
-  private startMs: number | null = null;
+  private startMs: number | null;
   private frameWidth = 640;
   private frameHeight = 480;
   private characters = 0;
+
+  /** `startMs`: the time (on the results' clock) that t = 0 means; the first frame's by default. */
+  constructor(startMs: number | null = null) {
+    this.startMs = startMs;
+  }
 
   add(result: VisionResult): void {
     this.startMs ??= result.timestamp;
@@ -140,16 +156,77 @@ export class LandmarkRecorder {
     return this.characters + 200;
   }
 
-  toRecording(now = new Date()): LandmarkRecording {
+  /** Drops the frames from `fromMs` on (recording time), such as a step being redone. */
+  discardFrom(fromMs: number): void {
+    const kept = this.frames.filter((frame) => frame.t < fromMs);
+    if (kept.length === this.frames.length) return;
+    this.frames = kept;
+    this.characters = kept.reduce((total, frame) => total + JSON.stringify(frame).length + 1, 0);
+  }
+
+  get frameTimes(): number[] {
+    return this.frames.map((frame) => frame.t);
+  }
+
+  toRecording(now = new Date(), markers?: readonly RecordingMarker[]): LandmarkRecording {
     return {
       format: RECORDING_FORMAT,
       version: RECORDING_VERSION,
       frameWidth: this.frameWidth,
       frameHeight: this.frameHeight,
       recordedAt: now.toISOString(),
+      ...(markers ? { markers: [...markers] } : {}),
       frames: [...this.frames],
     };
   }
+}
+
+/** Every second frame left out (the markers stay as they are). */
+export function thinRecording(recording: LandmarkRecording): LandmarkRecording {
+  return {
+    ...recording,
+    thinned: true,
+    frames: recording.frames.filter((_, index) => index % 2 === 0),
+  };
+}
+
+/** The file size of a recording, in bytes. */
+export function recordingBytes(recording: LandmarkRecording): number {
+  return new TextEncoder().encode(serialiseRecording(recording)).length;
+}
+
+/**
+ * Halves the frames until the file is at most maxBytes (or only one frame is left). Returns the
+ * recording and how many times it was halved.
+ */
+export function fitRecording(
+  recording: LandmarkRecording,
+  maxBytes: number,
+): { recording: LandmarkRecording; halvings: number } {
+  let current = recording;
+  let halvings = 0;
+  while (current.frames.length > 1 && recordingBytes(current) > maxBytes) {
+    current = thinRecording(current);
+    halvings++;
+  }
+  return { recording: current, halvings };
+}
+
+/**
+ * Frames a second while recording: gaps longer than `gapMs` (pauses, countdowns between steps)
+ * are left out. 0 with fewer than two frames.
+ */
+export function averageFps(times: readonly number[], gapMs = 500): number {
+  let span = 0;
+  let intervals = 0;
+  for (let i = 1; i < times.length; i++) {
+    const gap = times[i] - times[i - 1];
+    if (gap > 0 && gap <= gapMs) {
+      span += gap;
+      intervals++;
+    }
+  }
+  return span > 0 ? (intervals * 1000) / span : 0;
 }
 
 /** One line per frame, so a recording is still readable in a text editor. */

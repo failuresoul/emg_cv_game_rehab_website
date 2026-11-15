@@ -6,6 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
+import { saveLandmarksPlugin } from "./plugins/saveLandmarks.ts";
 import { logoMarkSvg } from "./src/components/brand/logoShapes.ts";
 import { project } from "./src/config/project.ts";
 
@@ -60,7 +61,7 @@ function noTestFixtures(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), identity(), noTestFixtures()],
+  plugins: [react(), tailwindcss(), identity(), noTestFixtures(), saveLandmarksPlugin()],
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
