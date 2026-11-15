@@ -10,6 +10,7 @@ from app.models import PatientProfile
 from app.schemas.patient import PatientCreate, PatientRegister
 from app.schemas.user import LoginResponse, MeRead, UserRead
 from app.services import patients
+from app.services.login_limits import login_limiter
 from app.services.users import authenticate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -19,13 +20,23 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def login(
     form: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep
 ) -> LoginResponse:
+    # 5 failed attempts per email in 15 minutes, then a pause (login_limits).
+    wait = login_limiter.retry_after(form.username)
+    if wait is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed attempts. Please wait and try again.",
+            headers={"Retry-After": str(wait)},
+        )
     user = authenticate(session, form.username, form.password)
     if user is None or user.id is None:
+        login_limiter.failed(form.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    login_limiter.succeeded(form.username)
     return LoginResponse(
         access_token=create_access_token(user.id, user.role),
         user=UserRead.model_validate(user),

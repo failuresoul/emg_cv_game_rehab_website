@@ -41,6 +41,16 @@ def no_real_model(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", guarded)
 
 
+@pytest.fixture(autouse=True)
+def fresh_login_limits() -> Generator[None, None, None]:
+    """Each test starts with no failed logins counted."""
+    from app.services.login_limits import login_limiter
+
+    login_limiter.reset()
+    yield
+    login_limiter.reset()
+
+
 @pytest.fixture
 def session() -> Generator[Session, None, None]:
     engine = create_engine(

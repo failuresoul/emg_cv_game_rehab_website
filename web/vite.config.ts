@@ -10,6 +10,7 @@ import { configDefaults } from "vitest/config";
 import { saveLandmarksPlugin } from "./plugins/saveLandmarks.ts";
 import { logoMarkSvg } from "./src/components/brand/logoShapes.ts";
 import { project } from "./src/config/project.ts";
+import { SECURITY_HEADERS } from "./securityHeaders.ts";
 
 const packageJson = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf-8"),
@@ -78,6 +79,8 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  // The production build served as nginx serves it, with its security headers.
+  preview: { headers: SECURITY_HEADERS },
   server: {
     port: 5173,
     proxy: {

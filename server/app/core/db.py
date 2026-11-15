@@ -1,7 +1,9 @@
 from collections.abc import Generator
 from pathlib import Path
 
-from sqlalchemy import URL, Engine, inspect, make_url, text
+from typing import Any
+
+from sqlalchemy import URL, Engine, event, inspect, make_url, text
 from sqlmodel import Session, SQLModel, create_engine
 
 from app import models  # noqa: F401  (registers the tables on SQLModel.metadata)
@@ -19,10 +21,28 @@ def _resolve_database_url(database_url: str) -> URL:
     return url.set(database=str(path))
 
 
+#: How long a SQLite write waits for another to finish before "database is locked" (Day 18).
+SQLITE_BUSY_TIMEOUT_S = 15
+
+
 def _create_engine(database_url: str) -> Engine:
     url = _resolve_database_url(database_url)
-    connect_args = {"check_same_thread": False} if url.get_backend_name() == "sqlite" else {}
-    return create_engine(url, connect_args=connect_args)
+    if url.get_backend_name() != "sqlite":
+        return create_engine(url)
+    created = create_engine(
+        url, connect_args={"check_same_thread": False, "timeout": SQLITE_BUSY_TIMEOUT_S}
+    )
+    if url.database not in (None, "", ":memory:"):
+        # A file database: readers do not wait for a writer (WAL), and writers wait for each
+        # other for up to the busy timeout instead of failing at once.
+        @event.listens_for(created, "connect")
+        def _sqlite_pragmas(connection: Any, _: Any) -> None:
+            cursor = connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute(f"PRAGMA busy_timeout={SQLITE_BUSY_TIMEOUT_S * 1000}")
+            cursor.close()
+
+    return created
 
 
 engine = _create_engine(settings.DATABASE_URL)

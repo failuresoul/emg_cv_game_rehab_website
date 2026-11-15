@@ -12,6 +12,7 @@ from app import __version__
 from app.api import admin, auth, feedback, games, health, patient, review, sessions, studies
 from app.api import engine as engine_api
 from app.core.config import settings
+from app.core import hardening
 from app.core.db import create_db_and_tables, engine
 from app.feedback.jobs import report_jobs, warm_up_quietly
 from app.services import alerts
@@ -51,6 +52,9 @@ async def validation_error_handler(_: Request, error: RequestValidationError) ->
     ]
     return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content={"detail": detail})
 
+
+# Request limits, security headers and safe error answers (Day 18).
+hardening.install(app)
 
 app.add_middleware(
     CORSMiddleware,
