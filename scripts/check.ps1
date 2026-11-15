@@ -14,6 +14,9 @@
       4. Frontend build                (web: npm run build)
       5. Smoke test                    (server/scripts/smoke_test.py against a backend this
                                         script starts on its own port)
+      6. End-to-end tests, with -E2E   (web: npm run e2e, the fast Playwright suite in headless
+                                        Chromium; Playwright starts and stops its own servers on
+                                        ports 8001 and 5174 with a separate test database)
 
     The smoke test's backend uses a temporary SQLite database and a temporary admin login,
     both deleted afterwards, so your own database and server/.env are never changed. It needs
@@ -27,11 +30,16 @@
 
 .PARAMETER SkipBuild
     Leave out the frontend build, which is the slowest step.
+
+.PARAMETER E2E
+    Also run the fast end-to-end suite (about 10 minutes). It needs Chromium for Playwright
+    (once: cd web; npx playwright install chromium) and ports 8001 and 5174 free.
 #>
 [CmdletBinding()]
 param(
     [int]$Port = 8765,
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$E2E
 )
 
 $ErrorActionPreference = 'Stop'
@@ -162,6 +170,16 @@ try {
     }
     foreach ($name in $envNames) { [Environment]::SetEnvironmentVariable($name, $savedEnv[$name], 'Process') }
     Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
+}
+
+if ($E2E) {
+    $busy = @(8001, 5174 | Where-Object { Get-NetTCPConnection -LocalPort $_ -State Listen -ErrorAction SilentlyContinue })
+    if ($busy.Count -gt 0) {
+        Write-Banner 'End-to-end tests'
+        Add-Result 'End-to-end tests' $false ("port(s) in use: " + ($busy -join ', ')) 0
+    } else {
+        Invoke-Step 'End-to-end tests' $web { npm run e2e }
+    }
 }
 
 # Summary

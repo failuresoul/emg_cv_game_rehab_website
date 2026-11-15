@@ -12,7 +12,8 @@
     "test": "vitest run",
     "export:specs": "node scripts/export-specs.mjs",
     "i18n:check": "vitest run src/i18n",
-    "e2e": "playwright test",
+    "e2e": "playwright test --project=fast",
+    "e2e:full": "playwright test --project=full",
     "fixtures:landmarks": "node scripts/make-landmark-fixture.mjs"
   },
   "dependencies": {

@@ -152,7 +152,17 @@ class VisionEngine {
     // Test mode only (Vite removes this branch from other builds): replayed or synthetic
     // landmarks instead of the camera and MediaPipe, without asking for the camera.
     if (import.meta.env.DEV && import.meta.env.VITE_TEST_MODE === "true") {
-      const { startTestReplay } = await import("@/testing/engineReplay");
+      // Now, not after the import: a start cancelled meanwhile must not change the status.
+      this.setStatus({ phase: "camera" });
+      let startTestReplay: typeof import("@/testing/engineReplay").startTestReplay;
+      try {
+        ({ startTestReplay } = await import("@/testing/engineReplay"));
+      } catch {
+        // The development server could not give the module (it may be restarting).
+        if (run === this.runId) this.fail("modelsFailed");
+        return;
+      }
+      if (run !== this.runId) return;
       const replaying = await startTestReplay({
         isCurrent: () => run === this.runId,
         setStatus: (status) => this.setStatus(status),

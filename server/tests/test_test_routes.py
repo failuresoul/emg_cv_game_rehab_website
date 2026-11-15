@@ -19,7 +19,7 @@ from app.models import GameRun, PatientProfile, SessionMetric, User
 from app.models import Session as SessionRecord
 
 SERVER_DIR = Path(__file__).resolve().parents[1]
-TEST_PATHS = ("/api/test/reset", "/api/test/seed-session")
+TEST_PATHS = ("/api/test/llm", "/api/test/reset", "/api/test/seed-session")
 
 #: Prints the app's /api/test routes for the APP_ENV given in the environment.
 LIST_ROUTES = (
@@ -174,3 +174,44 @@ def test_seed_session_for_an_unknown_patient_is_404(test_client: TestClient, ses
     assert session.exec(select(PatientProfile)).first() is None
     response = test_client.post("/api/test/seed-session", json={"patient_id": 999})
     assert response.status_code == 404
+
+
+def test_the_llm_switch_fails_the_model_and_a_reset_restores_it(test_client: TestClient) -> None:
+    from app.feedback.jobs import report_jobs
+    from app.feedback.llm import LLMError, get_provider
+
+    assert test_client.post("/api/test/llm", json={"mode": "fail"}).status_code == 204
+    provider = report_jobs.provider_factory()
+    with pytest.raises(LLMError):
+        provider.generate("system", "user", {})
+    assert test_client.post("/api/test/llm", json={"mode": "ok"}).status_code == 204
+    assert report_jobs.provider_factory is get_provider
+    test_client.post("/api/test/llm", json={"mode": "fail"})
+    test_client.post("/api/test/reset", json={"demo_patients": False})
+    assert report_jobs.provider_factory is get_provider
+    assert test_client.post("/api/test/llm", json={"mode": "maybe"}).status_code == 422
+
+
+@pytest.mark.parametrize("seed", range(12))
+@pytest.mark.parametrize("language", ["en", "bn"])
+def test_the_test_servers_mock_writes_valid_reports(seed: int, language: str) -> None:
+    """With APP_ENV=test the mock model's report passes validation, so the end-to-end tests see
+    the model's report; the template is only used when the model fails."""
+    from feedback_factories import random_facts
+
+    from app.feedback.llm import MockProvider
+    from app.feedback.service import generate_report_from_facts
+
+    provider = MockProvider(from_schema=True)
+    result = generate_report_from_facts(random_facts(seed), language, provider=provider)  # type: ignore[arg-type]
+    assert not result.meta.fallback_used, result.meta.validation_errors
+    assert provider.calls
+
+
+def test_unit_tests_keep_the_canned_answer(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.feedback.llm import MockProvider, get_provider
+
+    provider = get_provider()
+    assert isinstance(provider, MockProvider) and not provider.from_schema
+    monkeypatch.setattr(settings, "APP_ENV", "test")
+    assert get_provider().from_schema  # type: ignore[attr-defined]

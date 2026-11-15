@@ -593,7 +593,11 @@ const GamePlay = memo(function GamePlay({
       // Test mode only (removed from other builds): the game's goal, for the synthetic hand.
       if (import.meta.env.DEV && import.meta.env.VITE_TEST_MODE === "true" && window.__muviTest) {
         window.__muviTest.currentTarget = game.testTarget?.() ?? null;
-        window.__muviTest.game = { stage: runtime.stage };
+        window.__muviTest.game = {
+          stage: runtime.stage,
+          level: handRef.current.getGrip(),
+          source: handRef.current.gripSourceId,
+        };
       }
 
       const playArea = area();

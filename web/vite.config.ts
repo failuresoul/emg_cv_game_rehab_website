@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { configDefaults } from "vitest/config";
 
 import { saveLandmarksPlugin } from "./plugins/saveLandmarks.ts";
 import { logoMarkSvg } from "./src/components/brand/logoShapes.ts";
@@ -65,6 +66,13 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
+  // The end-to-end tests' server (VITE_TEST_MODE) finds every dependency when it starts, so it
+  // never re-optimises (and reloads the page) in the middle of a test.
+  ...(process.env.VITE_TEST_MODE === "true"
+    ? { optimizeDeps: { entries: ["index.html", "src/**/*.{ts,tsx}", "!src/**/*.test.{ts,tsx}"] } }
+    : {}),
+  // Vitest leaves out the Playwright tests (e2e/*.spec.ts).
+  test: { exclude: [...configDefaults.exclude, "e2e/**"] },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

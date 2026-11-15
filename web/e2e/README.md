@@ -8,10 +8,33 @@ The tests run in headless Chromium without a webcam, a muscle sensor or Ollama:
 
 ```powershell
 cd web
-npm run e2e                 # all tests; Playwright starts and stops both servers
-npx playwright test smoke   # one file
-npx playwright show-report  # the last run's report
+npm run e2e                                    # the fast suite (every spec, short sessions)
+npm run e2e:full                               # the main journey at its real length
+npx playwright test --project=fast auth.spec   # one file
+npx playwright show-report                     # the HTML report of the last run
+.\..\scripts\check.ps1 -E2E                     # every check, then the fast suite
 ```
+
+### The suites
+
+| File                                    | What it covers                                                                                                                                                                                                                                                                               |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.spec.ts`                          | Landing page to login (admin and patient), a wrong password, role guards on typed addresses, logout, the login surviving a reload                                                                                                                                                            |
+| `admin.spec.ts`                         | Create, edit, deactivate and activate a patient; a programme (a game off, a level cap, games per session, gentle warm-up); the Game Library; an alert acknowledged and resolved; a study created and a patient enrolled                                                                      |
+| `patient-session.spec.ts`               | The main journey: camera check, calibration, all six warm-up exercises (counts within 1 of the script), the plan (the programme and its reasons), two games, the cool-down, the mock report, the history and the admin's session page; and the same first steps with Shadik's real recording |
+| `emg.spec.ts`                           | The simulated muscle sensor: check to "ready" with a test squeeze, rest and three efforts, Grip and hold played with the sensor, the cable pulled (amber dot, camera fallback) and plugged back in                                                                                           |
+| `resilience.spec.ts`                    | Refreshing in the warm-up and in game 2, leaving mid-session (aborted), the server away during a game (its trials saved later), the model failing (template report), the camera refused                                                                                                      |
+| `bangla.spec.ts`                        | A short session in Bangla: no English on any screen (checked against `en.ts`), the report in Bangla                                                                                                                                                                                          |
+| `research.spec.ts`                      | A three-condition study: three sessions in the participant's Latin-square order, identical screens, the results page                                                                                                                                                                         |
+| `privacy.spec.ts`                       | No image or video in any request of a whole session, requests only to this computer (and Google Fonts), the camera let go afterwards                                                                                                                                                         |
+| `smoke.spec.ts`, `record-guide.spec.ts` | Test mode itself, and the guided recorder's page and save endpoint                                                                                                                                                                                                                           |
+
+### Projects
+
+- **fast** (the default): short sessions through test settings, 2 warm-up repetitions and 2 game trials. In test mode the app reads them from localStorage `muvi-test-settings`.
+- **full:** `patient-session.spec.ts` at the real lengths (10 repetitions, the games' own trials).
+
+On a failure Playwright keeps a screenshot. Each failing test is retried once, and the retry records a trace (`npx playwright show-trace test-results/.../trace.zip`).
 
 Playwright starts two servers, and stops them when the run ends:
 
@@ -39,12 +62,14 @@ The vision engine plays landmarks instead of opening the camera. It never asks f
 
 ### `window.__muviTest`
 
-| Part                                                               | What it does                                                                                         |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `currentTarget`                                                    | The current game's goal: `phase`, `pointSw` (body frame), `hand` and `finger`. `null` between trials |
-| `game.stage`                                                       | The current game's stage                                                                             |
-| `vision.play`, `playRecording`, `clear`, `source`, `framesEmitted` | Control and check the replay                                                                         |
-| `emg.setLevel(x)`                                                  | Holds the simulated muscle sensor at x (0 rest, 1 full). `null` gives the M key back                 |
+| Part                                                                                                 | What it does                                                                                                  |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `currentTarget`                                                                                      | The current game's goal: `phase`, `pointSw` (body frame), `hand`, `finger` and `level`. `null` between trials |
+| `game.stage`, `game.level`, `game.source`                                                            | The current game's stage, its activation level and input source (`emg`, a camera source…)                     |
+| `vision.play`, `playRecording` (with a `marker`), `clear`, `source`, `framesEmitted`, `engineStatus` | Control and check the replay; a marker plays one step of a guided recording                                   |
+| `emg.setLevel(x)`                                                                                    | Holds the simulated muscle sensor at x (0 rest, 1 full). `null` gives the M key back                          |
+| `emg.unplug()`, `emg.replug()`                                                                       | Pulls the simulated sensor's cable, and plugs it back in                                                      |
+| `i18n.values(language)`, `i18n.language()`                                                           | The app's strings, so the tests find buttons in either language                                               |
 
 ### Server helpers
 
@@ -52,6 +77,9 @@ These exist only with `APP_ENV=test`; `tests/test_test_routes.py` proves it.
 
 - `POST /api/test/reset`: a fresh database with the admin and the two demo patients. It takes `{"demo_patients": false}` for the admin only. The patients' password is in the answer.
 - `POST /api/test/seed-session`: a completed session with data for a patient. It takes `{"patient_id": 1, "progress": 0.5, "pain": false, "days_ago": 0}`.
+- `POST /api/test/llm`: `{"mode": "fail"}` makes the feedback model fail, so reports use the template; `{"mode": "ok"}` (or a reset) undoes it.
+
+The test server's mock model writes a valid report ("You completed today's session…"), so a test can tell the model's report from the template's.
 
 ## Synthetic scripts
 
@@ -85,6 +113,8 @@ These are the steps:
   - `hand` (`open`: 0 to 1);
   - `thumbTouch`;
   - `pinch` and `release`. For a pinch-carry-release, use reach, then `pinch`, then reach, then `release`.
+- **Playing a game by itself:** `auto` follows the game's target and does what it asks of the hand, every frame.
+- **Calibration:** `reach` with `by: "wrist"` puts the wrist (not the fingertip) on the point.
 - **Trunk:** `lean` (`forwardDeg`, `sidewaysDeg`).
 - **Losing sight:**
   - `hideHand` (the hand is lost);

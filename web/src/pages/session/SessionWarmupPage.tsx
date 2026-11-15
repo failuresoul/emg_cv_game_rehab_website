@@ -11,6 +11,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { withTestReps } from "@/testing/testSettings";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -470,7 +471,7 @@ function WarmupRun({
       ) : (
         <ExerciseStep
           key={`${id}-${preset}`}
-          exercise={EXERCISES[id]}
+          exercise={withTestReps(EXERCISES[id])}
           preset={preset}
           history={histories[id]}
           startAtCountdown={startAtCountdown}

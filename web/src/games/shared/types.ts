@@ -186,6 +186,8 @@ export interface GameTestTarget {
   hand: "open" | "close" | "pinch" | "release" | null;
   /** The finger to touch with the thumb. */
   finger: Finger | null;
+  /** The squeeze level (0-1) to hold now, for games scored on a level. */
+  level?: number | null;
 }
 
 export interface GameInstance {

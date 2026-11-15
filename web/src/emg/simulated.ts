@@ -15,11 +15,28 @@ export const SIMULATED_HZ = 500;
 export const RAMP_MS = 300;
 export const REST_MV = 200;
 export const CONTRACTION_MV = 1800;
+/** The resting signal's slow wander, in mV (see envelope). */
+export const REST_WANDER_MV = 7;
 const TICK_MS = 20;
 const SETTING_KEY = "muvi-simulated-emg";
 
 /** Test mode (Day 18): every simulated sensor holds this level (0-1); null uses the M key. */
 let testLevel: number | null = null;
+
+/** The newest simulated sensor, so the test hooks can unplug it (test mode only). */
+let latest: SimulatedEmgStream | null = null;
+const rememberLatest = (stream: SimulatedEmgStream) => {
+  latest = stream;
+};
+
+/** Test mode: pulls the newest simulated sensor's cable, or plugs it back in. */
+export function unplugSimulatedForTest(): void {
+  if (import.meta.env.DEV) latest?.unplug();
+}
+
+export function replugSimulatedForTest(): Promise<void> {
+  return import.meta.env.DEV && latest ? latest.connect() : Promise.resolve();
+}
 
 /** Only called by the test hooks (window.__muviTest.emg.setLevel). */
 export function setSimulatedTestLevel(level: number | null): void {
@@ -50,6 +67,8 @@ export interface SimulatedOptions {
   setTimer?: (callback: () => void, ms: number) => unknown;
   clearTimer?: (timer: unknown) => void;
   random?: () => number;
+  /** The resting signal's slow wander in mV (REST_WANDER_MV); 0 for exact values in tests. */
+  restWanderMv?: number;
   /** Where the M key is listened to; none in tests. */
   keys?: Pick<Window, "addEventListener" | "removeEventListener"> | null;
 }
@@ -61,6 +80,7 @@ export class SimulatedEmgStream implements EmgStream {
   private readonly setTimer: (callback: () => void, ms: number) => unknown;
   private readonly clearTimer: (timer: unknown) => void;
   private readonly random: () => number;
+  private readonly restWanderMv: number;
   private readonly keys: SimulatedOptions["keys"];
   private timer: unknown = null;
   private isConnected = false;
@@ -79,8 +99,10 @@ export class SimulatedEmgStream implements EmgStream {
     this.clearTimer =
       options.clearTimer ?? ((timer) => clearInterval(timer as ReturnType<typeof setInterval>));
     this.random = options.random ?? Math.random;
+    this.restWanderMv = options.restWanderMv ?? REST_WANDER_MV;
     this.keys =
       options.keys === undefined ? (typeof window === "undefined" ? null : window) : options.keys;
+    if (import.meta.env.DEV) rememberLatest(this);
   }
 
   get connected(): boolean {
@@ -111,6 +133,18 @@ export class SimulatedEmgStream implements EmgStream {
     this.keys?.removeEventListener("keydown", this.onKeyDown);
     this.keys?.removeEventListener("keyup", this.onKeyUp);
     this.hub.emit({ type: "disconnected", error: null });
+  }
+
+  /** As a pulled cable: the stream stops and reports the connection lost (tests only). */
+  unplug(): void {
+    if (!this.isConnected) return;
+    this.isConnected = false;
+    this.streaming = false;
+    this.clearTimer(this.timer);
+    this.timer = null;
+    this.keys?.removeEventListener("keydown", this.onKeyDown);
+    this.keys?.removeEventListener("keyup", this.onKeyUp);
+    this.hub.emit({ type: "disconnected", error: "lost" });
   }
 
   /** Contracts (true) or relaxes (false), as holding the M key does. */
@@ -181,7 +215,13 @@ export class SimulatedEmgStream implements EmgStream {
 
   private envelope(): number {
     const noise = (this.random() - 0.5) * 30; // about +-15 mV
-    const mv = REST_MV + (CONTRACTION_MV - REST_MV) * this.level + noise;
+    // A relaxed muscle's slow wander (about +-10 mV): without it the smoothed resting signal
+    // would be flatter than the calibration allows, and read as an electrode off.
+    const seconds = this.counter / this.rateHz;
+    const wander =
+      this.restWanderMv *
+      (Math.sin(2 * Math.PI * 0.7 * seconds) + 0.5 * Math.sin(2 * Math.PI * 1.9 * seconds));
+    const mv = REST_MV + (CONTRACTION_MV - REST_MV) * this.level + noise + wander;
     return Math.round(Math.min(3300, Math.max(0, mv)));
   }
 

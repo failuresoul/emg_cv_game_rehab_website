@@ -11,6 +11,7 @@ import { useSession, useSessionStep } from "@/features/session/SessionContext";
 import { GAMES, isGameId } from "@/games/shared/registry";
 import type { GameDefinition } from "@/games/shared/types";
 import { t } from "@/i18n";
+import { withTestTrials } from "@/testing/testSettings";
 import type { PatientGameSetting } from "@/types/api";
 
 export function SessionGamePage() {
@@ -79,7 +80,8 @@ function ConfiguredGame({
   const [configured] = useState(() => {
     const game = applyGameSetting(definition, setting);
     const planned = gameQueue?.trials?.[definition.id];
-    return planned ? { ...game, trialsDefault: planned } : game;
+    // Test mode's shorter games (nothing changes otherwise).
+    return withTestTrials(planned ? { ...game, trialsDefault: planned } : game);
   });
   const queue = gameQueue?.games ?? [];
   const position = queue.indexOf(definition.id);

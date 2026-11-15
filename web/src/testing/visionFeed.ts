@@ -14,6 +14,7 @@ import type { VisionResult } from "@/vision/visionEngine";
 import { decodeFrame, parseRecording, ReplayClock, type LandmarkRecording } from "./landmarkFormat";
 import {
   type FeedFrame,
+  type SynthGoal,
   type SynthScript,
   SynthPlayer,
   type TargetResolver,
@@ -23,6 +24,8 @@ export const REPLAY_PARAM = "replay";
 export const REPLAY_LOOP_PARAM = "replayLoop";
 export const REPLAY_STORAGE_KEY = "muvi-test-replay";
 export const REPLAY_LOOP_STORAGE_KEY = "muvi-test-replay-loop";
+export const REPLAY_SIDE_PARAM = "replaySide";
+export const REPLAY_SIDE_STORAGE_KEY = "muvi-test-replay-side";
 export const FIXTURE_DIRECTORY = "/test-fixtures/landmarks";
 
 export interface DueFrame {
@@ -47,10 +50,18 @@ export class RecordingSource implements FrameSource {
   private readonly frames: FeedFrame[];
   private readonly clock: ReplayClock;
 
-  constructor(recording: LandmarkRecording, loop: boolean) {
+  /** `marker`: only that marked part of the recording (such as one guided step). */
+  constructor(recording: LandmarkRecording, loop: boolean, marker?: string) {
     this.frameWidth = recording.frameWidth;
     this.frameHeight = recording.frameHeight;
-    this.frames = recording.frames.map(decodeFrame);
+    let frames = recording.frames;
+    if (marker) {
+      const part = recording.markers?.find((item) => item.id === marker);
+      if (!part) throw new Error(`The recording has no marker "${marker}"`);
+      frames = frames.filter((frame) => frame.t >= part.start && frame.t <= part.end);
+      if (frames.length === 0) throw new Error(`The marker "${marker}" has no frames`);
+    }
+    this.frames = frames.map(decodeFrame);
     this.clock = new ReplayClock(
       this.frames.map((frame) => frame.t),
       loop,
@@ -78,8 +89,12 @@ export class SyntheticSource implements FrameSource {
   readonly frameHeight: number;
   private readonly player: SynthPlayer;
 
-  constructor(script: SynthScript, resolveTarget?: TargetResolver) {
-    this.player = new SynthPlayer(script, { resolveTarget });
+  constructor(
+    script: SynthScript,
+    resolveTarget?: TargetResolver,
+    resolveGoal?: () => SynthGoal | null,
+  ) {
+    this.player = new SynthPlayer(script, { resolveTarget, resolveGoal });
     this.frameWidth = this.player.frameWidth;
     this.frameHeight = this.player.frameHeight;
   }
@@ -216,11 +231,28 @@ function readSetting(param: string, storageKey: string): string | null {
 /** What "target" means in a synthetic script: the game's current point. */
 const gameTarget: TargetResolver = () => window.__muviTest?.currentTarget?.pointSw ?? null;
 
-export async function loadRecording(name: string, loop: boolean): Promise<RecordingSource> {
+/** The game's whole goal, for "auto" steps. */
+const gameGoal = (): SynthGoal | null => window.__muviTest?.currentTarget ?? null;
+
+const recordings = new Map<string, Promise<LandmarkRecording>>();
+
+export async function loadRecording(
+  name: string,
+  loop: boolean,
+  marker?: string,
+): Promise<RecordingSource> {
   if (!SAFE_NAME.test(name)) throw new Error(`Bad recording name "${name}"`);
-  const response = await fetch(`${FIXTURE_DIRECTORY}/${name}.json`);
-  if (!response.ok) throw new Error(`No landmark recording "${name}" (${response.status})`);
-  return new RecordingSource(parseRecording(await response.json()), loop);
+  // Fetched once per page: a long recording is several megabytes.
+  let recording = recordings.get(name);
+  if (!recording) {
+    recording = fetch(`${FIXTURE_DIRECTORY}/${name}.json`).then(async (response) => {
+      if (!response.ok) throw new Error(`No landmark recording "${name}" (${response.status})`);
+      return parseRecording(await response.json());
+    });
+    recordings.set(name, recording);
+    recording.catch(() => recordings.delete(name));
+  }
+  return new RecordingSource(await recording, loop, marker);
 }
 
 class TestVisionFeed {
@@ -236,12 +268,12 @@ class TestVisionFeed {
   }
 
   play(script: SynthScript): void {
-    this.source = new SyntheticSource(script, gameTarget);
+    this.source = new SyntheticSource(script, gameTarget, gameGoal);
     this.configured = true;
   }
 
-  async playRecording(name: string, loop = false): Promise<void> {
-    this.source = await loadRecording(name, loop);
+  async playRecording(name: string, loop = false, marker?: string): Promise<void> {
+    this.source = await loadRecording(name, loop, marker);
     this.configured = true;
   }
 
@@ -261,8 +293,8 @@ class TestVisionFeed {
     if (name.startsWith("synth:")) {
       const preset = SYNTH_PRESETS[name.slice("synth:".length)];
       if (!preset) throw new Error(`No synthetic preset "${name}"`);
-      // ?replaySide=right for a patient whose right side is affected.
-      const side = new URLSearchParams(window.location.search).get("replaySide");
+      // ?replaySide=right (or localStorage) for a patient whose right side is affected.
+      const side = readSetting(REPLAY_SIDE_PARAM, REPLAY_SIDE_STORAGE_KEY);
       this.play(preset(side === "right" ? "right" : "left"));
       return true;
     }

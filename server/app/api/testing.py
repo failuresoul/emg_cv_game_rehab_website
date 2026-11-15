@@ -5,10 +5,13 @@ the setting again before changing anything.
 - POST /api/test/reset: a fresh database with the admin and the seeded demo patients.
 - POST /api/test/seed-session: a completed session with data (calibration, warm-up, games,
   questionnaire, measures) for a patient.
+- POST /api/test/llm: makes the feedback model fail (or work again), to test the template
+  fallback.
 """
 
 import random
 from datetime import timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -21,6 +24,8 @@ from app.core.security import hash_password
 from app.models import PatientProfile, User
 from app.models import Session as SessionRecord
 from app.models.user import utc_now
+from app.feedback.jobs import report_jobs
+from app.feedback.llm import LLMUnavailableError, MockProvider, get_provider
 from app.services import alerts, session_metrics, trial_metrics
 from app.services.users import ensure_admin
 
@@ -109,7 +114,24 @@ def _reset(session: Session, request: ResetRequest) -> ResetResponse:
 
 @router.post("/reset", response_model=ResetResponse)
 def reset(session: SessionDep, request: ResetRequest | None = None) -> ResetResponse:
+    # A reset also gives back the working (mock) model.
+    report_jobs.provider_factory = get_provider
     return _reset(session, request or ResetRequest())
+
+
+class LlmModeRequest(BaseModel):
+    #: "ok": the configured provider (the mock in the tests); "fail": every call fails, as if
+    #: the Ollama app could not be reached, so reports fall back to the template.
+    mode: Literal["ok", "fail"]
+
+
+def _failing_provider() -> MockProvider:
+    return MockProvider(fail_with=LLMUnavailableError("The model is switched off by a test"))
+
+
+@router.post("/llm", status_code=204)
+def set_llm_mode(request: LlmModeRequest) -> None:
+    report_jobs.provider_factory = _failing_provider if request.mode == "fail" else get_provider
 
 
 @router.post("/seed-session", response_model=SeedSessionResponse, status_code=201)

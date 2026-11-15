@@ -304,9 +304,48 @@ MOCK_ANSWER: dict[str, Any] = {
 }
 
 
+#: The texts of MockProvider's report answers (from_schema), by language.
+MOCK_REPORT_TEXT: dict[str, dict[str, str]] = {
+    "en": {
+        "patient_summary": "You completed today's session. Well done for practising your movements.",
+        "suggestion": "Keep practising at a pace that feels comfortable.",
+        "next_session_text": "Next time we will practise the same movements again.",
+    },
+    "bn": {
+        "patient_summary": "আপনি আজকের সেশন শেষ করেছেন। অনুশীলনের জন্য ধন্যবাদ।",
+        "suggestion": "আরামদায়ক গতিতে অনুশীলন চালিয়ে যান।",
+        "next_session_text": "পরের বার আমরা একই নড়াচড়াগুলো আবার অনুশীলন করব।",
+    },
+}
+MOCK_THERAPIST_SUMMARY = "Mock report for automated tests: the session was completed."
+
+
+def schema_answer(json_schema: dict[str, Any]) -> dict[str, Any] | None:
+    """A report that fits the report schema given (its language and the session's suggestion
+    ids), with plain texts and no numbers, so it passes validation; None for other schemas."""
+    properties = json_schema.get("properties", {})
+    if "patient_summary" not in properties:
+        return None
+    language = (properties.get("language", {}).get("enum") or ["en"])[0]
+    text = MOCK_REPORT_TEXT.get(language, MOCK_REPORT_TEXT["en"])
+    suggestion_ids = (
+        properties.get("suggestions", {}).get("items", {}).get("properties", {}).get("id", {})
+    ).get("enum") or []
+    return {
+        "language": language,
+        "patient_summary": text["patient_summary"],
+        "highlights": [],
+        "suggestions": [{"id": suggestion_ids[0], "text": text["suggestion"]}] if suggestion_ids else [],
+        "next_session_text": text["next_session_text"],
+        "therapist_summary": MOCK_THERAPIST_SUMMARY,
+    }
+
+
 class MockProvider:
     """Returns canned JSON without any model; records every call. `answers` (texts or objects)
-    are returned in turn, the last one repeating; `fail_with` raises instead."""
+    are returned in turn, the last one repeating; `fail_with` raises instead. With
+    `from_schema` (and no `answers`), a report schema gets a valid report (schema_answer): the
+    end-to-end tests' server uses that, so its reports are the "model's"."""
 
     name = "mock"
 
@@ -316,8 +355,10 @@ class MockProvider:
         model: str = "mock",
         fail_with: LLMError | None = None,
         on_call: Callable[[dict[str, Any]], None] | None = None,
+        from_schema: bool = False,
     ) -> None:
         self.model = model
+        self.from_schema = from_schema and not answers
         self.answers = list(answers) if answers else [MOCK_ANSWER]
         self.fail_with = fail_with
         self.on_call = on_call
@@ -343,8 +384,10 @@ class MockProvider:
             self.on_call(call)
         if self.fail_with is not None:
             raise self.fail_with
-        answer = self.answers[min(len(self.calls) - 1, len(self.answers) - 1)]
-        text = answer if isinstance(answer, str) else json.dumps(answer)
+        answer: str | dict[str, Any] = self.answers[min(len(self.calls) - 1, len(self.answers) - 1)]
+        if self.from_schema:
+            answer = schema_answer(json_schema) or answer
+        text = answer if isinstance(answer, str) else json.dumps(answer, ensure_ascii=False)
         return LLMResult(
             text=text,
             model=model or self.model,
@@ -374,7 +417,9 @@ def get_provider() -> LLMProvider:
     if settings.LLM_PROVIDER == "ollama":
         return OllamaProvider()
     if settings.LLM_PROVIDER == "mock":
-        return MockProvider()
+        # The end-to-end tests' server (APP_ENV=test) gets valid reports; unit tests keep the
+        # canned answer, which is never a valid report.
+        return MockProvider(from_schema=settings.APP_ENV == "test")
     raise ValueError(f"Unknown LLM_PROVIDER {settings.LLM_PROVIDER!r}: use 'ollama' or 'mock'")
 
 

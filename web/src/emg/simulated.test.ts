@@ -7,12 +7,14 @@ import {
   SIMULATED_VERSION,
   SimulatedEmgStream,
 } from "./simulated";
+import { restResult } from "./calibration";
 import type { EmgEvent } from "./stream";
 
 /** A simulated stream on a fake clock: `advance` moves time on in 20 ms ticks. */
-function setup() {
+function setup(restWanderMv = 0) {
   let now = 0;
   const stream = new SimulatedEmgStream({
+    restWanderMv,
     now: () => now,
     setTimer: () => 1,
     clearTimer: () => undefined,
@@ -99,6 +101,7 @@ describe("the simulated EMG source", () => {
     } as unknown as Pick<Window, "addEventListener" | "removeEventListener">;
     let now = 0;
     const stream = new SimulatedEmgStream({
+      restWanderMv: 0,
       now: () => now,
       setTimer: () => 1,
       clearTimer: () => undefined,
@@ -121,5 +124,25 @@ describe("the simulated EMG source", () => {
     await stream.disconnect();
     expect(handlers.size).toBe(0);
     expect(stream.connected).toBe(false);
+  });
+
+  it("rests with a slow wander that the calibration's rest check accepts", async () => {
+    const { stream, advance, samples } = setup(7);
+    await stream.connect();
+    await stream.send("START");
+    advance(10_000);
+    const values = samples().map((sample) => sample.mv);
+    // Smoothed over 250 ms, as an envelope is: not a flat line, and still relaxed.
+    const smoothed = values.slice(125).map((_, index) => {
+      const window = values.slice(index, index + 125);
+      return window.reduce((total, value) => total + value, 0) / window.length;
+    });
+    expect(restResult(smoothed).problem).toBeNull();
+    // Without the wander the same signal would look like an electrode off.
+    const flat = setup(0);
+    await flat.stream.connect();
+    await flat.stream.send("START");
+    flat.advance(2000);
+    expect(restResult(flat.samples().map((sample) => sample.mv)).problem).toBe("electrodeOff");
   });
 });

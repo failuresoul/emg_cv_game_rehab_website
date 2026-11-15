@@ -69,9 +69,12 @@ export type SynthStep =
   /** Sit still (the arm resting, the hand on the lap). */
   | { do: "still"; ms: number }
   /** Move the index fingertip to a body-frame point (SW), or the game's current target. */
-  | ({ do: "reach"; to: Point | "target" } & Timed)
+  | ({ do: "reach"; to: Point | "target"; by?: ReachBy } & Timed)
   /** Keep the fingertip on the game's moving target (path tracing, catching). */
   | { do: "follow"; ms: number }
+  /** Plays the game by itself: follows the game's target and does what it asks of the hand
+   * (close, open, pinch, release, touch a finger), every frame. */
+  | { do: "auto"; ms: number }
   /** Raise the (straight) arm forward, sideways, or in a plane given in degrees. */
   | ({ do: "raise"; plane: "forward" | "sideways" | number; deg: number } & Timed)
   /** Set the elbow angle (180 straight) keeping the upper arm where it is. */
@@ -91,6 +94,9 @@ export type SynthStep =
   | { do: "hideHand"; ms: number }
   /** Nobody in view: no pose and no hand. */
   | { do: "leave"; ms: number };
+
+/** What a reach puts on the point: the index fingertip (games), or the wrist (calibration). */
+export type ReachBy = "fingertip" | "wrist";
 
 export interface SynthScript {
   affectedSide: Side;
@@ -479,10 +485,15 @@ function bodyPointToPixel(state: BodyState, side: Side, pointSw: Point): PixelPo
 }
 
 /** The arm that puts the index fingertip on a body-frame point, as far as it can. */
-export function armReaching(state: BodyState, side: Side, pointSw: Point): ArmPose {
+export function armReaching(
+  state: BodyState,
+  side: Side,
+  pointSw: Point,
+  by: ReachBy = "fingertip",
+): ArmPose {
   const leaned = leanRotation(state, side);
   const shoulder = leaned(v(side === "left" ? SHOULDER_HALF_M : -SHOULDER_HALF_M, SHOULDER_Y_M, 0));
-  const lower = FOREARM_M + indexTipReach(state);
+  const lower = FOREARM_M + (by === "wrist" ? 0 : indexTipReach(state));
   const full = UPPER_ARM_M + lower;
 
   // On the camera's ray through the target, the point in front of the body at a comfortable
@@ -604,14 +615,29 @@ interface Segment {
   end: (start: BodyState) => BodyState;
   /** Follows a moving target every frame instead of moving to a fixed end. */
   follow?: boolean;
+  /** Plays the game's goal every frame (an "auto" step). */
+  auto?: boolean;
 }
 
 /** What `"target"` means: the game's current goal, or null if there is none. */
 export type TargetResolver = () => Point | null;
 
+/** The game's whole goal, for "auto" steps: where to go and what the hand should do. */
+export interface SynthGoal {
+  pointSw: Point | null;
+  hand: "open" | "close" | "pinch" | "release" | null;
+  finger: Finger | null;
+}
+
 export interface SynthOptions {
   resolveTarget?: TargetResolver;
+  resolveGoal?: () => SynthGoal | null;
 }
+
+/** How fast "auto" moves the hand: fully open to closed in this long. */
+const AUTO_HAND_MS = 300;
+/** How fast "auto" catches up with the target. */
+const AUTO_ARM_MS = 200;
 
 function interpolate(a: BodyState, b: BodyState, s: number): BodyState {
   return {
@@ -656,13 +682,15 @@ function stepSegments(step: SynthStep, side: Side, options: SynthOptions): Segme
         step.ms,
         (start) => {
           const point = step.to === "target" ? (options.resolveTarget?.() ?? null) : step.to;
-          return point ? { ...start, arm: armReaching(start, side, point) } : start;
+          return point ? { ...start, arm: armReaching(start, side, point, step.by) } : start;
         },
         step.holdMs,
         step.back,
       );
     case "follow":
       return [{ ms: step.ms, end: (start) => start, follow: true }];
+    case "auto":
+      return [{ ms: step.ms, end: (start) => start, auto: true }];
     case "raise": {
       const plane =
         step.plane === "forward" ? 90 : step.plane === "sideways" ? 0 : Number(step.plane);
@@ -818,6 +846,56 @@ export class SynthPlayer {
     return toFrame(this.state, this.side, t, this.script.brightness ?? 140, noise);
   }
 
+  /** One frame of playing the game's goal. */
+  private autoStep(state: BodyState): BodyState {
+    const goal = this.options.resolveGoal?.() ?? null;
+    if (!goal) return state;
+    let next = state;
+    if (goal.pointSw) {
+      const aim = armReaching(next, this.side, goal.pointSw);
+      const share = Math.min(1, this.frameMs / AUTO_ARM_MS);
+      next = {
+        ...next,
+        arm: {
+          upper: slerp(next.arm.upper, aim.upper, share),
+          fore: slerp(next.arm.fore, aim.fore, share),
+        },
+      };
+    }
+    const rate = this.frameMs / AUTO_HAND_MS;
+    const towards = (value: number, target: number) =>
+      value + Math.max(-rate, Math.min(rate, target - value));
+    if (goal.finger) {
+      const finger = FINGER_INDEX[goal.finger];
+      // Let go of the last finger before touching the next one.
+      if (finger !== next.thumbFinger) {
+        const amount = towards(next.thumbAmount, 0);
+        next = { ...next, open: towards(next.open, 1), thumbAmount: amount };
+        if (amount <= 0.05) next = { ...next, thumbFinger: finger };
+      } else {
+        next = { ...next, open: towards(next.open, 1), thumbAmount: towards(next.thumbAmount, 1) };
+      }
+      return next;
+    }
+    switch (goal.hand) {
+      case "close":
+        return { ...next, open: towards(next.open, 0), thumbAmount: towards(next.thumbAmount, 0) };
+      case "open":
+        return { ...next, open: towards(next.open, 1), thumbAmount: towards(next.thumbAmount, 0) };
+      case "pinch":
+        return {
+          ...next,
+          thumbFinger: 0,
+          open: towards(next.open, 1),
+          thumbAmount: towards(next.thumbAmount, 1),
+        };
+      case "release":
+        return { ...next, thumbAmount: towards(next.thumbAmount, 0) };
+      default:
+        return next;
+    }
+  }
+
   private restart(): void {
     this.segments = [];
     this.stepIndex = 0;
@@ -848,7 +926,10 @@ export class SynthPlayer {
       }
       const segment = this.segment;
       const end = this.segmentStart + segment.ms;
-      if (segment.follow) {
+      if (segment.auto) {
+        this.state = this.autoStep(this.state);
+        if (time < end) return;
+      } else if (segment.follow) {
         const point = this.options.resolveTarget?.() ?? null;
         if (point) {
           const aim = armReaching(this.state, this.side, point);

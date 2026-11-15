@@ -20,7 +20,7 @@ export interface ReplayHooks {
 
 /** True if a replay runs (or the start was cancelled); false to use the camera. */
 export async function startTestReplay(hooks: ReplayHooks): Promise<boolean> {
-  hooks.setStatus({ phase: "camera" });
+  // The engine has set "camera"; only a current start may change the status after awaiting.
   let replay: boolean;
   try {
     replay = await testVisionFeed.prepare();

@@ -8,6 +8,7 @@ import type { EmgEvent, EmgStream } from "./stream";
 function simulated() {
   let now = 0;
   const stream = new SimulatedEmgStream({
+    restWanderMv: 0,
     now: () => now,
     setTimer: () => 1,
     clearTimer: () => undefined,

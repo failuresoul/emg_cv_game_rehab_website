@@ -169,15 +169,19 @@ export function createGripHoldGame(context: GameContext): GameInstance {
       if (trial?.machine.isLive) trial = null;
     },
 
-    testTarget: () =>
-      trial
-        ? {
-            phase: trial.machine.phase,
-            pointSw: null,
-            hand: trial.machine.phase === "REST" ? "open" : "close",
-            finger: null,
-          }
-        : null,
+    testTarget: () => {
+      if (!trial) return null;
+      const { phase, band } = trial.machine;
+      const holding = phase === "HOLD";
+      return {
+        phase,
+        pointSw: null,
+        hand: holding ? "close" : "open",
+        finger: null,
+        // The middle of the band while holding; relaxed otherwise.
+        level: holding ? (band.low + band.high) / 2 : 0,
+      };
+    },
 
     isFinished: () => records.length >= context.trialsPlanned && trial === null,
 

@@ -21,23 +21,34 @@ export interface MuviTestApi {
   /** The current game's goal, updated every frame while a game runs; null otherwise. */
   currentTarget: GameTestTarget | null;
   /** The game being played and its stage ("countdown", "playing", "finished"...). */
-  game: { stage: string } | null;
+  game: { stage: string; level: number; source: string } | null;
   vision: {
     /** Plays a synthetic landmark script instead of the camera (from now). */
     play(script: SynthScript): void;
     /** Plays web/public/test-fixtures/landmarks/<name>.json instead of the camera. */
-    playRecording(name: string, options?: { loop?: boolean }): Promise<void>;
+    /** `marker` plays only that marked part (such as one guided step). */
+    playRecording(name: string, options?: { loop?: boolean; marker?: string }): Promise<void>;
     /** Nothing in view (as an empty room). */
     clear(): void;
     /** "synthetic", "recording" or "none". */
     source(): string;
     /** How many replayed frames the vision engine has emitted so far. */
     framesEmitted(): number;
+    /** The vision engine's phase: "idle" once a page has let go of the camera. */
+    engineStatus(): string;
   };
   emg: {
     /** Holds the simulated muscle sensor at a contraction level from 0 (rest) to 1; null lets the
      * M key drive it again. */
     setLevel(level: number | null): void;
+    /** Pulls the simulated sensor's cable, or plugs it back in. */
+    unplug(): void;
+    replug(): Promise<void>;
+  };
+  i18n: {
+    /** Every string of a language, by key. */
+    values(language: "en" | "bn"): Record<string, string>;
+    language(): string;
   };
 }
 
