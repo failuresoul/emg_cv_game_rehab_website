@@ -1,6 +1,22 @@
 # Pending manual checks
 
-Checks that need a person, a camera or a device, and cannot run in the automated tests.
+These checks need a person, a camera or a device, so they cannot run in the automated tests.
+
+## Checklist
+
+| #   | Check                                                                             | When               | Where                                                       | Status  |
+| --- | --------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------- | ------- |
+| 1   | Validation session: latency, joint angles, repetition counting                    | Before the release | [Below](#validation-session-later)                          | PENDING |
+| 2   | Repeatability visits 1, 2 and 3, on different days                                | Over three days    | [Below](#3-repeatability-visits-3-visits-on-different-days) | PENDING |
+| 3   | Decide the seated rest thresholds of the shoulder exercises (counts were 0 of 3)  | After check 1      | [Below](#4-repetition-counting-no-session-needed)           | PENDING |
+| 4   | Usability test: 3–5 volunteers, both languages, System Usability Scale            | Day 19–20          | Day 18 preview in `day-logs/day-17.md`                      | PENDING |
+| 5   | Bangla by eye, and a native speaker's review of the strings and the patient guide | Day 19–20          | `day-logs/day-17-test-report.md` (checklist)                | PENDING |
+| 6   | Large text, high contrast and keyboard-only, by eye                               | Day 19–20          | `day-logs/day-17-test-report.md` (checklist)                | PENDING |
+| 7   | Playwright full project and `scripts/check.ps1 -E2E` as one run                   | Day 20             | `docs/testing.md`                                           | PENDING |
+| 8   | Real muscle sensor (ESP32) and EMG validation                                     | Day 21             | `docs/emg-hardware-test.md`, `docs/validation.md`           | PENDING |
+| 9   | Frame rate with the real webcam and MediaPipe                                     | Day 21             | `docs/performance.md`                                       | PENDING |
+
+After checks 1–2, run `analysis/validation/run_validation.py`, then `render_docs.py`. The app then uses the measured MDCs: the admin's Metrics shows "measured (n=1, pilot)".
 
 ## Validation session (later)
 

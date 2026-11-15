@@ -1,0 +1,30 @@
+{
+  "label": "DEMO — SYNTHETIC",
+  "generated_at": "2026-11-15T20:10:35+00:00",
+  "source": {
+    "file": "repeatability.csv",
+    "present": true,
+    "rows": 9,
+    "sha256": null
+  },
+  "metrics": {
+    "C1": {
+      "mdc95": 0.3751646849051757,
+      "sem": 0.13534770038681843,
+      "visits": 3,
+      "participants": 1
+    },
+    "K1": {
+      "mdc95": 0.02416450289163841,
+      "sem": 0.008717797887081356,
+      "visits": 3,
+      "participants": 1
+    },
+    "W1": {
+      "mdc95": 7.800596610413835,
+      "sem": 2.814211612512459,
+      "visits": 3,
+      "participants": 1
+    }
+  }
+}

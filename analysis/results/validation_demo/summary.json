@@ -1,0 +1,225 @@
+{
+  "label": "DEMO — SYNTHETIC",
+  "generated_at": "2026-11-15T20:10:35+00:00",
+  "git_commit": "6adf8f0",
+  "inputs": {
+    "latency_manual": {
+      "file": "latency_manual.csv",
+      "present": true,
+      "rows": 20,
+      "sha256": null
+    },
+    "latency_software": {
+      "file": "latency_software.csv",
+      "present": true,
+      "rows": 300,
+      "sha256": null
+    },
+    "angles": {
+      "file": "angles.csv",
+      "present": true,
+      "rows": 21,
+      "sha256": null
+    },
+    "repeatability": {
+      "file": "repeatability.csv",
+      "present": true,
+      "rows": 9,
+      "sha256": null
+    },
+    "rep_accuracy": {
+      "file": "rep_accuracy.csv",
+      "present": true,
+      "rows": 3,
+      "sha256": "0fe7d475ce10655e5306988c7952c052f250dda665858c597be62b0e9d66a4e1"
+    }
+  },
+  "sections": {
+    "latency": {
+      "status": "DONE",
+      "results": {
+        "manual_end_to_end_ms": {
+          "n": 20,
+          "mean": 141.65,
+          "sd": 12.562538295306908,
+          "p50": 142.65,
+          "p95": 157.885
+        },
+        "detect_ms": {
+          "n": 300,
+          "mean": 21.705666666666666,
+          "sd": 2.944791199090868,
+          "p50": 21.755000000000003,
+          "p95": 26.372
+        },
+        "render_ms": {
+          "n": 300,
+          "mean": 4.015833333333333,
+          "sd": 1.0054581671931826,
+          "p50": 4.05,
+          "p95": 5.6215
+        },
+        "total_ms": {
+          "n": 300,
+          "mean": 26.2623,
+          "sd": 3.348698500735686,
+          "p50": 26.200000000000003,
+          "p95": 31.612
+        }
+      }
+    },
+    "angles": {
+      "status": "DONE",
+      "results": {
+        "elbow": {
+          "2D": {
+            "joint": "elbow",
+            "method": "2D",
+            "n": 7,
+            "rmse_deg": 7.468118906391354,
+            "bias_deg": -2.0457142857142867,
+            "loa_low_deg": -17.251301385198474,
+            "loa_high_deg": 13.159872813769901
+          },
+          "3D": {
+            "joint": "elbow",
+            "method": "3D",
+            "n": 7,
+            "rmse_deg": 3.9949307163668615,
+            "bias_deg": -0.567142857142856,
+            "loa_low_deg": -8.938918417122158,
+            "loa_high_deg": 7.804632702836446
+          }
+        },
+        "shoulder_abduction": {
+          "2D": {
+            "joint": "shoulder_abduction",
+            "method": "2D",
+            "n": 7,
+            "rmse_deg": 12.490556432761512,
+            "bias_deg": -9.594285714285714,
+            "loa_low_deg": -26.52581525495825,
+            "loa_high_deg": 7.337243826386821
+          },
+          "3D": {
+            "joint": "shoulder_abduction",
+            "method": "3D",
+            "n": 7,
+            "rmse_deg": 3.8179987278303673,
+            "bias_deg": 2.5657142857142885,
+            "loa_low_deg": -3.4200227839093573,
+            "loa_high_deg": 8.551451355337935
+          }
+        },
+        "shoulder_flexion": {
+          "2D": {
+            "joint": "shoulder_flexion",
+            "method": "2D",
+            "n": 7,
+            "rmse_deg": 6.781792851872895,
+            "bias_deg": -2.2257142857142864,
+            "loa_low_deg": -15.787827826014707,
+            "loa_high_deg": 11.336399254586135
+          },
+          "3D": {
+            "joint": "shoulder_flexion",
+            "method": "3D",
+            "n": 7,
+            "rmse_deg": 3.6865915345827394,
+            "bias_deg": 2.2499999999999964,
+            "loa_low_deg": -3.9325082116133627,
+            "loa_high_deg": 8.432508211613357
+          }
+        }
+      }
+    },
+    "repeatability": {
+      "status": "DONE",
+      "results": {
+        "C1": {
+          "metric_id": "C1",
+          "visits": 3,
+          "mean": 2.122,
+          "within_sd": 0.13534770038681843,
+          "sem": 0.13534770038681843,
+          "mdc95": 0.3751646849051757,
+          "cv_percent": 6.378308218040454,
+          "icc_2_1": "not applicable (n=1)"
+        },
+        "K1": {
+          "metric_id": "K1",
+          "visits": 3,
+          "mean": 0.64,
+          "within_sd": 0.008717797887081356,
+          "sem": 0.008717797887081356,
+          "mdc95": 0.02416450289163841,
+          "cv_percent": 1.3621559198564617,
+          "icc_2_1": "not applicable (n=1)"
+        },
+        "W1": {
+          "metric_id": "W1",
+          "visits": 3,
+          "mean": 93.032,
+          "within_sd": 2.814211612512459,
+          "sem": 2.814211612512459,
+          "mdc95": 7.800596610413835,
+          "cv_percent": 3.0249931340962886,
+          "icc_2_1": "not applicable (n=1)"
+        }
+      }
+    },
+    "rep_accuracy": {
+      "status": "DONE",
+      "results": {
+        "by_exercise": [
+          {
+            "exercise": "shoulder_flexion",
+            "scripted": 10,
+            "counted": 10,
+            "error": 0,
+            "accuracy_percent": 100.0,
+            "min_value": null,
+            "max_value": null,
+            "low": null,
+            "high": null
+          },
+          {
+            "exercise": "elbow_flexion",
+            "scripted": 10,
+            "counted": 9,
+            "error": -1,
+            "accuracy_percent": 90.0,
+            "min_value": null,
+            "max_value": null,
+            "low": null,
+            "high": null
+          },
+          {
+            "exercise": "hand_open_close",
+            "scripted": 10,
+            "counted": 10,
+            "error": 0,
+            "accuracy_percent": 100.0,
+            "min_value": null,
+            "max_value": null,
+            "low": null,
+            "high": null
+          }
+        ],
+        "scripted_total": 30,
+        "absolute_error_total": 1,
+        "overall_accuracy_percent": 96.66666666666667
+      }
+    }
+  },
+  "figures": [
+    "angles_bland_altman.png",
+    "latency.png",
+    "repeatability_mdc.png",
+    "rep_accuracy.png",
+    "angles_bland_altman.svg",
+    "latency.svg",
+    "repeatability_mdc.svg",
+    "rep_accuracy.svg"
+  ]
+}

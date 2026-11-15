@@ -55,30 +55,25 @@ Guided recordings (`/dev/record-guide`) are played through the warm-up's own cou
 ## Results
 
 <!-- results:start -->
-
-From `analysis/results/validation/summary.json`, generated 2026-11-15T20:01:38+00:00 (commit 0c25fcc). All values are **pilot** (n = 1, healthy).
+From `analysis/results/validation/summary.json`, generated 2026-11-15T20:10:33+00:00 (commit 6adf8f0). All values are **pilot** (n = 1, healthy).
 
 ### Latency
-
 **PENDING**: No latency_manual.csv or latency_software.csv yet (see /dev/latency).
 
 ### Joint angles
-
 **PENDING**: No angles.csv yet (see /dev/angle-validation).
 
 ### Repeatability
-
 **PENDING**: No repeatability.csv yet (Admin > patient > Repeatability visit, 3 visits).
 
 ### Repetition counting
-
-| Exercise           | Scripted | Counted | Error | Accuracy % | Measured range  | Rest / target  |
-| ------------------ | -------- | ------- | ----- | ---------- | --------------- | -------------- |
-| shoulder_flexion   | 3        | 0       | -3    | 0          | 45.14 to 103.64 | 30.00 / 90.00  |
-| shoulder_abduction | 3        | 0       | -3    | 0          | 68.10 to 114.73 | 30.00 / 80.00  |
-| elbow_flexion      | 10       | 0       | -10   | 0          | 66.35 to 156.81 | 70.00 / 140.00 |
-| hand_open_close    | 10       | 7       | -3    | 70         | 0.75 to 1.68    | 1.20 / 1.60    |
-| thumb_opposition   | 2        | 0       | -2    | 0          | 0.15 to 0.89    | 0.25 / 0.40    |
+| Exercise | Scripted | Counted | Error | Accuracy % | Measured range | Rest / target |
+| --- | --- | --- | --- | --- | --- | --- |
+| shoulder_flexion | 3 | 0 | -3 | 0 | 45.14 to 103.64 | 30.00 / 90.00 |
+| shoulder_abduction | 3 | 0 | -3 | 0 | 68.10 to 114.73 | 30.00 / 80.00 |
+| elbow_flexion | 10 | 0 | -10 | 0 | 66.35 to 156.81 | 70.00 / 140.00 |
+| hand_open_close | 10 | 7 | -3 | 70 | 0.75 to 1.68 | 1.20 / 1.60 |
+| thumb_opposition | 2 | 0 | -2 | 0 | 0.15 to 0.89 | 0.25 / 0.40 |
 
 Overall: 25% (21 wrong of 28 scripted).
 <!-- results:end -->
