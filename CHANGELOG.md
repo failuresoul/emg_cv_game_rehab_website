@@ -4,6 +4,22 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 20, task 4: the technical report)
+
+- **`docs/MuVi_Rehab_Technical_Report.docx`:** A4, title page, contents, numbered headings, page numbers, figure and table captions, screenshots and diagrams.
+  - **Chapters:** 16, each part described as What / How (with its file) / Why / Alternatives, plus 68 presentation questions.
+  - **Appendices:** API endpoints, database tables, settings, glossary and references (marked "verify").
+- **Built by `tools/docs/build_report.py`:** chapters in `report_content.py`. The report reads the identity, version, game specs, metric catalogue, EMG settings, API contract, data dictionary, `.env.example` and results summary from the repository, so no number is typed by hand.
+- **One command, `scripts/docs/make_report.ps1`:**
+  - creates `tools/docs/.venv` with `tools/docs/requirements.txt` (python-docx 1.1.2, not a server dependency);
+  - builds the report;
+  - fills the contents and counts pages with Word;
+  - reads the report back.
+
+### Fixed
+
+- **`docs/methods-draft.md`:** warm-up counting uses a median and moving-average filter (`angleFilter.ts`), not the one-euro filter, which smooths only the cursor and the pinch level.
+
 ### Added (Day 20, task 3: the README)
 
 - **README.md:** brought up to date (1.0.0-rc1, nine games, the adaptive engine, feedback reports and the muscle sensor were still described as planned) and extended:

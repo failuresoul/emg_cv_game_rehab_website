@@ -399,7 +399,10 @@ The main folders and files, with what each does. Generated folders (`node_module
 │                                 test vectors shared by the browser and the server
 ├── scripts/                      check.ps1 (every check), start.ps1, stop.ps1, backup.ps1,
 │   │                             restore.ps1
-│   └── docs/                     make_screenshots.ps1, optimise_images.py, check_readme_links.py
+│   └── docs/                     make_screenshots.ps1, optimise_images.py, check_readme_links.py,
+│                                 make_report.ps1
+├── tools/docs/                   the technical report builder (build_report.py, report_content.py;
+│                                 its own requirements.txt, not a server dependency)
 └── docs/                         documentation (see below); images/ screenshots and diagrams
 ```
 
@@ -678,6 +681,7 @@ Every route starts with `/api`; the interactive documentation is at <http://loca
 | [Session facts](docs/session-facts.md) | What the feedback model reads |
 | [Patient guide](docs/user-guide-patient.md), [Admin guide](docs/admin-guide.md), [Demo script](docs/demo-script.md) | Guides |
 | [API contract](docs/api-contract.md), [Day logs](docs/day-logs/README.md), [Docs index](docs/README.md) | Reference |
+| [Technical report (Word)](docs/MuVi_Rehab_Technical_Report.docx) | Every part explained (what, how, why, alternatives) with 68 likely questions; rebuilt by `.\scripts\docs\make_report.ps1` |
 
 ## Results
 

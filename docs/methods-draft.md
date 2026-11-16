@@ -77,7 +77,7 @@ Each has 10 target repetitions (5 rounds for opposition) and lasts at most 90 s.
 
 **Counting:**
 
-- **Smoothing:** values are smoothed (one-euro filter) before counting.
+- **Smoothing:** values are smoothed before counting by a 5-frame median and a moving average (α = 0.4; `web/src/vision/angleFilter.ts`); saved values stay raw. The one-euro filter smooths only the on-screen cursor and the pinch level.
 - **The rep counter:**
   - **States:** rest, then moving, then target, then return.
   - **Thresholds:** a rest line and a target line, with hysteresis.
