@@ -2,21 +2,24 @@
 
 These checks need a person, a camera or a device, so they cannot run in the automated tests.
 
-## Checklist
+## Checklist (in the order to do them)
 
-| #   | Check                                                                             | When               | Where                                                       | Status  |
-| --- | --------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------- | ------- |
-| 1   | Validation session: latency, joint angles, repetition counting                    | Before the release | [Below](#validation-session-later)                          | PENDING |
-| 2   | Repeatability visits 1, 2 and 3, on different days                                | Over three days    | [Below](#3-repeatability-visits-3-visits-on-different-days) | PENDING |
-| 3   | Decide the seated rest thresholds of the shoulder exercises (counts were 0 of 3)  | After check 1      | [Below](#4-repetition-counting-no-session-needed)           | PENDING |
-| 4   | Usability test: 3–5 volunteers, both languages, System Usability Scale            | Day 19–20          | Day 18 preview in `day-logs/day-17.md`                      | PENDING |
-| 5   | Bangla by eye, and a native speaker's review of the strings and the patient guide | Day 19–20          | `day-logs/day-17-test-report.md` (checklist)                | PENDING |
-| 6   | Large text, high contrast and keyboard-only, by eye                               | Day 19–20          | `day-logs/day-17-test-report.md` (checklist)                | PENDING |
-| 7   | Playwright full project and `scripts/check.ps1 -E2E` as one run                   | Day 20             | `docs/testing.md`                                           | PENDING |
-| 8   | Real muscle sensor (ESP32) and EMG validation                                     | Day 21             | `docs/emg-hardware-test.md`, `docs/validation.md`           | PENDING |
-| 9   | Frame rate with the real webcam and MediaPipe                                     | Day 21             | `docs/performance.md`                                       | PENDING |
+Every item is PENDING until you tick it. The step-by-step tests are in the [manual testing guide](MuVi_Rehab_Testing_Guide.docx) (test IDs in brackets).
 
-After checks 1–2, run `analysis/validation/run_validation.py`, then `render_docs.py`. The app then uses the measured MDCs: the admin's Metrics shows "measured (n=1, pilot)".
+1. **Your local `server/.env`:** set `APP_NAME=MuVi Rehab`. It still says the code name, which shows in `/api/health` and `/api/version`. The default in the code and `.env.example` is already right. *Now, before testing.*
+2. **The whole manual testing guide** with your real webcam and Ollama: sections 1–10 and 13; note your report generation time (T7.1). *Before tagging v1.0.0.*
+3. **One full automated run:** `.\scripts\check.ps1 -E2E`, plus the Playwright full project (`npm run e2e:full`, about 15 min; not run yet). *Before tagging v1.0.0.* See `docs/testing.md`.
+4. **By eye:** large text, high contrast and keyboard-only (T2.6, T2.7), and the layouts at phone width (T2.8). *Before tagging v1.0.0.* Checklist in `day-logs/day-17-test-report.md`.
+5. **The model's licence:** check `qwen3.5:4b`'s licence on its model card and remove the VERIFY mark in `THIRD_PARTY_NOTICES.md`. *Before tagging v1.0.0.*
+6. **Bangla:** check by eye, then a native speaker's review of the strings and the patient guide. *Before tagging v1.0.0.*
+7. **The real muscle sensor (Day 21):** wiring, flashing, readiness, calibration, games and three or more 30 s recordings per site, then `analysis/emg/emg_validation.py`. Runbook: [hardware-day.md](hardware-day.md); record: [emg-hardware-test.md](emg-hardware-test.md). Label recordings with a patient code, never a name: they are committed with the analysis data.
+8. **Frame rate with the real webcam and MediaPipe** on the target laptop. *Day 21.* See `docs/performance.md`.
+9. **The validation session:** latency and joint angles ([below](#validation-session-later)).
+10. **Repeatability visits 1, 2 and 3**, on different days ([below](#3-repeatability-visits-3-visits-on-different-days)). Then run `analysis/validation/run_validation.py` and `render_docs.py`; the app then uses the measured MDCs, and the admin's Metrics shows "measured (n=1, pilot)".
+11. **Decide the seated rest thresholds** of the shoulder exercises (counts were 0 of 3), after item 9 ([below](#4-repetition-counting-no-session-needed)).
+12. **The LLM evaluation** (automatic and blind human; `docs/llm-evaluation.md`), then choose the model (`docs/llm-model-choice.md`).
+13. **Usability test:** 3–5 volunteers, both languages, System Usability Scale (Day 18 preview in `day-logs/day-17.md`); needs ethics approval for patients.
+14. **Release 1.0.0:** the final checklist in the testing guide (section 15), then tag `v1.0.0`.
 
 ## Validation session (later)
 

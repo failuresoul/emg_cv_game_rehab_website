@@ -1,6 +1,6 @@
 # MuVi Rehab: guide for therapists and researchers
 
-This guide covers the admin area of MuVi Rehab v0.1: managing patients, weekly goals, reviewing sessions and progress, handling safety alerts, and using demo data.
+This guide covers the admin area of MuVi Rehab 1.0: managing patients, weekly goals, programmes, reviewing sessions and progress, handling safety alerts, research mode, and using demo data.
 
 Log in with the admin account from `server/.env` (`ADMIN_EMAIL` and `ADMIN_PASSWORD`). You land on the **Overview**.
 

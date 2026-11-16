@@ -1,5 +1,7 @@
 # MuVi Rehab v0.1: 10-minute supervisor demo
 
+> **Historical:** written for the v0.1 demo (three games, before adaptive difficulty, EMG and the feedback reports). For 1.0, follow the session steps in the [README](../README.md#how-a-session-works) and the [manual testing guide](MuVi_Rehab_Testing_Guide.docx).
+
 What to click and what to say, in order. Times are a guide; the whole demo takes about 10 minutes.
 
 ## Before the demo (15 minutes earlier)

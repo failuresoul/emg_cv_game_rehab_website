@@ -4,6 +4,12 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Changed (Day 20, task 6: the release candidate's review)
+
+- **Old version mentions:** the admin guide said v0.1, and the API contract's health example said 0.1.0. `demo-script.md` is labelled as the historical v0.1 demo.
+- **`pending-manual-checks.md`:** one ordered list, in the order to do things.
+- **`docs/day-logs/day-20.md`.**
+
 ### Added (Day 20, task 5: the manual testing guide)
 
 - **`docs/MuVi_Rehab_Testing_Guide.docx`:** A4, title page, contents, page numbers.

@@ -156,7 +156,7 @@ A 422 response usually lists each problem, and `loc` names the field. The submit
 Response `200`:
 
 ```json
-{ "status": "ok", "app": "MuVi Rehab", "version": "0.1.0" }
+{ "status": "ok", "app": "MuVi Rehab", "version": "1.0.0-rc1" }
 ```
 
 ## Authentication
