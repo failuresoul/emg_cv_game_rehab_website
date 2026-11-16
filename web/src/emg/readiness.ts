@@ -8,7 +8,8 @@ import { t, type TranslationKey } from "@/i18n";
 import { formatNumber } from "@/lib/format";
 
 import type { EmgEngine, EmgStatus } from "./engine";
-import { OnsetDetector, SATURATION_MV, windowStats } from "./processing";
+import { EMG } from "./emgSettings";
+import { OnsetDetector, windowStats } from "./processing";
 import { READINESS } from "./readinessConfig";
 
 export type CheckId =
@@ -123,7 +124,7 @@ export function evaluateReadiness(input: ReadinessInput): CheckResult[] {
       input.saturated === null
         ? null
         : input.saturated
-          ? `≥ ${formatNumber(SATURATION_MV, 0)} mV`
+          ? `≥ ${formatNumber(EMG.saturationMv, 0)} mV`
           : t("emgCheck.ok"),
     ),
     result(
@@ -223,7 +224,7 @@ export function gatherReadiness(
   const relaxedWindow = lastEnvelope(READINESS.relaxedWindowMs);
   let saturated: boolean | null = null;
   if (signal.mv.length > 0) {
-    saturated = signal.mv.some((value) => value >= SATURATION_MV);
+    saturated = signal.mv.some((value) => value >= EMG.saturationMv);
   }
   const relaxedStats = windowStats(relaxedWindow);
   return {

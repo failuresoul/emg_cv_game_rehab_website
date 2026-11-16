@@ -4,6 +4,28 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 20, task 2: the EMG path ready without hardware)
+
+- **Mock ESP32** (`web/src/emg/mockSerial.ts`): the firmware protocol behind the Web Serial interface, with a configurable rate, noise, lost counters, firmware drops, saturation, a flat line, garbled lines, a slow PONG, unplugging and plugging back in.
+- **Whole-path tests** (`hardwarePath.test.ts`): connect, PING/INFO/START, `RATE`, all 9 readiness items (each pass and fail), calibration through `flowReducer`, %MVC, the games' EMG source, unplug → camera fallback, replug → the sensor again.
+- **Board simulation:** firmware `SIM ON` data goes through the same path as sensor data. It shows a "Board simulation" badge (session header dot, sensor check, admin session card) and is stored as `quality.device_mode`.
+- **`/dev/emg-monitor`** (development only):
+  - a live 10 s raw and envelope plot;
+  - rate, gaps, drops, saturation, rest SD, %MVC and the 9 readiness items;
+  - command buttons and mock-board faults;
+  - "Record 30 s CSV" (a guided rest and 3 cued squeezes), saved by the dev-only `/__dev/save-emg` to `analysis/emg/recordings/`.
+- **EMG settings:** every threshold in one config (`web/src/emg/emgSettings.json`, the server's copy kept identical by a test).
+  - **Admin:** Admin → System → "EMG settings", with defaults, limits and a reset.
+  - **API:** `GET /api/emg-settings`, `PUT` and `DELETE /api/admin/emg-settings`.
+- **`analysis/emg/emg_validation.py`:** rate, gaps, rest mean and SD, MVC CV% and onset latency from the recordings; PENDING without real data; fills the EMG section of `docs/validation.md`.
+- **`docs/hardware-day.md`:** the Day 21 runbook.
+
+### Changed
+
+- **Connecting** sends `PING`, `INFO`, then `START`. The answer to its own `INFO` is not mistaken for a board restart.
+- **Firmware:** after `START`, a sample from before the restart is never sent.
+- **Protocol fixtures and checks:** `test-lines.txt` covers `OK,SIM,OFF` and `ERR,TOO_LONG`. Tests check that the firmware, the browser's commands, the mock and the docs agree.
+
 ## [1.0.0-rc1] - 2026-11-16
 
 Release candidate; no new features. See [docs/release-notes-v1.0.md](docs/release-notes-v1.0.md).

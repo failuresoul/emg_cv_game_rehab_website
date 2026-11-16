@@ -4,8 +4,14 @@ import { join, resolve } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { EMG_CSV_HEADER } from "../src/dev/emgMonitor/recording.ts";
+
 import {
+  checkEmgCsvText,
   checkRecordingText,
+  EMG_CSV_COLUMNS,
+  EMG_FOLDER,
+  handleEmgSave,
   handleSave,
   LANDMARKS_FOLDER,
   landmarkFilePath,
@@ -134,5 +140,68 @@ describe("saving", () => {
 
   it("exists only on the development server", () => {
     expect(saveLandmarksPlugin().apply).toBe("serve");
+  });
+});
+
+describe("saving EMG recordings (/dev/emg-monitor)", () => {
+  const CSV = [
+    "# firmware: 1.0.0",
+    EMG_CSV_COLUMNS,
+    "0,0,0,203,203,rest,0",
+    "2,0,1,198,200.5,rest,0",
+    "",
+  ].join("\n");
+  let root: string;
+  const request = (overrides: Partial<SaveRequest> = {}): SaveRequest => ({
+    method: "POST",
+    headers: { "content-type": "text/csv", "x-muvi-dev": "1" },
+    query: new URLSearchParams({ name: "emg-20261116-101500-shadik" }),
+    body: CSV,
+    ...overrides,
+  });
+
+  // The web folder inside a fresh repository-like folder: recordings go to ../analysis/emg/...
+  let repo: string;
+  beforeEach(() => {
+    repo = mkdtempSync(join(tmpdir(), "muvi-emg-"));
+    root = join(repo, "web");
+  });
+  afterEach(() => {
+    rmSync(repo, { recursive: true, force: true });
+  });
+
+  it("uses the recorder's header", () => {
+    expect(EMG_CSV_COLUMNS).toBe(EMG_CSV_HEADER);
+  });
+
+  it("writes the CSV into analysis/emg/recordings only", () => {
+    const saved = handleEmgSave(root, request());
+    expect(saved.file).toBe("../analysis/emg/recordings/emg-20261116-101500-shadik.csv");
+    expect(readFileSync(resolve(root, EMG_FOLDER, "emg-20261116-101500-shadik.csv"), "utf8")).toBe(
+      CSV,
+    );
+    expect(status(() => handleEmgSave(root, request()))).toBe(409);
+  });
+
+  it("refuses anything that is not an EMG recording, or not sent as one", () => {
+    const csv = (...lines: string[]) => lines.join("\n");
+    expect(status(() => checkEmgCsvText(csv("a,b", "1,2", "")))).toBe(400);
+    expect(status(() => checkEmgCsvText(csv(EMG_CSV_COLUMNS, "")))).toBe(400);
+    expect(status(() => checkEmgCsvText(csv(EMG_CSV_COLUMNS, "1,2,3", "")))).toBe(400);
+    expect(checkEmgCsvText(csv(EMG_CSV_COLUMNS, "0,0,0,1,1,rest,0"))).toBeUndefined();
+    expect(status(() => handleEmgSave(root, request({ method: "GET" })))).toBe(405);
+    expect(
+      status(() => handleEmgSave(root, request({ headers: { "content-type": "text/csv" } }))),
+    ).toBe(403);
+    expect(
+      status(() =>
+        handleEmgSave(
+          root,
+          request({ headers: { "content-type": "application/json", "x-muvi-dev": "1" } }),
+        ),
+      ),
+    ).toBe(415);
+    const escape = new URLSearchParams({ name: "../../outside" });
+    expect(status(() => handleEmgSave(root, request({ query: escape })))).toBe(400);
   });
 });

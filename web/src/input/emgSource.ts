@@ -1,3 +1,5 @@
+import { EMG } from "@/emg/emgSettings";
+
 import { clamp01, LevelListeners, type LevelSource } from "./types";
 
 /**
@@ -14,8 +16,6 @@ const SITE_FOR: Record<EmgChannel, "flexors" | "extensors"> = {
 /** The level's smoothing: level += ALPHA x (target - level), 50 times a second. */
 export const EMG_ALPHA = 0.3;
 export const EMG_TICK_MS = 20;
-/** Paused when more than this share (percent) of the last second's samples were lost. */
-export const EMG_MAX_GAPS_PCT = 1;
 
 /** The part of the EMG engine (emg/engine.ts) a source reads. */
 export interface EmgReading {
@@ -85,7 +85,8 @@ export class EmgSource implements LevelSource<"emg"> {
     const status = engine.getStatus();
     if (!status.connected || !status.streaming || status.electrodeOff) return false;
     const lastSecond = engine.arrivalStats(1000);
-    return lastSecond.received > 0 && lastSecond.gapsPct <= EMG_MAX_GAPS_PCT;
+    // Paused when more of the last second's samples were lost than the setting allows.
+    return lastSecond.received > 0 && lastSecond.gapsPct <= EMG.gameMaxGapsPct;
   }
 
   getLevel(): number {

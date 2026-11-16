@@ -3,9 +3,12 @@ import { Activity } from "lucide-react";
 import { useState } from "react";
 
 import { useEmgStatus } from "@/emg/EmgProvider";
+import { EMG } from "@/emg/emgSettings";
 import { EMG_ERROR_KEYS } from "@/emg/messages";
 import { t, type TranslationKey } from "@/i18n";
 import { formatNumber } from "@/lib/format";
+
+import { BoardSimBadge } from "./BoardSimBadge";
 
 export type DotState = "on" | "paused" | "off";
 
@@ -18,7 +21,7 @@ export function dotState(status: {
   electrodeOff?: boolean;
   gapsPct?: number;
 }): DotState {
-  const paused = status.electrodeOff === true || (status.gapsPct ?? 0) > 1;
+  const paused = status.electrodeOff === true || (status.gapsPct ?? 0) > EMG.gameMaxGapsPct;
   if (status.connected && status.streaming && !paused) return "on";
   if (status.connected || status.error === "lost") return "paused";
   return "off";
@@ -47,6 +50,16 @@ export function EmgStatusDot({ inUse }: { inUse: boolean }) {
     { key: "emgDot.source", value: status.source ?? "–", ok: null },
     { key: "emgDot.firmware", value: status.firmwareVersion ?? "–", ok: null },
     {
+      key: "emgDot.mode",
+      value:
+        status.mode === "SIM"
+          ? t("emg.boardSimulation")
+          : status.mode === "ADC"
+            ? t("emgDot.mode.adc")
+            : "–",
+      ok: null,
+    },
+    {
       key: "emgCheck.rate",
       value: status.sampleRate === null ? "–" : `${formatNumber(status.sampleRate, 0)}/s`,
       ok: status.sampleRate !== null,
@@ -54,7 +67,7 @@ export function EmgStatusDot({ inUse }: { inUse: boolean }) {
     {
       key: "emgCheck.gaps",
       value: `${formatNumber(status.gapsPct, 1)}%`,
-      ok: status.gapsPct < 0.5,
+      ok: status.gapsPct < EMG.maxGapsPct,
     },
     {
       key: "emgCheck.contact",
@@ -63,7 +76,7 @@ export function EmgStatusDot({ inUse }: { inUse: boolean }) {
     },
     {
       key: "emgCheck.saturation",
-      value: status.saturation ? "≥ 3000 mV" : t("emgCheck.ok"),
+      value: status.saturation ? `≥ ${formatNumber(EMG.saturationMv, 0)} mV` : t("emgCheck.ok"),
       ok: !status.saturation,
     },
     {
@@ -84,6 +97,7 @@ export function EmgStatusDot({ inUse }: { inUse: boolean }) {
       >
         <span aria-hidden className={clsx("size-3 rounded-full", DOT_CLASSES[state])} />
         <span className="text-sm">{t("emgDot.label")}</span>
+        <BoardSimBadge mode={status.mode} />
         <span className="sr-only">{t(DOT_KEYS[state])}</span>
       </button>
       {open && (

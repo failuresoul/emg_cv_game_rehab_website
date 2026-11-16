@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "settings": {
+    "rateWindowMs": {
+      "group": "stream",
+      "default": 2000,
+      "min": 500,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "minRateHz": {
+      "group": "stream",
+      "default": 490,
+      "min": 50,
+      "max": 1000,
+      "integer": true,
+      "unit": "Hz"
+    },
+    "maxRateHz": {
+      "group": "stream",
+      "default": 510,
+      "min": 50,
+      "max": 1100,
+      "integer": true,
+      "unit": "Hz"
+    },
+    "gapsWindowMs": {
+      "group": "stream",
+      "default": 5000,
+      "min": 1000,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "maxGapsPct": {
+      "group": "stream",
+      "default": 0.5,
+      "min": 0,
+      "max": 20,
+      "integer": false,
+      "unit": "%"
+    },
+    "gameMaxGapsPct": {
+      "group": "stream",
+      "default": 1,
+      "min": 0,
+      "max": 20,
+      "integer": false,
+      "unit": "%"
+    },
+    "pongTimeoutMs": {
+      "group": "stream",
+      "default": 2000,
+      "min": 200,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+
+    "contactWindowMs": {
+      "group": "check",
+      "default": 1000,
+      "min": 200,
+      "max": 5000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "minContactSdMv": {
+      "group": "check",
+      "default": 2,
+      "min": 0,
+      "max": 100,
+      "integer": false,
+      "unit": "mV"
+    },
+    "saturationMv": {
+      "group": "check",
+      "default": 3000,
+      "min": 500,
+      "max": 3600,
+      "integer": true,
+      "unit": "mV"
+    },
+    "saturationWindowMs": {
+      "group": "check",
+      "default": 5000,
+      "min": 1000,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "relaxedWindowMs": {
+      "group": "check",
+      "default": 2000,
+      "min": 500,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "relaxedMaxSdMv": {
+      "group": "check",
+      "default": 40,
+      "min": 1,
+      "max": 1000,
+      "integer": false,
+      "unit": "mV"
+    },
+    "relaxedMaxMeanMv": {
+      "group": "check",
+      "default": 800,
+      "min": 10,
+      "max": 3600,
+      "integer": false,
+      "unit": "mV"
+    },
+    "squeezeMs": {
+      "group": "check",
+      "default": 2000,
+      "min": 500,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "squeezeMinRatio": {
+      "group": "check",
+      "default": 3,
+      "min": 1,
+      "max": 50,
+      "integer": false,
+      "unit": "×"
+    },
+    "greenForMs": {
+      "group": "check",
+      "default": 2000,
+      "min": 0,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+
+    "restMs": {
+      "group": "calibration",
+      "default": 10000,
+      "min": 3000,
+      "max": 60000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "countdownMs": {
+      "group": "calibration",
+      "default": 3000,
+      "min": 0,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "effortMs": {
+      "group": "calibration",
+      "default": 3000,
+      "min": 1000,
+      "max": 10000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "pauseMs": {
+      "group": "calibration",
+      "default": 30000,
+      "min": 0,
+      "max": 120000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "attempts": {
+      "group": "calibration",
+      "default": 3,
+      "min": 1,
+      "max": 5,
+      "integer": true,
+      "unit": ""
+    },
+    "mvcWindowMs": {
+      "group": "calibration",
+      "default": 500,
+      "min": 100,
+      "max": 3000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "maxAttemptSpread": {
+      "group": "calibration",
+      "default": 0.15,
+      "min": 0.01,
+      "max": 1,
+      "integer": false,
+      "unit": ""
+    },
+    "minMvcToRestRatio": {
+      "group": "calibration",
+      "default": 3,
+      "min": 1,
+      "max": 50,
+      "integer": false,
+      "unit": "×"
+    },
+
+    "smoothingMs": {
+      "group": "signal",
+      "default": 50,
+      "min": 5,
+      "max": 500,
+      "integer": true,
+      "unit": "ms"
+    },
+    "onsetK": {
+      "group": "signal",
+      "default": 3,
+      "min": 0.5,
+      "max": 10,
+      "integer": false,
+      "unit": "SD"
+    },
+    "onsetMs": {
+      "group": "signal",
+      "default": 50,
+      "min": 0,
+      "max": 1000,
+      "integer": true,
+      "unit": "ms"
+    },
+    "offsetMs": {
+      "group": "signal",
+      "default": 100,
+      "min": 0,
+      "max": 1000,
+      "integer": true,
+      "unit": "ms"
+    }
+  }
+}

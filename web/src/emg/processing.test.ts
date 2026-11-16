@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { EMG } from "./emgSettings";
 import {
-  FLAT_SD_MV,
   isFlatLine,
   isSaturated,
   isSaturating,
@@ -11,21 +11,20 @@ import {
   type OnsetEvent,
   percentMvc,
   RingBuffer,
-  SATURATION_MV,
   windowStats,
 } from "./processing";
 
 describe("signal checks", () => {
   it("flags saturation near the ADC maximum", () => {
-    expect(isSaturated(SATURATION_MV - 1)).toBe(false);
-    expect(isSaturated(SATURATION_MV)).toBe(true);
+    expect(isSaturated(EMG.saturationMv - 1)).toBe(false);
+    expect(isSaturated(EMG.saturationMv)).toBe(true);
     expect(isSaturating([...Array(500).fill(1800), 3100, 3100, 3100, 3100])).toBe(false);
     expect(isSaturating([...Array(500).fill(1800), ...Array(5).fill(3100)])).toBe(true);
   });
 
   it("finds a flat line (an electrode off) but not a resting muscle", () => {
     const flat = Array.from({ length: 500 }, (_, index) => 200 + (index % 2));
-    expect(windowStats(flat).sd).toBeLessThan(FLAT_SD_MV);
+    expect(windowStats(flat).sd).toBeLessThan(EMG.minContactSdMv);
     expect(isFlatLine(flat, 250)).toBe(true);
     const resting = Array.from({ length: 500 }, (_, index) => 200 + ((index * 7) % 15) - 7);
     expect(isFlatLine(resting, 250)).toBe(false);

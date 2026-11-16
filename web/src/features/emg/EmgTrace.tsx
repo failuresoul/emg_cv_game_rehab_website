@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import type { EmgEngine } from "@/emg/engine";
-import { SATURATION_MV } from "@/emg/processing";
+import { EMG } from "@/emg/emgSettings";
 import { t } from "@/i18n";
 
 const FPS = 15;
@@ -54,11 +54,11 @@ export function EmgTrace({
         context.lineTo(width, y(thresholdMv));
         context.stroke();
       }
-      if (SATURATION_MV < top) {
+      if (EMG.saturationMv < top) {
         context.strokeStyle = "rgba(240,90,80,0.8)";
         context.beginPath();
-        context.moveTo(0, y(SATURATION_MV));
-        context.lineTo(width, y(SATURATION_MV));
+        context.moveTo(0, y(EMG.saturationMv));
+        context.lineTo(width, y(EMG.saturationMv));
         context.stroke();
       }
       context.setLineDash([]);

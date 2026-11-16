@@ -12,6 +12,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { EmgProvider } from "@/emg/EmgProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider } from "@/features/auth/AuthContext";
+import { EmgSettingsSync } from "@/features/emgSettings/EmgSettingsSync";
 import { isSilent, reportApiError } from "@/lib/apiErrors";
 
 // Test mode only (Vite removes this from other builds): the hooks the end-to-end tests use.
@@ -52,6 +53,7 @@ createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <ToastProvider>
             <EmgProvider>
+              <EmgSettingsSync />
               <OfflineBanner />
               <RouterProvider router={router} />
             </EmgProvider>

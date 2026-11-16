@@ -86,6 +86,17 @@ A session's muscle-sensor calibration: the relaxed level, the maximum voluntary 
 | `gain_note` | VARCHAR(300) | yes |  |  |
 | `created_at` | DATETIME | no |  |  |
 
+### `emgsettings`
+
+The admin's changes to the EMG thresholds (one row, id 1). Only the changed values are kept; every other threshold is its default (app/core/emg_settings.json).
+
+| Column | Type | Null | Key / index | Description |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no | PK |  |
+| `overrides` | JSON | no |  | Setting name -> value, for the settings that differ from their default. |
+| `updated_at` | DATETIME | no |  |  |
+| `updated_by_id` | INTEGER | yes | FK → user.id |  |
+
 ### `enginestate`
 
 A patient's difficulty in one game for one parameter engine (app/engine/), kept between sessions so each session starts where the last one left off (eased a little).

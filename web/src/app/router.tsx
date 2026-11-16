@@ -69,6 +69,12 @@ export const router = createBrowserRouter([
           }),
         },
         {
+          path: "/dev/emg-monitor",
+          lazy: async () => ({
+            Component: (await import("@/dev/emgMonitor/EmgMonitorPage")).EmgMonitorPage,
+          }),
+        },
+        {
           path: "/dev/emg-lab",
           lazy: async () => ({
             Component: (await import("@/dev/EmgLabPage")).EmgLabPage,

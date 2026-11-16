@@ -1,45 +1,95 @@
 /**
- * Every threshold of the muscle-sensor check and calibration, in one place. Values for the
- * Advancer Muscle Sensor V3.0 envelope at the ESP32's pin (mV), sampled at 500 Hz.
+ * The muscle-sensor check and calibration thresholds, by their familiar names. The values live in
+ * one place, emgSettings.ts (defaults in emgSettings.json, changes on the admin's "EMG settings"
+ * panel); these getters read them when a rule runs, so a change applies at once.
  */
+
+import { EMG } from "./emgSettings";
+
 export const READINESS = {
   /** The PONG must come within this long of the PING. */
-  pongTimeoutMs: 2000,
+  get pongTimeoutMs() {
+    return EMG.pongTimeoutMs;
+  },
   /** Data rate over the last 2 s, samples per second. */
-  rateWindowMs: 2000,
-  minRateHz: 490,
-  maxRateHz: 510,
+  get rateWindowMs() {
+    return EMG.rateWindowMs;
+  },
+  get minRateHz() {
+    return EMG.minRateHz;
+  },
+  get maxRateHz() {
+    return EMG.maxRateHz;
+  },
   /** Counter gaps over the last 5 s, percent. */
-  gapsWindowMs: 5000,
-  maxGapsPct: 0.5,
+  get gapsWindowMs() {
+    return EMG.gapsWindowMs;
+  },
+  get maxGapsPct() {
+    return EMG.maxGapsPct;
+  },
   /** Electrode contact: the SD over 1 s must be above this (below is a flat line). */
-  contactWindowMs: 1000,
-  minContactSdMv: 2,
+  get contactWindowMs() {
+    return EMG.contactWindowMs;
+  },
+  get minContactSdMv() {
+    return EMG.minContactSdMv;
+  },
   /** No sample at or above the saturation level in the last 5 s. */
-  saturationWindowMs: 5000,
+  get saturationWindowMs() {
+    return EMG.saturationWindowMs;
+  },
   /** Relaxed and stable: over 2 s, SD and mean at or below these. */
-  relaxedWindowMs: 2000,
-  relaxedMaxSdMv: 40,
-  relaxedMaxMeanMv: 800,
+  get relaxedWindowMs() {
+    return EMG.relaxedWindowMs;
+  },
+  get relaxedMaxSdMv() {
+    return EMG.relaxedMaxSdMv;
+  },
+  get relaxedMaxMeanMv() {
+    return EMG.relaxedMaxMeanMv;
+  },
   /** Test squeeze: 2 s, peak at least this many times the relaxed mean, with an onset. */
-  squeezeMs: 2000,
-  squeezeMinRatio: 3,
+  get squeezeMs() {
+    return EMG.squeezeMs;
+  },
+  get squeezeMinRatio() {
+    return EMG.squeezeMinRatio;
+  },
   /** Checks 1-8 must stay green this long (once). */
-  greenForMs: 2000,
-} as const;
+  get greenForMs() {
+    return EMG.greenForMs;
+  },
+};
 
 export const CALIBRATION = {
-  restMs: 10_000,
-  countdownMs: 3000,
-  effortMs: 3000,
-  pauseMs: 30_000,
-  /** The pause between attempts in development builds. */
+  get restMs() {
+    return EMG.restMs;
+  },
+  get countdownMs() {
+    return EMG.countdownMs;
+  },
+  get effortMs() {
+    return EMG.effortMs;
+  },
+  get pauseMs() {
+    return EMG.pauseMs;
+  },
+  /** The pause between attempts in development builds (not a setting). */
   pauseMsDevelopment: 10_000,
-  attempts: 3,
+  get attempts() {
+    return EMG.attempts;
+  },
   /** Each attempt's MVC is its highest mean over this long. */
-  mvcWindowMs: 500,
+  get mvcWindowMs() {
+    return EMG.mvcWindowMs;
+  },
   /** Attempts within this share of the largest (else one extra attempt). */
-  maxAttemptSpread: 0.15,
+  get maxAttemptSpread() {
+    return EMG.maxAttemptSpread;
+  },
   /** The MVC must be at least this many times the rest mean. */
-  minMvcToRestRatio: 3,
-} as const;
+  get minMvcToRestRatio() {
+    return EMG.minMvcToRestRatio;
+  },
+};

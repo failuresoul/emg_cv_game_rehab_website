@@ -37,6 +37,7 @@ import { isWebSerialSupported } from "@/emg/serial";
 import { isSimulatedEmgAllowed } from "@/emg/simulated";
 import { defaultEmgSite, usePatientProgramme } from "@/features/programme/patientProgramme";
 import { EmgError } from "@/emg/stream";
+import { BoardSimBadge } from "@/features/emg/BoardSimBadge";
 import { ElectrodeDiagram } from "@/features/emg/ElectrodeDiagram";
 import { EmgTrace } from "@/features/emg/EmgTrace";
 import { useSession, useSessionStep } from "@/features/session/SessionContext";
@@ -342,6 +343,7 @@ function CheckStage({
             {t(error)}
           </p>
         )}
+        <BoardSimBadge mode={status.connected ? status.mode : null} withHint />
         <EmgTrace engine={engine} seconds={5} />
         {simulated && status.connected && (
           <p className="text-sm opacity-80">{t("emgStep.simulatedHint")}</p>
@@ -748,7 +750,7 @@ export function SessionEmgPage() {
       mvc_mv: Math.round(state.mvc.mvc * 100) / 100,
       mvc_attempts: state.attempts.map((attempt) => Math.round(attempt.peakMv * 100) / 100),
       readiness: readinessRecord(state.readiness),
-      quality: qualityOf(state, engine.arrivalStats(5000).gapsPct),
+      quality: qualityOf(state, engine.arrivalStats(5000).gapsPct, status.mode),
       battery_ok: batteryOk(state),
       gain_note: note.trim() || null,
     };

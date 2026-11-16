@@ -73,6 +73,9 @@ static TaskHandle_t samplerHandle = nullptr;
 static volatile bool streaming = false;
 static volatile bool simulate = false;
 static volatile bool restartRequested = false;  // set by START: the sampler resets its counters
+// After START, loop() skips samples until counter 0: one taken just before the restart (with the
+// old counter) could otherwise slip out after OK,START and look like a jump backwards.
+static bool awaitingFirstSample = false;
 static volatile uint32_t periodTicks = 2;       // the sampling period, in FreeRTOS ticks
 static volatile uint32_t droppedCount = 0;      // written only by the sampler
 
@@ -213,6 +216,7 @@ static void startStreaming() {
   xQueueReset(sampleQueue);  // forget samples from before
   lastCounter = 0;
   restartRequested = true;   // the sampler resets its counter on its next tick
+  awaitingFirstSample = true;
   streaming = true;
   digitalWrite(LED_PIN, HIGH);
   printLine("OK,START");
@@ -310,6 +314,10 @@ void loop() {
   Sample sample;
   uint32_t handled = 0;
   while (handled < SAMPLES_PER_LOOP && xQueueReceive(sampleQueue, &sample, 0) == pdTRUE) {
+    if (awaitingFirstSample) {
+      if (sample.counter != 0) continue;  // from before START
+      awaitingFirstSample = false;
+    }
     char line[24];
     int length = snprintf(line, sizeof(line), "E,%lu,%u\n", (unsigned long)sample.counter,
                           (unsigned)sample.mv);

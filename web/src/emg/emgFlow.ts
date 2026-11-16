@@ -215,8 +215,14 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
 }
 
 /** What to store: the quality of the calibration. */
-export function qualityOf(state: FlowState, gapsPct: number): Record<string, unknown> {
+export function qualityOf(
+  state: FlowState,
+  gapsPct: number,
+  /** The board's mode: "SIM" when the firmware's own simulation (SIM ON) gave the data. */
+  deviceMode: "ADC" | "SIM" | null = null,
+): Record<string, unknown> {
   return {
+    device_mode: deviceMode,
     saturation: state.saturatedAttempts > 0,
     saturated_attempts: state.saturatedAttempts,
     gaps_pct: Math.round(gapsPct * 100) / 100,

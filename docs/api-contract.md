@@ -53,6 +53,9 @@ This document lists every API route the server provides today, plus the routes r
 | POST   | `/api/sessions/{id}/emg-calibration` | `patient` | Save the muscle sensor's calibration |
 | GET    | `/api/patient/emg-calibration/latest` | `patient` | Own latest muscle-sensor calibration |
 | GET    | `/api/admin/patients/{id}/emg-calibrations` | `admin` | A patient's muscle-sensor calibrations |
+| GET    | `/api/emg-settings`                  | any signed-in user | The EMG thresholds the admin changed: `{"overrides": {name: value}, "updated_at"}`. The browser applies them over its defaults (`web/src/emg/emgSettings.json`) |
+| PUT    | `/api/admin/emg-settings`            | `admin`   | Replace the changes: `{"overrides": {name: value}}`. Names and limits from `server/app/core/emg_settings.json`; 422 with `{"detail": {name: why}}` for an unknown name, a value outside its limits, a fraction where a whole number is needed, or `minRateHz` ≥ `maxRateHz` |
+| DELETE | `/api/admin/emg-settings`            | `admin`   | Every EMG threshold back to its default |
 | POST   | `/api/sessions/{id}/warmup`          | `patient` | Save or replace warm-up results |
 | GET    | `/api/sessions/{id}/warmup`          | `patient` | Get a session's warm-up results |
 | POST   | `/api/sessions/{id}/games`           | `patient` | Start a game run                |

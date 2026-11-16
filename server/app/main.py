@@ -9,7 +9,8 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from app import __version__
-from app.api import admin, auth, feedback, games, health, patient, review, sessions, studies
+from app.api import admin, auth, emg_settings, feedback, games, health, patient, review
+from app.api import sessions, studies
 from app.api import engine as engine_api
 from app.core.config import production_problems, settings
 from app.core import hardening
@@ -78,6 +79,7 @@ app.include_router(engine_api.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(review.router, prefix="/api")
 app.include_router(studies.router, prefix="/api")
+app.include_router(emg_settings.router, prefix="/api")
 
 # Only for the automated end-to-end tests: the routes do not exist in any other environment.
 if settings.APP_ENV == "test":

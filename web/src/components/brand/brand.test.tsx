@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 
+import { ToastProvider } from "@/components/ui/Toast";
 import { project } from "@/config/project";
 import { AdminSystemPage } from "@/pages/admin/AdminSystemPage";
 import { HomePage } from "@/pages/public/HomePage";
@@ -62,7 +63,9 @@ describe("where the identity appears", () => {
     // The page also shows the feedback model's health, which it fetches.
     const markup = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
-        <AdminSystemPage />
+        <ToastProvider>
+          <AdminSystemPage />
+        </ToastProvider>
       </QueryClientProvider>,
     );
     expect(markup).toContain(project.name);

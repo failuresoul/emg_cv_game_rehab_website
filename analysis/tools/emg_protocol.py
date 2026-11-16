@@ -1,6 +1,6 @@
 """The lines the EMG firmware (firmware/emg_stream/emg_stream.ino) prints, and how to read them.
 
-The browser (web/src/input/emg/) follows exactly the same rules; firmware/test-lines.txt holds
+The browser (web/src/emg/protocol.ts) follows exactly the same rules; firmware/test-lines.txt holds
 examples with their expected results, checked by tests on both sides.
 
     E,<counter>,<mv>                            a sample

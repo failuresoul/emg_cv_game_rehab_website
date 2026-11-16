@@ -90,6 +90,18 @@ export interface ArrivalStats {
 /** How long arrivals are remembered (the longest readiness window is 5 s). */
 const ARRIVAL_MEMORY_MS = 6000;
 
+/** One sample as the engine sees it (for recordings: /dev/emg-monitor). */
+export interface EngineSample {
+  /** Sample time from the counter (ms). */
+  t: number;
+  /** When its chunk arrived (ms, the browser's clock). */
+  arrivalMs: number;
+  counter: number;
+  mv: number;
+  /** The smoothed envelope (mV). */
+  envelope: number;
+}
+
 export interface RecentSignal {
   t: Float64Array;
   mv: Float64Array;
@@ -108,6 +120,8 @@ export class EmgEngine {
   private unwatchReplug: (() => void) | null = null;
   /** START was asked for (and not STOP since): a board that restarts is started again. */
   private wantStreaming = false;
+  /** An INFO was sent: the next I line answers it (not a board that restarted). */
+  private infoAsked = false;
   private fs = DEFAULT_FS;
   private clock = new SampleClock(DEFAULT_FS);
   private smoother = new MovingAverage(DEFAULT_FS);
@@ -124,6 +138,7 @@ export class EmgEngine {
   private readonly statusListeners = new Set<() => void>();
   private readonly onsetListeners = new Set<(event: OnsetEvent) => void>();
   private readonly eventListeners = new Set<(event: EmgEvent) => void>();
+  private readonly sampleListeners = new Set<(sample: EngineSample) => void>();
 
   constructor(now: () => number = () => performance.now()) {
     this.now = now;
@@ -208,6 +223,14 @@ export class EmgEngine {
     };
   }
 
+  /** Every sample with its time and envelope (only while someone listens: recordings). */
+  onSample(listener: (sample: EngineSample) => void): () => void {
+    this.sampleListeners.add(listener);
+    return () => {
+      this.sampleListeners.delete(listener);
+    };
+  }
+
   // ---- Connecting ----------------------------------------------------------------------------
 
   /** The ESP32: shows the browser's port chooser (call from a click), then starts streaming. */
@@ -234,7 +257,10 @@ export class EmgEngine {
     this.attach(stream);
     try {
       await open();
+      // PING (is it the firmware?), INFO (its rate and mode), then START.
       await this.ping();
+      this.infoAsked = true;
+      await stream.send("INFO");
       this.wantStreaming = true;
       await stream.send("START");
     } catch (error) {
@@ -262,6 +288,7 @@ export class EmgEngine {
     }
     if (command === "START") this.wantStreaming = true;
     if (command === "STOP") this.wantStreaming = false;
+    if (command === "INFO") this.infoAsked = true;
     await this.stream.send(command);
   }
 
@@ -379,8 +406,11 @@ export class EmgEngine {
             : this.status.mode;
         this.setStatus({ ...this.status, firmwareVersion: version, mode }, true);
         // The board restarted (its start-up line says it is not streaming), for example when it
-        // was plugged back in or the port's opening reset it: start it again.
-        if (event.fields.streaming === "0" && this.wantStreaming && this.stream) {
+        // was plugged back in or the port's opening reset it: start it again. An answer to our own
+        // INFO is not a restart.
+        const answered = this.infoAsked;
+        this.infoAsked = false;
+        if (!answered && event.fields.streaming === "0" && this.wantStreaming && this.stream) {
           void this.stream.send("START").catch(() => undefined);
         }
         break;
@@ -427,6 +457,10 @@ export class EmgEngine {
       this.times.push(t);
       this.raw.push(mv);
       this.smooth.push(envelope);
+      if (this.sampleListeners.size > 0) {
+        const sample = { t, arrivalMs, counter, mv, envelope };
+        this.sampleListeners.forEach((listener) => listener(sample));
+      }
       if (this.calibration) {
         this.latestPercent = percentMvc(envelope, this.calibration);
         this.percents.push(this.latestPercent);

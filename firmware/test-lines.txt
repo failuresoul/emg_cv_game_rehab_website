@@ -33,8 +33,10 @@ OK,START => {"type": "ok", "detail": "START"}
 OK,STOP => {"type": "ok", "detail": "STOP"}
 OK,RATE,333 => {"type": "ok", "detail": "RATE,333"}
 OK,SIM,ON => {"type": "ok", "detail": "SIM,ON"}
+OK,SIM,OFF => {"type": "ok", "detail": "SIM,OFF"}
 ERR,UNKNOWN,FOO => {"type": "error", "detail": "UNKNOWN,FOO"}
 ERR,RATE,100-1000 => {"type": "error", "detail": "RATE,100-1000"}
+ERR,TOO_LONG => {"type": "error", "detail": "TOO_LONG"}
 I,version=1.0.0,rate=500,mode=ADC,streaming=0,pin=34,baud=230400,core=3.x,queue=512 => {"type": "info", "fields": {"version": "1.0.0", "rate": "500", "mode": "ADC", "streaming": "0", "pin": "34", "baud": "230400", "core": "3.x", "queue": "512"}}
 I,version => {"type": "invalid", "line": "I,version"}
 #

@@ -1,6 +1,7 @@
 import type { EmgSite, GameId, TrialTarget, TrialTimings } from "@/types/api";
 
-import { type EmgCalibration, MAX_PERCENT_MVC, OFFSET_MS, ONSET_K, ONSET_MS } from "./processing";
+import { EMG } from "./emgSettings";
+import { type EmgCalibration, MAX_PERCENT_MVC } from "./processing";
 
 /** The per-trial trace is kept at 50 Hz, and at most 1500 points (30 s) are saved. */
 export const EMG_TRACE_STEP_MS = 20;
@@ -90,7 +91,7 @@ export function capTrace(
 export function thresholdPercent(calibration: EmgCalibration): number {
   const range = calibration.mvc - calibration.restMean;
   if (!(range > 0)) return 0;
-  return Math.max(0, ((ONSET_K * calibration.restSd) / range) * 100);
+  return Math.max(0, ((EMG.onsetK * calibration.restSd) / range) * 100);
 }
 
 /**
@@ -187,11 +188,11 @@ export function emgTrialMetrics(
     active.length > 0 ? active.reduce((total, value) => total + value, 0) / active.length : null;
 
   const onset =
-    cues.cue === null ? null : firstSustained(trace, cues.cue, thresholdPct, true, ONSET_MS);
+    cues.cue === null ? null : firstSustained(trace, cues.cue, thresholdPct, true, EMG.onsetMs);
   const offset =
     cues.release === null
       ? null
-      : firstSustained(trace, cues.release, thresholdPct, false, OFFSET_MS);
+      : firstSustained(trace, cues.release, thresholdPct, false, EMG.offsetMs);
 
   let timeInBand: number | null = null;
   let steadiness: number | null = null;

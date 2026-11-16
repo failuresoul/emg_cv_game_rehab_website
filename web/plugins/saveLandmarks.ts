@@ -9,6 +9,10 @@
  *   one folder;
  * - a body that is a landmark recording, at most MAX_BYTES.
  * An existing file is kept unless the request asks to overwrite it.
+ *
+ * Day 20: the same rules for EMG recordings from /dev/emg-monitor, POSTed as text/csv to
+ * SAVE_EMG_PATH and written to analysis/emg/recordings/<name>.csv (EMG_FOLDER, beside the web
+ * folder), where analysis/emg/emg_validation.py reads them.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -21,6 +25,10 @@ export const SAVE_LANDMARKS_PATH = "/__dev/save-landmarks";
 export const LANDMARKS_FOLDER = "public/test-fixtures/landmarks";
 export const DEV_HEADER = "x-muvi-dev";
 export const MAX_BYTES = 20 * 1024 * 1024;
+export const SAVE_EMG_PATH = "/__dev/save-emg";
+export const EMG_FOLDER = "../analysis/emg/recordings";
+/** Must match EMG_CSV_HEADER in src/dev/emgMonitor/recording.ts (a test checks). */
+export const EMG_CSV_COLUMNS = "t_ms,arrival_ms,counter,mv,envelope_mv,phase,cue";
 
 // No dots, so no other extension and no "..".
 const NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/;
@@ -40,14 +48,14 @@ export class SaveError extends Error {
  * The file a name is saved to, inside `folder`; throws a SaveError (400) for anything that is not
  * a plain .json file name in that folder.
  */
-export function landmarkFilePath(folder: string, rawName: string): string {
-  const name = rawName.endsWith(".json") ? rawName.slice(0, -".json".length) : rawName;
+export function landmarkFilePath(folder: string, rawName: string, extension = ".json"): string {
+  const name = rawName.endsWith(extension) ? rawName.slice(0, -extension.length) : rawName;
   if (!NAME.test(name)) {
-    throw new SaveError(400, "Use a plain .json file name: letters, digits, '-' or '_'");
+    throw new SaveError(400, `Use a plain ${extension} file name: letters, digits, '-' or '_'`);
   }
   if (RESERVED.test(name)) throw new SaveError(400, "That name is reserved");
   const base = resolve(folder);
-  const target = resolve(base, `${name}.json`);
+  const target = resolve(base, `${name}${extension}`);
   const inside = relative(base, target);
   if (
     inside.startsWith("..") ||
@@ -55,7 +63,7 @@ export function landmarkFilePath(folder: string, rawName: string): string {
     inside.includes("/") ||
     inside.includes("\\")
   ) {
-    throw new SaveError(400, "The file must be in the landmarks folder");
+    throw new SaveError(400, "The file must be in its folder");
   }
   return target;
 }
@@ -81,6 +89,21 @@ export function checkRecordingText(text: string): void {
   }
 }
 
+/** Throws a SaveError (400) unless the text is an EMG recording: metadata lines, the header,
+ * then at least one row of 7 values. */
+export function checkEmgCsvText(text: string): void {
+  if (text.length > MAX_BYTES) throw new SaveError(413, "The recording is too big");
+  const lines = text
+    .split("\n")
+    .map((line) => line.replace(/\r$/, ""))
+    .filter((line) => line !== "" && !line.startsWith("#"));
+  if (lines[0] !== EMG_CSV_COLUMNS || lines.length < 2) {
+    throw new SaveError(400, "The body is not an EMG recording");
+  }
+  const bad = lines.slice(1).find((line) => line.split(",").length !== 7);
+  if (bad !== undefined) throw new SaveError(400, "A row of the EMG recording is broken");
+}
+
 export interface SaveRequest {
   method: string | undefined;
   headers: Record<string, string | string[] | undefined>;
@@ -97,6 +120,23 @@ export function handleSave(root: string, request: SaveRequest): { file: string }
   const folder = resolve(root, LANDMARKS_FOLDER);
   const target = landmarkFilePath(folder, request.query.get("name") ?? "");
   checkRecordingText(request.body);
+  if (existsSync(target) && request.query.get("overwrite") !== "1") {
+    throw new SaveError(409, "A file with that name already exists");
+  }
+  mkdirSync(folder, { recursive: true });
+  writeFileSync(target, request.body, "utf8");
+  return { file: relative(root, target).replaceAll("\\", "/") };
+}
+
+/** Saves an EMG recording; returns the saved path relative to the web folder. */
+export function handleEmgSave(root: string, request: SaveRequest): { file: string } {
+  if (request.method !== "POST") throw new SaveError(405, "Use POST");
+  if (request.headers[DEV_HEADER] !== "1") throw new SaveError(403, "Missing the dev header");
+  const type = String(request.headers["content-type"] ?? "");
+  if (!type.startsWith("text/csv")) throw new SaveError(415, "Send text/csv");
+  const folder = resolve(root, EMG_FOLDER);
+  const target = landmarkFilePath(folder, request.query.get("name") ?? "", ".csv");
+  checkEmgCsvText(request.body);
   if (existsSync(target) && request.query.get("overwrite") !== "1") {
     throw new SaveError(409, "A file with that name already exists");
   }
@@ -138,24 +178,27 @@ export function saveLandmarksPlugin(): Plugin {
       root = config.root;
     },
     configureServer(server) {
-      server.middlewares.use(SAVE_LANDMARKS_PATH, (request, response) => {
-        const query = new URL(request.url ?? "/", "http://localhost").searchParams;
-        readBody(request)
-          .then((body) => {
-            const saved = handleSave(root, {
-              method: request.method,
-              headers: request.headers,
-              query,
-              body,
+      const route = (path: string, handler: typeof handleSave) =>
+        server.middlewares.use(path, (request, response) => {
+          const query = new URL(request.url ?? "/", "http://localhost").searchParams;
+          readBody(request)
+            .then((body) => {
+              const saved = handler(root, {
+                method: request.method,
+                headers: request.headers,
+                query,
+                body,
+              });
+              reply(response, 200, saved);
+            })
+            .catch((error: unknown) => {
+              const status = error instanceof SaveError ? error.status : 500;
+              const message = error instanceof Error ? error.message : "Could not save";
+              reply(response, status, { error: message });
             });
-            reply(response, 200, saved);
-          })
-          .catch((error: unknown) => {
-            const status = error instanceof SaveError ? error.status : 500;
-            const message = error instanceof Error ? error.message : "Could not save";
-            reply(response, status, { error: message });
-          });
-      });
+        });
+      route(SAVE_LANDMARKS_PATH, handleSave);
+      route(SAVE_EMG_PATH, handleEmgSave);
     },
   };
 }

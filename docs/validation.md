@@ -92,15 +92,18 @@ Overall: 25% (21 wrong of 28 scripted).
 
 ## EMG validation (Day 21)
 
-To be filled on Day 21 with the real ESP32 and electrodes, following [docs/emg-hardware-test.md](emg-hardware-test.md).
+With the real ESP32 and electrodes ([docs/hardware-day.md](hardware-day.md)): each "Record 30 s CSV" on `/dev/emg-monitor` is 10 s relaxed, then three 3 s maximum squeezes, each on a prompt, with relaxing between. `analysis/emg/emg_validation.py` fills the table below from `analysis/emg/recordings/`; recordings from the mock board or the firmware's SIM mode are left out. Electrode-off detection is checked by hand (lift an electrode: the contact item turns red), [emg-hardware-test.md](emg-hardware-test.md).
 
-| Measure                       | Method           | Result | Notes |
-| ----------------------------- | ---------------- | ------ | ----- |
-| Sample rate and gaps          | 10 min stream    |        |       |
-| Rest noise (mV, SD)           | 10 s relaxed     |        |       |
-| MVC repeatability (3 efforts) | CV%              |        |       |
-| Onset latency (EMG vs camera) | Squeeze trials   |        |       |
-| Electrode-off detection       | Electrode lifted |        |       |
+<!-- emg-results:start -->
+| Measure | Method | Result | Notes |
+| --- | --- | --- | --- |
+| Sample rate and gaps | 30 s recordings | **PENDING** | no real sensor recordings yet |
+| Rest noise (mV, SD) | 10 s relaxed | **PENDING** | no real sensor recordings yet |
+| MVC repeatability | CV% of 3 efforts | **PENDING** | no real sensor recordings yet |
+| Onset latency (cue to EMG onset) | 3 cued squeezes per recording | **PENDING** | no real sensor recordings yet |
+
+Source: `analysis/results/emg/emg_summary.json` (2026-11-16T08:15:36Z), from `analysis/emg/recordings/`.
+<!-- emg-results:end -->
 
 | Session measure         | Visits | SEM | MDC95 |
 | ----------------------- | ------ | --- | ----- |

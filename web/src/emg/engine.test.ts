@@ -96,7 +96,7 @@ describe("the EMG engine", () => {
     const engine = new EmgEngine();
     const stream = new ManualStream();
     await engine.connectSerial(stream);
-    expect(stream.sent).toEqual(["PING", "START"]);
+    expect(stream.sent).toEqual(["PING", "INFO", "START"]);
     stream.emit({ type: "ok", detail: "START" });
     expect(engine.percentMvc).toBeNull();
 
@@ -196,19 +196,24 @@ describe("review: a board that restarts", () => {
     const engine = new EmgEngine();
     const stream = new ManualStream();
     await engine.connectSerial(stream);
-    expect(stream.sent).toEqual(["PING", "START"]);
+    expect(stream.sent).toEqual(["PING", "INFO", "START"]);
+    // The answer to its own INFO (sent before START) is not a restart.
     stream.emit(bootLine);
-    expect(stream.sent).toEqual(["PING", "START", "START"]);
+    expect(stream.sent).toEqual(["PING", "INFO", "START"]);
+    // The next start-up line is.
+    stream.emit(bootLine);
+    expect(stream.sent).toEqual(["PING", "INFO", "START", "START"]);
   });
 
   it("is left stopped after STOP, and an INFO answer while streaming changes nothing", async () => {
     const engine = new EmgEngine();
     const stream = new ManualStream();
     await engine.connectSerial(stream);
+    stream.emit(bootLine);
     stream.emit({ ...bootLine, fields: { ...bootLine.fields, streaming: "1" } });
-    expect(stream.sent).toEqual(["PING", "START"]);
+    expect(stream.sent).toEqual(["PING", "INFO", "START"]);
     await engine.send("STOP");
     stream.emit(bootLine);
-    expect(stream.sent).toEqual(["PING", "START", "STOP"]);
+    expect(stream.sent).toEqual(["PING", "INFO", "START", "STOP"]);
   });
 });

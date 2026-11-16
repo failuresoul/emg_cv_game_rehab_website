@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { EmgEngine } from "@/emg/engine";
 import { useEmgEngine, useEmgStatus } from "@/emg/EmgProvider";
-import { type OnsetEvent, SATURATION_MV, windowStats } from "@/emg/processing";
+import { EMG } from "@/emg/emgSettings";
+import { type OnsetEvent, windowStats } from "@/emg/processing";
 import type { EmgCommand } from "@/emg/protocol";
 import { isWebSerialSupported } from "@/emg/serial";
 import { isSimulatedEmgAllowed } from "@/emg/simulated";
@@ -66,8 +67,8 @@ function EmgPlot({
         context.strokeStyle = "rgba(179,38,30,0.6)";
         context.setLineDash([4, 4]);
         context.beginPath();
-        context.moveTo(0, y(SATURATION_MV));
-        context.lineTo(width, y(SATURATION_MV));
+        context.moveTo(0, y(EMG.saturationMv));
+        context.lineTo(width, y(EMG.saturationMv));
         context.stroke();
         context.setLineDash([]);
       }

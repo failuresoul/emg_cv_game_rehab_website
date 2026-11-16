@@ -1,0 +1,16 @@
+{
+  "label": "PENDING",
+  "generated_at": "2026-11-16T08:15:36Z",
+  "settings": {
+    "onsetK": 3.0,
+    "onsetMs": 50.0,
+    "mvcWindowMs": 500.0,
+    "smoothingMs": 50.0
+  },
+  "overall": {
+    "status": "PENDING",
+    "reason": "no real sensor recordings yet",
+    "recordings": 0
+  },
+  "recordings": []
+}

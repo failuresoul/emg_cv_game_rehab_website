@@ -1,6 +1,7 @@
 from app.models.adaptation_log import AdaptationLog
 from app.models.alert import Alert
 from app.models.emg import EmgCalibration
+from app.models.emg_settings import EmgSettingsRecord
 from app.models.engine_state import EngineState
 from app.models.game import GameRun, Trial
 from app.models.game_setting import GameSetting
@@ -20,6 +21,7 @@ __all__ = [
     "Alert",
     "Calibration",
     "EmgCalibration",
+    "EmgSettingsRecord",
     "EngineState",
     "GameRun",
     "GameSetting",

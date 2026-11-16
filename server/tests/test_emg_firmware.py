@@ -206,3 +206,55 @@ def test_the_readme_puts_the_safety_rule_first() -> None:
     assert "**" in first and "battery" in first.lower() and "unplugged" in first.lower()
     for topic in ("GPIO34", "voltage divider", "flexors", "extensors", "230400", "PING", "SIM ON", "CP210x", "CH340", "BOOT"):
         assert topic in readme, topic
+
+
+# Day 20: firmware, browser, docs and tests agree on every command and line.
+
+WEB_PROTOCOL = (FIRMWARE.parent / "web" / "src" / "emg" / "protocol.ts").read_text(encoding="utf-8")
+WEB_MOCK = (FIRMWARE.parent / "web" / "src" / "emg" / "mockSerial.ts").read_text(encoding="utf-8")
+HARDWARE_DAY = (FIRMWARE.parent / "docs" / "hardware-day.md").read_text(encoding="utf-8")
+COMMANDS = ["START", "STOP", "PING", "RATE", "SIM ON", "SIM OFF", "INFO"]
+
+
+def test_the_browser_sends_exactly_the_firmware_commands() -> None:
+    union = re.search(r"export type EmgCommand =(.*?);", WEB_PROTOCOL, re.S)
+    assert union is not None
+    sent = re.findall(r'"([A-Z ]+)"|`(RATE) \$\{number\}`', union.group(1))
+    names = sorted({a or b for a, b in sent})
+    assert names == sorted(COMMANDS)
+    body = function_body("static void handleCommand")
+    for command in COMMANDS:
+        assert f'"{command}"' in body, command
+
+
+def test_the_mock_board_replies_like_the_firmware() -> None:
+    """The mock (web/src/emg/mockSerial.ts) prints the firmware's replies and lines."""
+    for reply in ("OK,START", "OK,STOP", "PONG,", "OK,RATE,", "ERR,RATE,100-1000", "OK,SIM,ON", "OK,SIM,OFF", "ERR,UNKNOWN,", "ERR,TOO_LONG"):
+        assert reply in WEB_MOCK, reply
+    assert "E,${counter}," in WEB_MOCK and "S,${this.lastCounter},${this.dropped}," in WEB_MOCK
+    info = re.search(r"`I,version=\$\{MOCK_VERSION\},rate=.*?queue=512", WEB_MOCK, re.S)
+    assert info is not None
+    for key in ("version", "rate", "mode", "streaming", "pin=34", "baud=230400", "core", "queue=512"):
+        assert key in info.group(0), key
+
+
+def test_the_docs_list_every_command_and_line() -> None:
+    readme = (FIRMWARE / "README.md").read_text(encoding="utf-8")
+    for command in COMMANDS:
+        assert f"`{command}" in readme, command
+    for line in ("E,<counter>,<millivolts>", "S,<counter>,<dropped>,<version>,<ADC|SIM>", "PONG,1.0.0", "OK,SIM,OFF", "I,version=1.0.0"):
+        assert line in readme, line
+    # The hardware day's runbook: safety first, the step order and every readiness item.
+    first = HARDWARE_DAY.split("\n## ")[1]
+    assert "SAFETY" in HARDWARE_DAY.split("## Parts")[0] and "charger unplugged" in HARDWARE_DAY
+    assert first.startswith("Parts")
+    for item in ("Web Serial", "Connected", "Responding", "Rate", "Gaps", "Contact", "Saturation", "Relaxed", "Test squeeze"):
+        assert f"| {item}" in HARDWARE_DAY or f" {item} " in HARDWARE_DAY, item
+    for value in ("GPIO34", "20 kΩ", "10 kΩ", "3.0 V", "230400", "reference on the bony point of the elbow", "```mermaid"):
+        assert value in HARDWARE_DAY, value
+
+
+def test_the_firmware_never_sends_a_stale_sample_after_start() -> None:
+    assert "awaitingFirstSample = true;" in function_body("static void startStreaming")
+    loop = function_body("void loop")
+    assert "if (sample.counter != 0) continue;" in loop

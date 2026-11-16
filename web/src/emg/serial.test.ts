@@ -213,7 +213,7 @@ describe("review: plugging the ESP32 back in", () => {
     const engine = new EmgEngine();
     await engine.connectSerial(stream);
     engine.setCalibration({ restMean: 200, restSd: 10, mvc: 1500 });
-    expect(serial.port.written).toEqual(["PING\n", "START\n"]);
+    expect(serial.port.written).toEqual(["PING\n", "INFO\n", "START\n"]);
 
     serial.port.unplug();
     await stream.whenClosed();
@@ -224,7 +224,7 @@ describe("review: plugging the ESP32 back in", () => {
     serial.listeners.get("connect")!({} as Event);
     await new Promise((resolve) => setTimeout(resolve, REPLUG_DELAY_MS + 50));
     expect(engine.getStatus().connected).toBe(true);
-    expect(serial.port.written).toEqual(["PING\n", "START\n"]);
+    expect(serial.port.written).toEqual(["PING\n", "INFO\n", "START\n"]);
     expect(engine.getStatus().calibrated).toBe(true);
     await engine.disconnect();
   });

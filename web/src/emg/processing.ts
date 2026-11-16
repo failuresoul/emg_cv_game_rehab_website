@@ -3,20 +3,19 @@
  * every function here is tested on its own.
  */
 
-/** At or above this the signal is clipped: the sensor's gain or the voltage divider is too high
- * (firmware/README.md keeps the pin at or below 3.0 V). */
-export const SATURATION_MV = 3000;
-/** A standard deviation below this over a second means a flat line: an electrode is off. */
-export const FLAT_SD_MV = 2;
-export const SMOOTHING_MS = 50;
+import { EMG } from "./emgSettings";
+
+// The thresholds are settings (emgSettings.ts), read when used:
+// - EMG.saturationMv: at or above it the signal is clipped (gain or divider too high; the pin
+//   stays at or below 3.0 V, firmware/README.md);
+// - EMG.minContactSdMv: an SD below it over a second is a flat line (an electrode is off);
+// - EMG.smoothingMs: the moving average;
+// - EMG.onsetK, onsetMs, offsetMs: onset above rest mean + k x rest SD for onsetMs, offset below
+//   it for offsetMs.
 export const MAX_PERCENT_MVC = 120;
-/** Onset: above rest mean + k * rest SD for ONSET_MS; offset: below it for OFFSET_MS. */
-export const ONSET_K = 3;
-export const ONSET_MS = 50;
-export const OFFSET_MS = 100;
 
 export function isSaturated(mv: number): boolean {
-  return mv >= SATURATION_MV;
+  return mv >= EMG.saturationMv;
 }
 
 export interface WindowStats {
@@ -52,7 +51,7 @@ export function windowStats(values: ArrayLike<number>): WindowStats {
 /** Flat line over the window (at least half a second of samples): the electrode is off. */
 export function isFlatLine(values: ArrayLike<number>, minimumSamples: number): boolean {
   if (values.length < minimumSamples) return false;
-  return windowStats(values).sd < FLAT_SD_MV;
+  return windowStats(values).sd < EMG.minContactSdMv;
 }
 
 /** Saturation: at least `minimumCount` samples of the window are clipped. */
@@ -74,7 +73,7 @@ export class MovingAverage {
   private filled = 0;
   private sum = 0;
 
-  constructor(fs: number, windowMs = SMOOTHING_MS) {
+  constructor(fs: number, windowMs = EMG.smoothingMs) {
     this.values = new Float64Array(Math.max(1, Math.round((fs * windowMs) / 1000)));
   }
 
@@ -124,7 +123,7 @@ export class OnsetDetector {
   private active = false;
   private crossingSince: number | null = null;
 
-  constructor(calibration: Pick<EmgCalibration, "restMean" | "restSd">, k = ONSET_K) {
+  constructor(calibration: Pick<EmgCalibration, "restMean" | "restSd">, k = EMG.onsetK) {
     this.threshold = calibration.restMean + k * calibration.restSd;
   }
 
@@ -141,7 +140,7 @@ export class OnsetDetector {
       return null;
     }
     if (this.crossingSince === null) this.crossingSince = t;
-    const needed = this.active ? OFFSET_MS : ONSET_MS;
+    const needed = this.active ? EMG.offsetMs : EMG.onsetMs;
     if (t - this.crossingSince < needed) return null;
     this.active = above;
     const event: OnsetEvent = { type: above ? "onset" : "offset", t: this.crossingSince };

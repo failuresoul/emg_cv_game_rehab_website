@@ -3,7 +3,8 @@
  * voluntary contraction (MVC) from three efforts, each counted as its highest 0.5 s mean.
  */
 
-import { FLAT_SD_MV, isSaturated, windowStats } from "./processing";
+import { EMG } from "./emgSettings";
+import { isSaturated, windowStats } from "./processing";
 import { CALIBRATION, READINESS } from "./readinessConfig";
 
 export type RestProblem = "electrodeOff" | "unstable";
@@ -19,7 +20,7 @@ export interface RestResult {
 export function restResult(envelope: ArrayLike<number>): RestResult {
   const { mean, sd } = windowStats(envelope);
   let problem: RestProblem | null = null;
-  if (sd < FLAT_SD_MV) problem = "electrodeOff";
+  if (sd < EMG.minContactSdMv) problem = "electrodeOff";
   else if (sd > READINESS.relaxedMaxSdMv || mean > READINESS.relaxedMaxMeanMv) {
     problem = "unstable";
   }
@@ -115,7 +116,7 @@ export function mvcStrongEnough(mvc: number, restMean: number): boolean {
 
 /** Onset threshold, as the server computes it: rest mean + 3 x rest SD. */
 export function thresholdMv(rest: { mean: number; sd: number }): number {
-  return Math.round((rest.mean + 3 * rest.sd) * 100) / 100;
+  return Math.round((rest.mean + EMG.onsetK * rest.sd) * 100) / 100;
 }
 
 /** A short trace for the summary's mini plot: `points` evenly chosen values. */
