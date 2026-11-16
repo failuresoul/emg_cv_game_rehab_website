@@ -4,6 +4,20 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Changed (Day 20: the internal code name removed)
+
+- **"MotionLab" is gone** from the identifiers, configs and docs; everything uses `muvi`:
+  - the database file `data/muvi.db`;
+  - the browser keys `muvi_token`, `muvi.gameQueue.*` and `muvi.summarySession`;
+  - the default admin `admin@muvi.local`;
+  - the Docker user `muvi`, and the development stack `muvi-rehab-dev`;
+  - texts in the docs, the scripts and the metric catalogue.
+- **Automatic migration:**
+  - when the app opens its database, an old `motionlab.db` (with its WAL and shared-memory files) is renamed to `muvi.db` if `muvi.db` does not exist yet (`server/app/core/db.py`);
+  - a login saved under the old browser key is moved, so nobody is logged out, and a game queue saved under the old key is still read;
+  - tests cover both.
+- **Kept on purpose:** the old names only inside that migration code, and in the tests that check the old name never appears on screen. The history (this changelog, the day logs) is left as written.
+
 ### Changed (Day 20, task 6: the release candidate's review)
 
 - **Old version mentions:** the admin guide said v0.1, and the API contract's health example said 0.1.0. `demo-script.md` is labelled as the historical v0.1 demo.

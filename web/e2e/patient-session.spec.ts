@@ -116,8 +116,8 @@ test("a full session: check, calibration, warm-up, plan, two games, cool-down, s
     expect(detail.warmup_results).toHaveLength(6);
     expect(detail.calibration).not.toBeNull();
 
-    await page.evaluate(() => localStorage.removeItem("motionlab_token"));
-    await loginWithToken(page, "admin@motionlab.local", "e2e-admin-password");
+    await page.evaluate(() => localStorage.removeItem("muvi_token"));
+    await loginWithToken(page, "admin@muvi.local", "e2e-admin-password");
     await page.goto(`/admin/sessions/${sessions[0].id}`);
     const admin_s = await strings(page);
     await expect(page.getByText(admin_s["game.reach_activate.name"]).first()).toBeVisible();

@@ -168,7 +168,7 @@ Response `200`:
 The request is a form (`application/x-www-form-urlencoded`), and `username` holds the email:
 
 ```
-username=admin@motionlab.local&password=example-admin-password
+username=admin@muvi.local&password=example-admin-password
 ```
 
 Response `200`:
@@ -179,7 +179,7 @@ Response `200`:
   "token_type": "bearer",
   "user": {
     "id": 1,
-    "email": "admin@motionlab.local",
+    "email": "admin@muvi.local",
     "full_name": "MuVi Rehab Admin",
     "role": "admin",
     "is_active": true,

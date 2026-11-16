@@ -154,8 +154,8 @@ test("three study sessions follow the Latin square, look the same, and give resu
   });
 
   await test.step("the results page shows the three conditions", async () => {
-    await page.evaluate(() => localStorage.removeItem("motionlab_token"));
-    await loginWithToken(page, "admin@motionlab.local", "e2e-admin-password");
+    await page.evaluate(() => localStorage.removeItem("muvi_token"));
+    await loginWithToken(page, "admin@muvi.local", "e2e-admin-password");
     await page.goto("/admin/research");
     const s = await settledStrings(page);
     await page.getByRole("button", { name: "E2E engine comparison" }).click();

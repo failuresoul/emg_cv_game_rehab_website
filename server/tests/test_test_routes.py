@@ -34,7 +34,7 @@ def routes_with(app_env: str | None) -> str:
         "DATABASE_URL": "sqlite://",
         "LLM_PROVIDER": "mock",
         "JWT_SECRET": "x" * 64,
-        "ADMIN_EMAIL": "admin@motionlab.local",
+        "ADMIN_EMAIL": "admin@muvi.local",
         "ADMIN_PASSWORD": "test-password",
         "ADMIN_NAME": "Test Admin",
     }

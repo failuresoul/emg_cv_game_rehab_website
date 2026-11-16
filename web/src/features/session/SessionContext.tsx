@@ -50,7 +50,7 @@ const SESSION_KEY = ["session", "current"];
 /** The active session, if any, without starting one; for the home page's resume offer. */
 export const ACTIVE_SESSION_KEY = ["session", "active"];
 /** The session just finished, so a refresh on the summary shows it rather than a new one. */
-const SUMMARY_STORAGE_KEY = "motionlab.summarySession";
+const SUMMARY_STORAGE_KEY = "muvi.summarySession";
 /** Progress saves share this scope, so they reach the server in the order they were made. */
 const PROGRESS_SCOPE = "session-progress";
 

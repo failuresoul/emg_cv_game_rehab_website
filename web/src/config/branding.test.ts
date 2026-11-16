@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 /**
- * "MotionLab" is the internal code name. It may stay in identifiers (lower case, such as the
- * storage key motionlab_token) but never in anything a user sees.
+ * "MotionLab" was the internal code name (until Day 20). It must never appear in anything a user
+ * sees. Lower-case identifiers that only migrate old data (the old token key, the old database
+ * file name) are allowed; everything else uses "muvi".
  */
 const VISIBLE = /MotionLab/;
 

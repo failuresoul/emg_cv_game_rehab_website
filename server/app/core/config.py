@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # "development", "production" or "test". Only "test" adds the /api/test routes (Day 18),
     # which reset the database: never set it on a database you want to keep.
     APP_ENV: str = "development"
-    DATABASE_URL: str = "sqlite:///../data/motionlab.db"
+    DATABASE_URL: str = "sqlite:///../data/muvi.db"
     JWT_SECRET: str
     JWT_EXPIRE_MINUTES: int = 720
     ADMIN_EMAIL: str
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:5173"
     # The game settings exported by the web app. Empty: shared/game-specs.json in the repository.
     GAME_SPECS_PATH: str = ""
-    # The measures MotionLab reports. Empty: shared/metrics-catalog.json in the repository.
+    # The measures MuVi Rehab reports. Empty: shared/metrics-catalog.json in the repository.
     METRICS_CATALOG_PATH: str = ""
     # The measured MDCs (Day 19). Empty: analysis/results/validation/mdc.json, if it exists.
     MDC_PATH: str = ""

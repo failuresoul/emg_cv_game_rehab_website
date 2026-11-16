@@ -9,7 +9,7 @@ AgeBand = Literal["18-29", "30-39", "40-49", "50-59", "60-69", "70+"]
 Language = Literal["en", "bn"]
 
 # EmailStr rejects reserved domains such as .local, so use it for new input only.
-# Read models use plain str because ADMIN_EMAIL may be admin@motionlab.local.
+# Read models use plain str because ADMIN_EMAIL may be a .local address such as admin@muvi.local.
 NormalizedEmail = Annotated[EmailStr, AfterValidator(str.lower)]
 Password = Annotated[str, Field(min_length=8, max_length=128)]
 FullName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]

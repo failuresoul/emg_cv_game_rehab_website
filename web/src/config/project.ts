@@ -2,8 +2,8 @@
  * The project's identity: the only place its name, research title, institutions and people are
  * written. Pages, layouts, the tab title and the favicon read from here.
  *
- * Internal identifiers keep the code name "motionlab" (storage keys, package names, the database
- * file); nothing a user sees should.
+ * Internal identifiers use "muvi" (storage keys, the database file). The old internal code name
+ * is gone; config/branding.test.ts makes sure it never appears in anything a user sees.
  */
 
 /** Set by Vite from package.json; absent when vite.config.ts itself reads this file. */

@@ -10,7 +10,7 @@ test("the landing page opens in test mode", async ({ page }) => {
 
 test("the API runs in test mode: a reset gives the admin and no patients", async ({ request }) => {
   const body = await resetDatabase(request, { demoPatients: false });
-  expect(body.admin_email).toBe("admin@motionlab.local");
+  expect(body.admin_email).toBe("admin@muvi.local");
   expect(body.patients).toEqual([]);
 });
 

@@ -444,7 +444,7 @@ One exercise of one session's warm-up. Saving the same exercise again replaces t
 
 ## Metric catalogue
 
-The measures MotionLab reports, one entry each. The server reads this file (server/app/services/metrics_catalog.py); the web app and the feedback module word figures from it. Units: SW is one shoulder width (body frame, origin at the affected shoulder); angles in degrees; hand distances as ratios of palm length; times in ms.
+The measures MuVi Rehab reports, one entry each. The server reads this file (server/app/services/metrics_catalog.py); the web app and the feedback module word figures from it. Units: SW is one shoulder width (body frame, origin at the affected shoulder); angles in degrees; hand distances as ratios of palm length; times in ms.
 
 The MDC of each measure is in `server/app/core/mdc.py` (measured from the validation's `mdc.json`, or provisional).
 

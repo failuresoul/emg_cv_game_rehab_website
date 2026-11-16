@@ -212,7 +212,7 @@ export async function setProgramme(
 /** Logs the browser in with a token from the API (faster than the form; auth.spec uses the form). */
 export async function loginWithToken(page: Page, email: string, password: string): Promise<Api> {
   const api = await Api.login(page.request, email, password);
-  await page.addInitScript((token) => localStorage.setItem("motionlab_token", token), api.token);
+  await page.addInitScript((token) => localStorage.setItem("muvi_token", token), api.token);
   return api;
 }
 

@@ -15,13 +15,13 @@ from app.services.users import ensure_admin
 def test_login_success_returns_token_and_updates_last_login(client: TestClient) -> None:
     response = client.post(
         "/api/auth/login",
-        data={"username": "ADMIN@motionlab.local", "password": "test-password"},
+        data={"username": "ADMIN@muvi.local", "password": "test-password"},
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["token_type"] == "bearer"
-    assert body["user"]["email"] == "admin@motionlab.local"
+    assert body["user"]["email"] == "admin@muvi.local"
     assert body["user"]["role"] == "admin"
     assert body["user"]["last_login_at"] is not None
 
@@ -34,7 +34,7 @@ def test_login_success_returns_token_and_updates_last_login(client: TestClient) 
 def test_login_wrong_password_is_401(client: TestClient) -> None:
     response = client.post(
         "/api/auth/login",
-        data={"username": "admin@motionlab.local", "password": "wrong-password"},
+        data={"username": "admin@muvi.local", "password": "wrong-password"},
     )
     assert response.status_code == 401
 
@@ -121,4 +121,4 @@ def test_ensure_admin_creates_only_one_admin(session: Session) -> None:
 
     admins = session.exec(select(User).where(User.role == "admin")).all()
     assert len(admins) == 1
-    assert admins[0].email == "admin@motionlab.local"
+    assert admins[0].email == "admin@muvi.local"

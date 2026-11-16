@@ -1,6 +1,6 @@
 [project]
 name = "muvi-rehab-server"
 version = "1.0.0-rc1"
-description = "MuVi Rehab (MotionLab) server: FastAPI, SQLModel, adaptive engines and feedback."
+description = "MuVi Rehab server: FastAPI, SQLModel, adaptive engines and feedback."
 requires-python = ">=3.12"
 # The dependencies, pinned exactly, are in requirements.txt (pip install -r requirements.txt).

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Runs every MotionLab check and prints PASS or FAIL for each, then a summary.
+    Runs every MuVi Rehab check and prints PASS or FAIL for each, then a summary.
 
 .DESCRIPTION
     From the repository root, in Windows PowerShell 5.1 or PowerShell 7:
@@ -110,7 +110,7 @@ if ($SkipBuild) {
 # Smoke test against a backend started here, with its own temporary database and admin.
 Write-Banner 'Smoke test'
 $timer = [System.Diagnostics.Stopwatch]::StartNew()
-$tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ('motionlab-check-' + [guid]::NewGuid().ToString('N'))
+$tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ('muvi-check-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 $database = Join-Path $tempDir 'smoke.db'
 $serverLog = Join-Path $tempDir 'server.log'

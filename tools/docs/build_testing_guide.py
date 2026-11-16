@@ -172,7 +172,7 @@ def build(g: Guide) -> None:
         ("Native install, once:\n`cd server; python -m venv .venv; .venv\\Scripts\\python.exe -m pip install -r requirements.txt; cd ..`\n`cd web; npm ci; cd ..`", "Both finish without errors.", None),
         ("Seed the demo data:\n`cd server; .venv\\Scripts\\python.exe scripts\\seed_demo_data.py; cd ..`", "It prints two demo patient logins (left and right side affected) with passwords; save them. Four weeks of sessions, progress, alerts and reports are created.", None),
         ("Reset the demo data when needed:\n`server\\.venv\\Scripts\\python.exe server\\scripts\\seed_demo_data.py --reset` (or `--clear` to only remove them).", "Old demo patients are removed and created again (new passwords). Only patients marked Demo are touched.", None),
-        ("Start completely fresh (optional): stop the app and delete `data\\motionlab.db`.", "On the next start the admin is created again; seed again.", None),
+        ("Start completely fresh (optional): stop the app and delete `data\\muvi.db`.", "On the next start the admin is created again; seed again.", None),
     ])
 
     # 1 ---------------------------------------------------------------------------------------
@@ -210,7 +210,7 @@ def build(g: Guide) -> None:
         ("As the patient, type `/admin` in the address bar.", "You are sent to the patient's own home: patients cannot open admin pages.", None),
         ("Log out, then log in with a wrong password.", s("login.error.invalid"), None),
         ("Fail 5 more times with the same email (within 15 minutes), then try the right password.", f"From the 6th try within 15 minutes: {s('apiError.tooMany')} (the server's limit, `server/app/services/login_limits.py`). It works again 15 minutes after the oldest failure.", None),
-        ("Session expiry: logged in, open DevTools (F12) → Application → Local storage → delete `motionlab_token`, then click any page.", "You are sent to the login page (a 401 clears the login). A real login lasts `JWT_EXPIRE_MINUTES` (720 minutes = 12 hours).", None),
+        ("Session expiry: logged in, open DevTools (F12) → Application → Local storage → delete `muvi_token`, then click any page.", "You are sent to the login page (a 401 clears the login). A real login lasts `JWT_EXPIRE_MINUTES` (720 minutes = 12 hours).", None),
     ])
 
     # 4 ---------------------------------------------------------------------------------------

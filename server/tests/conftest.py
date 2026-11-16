@@ -5,7 +5,7 @@ from typing import Any
 # Set before importing the app so tests never use server/.env or the real database.
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["JWT_SECRET"] = "test-secret-test-secret-test-secret-test-secret-test-secret-1234"
-os.environ["ADMIN_EMAIL"] = "admin@motionlab.local"
+os.environ["ADMIN_EMAIL"] = "admin@muvi.local"
 os.environ["ADMIN_PASSWORD"] = "test-password"
 os.environ["ADMIN_NAME"] = "Test Admin"
 # Tests never call a real model.
@@ -93,7 +93,7 @@ def login(client: TestClient) -> Callable[[str, str], Headers]:
 
 @pytest.fixture
 def admin_headers(login: Callable[[str, str], Headers]) -> Headers:
-    return login("admin@motionlab.local", "test-password")
+    return login("admin@muvi.local", "test-password")
 
 
 @pytest.fixture

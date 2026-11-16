@@ -79,12 +79,19 @@ describe("keeping the queue across a refresh", () => {
     expect(loadQueue(13, ALL, storage)).toBeNull();
   });
 
+  it("still reads a queue saved under the old key (before Day 20)", () => {
+    const storage = memoryStorage();
+    const queue = createQueue(7, ALL);
+    storage.setItem("motionlab.gameQueue.7", JSON.stringify(queue));
+    expect(loadQueue(7, ALL, storage)).toEqual(queue);
+  });
+
   it("ignores anything it cannot trust", () => {
     const storage = memoryStorage();
-    storage.setItem("motionlab.gameQueue.1", "not json");
-    storage.setItem("motionlab.gameQueue.2", JSON.stringify({ games: ["chess"], index: 0 }));
-    storage.setItem("motionlab.gameQueue.3", JSON.stringify({ games: ALL, index: "1" }));
-    storage.setItem("motionlab.gameQueue.4", JSON.stringify({ games: ALL, index: 99 }));
+    storage.setItem("muvi.gameQueue.1", "not json");
+    storage.setItem("muvi.gameQueue.2", JSON.stringify({ games: ["chess"], index: 0 }));
+    storage.setItem("muvi.gameQueue.3", JSON.stringify({ games: ALL, index: "1" }));
+    storage.setItem("muvi.gameQueue.4", JSON.stringify({ games: ALL, index: 99 }));
     expect(loadQueue(1, ALL, storage)).toBeNull();
     expect(loadQueue(2, ALL, storage)).toBeNull();
     expect(loadQueue(3, ALL, storage)).toBeNull();

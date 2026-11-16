@@ -19,7 +19,7 @@ A research prototype from the Department of Computer Science and Engineering, Kh
 - **Supervisors:** Dr. Muhammad Aminul Haque Akhand (Professor, Dept. of CSE, KUET) and Dr. Md. Abdul Awal (Postdoctoral Fellow, The University of Queensland)
 - **Team:** Nurul Absar Shadik and Nafis Ahammad (Dept. of CSE, KUET)
 
-The project's name, institutions and people live in one file, [web/src/config/project.ts](web/src/config/project.ts). "MotionLab" is the internal code name: it stays in identifiers (storage keys, package names, the database file) but never in anything a user sees.
+The project's name, institutions and people live in one file, [web/src/config/project.ts](web/src/config/project.ts). Internal identifiers use `muvi` (the database file `data/muvi.db`, browser storage keys).
 
 MuVi Rehab is a web platform for home-based arm and hand rehabilitation after stroke. A patient logs in, checks their camera, calibrates their reach, and completes warm-up exercises tracked by the webcam with MediaPipe. They then play rehabilitation games controlled by hand and arm movement (and, optionally, by a forearm muscle sensor), with an AI engine planning the session and adapting each game's difficulty to the patient. Each session ends with a short cool-down questionnaire and an AI feedback report. Therapists and researchers use an admin area to manage patients, programmes and games, and to review analytics. Webcam video and images never leave the browser: only landmarks, metrics and events go to the server.
 
@@ -543,7 +543,7 @@ Then open <http://localhost:8080>. The containers restart automatically until yo
 
 #### Reset the data
 
-Local runs and the development Docker setup share one database, `data/motionlab.db`; the release keeps its own in the `muvi-data` volume. To start again, stop the app and delete that file. The admin is created again on the next start, and you can then seed the demo patients again. Backups: `.\scripts\backup.ps1` and `.\scripts\restore.ps1`.
+Local runs and the development Docker setup share one database, `data/muvi.db`; the release keeps its own in the `muvi-data` volume. To start again, stop the app and delete that file. The admin is created again on the next start, and you can then seed the demo patients again. Backups: `.\scripts\backup.ps1` and `.\scripts\restore.ps1`.
 
 ## Usage
 
@@ -629,7 +629,7 @@ Settings are read from `server/.env` (copy [server/.env.example](server/.env.exa
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `APP_ENV` | `development` | `production` refuses default secrets; `test` adds the test routes (never on real data) |
-| `DATABASE_URL` | `sqlite:///../data/motionlab.db` | The database (SQLite file, or PostgreSQL) |
+| `DATABASE_URL` | `sqlite:///../data/muvi.db` | The database (SQLite file, or PostgreSQL) |
 | `JWT_SECRET` | placeholder | The token signing key (32+ random characters in production) |
 | `JWT_EXPIRE_MINUTES` | `720` | How long a login lasts |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | placeholders | The first admin, created at start-up |

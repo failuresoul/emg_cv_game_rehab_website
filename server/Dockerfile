@@ -12,10 +12,10 @@ COPY app/ app/
 COPY scripts/ scripts/
 
 # UID 1000 matches the usual first user on Linux, so it can write to the mounted ./data folder.
-RUN useradd --uid 1000 --no-create-home motionlab \
+RUN useradd --uid 1000 --no-create-home muvi \
     && mkdir /data \
-    && chown motionlab /data
-USER motionlab
+    && chown muvi /data
+USER muvi
 
 EXPOSE 8000
 

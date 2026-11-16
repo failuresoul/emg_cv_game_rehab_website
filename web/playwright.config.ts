@@ -20,7 +20,7 @@ import type { TestOptions, TestSettings } from "./e2e/fixtures";
 
 export const API_PORT = 8001;
 export const WEB_PORT = 5174;
-export const E2E_ADMIN = { email: "admin@motionlab.local", password: "e2e-admin-password" };
+export const E2E_ADMIN = { email: "admin@muvi.local", password: "e2e-admin-password" };
 
 const python = process.platform === "win32" ? ".venv\\Scripts\\python.exe" : ".venv/bin/python";
 

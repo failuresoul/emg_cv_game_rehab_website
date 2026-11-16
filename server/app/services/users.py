@@ -6,7 +6,7 @@ from app.models import User
 from app.models.user import utc_now
 
 # Verified when the email is unknown, so both login failures take similar time.
-_DUMMY_HASH = hash_password("motionlab-dummy-password")
+_DUMMY_HASH = hash_password("muvi-dummy-password")
 
 
 def get_user_by_email(session: Session, email: str) -> User | None:

@@ -37,7 +37,9 @@ export function defaultPlanRows(available: readonly GameId[]): PlanRow[] {
   ];
 }
 
-const STORAGE_PREFIX = "motionlab.gameQueue.";
+const STORAGE_PREFIX = "muvi.gameQueue.";
+/** The prefix before Day 20 (the internal code name), still read so a session in progress keeps its queue. */
+const LEGACY_PREFIX = "motionlab.gameQueue.";
 
 export function createQueue(
   sessionId: number,
@@ -117,7 +119,8 @@ export function loadQueue(
 ): GameQueue | null {
   if (!storage) return null;
   try {
-    const raw = storage.getItem(STORAGE_PREFIX + sessionId);
+    const raw =
+      storage.getItem(STORAGE_PREFIX + sessionId) ?? storage.getItem(LEGACY_PREFIX + sessionId);
     if (!raw) return null;
     const value: unknown = JSON.parse(raw);
     if (typeof value !== "object" || value === null) return null;

@@ -18,7 +18,7 @@ import {
   test,
 } from "./fixtures";
 
-const ADMIN = { email: "admin@motionlab.local", password: "e2e-admin-password" };
+const ADMIN = { email: "admin@muvi.local", password: "e2e-admin-password" };
 
 test.beforeAll(async ({ request }) => {
   await resetDatabase(request);

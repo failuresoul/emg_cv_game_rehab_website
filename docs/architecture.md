@@ -1,6 +1,6 @@
 # Architecture
 
-MuVi Rehab (code name MotionLab) is a research prototype for home upper-limb rehabilitation after stroke, not a medical device. It has three parts:
+MuVi Rehab is a research prototype for home upper-limb rehabilitation after stroke, not a medical device. It has three parts:
 
 - **The browser app:** React and TypeScript. It does all the sensing.
 - **The server:** FastAPI with SQLModel and SQLite. It keeps the data, adapts the difficulty and writes the feedback.

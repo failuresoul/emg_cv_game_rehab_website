@@ -10,8 +10,31 @@ from app import models  # noqa: F401  (registers the tables on SQLModel.metadata
 from app.core.config import SERVER_DIR, settings
 
 
+#: The database file's name before Day 20 (the internal code name); renamed to muvi.db.
+LEGACY_DATABASE_NAME = "motionlab.db"
+DATABASE_NAME = "muvi.db"
+
+
+def migrate_legacy_database(path: Path) -> bool:
+    """A muvi.db that does not exist yet, beside an old motionlab.db: rename the old file (and
+    its WAL and shared-memory files), so an existing installation keeps its data. True if it
+    renamed anything."""
+    if path.name != DATABASE_NAME or path.exists():
+        return False
+    legacy = path.with_name(LEGACY_DATABASE_NAME)
+    if not legacy.exists():
+        return False
+    for suffix in ("", "-wal", "-shm"):
+        old = legacy.with_name(LEGACY_DATABASE_NAME + suffix)
+        if old.exists():
+            old.rename(path.with_name(DATABASE_NAME + suffix))
+    return True
+
+
 def _resolve_database_url(database_url: str) -> URL:
-    """Anchor relative SQLite paths to server/ and create their folder if missing."""
+    """Anchor relative SQLite paths to server/ and create their folder if missing. Pure apart
+    from the folder: it never moves a file (the migration runs only when the app opens its
+    database, in _create_engine)."""
     url = make_url(database_url)
     if url.get_backend_name() != "sqlite" or url.database in (None, "", ":memory:"):
         return url
@@ -29,6 +52,9 @@ def _create_engine(database_url: str) -> Engine:
     url = _resolve_database_url(database_url)
     if url.get_backend_name() != "sqlite":
         return create_engine(url)
+    if url.database not in (None, "", ":memory:"):
+        # An installation from before Day 20: its motionlab.db becomes muvi.db.
+        migrate_legacy_database(Path(url.database))
     created = create_engine(
         url, connect_args={"check_same_thread": False, "timeout": SQLITE_BUSY_TIMEOUT_S}
     )

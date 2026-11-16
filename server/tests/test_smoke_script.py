@@ -26,7 +26,7 @@ from tests.test_feedback_api import client, model, session  # noqa: F401, E402
 def test_smoke_passes_every_step(
     client: TestClient, session: Session, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert run_smoke(client, "admin@motionlab.local", "test-password") is True
+    assert run_smoke(client, "admin@muvi.local", "test-password") is True
 
     output = capsys.readouterr().out
     assert output.count("PASS") == 78
@@ -109,7 +109,7 @@ def test_smoke_passes_every_step(
 def test_smoke_reports_failure_and_stops(
     client: TestClient, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert run_smoke(client, "admin@motionlab.local", "wrong-password") is False
+    assert run_smoke(client, "admin@muvi.local", "wrong-password") is False
 
     output = capsys.readouterr().out
     assert "PASS  Server is healthy" in output
@@ -126,7 +126,7 @@ def test_smoke_fails_a_warmup_step_and_stops(
     # Leaves thumb opposition out, so its history is empty.
     monkeypatch.setattr(smoke_test, "WARMUP_EXERCISES", smoke_test.WARMUP_EXERCISES[:5])
 
-    assert run_smoke(client, "admin@motionlab.local", "test-password") is False
+    assert run_smoke(client, "admin@muvi.local", "test-password") is False
 
     output = capsys.readouterr().out
     assert "PASS  Patient saves six warm-up results" in output
@@ -148,7 +148,7 @@ def test_smoke_puts_back_game_settings_the_admin_had(
     )
     session.commit()
 
-    assert run_smoke(client, "admin@motionlab.local", "test-password") is True
+    assert run_smoke(client, "admin@muvi.local", "test-password") is True
     capsys.readouterr()
 
     settings = {row.game_id: row for row in session.exec(select(GameSetting)).all()}

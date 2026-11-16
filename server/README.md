@@ -28,7 +28,7 @@ pip install -r requirements.txt
 
 Copy `.env.example` to `.env`, then replace the placeholder values. Never commit `.env`.
 
-By default the server uses a local SQLite file at `data/motionlab.db`. To use a hosted PostgreSQL database, set `DATABASE_URL` in `.env`:
+By default the server uses a local SQLite file at `data/muvi.db`. To use a hosted PostgreSQL database, set `DATABASE_URL` in `.env`:
 
 ```
 DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST/DATABASE

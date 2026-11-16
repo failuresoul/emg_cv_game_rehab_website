@@ -1,4 +1,4 @@
-"""The measures MotionLab reports, from shared/metrics-catalog.json."""
+"""The measures MuVi Rehab reports, from shared/metrics-catalog.json."""
 
 import json
 from functools import lru_cache

@@ -102,5 +102,5 @@ test("the login survives a reload, and logging out ends it", async ({ page }) =>
   await expect(page).not.toHaveURL(/\/patient/);
   await page.goto("/patient");
   await expect(page).toHaveURL(/\/login/);
-  expect(await page.evaluate(() => localStorage.getItem("motionlab_token"))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem("muvi_token"))).toBeNull();
 });
