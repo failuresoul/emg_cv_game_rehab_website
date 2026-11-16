@@ -4,6 +4,26 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 20, task 3: the README)
+
+- **README.md:** brought up to date (1.0.0-rc1, nine games, the adaptive engine, feedback reports and the muscle sensor were still described as planned) and extended:
+  - badges, a hero screenshot and the About section;
+  - key features with screenshots, how a session works (steps and a sequence diagram), and a screenshot gallery;
+  - the architecture with each component, the technology stack, AI adaptation, LLM feedback, privacy and safety;
+  - the full project structure with where each feature is handled;
+  - configuration, the API overview, results (labelled, PENDING where not measured), roadmap, citation, acknowledgements and licence placeholders.
+- **Screenshots:** `web/e2e/docs/screenshots.spec.ts` and `web/playwright.docs.config.ts` capture 38 screens (test mode, demo data, the replayed camera, the simulated sensor, 1440×900 at 2×) and render the 3 Mermaid diagrams of `docs/architecture.md`. These are not part of the normal test runs.
+- **Scripts:**
+  - `scripts/docs/make_screenshots.ps1` runs everything with one command;
+  - `optimise_images.py` builds the warm-up and games grids and keeps every PNG under 400 KB;
+  - `check_readme_links.py` checks every link, image and path.
+- **docs/README.md** lists every document.
+
+### Fixed
+
+- **About page:** "Personal feedback reports" was still marked "coming soon"; the unused `PlaceholderPage` was removed.
+- **Board simulation badge:** it showed for the browser's own simulated sensor. It now shows only for a real ESP32 in `SIM ON` mode.
+
 ### Added (Day 20, task 2: the EMG path ready without hardware)
 
 - **Mock ESP32** (`web/src/emg/mockSerial.ts`): the firmware protocol behind the Web Serial interface, with a configurable rate, noise, lost counters, firmware drops, saturation, a flat line, garbled lines, a slow PONG, unplugging and plugging back in.

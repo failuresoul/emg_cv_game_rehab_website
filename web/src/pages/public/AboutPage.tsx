@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Badge } from "@/components/ui/Badge";
 import { project } from "@/config/project";
 import { GAME_IDS } from "@/games/shared/registry";
 import { t, type TranslationKey } from "@/i18n";
@@ -24,13 +23,12 @@ import { TeamGroups } from "./landing/Team";
 const PARTS: {
   icon: LucideIcon;
   key: "sensing" | "games" | "adaptation" | "metrics" | "reports";
-  soon?: boolean;
 }[] = [
   { icon: Activity, key: "sensing" },
   { icon: Gamepad2, key: "games" },
   { icon: ShieldCheck, key: "adaptation" },
   { icon: Gauge, key: "metrics" },
-  { icon: FileText, key: "reports", soon: true },
+  { icon: FileText, key: "reports" },
 ];
 
 const DATA_POINTS: { icon: LucideIcon; key: "video" | "saved" | "access" | "research" }[] = [
@@ -107,14 +105,11 @@ export function AboutPage() {
           title={t("about.system.title")}
         />
         <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {PARTS.map(({ icon: Icon, key, soon }) => (
+          {PARTS.map(({ icon: Icon, key }) => (
             <li key={key} className="rounded-[22px] border border-black/10 bg-white p-6">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <span className="bg-primary-light grid h-12 w-12 place-items-center rounded-2xl">
-                  <Icon size={24} aria-hidden className="text-primary" />
-                </span>
-                {soon && <Badge>{t("common.comingSoon")}</Badge>}
-              </div>
+              <span className="bg-primary-light mb-4 grid h-12 w-12 place-items-center rounded-2xl">
+                <Icon size={24} aria-hidden className="text-primary" />
+              </span>
               <h3 className="mb-1.5 text-[1.05rem] font-bold">
                 {t(`about.system.${key}.title` as TranslationKey, { n: GAME_IDS.length })}
               </h3>

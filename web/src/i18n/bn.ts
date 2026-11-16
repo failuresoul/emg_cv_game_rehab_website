@@ -1404,7 +1404,8 @@ export const bn: Record<TranslationKey, string> = {
   "about.system.metrics.text":
     "প্রতিটি সেশনে নাগালের এলাকা, মসৃণতা, পরিসর, গতি ও মুঠো মাপা হয়, শুধু স্কোর নয়।",
   "about.system.reports.title": "ব্যক্তিগত মতামত প্রতিবেদন",
-  "about.system.reports.text": "প্রতিটি সেশনের পরে সহজ ভাষায় ছোট একটি প্রতিবেদন।",
+  "about.system.reports.text":
+    "প্রতিটি সেশনের পরে সহজ ভাষায় ছোট একটি প্রতিবেদন, সেশনের তথ্য থেকে একটি স্থানীয় ভাষা মডেল লেখে, তথ্যের সঙ্গে মিলিয়ে দেখা হয়, ইংরেজি বা বাংলায়।",
   "about.privacy.title": "গোপনীয়তা ও তথ্য ব্যবস্থাপনা",
   "about.privacy.video.title": "ভিডিও থাকে আপনার ব্রাউজারে",
   "about.privacy.video.text":

@@ -54,9 +54,9 @@ describe("about page", () => {
     );
   });
 
-  it("marks feedback reports as coming soon", () => {
-    const reports = text.slice(text.indexOf(t("about.system.metrics.text")));
-    expect(reports).toContain(t("common.comingSoon"));
+  it("presents feedback reports as available, not coming soon", () => {
+    expect(text).toContain(t("about.system.reports.title"));
+    expect(text).not.toContain(t("common.comingSoon"));
   });
 
   it("shows every supervisor and team member from project.ts, with their cards", () => {

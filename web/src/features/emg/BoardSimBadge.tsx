@@ -1,8 +1,17 @@
 import clsx from "clsx";
 import { FlaskConical } from "lucide-react";
 
+import type { EmgStatus } from "@/emg/engine";
 import type { DeviceMode } from "@/emg/protocol";
 import { t } from "@/i18n";
+
+/** The real board's mode while it is connected; null for the browser's own simulated sensor
+ * (which also says "SIM", but is not the firmware's SIM ON). */
+export function boardMode(
+  status: Pick<EmgStatus, "connected" | "source" | "mode">,
+): DeviceMode | null {
+  return status.connected && status.source === "serial" ? status.mode : null;
+}
 
 /**
  * "Board simulation": the ESP32 is sending the firmware's own test signal (SIM ON) instead of the

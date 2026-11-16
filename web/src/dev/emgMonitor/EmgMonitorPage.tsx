@@ -26,7 +26,7 @@ import {
   steadyChecksGreen,
 } from "@/emg/readiness";
 import { isWebSerialSupported, SerialEmgStream } from "@/emg/serial";
-import { BoardSimBadge } from "@/features/emg/BoardSimBadge";
+import { BoardSimBadge, boardMode } from "@/features/emg/BoardSimBadge";
 
 import { EmgRecorder, phaseAt, RECORD_MS, recordingName, toCsv } from "./recording";
 
@@ -328,7 +328,7 @@ export function EmgMonitorPage() {
               : "not connected"}
             {mock ? " (mock board)" : ""}
           </span>
-          <BoardSimBadge mode={status.connected ? status.mode : null} />
+          <BoardSimBadge mode={boardMode(status)} />
         </header>
 
         <section className="flex flex-wrap items-end gap-2 rounded-xl bg-white/5 p-3">

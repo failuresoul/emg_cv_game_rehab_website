@@ -30,6 +30,8 @@ export const FAST_SETTINGS: TestSettings = { warmupReps: 2, gameTrials: 2 };
 export default defineConfig<TestOptions>({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
+  // The README's screenshots run only with playwright.docs.config.ts.
+  testIgnore: "docs/**",
   // One database for everything: tests run one at a time.
   workers: 1,
   fullyParallel: false,
@@ -53,7 +55,7 @@ export default defineConfig<TestOptions>({
   projects: [
     {
       name: "fast",
-      testIgnore: "perf.spec.ts",
+      testIgnore: ["perf.spec.ts", "docs/**"],
       use: { testSettings: FAST_SETTINGS },
     },
     {

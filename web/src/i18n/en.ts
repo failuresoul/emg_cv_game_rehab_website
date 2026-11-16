@@ -1409,7 +1409,8 @@ export const en = {
   "about.system.metrics.text":
     "Reach area, smoothness, range, speed and grip are measured in every session, not just scores.",
   "about.system.reports.title": "Personal feedback reports",
-  "about.system.reports.text": "A short, plain-language report after each session.",
+  "about.system.reports.text":
+    "A short, plain-language report after each session, written by a local language model from the session's facts, checked against them, in English or Bangla.",
   "about.privacy.title": "Privacy and data handling",
   "about.privacy.video.title": "Video stays in your browser",
   "about.privacy.video.text":

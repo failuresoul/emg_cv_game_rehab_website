@@ -83,7 +83,13 @@ export function EmgSessionCard({ session }: { session: AdminSessionDetail }) {
       <div className="mb-2 flex flex-wrap items-center gap-3">
         <h2 className="text-xl font-bold">{t("emgCard.title")}</h2>
         {/* The firmware's own test signal (SIM ON): not a muscle. */}
-        <BoardSimBadge mode={calibration.quality?.device_mode === "SIM" ? "SIM" : null} />
+        <BoardSimBadge
+          mode={
+            calibration.source === "serial" && calibration.quality?.device_mode === "SIM"
+              ? "SIM"
+              : null
+          }
+        />
       </div>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-5">
         <Figure label={t("emgCard.site")} value={t(SITE_KEYS[calibration.site])} />

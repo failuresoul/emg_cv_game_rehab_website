@@ -8,7 +8,7 @@ import { EMG_ERROR_KEYS } from "@/emg/messages";
 import { t, type TranslationKey } from "@/i18n";
 import { formatNumber } from "@/lib/format";
 
-import { BoardSimBadge } from "./BoardSimBadge";
+import { BoardSimBadge, boardMode } from "./BoardSimBadge";
 
 export type DotState = "on" | "paused" | "off";
 
@@ -52,7 +52,7 @@ export function EmgStatusDot({ inUse }: { inUse: boolean }) {
     {
       key: "emgDot.mode",
       value:
-        status.mode === "SIM"
+        boardMode(status) === "SIM"
           ? t("emg.boardSimulation")
           : status.mode === "ADC"
             ? t("emgDot.mode.adc")
@@ -97,7 +97,7 @@ export function EmgStatusDot({ inUse }: { inUse: boolean }) {
       >
         <span aria-hidden className={clsx("size-3 rounded-full", DOT_CLASSES[state])} />
         <span className="text-sm">{t("emgDot.label")}</span>
-        <BoardSimBadge mode={status.mode} />
+        <BoardSimBadge mode={boardMode(status)} />
         <span className="sr-only">{t(DOT_KEYS[state])}</span>
       </button>
       {open && (
