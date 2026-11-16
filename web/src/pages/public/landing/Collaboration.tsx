@@ -24,7 +24,7 @@ export function CollaborationCard({ titleId = "collab-title" }: { titleId?: stri
     collaborator: project.collaborator.name,
   });
   return (
-    <div className="relative grid items-center gap-8 overflow-hidden rounded-[26px] bg-[linear-gradient(120deg,#0F5C5C,#12706B_55%,#1B827B)] px-6 py-9 text-white sm:px-10 lg:grid-cols-[1fr_auto] lg:gap-10">
+    <div className="relative grid grid-cols-1 items-center gap-8 overflow-hidden rounded-[26px] bg-[linear-gradient(120deg,#0F5C5C,#12706B_55%,#1B827B)] px-6 py-9 text-white sm:px-10 lg:grid-cols-[1fr_auto] lg:gap-10">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-[radial-gradient(circle,rgba(242,167,121,0.35),transparent_65%)]"

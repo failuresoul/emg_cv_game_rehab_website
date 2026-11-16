@@ -82,7 +82,7 @@ export function ProgressChart({
         </Button>
       </div>
       {asTable ? (
-        <div id={tableId} className="overflow-x-auto">
+        <div id={tableId} className="relative overflow-x-auto">
           <table className="w-full text-left">
             <caption className="sr-only">{seriesName}</caption>
             <thead>
@@ -147,7 +147,7 @@ function ChartBody({
             minTickGap={16}
           />
           <YAxis
-            width={56}
+            width="auto"
             tick={{ fill: MUTED, fontSize: AXIS_FONT_SIZE }}
             tickLine={false}
             axisLine={false}

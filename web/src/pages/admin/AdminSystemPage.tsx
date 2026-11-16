@@ -33,9 +33,9 @@ export function AdminSystemPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t("page.admin.system.title")} />
-      <Card className="flex flex-wrap items-center gap-6">
+      <Card className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
         <LogoMark size={72} />
-        <dl className="grid flex-1 gap-x-8 gap-y-3 sm:grid-cols-[auto_1fr]">
+        <dl className="grid w-full min-w-0 flex-1 grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-[auto_1fr]">
           <dt className="text-muted font-semibold">{t("adminSystem.project")}</dt>
           <dd>
             <span className="text-primary text-xl font-bold">{project.name}</span>
@@ -49,7 +49,7 @@ export function AdminSystemPage() {
           <dd>{project.researchTitle}</dd>
         </dl>
       </Card>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <InstitutionCard title={t("adminSystem.institution")} institution={project.institution} />
         <InstitutionCard title={t("adminSystem.collaborator")} institution={project.collaborator} />
       </div>

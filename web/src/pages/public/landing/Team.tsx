@@ -62,7 +62,7 @@ function Group({
       </h3>
       <ul
         aria-labelledby={titleId}
-        className="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2 sm:gap-8"
+        className="mx-auto grid grid-cols-1 max-w-3xl gap-6 sm:grid-cols-2 sm:gap-8"
       >
         {people.map((person) => (
           <PersonCard key={person.name} person={person} tone={tone} />

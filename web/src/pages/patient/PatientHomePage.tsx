@@ -237,7 +237,11 @@ function ProgressCards() {
         <h2 id="home-trends" className="mb-3 text-2xl font-bold">
           {t("patient.progress.title")}
         </h2>
-        <TrendCharts series={data.series} size="sm" className="grid gap-4 lg:grid-cols-3" />
+        <TrendCharts
+          series={data.series}
+          size="sm"
+          className="grid grid-cols-1 gap-4 lg:grid-cols-3"
+        />
         <Link to="/patient/progress" className={buttonClasses("secondary", "md", "mt-4")}>
           {t("progress.seeAll")}
           <ArrowRight size={20} aria-hidden />
@@ -261,7 +265,7 @@ export function PatientHomePage() {
       </h1>
 
       {dashboard.isPending && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Skeleton className="h-96 rounded-xl lg:col-span-2" />
           <Skeleton className="h-96 rounded-xl" />
         </div>
@@ -274,7 +278,7 @@ export function PatientHomePage() {
       )}
 
       {dashboard.isSuccess && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <TodayCard plan={dashboard.data.today_plan} />
           <StreakCard days={progress.data?.streak_days ?? dashboard.data.streak_days} />
           <ProgressCards />

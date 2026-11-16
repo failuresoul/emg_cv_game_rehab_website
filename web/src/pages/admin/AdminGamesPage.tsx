@@ -281,7 +281,7 @@ export function AdminGamesPage() {
         <p>{t("adminGames.laterNote")}</p>
       </Card>
       {games.isPending && (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {Array.from({ length: 4 }, (_, index) => (
             <Skeleton key={index} className="h-56" />
           ))}
@@ -289,7 +289,7 @@ export function AdminGamesPage() {
       )}
       {games.isError && <QueryError onRetry={() => void games.refetch()} />}
       {games.data && (
-        <ul className="grid items-start gap-4 lg:grid-cols-2">
+        <ul className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           {games.data.map((game) => (
             <li key={game.spec.id}>
               <GameSettingCard game={game} />

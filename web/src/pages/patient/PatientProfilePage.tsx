@@ -39,7 +39,7 @@ function Details() {
   ];
 
   return (
-    <dl className="grid gap-4 sm:grid-cols-3">
+    <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       {details.map(({ labelKey, value }) => (
         <div key={labelKey}>
           <dt className="text-muted">{t(labelKey)}</dt>

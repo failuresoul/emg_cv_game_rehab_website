@@ -45,9 +45,11 @@ export function PageHeader({ title, description, actions, breadcrumbs }: PageHea
           </ol>
         </nav>
       )}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{title}</h1>
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-[1.75rem]">
+            {title}
+          </h1>
           {description && <p className="text-muted mt-1">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}

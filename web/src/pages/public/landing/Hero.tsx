@@ -43,7 +43,7 @@ export function Hero() {
       style={{ backgroundImage: BACKGROUND }}
     >
       <div aria-hidden className="pointer-events-none absolute inset-0" style={DOTS} />
-      <Container className="relative grid items-center gap-12 pt-8 lg:grid-cols-[1fr_1.02fr] lg:gap-10 lg:pt-12">
+      <Container className="relative grid grid-cols-1 items-center gap-12 pt-8 lg:grid-cols-[1fr_1.02fr] lg:gap-10 lg:pt-12">
         <div>
           <p className="inline-flex max-w-full items-center gap-3 rounded-full border border-black/10 bg-white/90 py-1.5 pr-4 pl-1.5 text-[0.75rem] font-semibold text-[#33474E] shadow-[0_6px_18px_-12px_rgba(0,0,0,0.25)]">
             <span className="flex shrink-0 -space-x-1">

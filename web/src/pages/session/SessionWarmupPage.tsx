@@ -292,7 +292,7 @@ function ExerciseStep({
   if (userPaused) feedbackLine = t("warmup.paused");
 
   return (
-    <div className="mx-auto grid w-full max-w-[1700px] flex-1 items-start gap-4 lg:grid-cols-12">
+    <div className="mx-auto grid grid-cols-1 w-full max-w-[1700px] flex-1 items-start gap-4 lg:grid-cols-12">
       <div className="relative lg:col-span-7">
         <SkeletonCanvas
           result={visionResult}
@@ -308,7 +308,7 @@ function ExerciseStep({
           </div>
         )}
       </div>
-      <Card className="flex flex-col gap-2 p-4 lg:col-span-5">
+      <Card className="flex flex-col gap-2 p-4 sm:p-4 lg:col-span-5">
         <h1 className="text-xl font-bold">{t(exercise.nameKey)}</h1>
         {stage === "COUNTDOWN" ? (
           <div className="flex min-h-64 flex-col items-center justify-center" aria-live="polite">

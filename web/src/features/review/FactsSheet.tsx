@@ -22,7 +22,7 @@ export function FactsSheet({ facts }: { facts: ReviewFacts }) {
         <dt className="text-muted">{t("review.facts.notice")}</dt>
         <dd>{facts.safety_notice_present ? t("feedback.admin.yes") : t("feedback.admin.no")}</dd>
       </dl>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full text-left">
           <caption className="mb-1 text-left font-bold">{t("review.facts.measures")}</caption>
           <thead>

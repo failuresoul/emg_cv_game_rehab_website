@@ -86,7 +86,7 @@ function StudyForm({
         onChange={(event) => setDraft({ ...draft, description: event.target.value })}
       />
       {designFixed && <p className="text-muted">{t("study.form.designFixed")}</p>}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Select
           label={t("study.form.design")}
           hint={t(
@@ -145,7 +145,7 @@ function StudyForm({
         <p className="text-muted text-sm" id={`${uid}-games`}>
           {t("study.form.gamesHint")}
         </p>
-        <div className="grid gap-1 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
           {GAME_IDS.map((game) => {
             const index = draft.games.indexOf(game);
             const name = t(GAMES[game].nameKey);
@@ -306,7 +306,7 @@ function ProgressTable({ study }: { study: Study }) {
   const rows = progress.data.participants;
   if (rows.length === 0) return <EmptyState title={t("study.progress.empty")} />;
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="table-sticky w-full text-left">
         <thead>
           <tr className="border-b border-black/10">

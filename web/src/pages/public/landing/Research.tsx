@@ -16,7 +16,7 @@ const AIMS: { icon: LucideIcon; tint: string; color: string; key: string }[] = [
 
 function MetaRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid gap-1 sm:grid-cols-[170px_1fr] sm:gap-4">
+    <div className="grid grid-cols-1 gap-1 sm:grid-cols-[170px_1fr] sm:gap-4">
       <dt className="text-muted pt-0.5 text-[0.75rem] font-semibold tracking-[0.06em] uppercase">
         {label}
       </dt>
@@ -34,7 +34,7 @@ export function Research() {
       className="scroll-mt-24 py-20 lg:py-28"
     >
       <Container>
-        <div className="grid items-start gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
+        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
           <div>
             <p
               className={`mb-3 text-[0.75rem] font-bold tracking-[0.12em] uppercase ${ACCENT_TEXT}`}

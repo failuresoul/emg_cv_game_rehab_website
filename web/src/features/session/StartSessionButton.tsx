@@ -65,7 +65,7 @@ export function StartSessionButton({
 
   return (
     <Button
-      size="lg"
+      size={compact ? "md" : "lg"}
       className={className}
       loading={startSession.isPending}
       onClick={() =>

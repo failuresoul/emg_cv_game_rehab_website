@@ -119,7 +119,7 @@ function SafetyStage({
     { site: "extensors", title: "emgStep.site.extensors", text: "emgStep.site.extensors.text" },
   ];
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Panel className="flex flex-col gap-3">
         <h2 className="flex items-center gap-2 text-xl font-bold">
           <ShieldAlert size={24} aria-hidden className="text-accent" />
@@ -313,7 +313,7 @@ function CheckStage({
   const site = state.site ?? "flexors";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <Panel className="flex flex-col gap-3 lg:col-span-2">
         <div className="flex flex-wrap gap-3">
           {!status.connected && state.source !== "simulated" && (
@@ -577,7 +577,7 @@ function CalibrateStage({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <Panel className="flex flex-col gap-3 lg:col-span-2">
         <EmgTrace
           engine={engine}
@@ -665,7 +665,7 @@ function SummaryStage({
     { key: "emgStep.summary.spread", value: `${Math.round(state.mvc.spread * 100)}%` },
   ];
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Panel className="flex flex-col gap-3">
         <h2 className="text-2xl font-bold">{t("emgStep.summary.title")}</h2>
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1">

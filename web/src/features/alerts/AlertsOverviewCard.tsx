@@ -39,24 +39,29 @@ export function AlertsOverviewCard() {
       {alerts.isSuccess && alerts.data.length > 0 && (
         <ul className="divide-y divide-black/10">
           {alerts.data.slice(0, LATEST).map((alert) => (
-            <li key={alert.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+            <li key={alert.id} className="flex items-start gap-3 py-2">
               <Badge variant={SEVERITY_BADGE[alert.severity]}>
                 {t(SEVERITY_LABEL_KEYS[alert.severity])}
               </Badge>
-              <span className="font-semibold">{t(TYPE_LABEL_KEYS[alert.type])}</span>
-              {alert.patient_id !== null && alert.patient_code ? (
-                <Link
-                  to={`/admin/patients/${alert.patient_id}`}
-                  className="text-primary font-semibold underline"
-                >
-                  {alert.patient_code}
-                </Link>
-              ) : (
-                <span className="text-muted">{t("alert.system")}</span>
-              )}
-              <span className="text-muted min-w-0 flex-1 truncate">{alertSummary(alert)}</span>
-              <span className="text-muted whitespace-nowrap">
-                {formatDateTime(alert.created_at)}
+              {/* Stacked on phones: what and who, then the summary and the time. */}
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5 lg:flex-row lg:items-center lg:gap-3">
+                <span className="flex flex-wrap items-center gap-x-2">
+                  <span className="font-semibold">{t(TYPE_LABEL_KEYS[alert.type])}</span>
+                  {alert.patient_id !== null && alert.patient_code ? (
+                    <Link
+                      to={`/admin/patients/${alert.patient_id}`}
+                      className="text-primary font-semibold underline"
+                    >
+                      {alert.patient_code}
+                    </Link>
+                  ) : (
+                    <span className="text-muted">{t("alert.system")}</span>
+                  )}
+                </span>
+                <span className="text-muted min-w-0 truncate lg:flex-1">{alertSummary(alert)}</span>
+                <span className="text-muted text-sm whitespace-nowrap sm:text-base">
+                  {formatDateTime(alert.created_at)}
+                </span>
               </span>
             </li>
           ))}

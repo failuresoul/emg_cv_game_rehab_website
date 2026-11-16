@@ -58,14 +58,14 @@ export function AdminLayout() {
           type="button"
           aria-label={t("nav.closeMenu")}
           onClick={() => setMenuOpen(false)}
-          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
         />
       )}
 
       <aside
         className={clsx(
-          "bg-surface fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-black/10 p-4",
-          "lg:static lg:flex lg:shrink-0",
+          "bg-surface fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-black/10 p-4 shadow-xl",
+          "lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-64 lg:shrink-0 lg:shadow-none",
           menuOpen ? "flex" : "hidden",
         )}
       >
@@ -103,22 +103,29 @@ export function AdminLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="bg-surface flex items-center justify-between gap-3 border-b border-black/10 px-4 py-2">
+        <header className="bg-surface/95 sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-black/10 px-4 py-2 backdrop-blur sm:gap-3 lg:px-8">
           <Button
             variant="ghost"
             aria-label={t("nav.openMenu")}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
-            className="lg:hidden"
+            className="px-2 lg:hidden"
           >
             <Menu size={24} aria-hidden />
           </Button>
-          <div className="ml-auto flex items-center gap-3">
+          <span className="hidden sm:inline-flex lg:hidden">
+            <Logo to="/admin" />
+          </span>
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <LanguageSwitch />
             <UserMenu />
           </div>
         </header>
-        <main id={MAIN_ID} tabIndex={-1} className="flex-1 p-4 outline-none lg:p-8">
+        <main
+          id={MAIN_ID}
+          tabIndex={-1}
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8"
+        >
           <Outlet />
         </main>
         <footer className="border-t border-black/10 px-4 py-4 lg:px-8">

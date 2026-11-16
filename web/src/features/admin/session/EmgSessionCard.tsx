@@ -79,7 +79,7 @@ export function EmgSessionCard({ session }: { session: AdminSessionDetail }) {
   return (
     <Card className="lg:col-span-3">
       <h2 className="mb-2 text-xl font-bold">{t("emgCard.title")}</h2>
-      <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-5">
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-5">
         <Figure label={t("emgCard.site")} value={t(SITE_KEYS[calibration.site])} />
         <Figure
           label={t("emgCard.rest")}

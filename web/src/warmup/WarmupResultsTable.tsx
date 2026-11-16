@@ -63,7 +63,7 @@ export function WarmupResultsTable({
   const columns: TranslationKey[] = showChange ? [...COLUMNS, "warmup.table.change"] : COLUMNS;
 
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full text-left">
         <thead>
           <tr className="border-b border-black/10">

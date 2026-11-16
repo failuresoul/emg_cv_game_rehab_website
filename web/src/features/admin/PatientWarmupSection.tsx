@@ -126,7 +126,7 @@ function ChartTable({ rows, unit }: { rows: ChartRow[]; unit: (value: number) =>
       <summary className="text-primary min-h-11 cursor-pointer py-2 font-medium">
         {t("adminWarmup.tableView")}
       </summary>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="table-sticky w-full text-left">
           <thead>
             <tr className="border-b border-black/10">
@@ -186,7 +186,7 @@ function DecisionsTable({ decisions }: { decisions: Decision[] }) {
   const none = t("common.notSet");
   if (decisions.length === 0) return <EmptyState title={t("adminWarmup.noDecisions")} />;
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="table-sticky w-full text-left">
         <thead>
           <tr className="border-b border-black/10">

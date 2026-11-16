@@ -125,7 +125,7 @@ function LiveCheck() {
   if (status.phase !== "running") return <VisionStatusCard status={status} retry={retry} />;
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl flex-1 items-start gap-4 lg:grid-cols-3">
+    <div className="mx-auto grid grid-cols-1 w-full max-w-6xl flex-1 items-start gap-4 lg:grid-cols-3">
       <div className="relative lg:col-span-2">
         <SkeletonCanvas
           result={result}

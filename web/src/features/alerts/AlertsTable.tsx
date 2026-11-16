@@ -97,7 +97,7 @@ function Filters({
   const set = <T extends string>(value: string): T[] | undefined =>
     value === "" ? undefined : [value as T];
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       <Select
         label={t("alert.filter.status")}
         value={filters.status && filters.status.length > 1 ? "unresolved" : one(filters.status)}
@@ -167,7 +167,7 @@ export function AlertsTable({ patientId }: { patientId?: number }) {
         <EmptyState icon={BellRing} title={t("alert.empty")} />
       )}
       {alerts.isSuccess && alerts.data.length > 0 && (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="table-sticky w-full text-left">
             <caption className="sr-only">{t("alert.tableCaption")}</caption>
             <thead>

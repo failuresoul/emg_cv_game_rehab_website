@@ -34,7 +34,7 @@ const COLUMNS: TranslationKey[] = [
 
 function PatientTable({ patients }: { patients: Patient[] }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="table-sticky w-full text-left">
         <thead>
           <tr className="border-b border-black/10">
@@ -127,7 +127,7 @@ export function AdminPatientsPage() {
           onChange={(event) => setSearch(event.target.value)}
         />
       </div>
-      <Card className="p-0">{renderResults()}</Card>
+      <Card className="p-0 sm:p-0">{renderResults()}</Card>
       <AddPatientModal open={addOpen} onClose={() => setAddOpen(false)} />
     </>
   );

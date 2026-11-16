@@ -7,7 +7,7 @@ export function Logo({ to = "/" }: { to?: string }) {
   return (
     <Link
       to={to}
-      className="text-primary inline-flex min-h-11 items-center gap-2 text-xl font-bold"
+      className="text-primary inline-flex min-h-11 shrink-0 items-center gap-1.5 text-base font-bold whitespace-nowrap sm:gap-2 sm:text-xl"
     >
       <LogoMark size={32} />
       {project.name}

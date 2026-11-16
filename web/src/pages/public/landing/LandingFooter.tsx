@@ -16,7 +16,7 @@ export function LandingFooter() {
   return (
     <footer className="mt-20 bg-[#0A1517] pt-16 pb-10 text-[0.9rem] text-[#B5CCCA] lg:mt-28">
       <Container>
-        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_0.8fr]">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-[1.4fr_1fr_0.8fr]">
           <div>
             <div className="flex items-center gap-3">
               <LogoMark size={42} />

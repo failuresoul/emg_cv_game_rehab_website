@@ -66,7 +66,7 @@ export function ResultsView({ setId }: { setId: number }) {
         <p className="text-muted">
           {t("review.results.fallbacks", { count: data.llm_fallbacks, items: data.items / 2 })}
         </p>
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="text-muted border-b border-black/10">
@@ -118,7 +118,7 @@ export function ResultsView({ setId }: { setId: number }) {
         {data.agreement.length === 0 ? (
           <p>{t("review.results.noAgreement")}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-muted border-b border-black/10">

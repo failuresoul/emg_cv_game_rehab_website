@@ -61,9 +61,9 @@ export function LandingNavbar() {
             className="flex min-h-11 items-center gap-3 rounded-lg"
             aria-label={project.name}
           >
-            <LogoMark size={44} />
+            <LogoMark size={40} />
             <span className="leading-tight" aria-hidden>
-              <span className="text-ink block text-[1.3rem] font-extrabold tracking-tight">
+              <span className="text-ink block text-[1.15rem] font-extrabold tracking-tight whitespace-nowrap sm:text-[1.3rem]">
                 {project.name}
               </span>
               <span className="text-muted hidden text-[0.65rem] font-semibold tracking-[0.08em] uppercase sm:block">
@@ -84,11 +84,8 @@ export function LandingNavbar() {
               </li>
             ))}
           </ul>
-          <LanguageSwitch className="ml-auto lg:ml-4" />
-          <Link
-            to="/login"
-            className={buttonClasses("primary", "md", "hidden rounded-xl sm:inline-flex")}
-          >
+          <LanguageSwitch className="ml-auto max-sm:hidden lg:ml-4" />
+          <Link to="/login" className={buttonClasses("primary", "md", "rounded-xl max-sm:hidden")}>
             {t("landing.login")}
             <ArrowRight size={20} aria-hidden />
           </Link>
@@ -99,7 +96,7 @@ export function LandingNavbar() {
             aria-controls={MENU_ID}
             aria-label={t(open ? "landing.nav.close" : "landing.nav.menu")}
             onClick={() => setOpen((value) => !value)}
-            className="text-ink hover:bg-primary-light inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg sm:ml-2 lg:hidden"
+            className="text-ink hover:bg-primary-light ml-auto inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg sm:ml-2 lg:hidden"
           >
             {open ? <X size={26} aria-hidden /> : <Menu size={26} aria-hidden />}
           </button>
@@ -119,6 +116,7 @@ export function LandingNavbar() {
               </li>
             ))}
           </ul>
+          <LanguageSwitch className="mt-3 sm:hidden" />
           <Link
             to="/login"
             className={buttonClasses("primary", "lg", "mt-3 w-full rounded-xl sm:hidden")}

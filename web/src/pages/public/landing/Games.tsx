@@ -43,7 +43,7 @@ export function Games() {
           title={t("landing.games.title", { n: GAME_IDS.length })}
           sub={t("landing.games.sub")}
         />
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {GAME_IDS.map((id) => {
             const { background, art } = GAME_ART[id];
             const tag = TAGS[id];

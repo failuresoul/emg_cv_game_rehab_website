@@ -79,7 +79,7 @@ export function FeedbackReportView({
           <h3 id="feedback-highlights" className="text-lg font-bold">
             {t("feedback.highlightsTitle")}
           </h3>
-          <ul className="grid gap-3 md:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {report.highlights.map((item, index) => {
               const Icon = highlightIcon(item.metric_id);
               return (
@@ -100,7 +100,7 @@ export function FeedbackReportView({
           <h3 id="feedback-tips" className="text-lg font-bold">
             {t("feedback.suggestionsTitle")}
           </h3>
-          <ul className="grid gap-3 md:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {report.suggestions.map((item) => {
               const Icon = SUGGESTION_ICONS[item.id] ?? Lightbulb;
               return (

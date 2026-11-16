@@ -44,7 +44,7 @@ export function EmgTrendsSection({ patientId }: { patientId: number }) {
         {t("adminProgress.emgTitle")}
       </h2>
       <p className="text-muted">{t("adminProgress.emgHint")}</p>
-      <div className="grid gap-6 2xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
         {EMG_TREND_CHARTS.map((chart) => {
           const series = chartSeries(all, chart);
           const unit = series?.unit ?? "ms";

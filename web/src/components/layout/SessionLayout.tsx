@@ -41,12 +41,13 @@ function StepBar({ pathname }: { pathname: string }) {
 
   return (
     <nav aria-label={t("sessionBar.label")} className="px-4 pb-3">
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-2">
+      {/* One scrolling line on phones; it wraps on wider screens. */}
+      <ol className="-mx-4 flex items-center gap-x-2 gap-y-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
         {BAR_STEPS.map((item, index) => {
           const done = index < current;
           const isCurrent = index === current;
           return (
-            <li key={item.id} className="flex items-center gap-2">
+            <li key={item.id} className="flex shrink-0 items-center gap-2">
               {index > 0 && (
                 <span aria-hidden className="text-white/50">
                   •
@@ -55,7 +56,7 @@ function StepBar({ pathname }: { pathname: string }) {
               <span
                 aria-current={isCurrent ? "step" : undefined}
                 className={clsx(
-                  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 font-semibold",
+                  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 font-semibold whitespace-nowrap",
                   isCurrent && "bg-accent text-white",
                   done && "text-white",
                   !isCurrent && !done && "text-white/70",
@@ -186,9 +187,11 @@ export function SessionLayout() {
       <div className="bg-session-bg flex min-h-dvh flex-col text-white">
         <SkipLink />
         <header className="flex flex-col">
-          <div className="flex items-center justify-between gap-4 px-4 py-3">
-            <p className="text-xl font-semibold">{handle && t(handle.stepKey)}</p>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 sm:gap-4">
+            <p className="min-w-0 truncate text-lg font-semibold sm:text-xl">
+              {handle && t(handle.stepKey)}
+            </p>
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               <SensorDot />
               <DisplayButton />
               <SessionExitButton />

@@ -33,7 +33,7 @@ function RadiiTable({
   const none = t("common.notSet");
 
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="table-sticky w-full text-left">
         <thead>
           <tr className="border-b border-black/10">
@@ -133,7 +133,7 @@ function MovementQualityCharts({ series }: { series: PatientProgress["series"] }
     return <EmptyState title={t("adminProgress.qualityEmpty")} />;
   }
   return (
-    <div className="grid gap-6 2xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
       <div>
         <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.sparcChartTitle")}</h3>
         <ProgressChart
@@ -172,7 +172,7 @@ function HandGamesCharts({ series }: { series: PatientProgress["series"] }) {
     return <EmptyState title={t("adminProgress.handEmpty")} />;
   }
   return (
-    <div className="grid gap-6 2xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
       <div>
         <h3 className="mb-2 text-lg font-semibold">{t("adminProgress.opennessChartTitle")}</h3>
         <ProgressChart
@@ -234,7 +234,7 @@ function CalibrationProgress({ patient }: { patient: Patient }) {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="grid items-start gap-6 2xl:grid-cols-2">
+      <section className="grid grid-cols-1 items-start gap-6 2xl:grid-cols-2">
         <div className="mx-auto w-full max-w-2xl">
           <h2 className="mb-2 text-xl font-bold">{t("adminProgress.mapTitle")}</h2>
           <CalibrationReachMap

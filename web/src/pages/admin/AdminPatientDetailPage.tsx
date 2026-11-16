@@ -131,12 +131,12 @@ function OverviewTab({ patient }: { patient: Patient }) {
       <hr className="my-6 border-black/10" />
       <LevelsCard patientId={patient.id} />
       <hr className="my-6 border-black/10" />
-      <div className="grid gap-8 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
         <EngineModeCard patient={patient} />
         <LatestPlanCard patientId={patient.id} />
       </div>
       <hr className="my-6 border-black/10" />
-      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Detail label={t("patientForm.email")}>{patient.user.email}</Detail>
         <Detail label={t("patientForm.affectedSide")}>{sideLabel(patient.affected_side)}</Detail>
         <Detail label={t("patientForm.dominantSide")}>{sideLabel(patient.dominant_side)}</Detail>

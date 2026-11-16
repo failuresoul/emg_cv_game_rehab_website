@@ -94,8 +94,11 @@ function RecentPatients() {
             to={`/admin/patients/${patient.id}`}
             className="hover:bg-primary-light flex min-h-11 items-center gap-3 rounded-lg px-2 py-2"
           >
-            <span className="text-primary font-semibold">{patient.patient_code}</span>
-            <span className="min-w-0 flex-1 truncate">{patient.user.full_name}</span>
+            {/* Code above the name on phones, side by side on wider screens. */}
+            <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-3">
+              <span className="text-primary font-semibold">{patient.patient_code}</span>
+              <span className="truncate">{patient.user.full_name}</span>
+            </span>
             <PatientStatusBadge isActive={patient.user.is_active} />
             <ChevronRight size={20} aria-hidden className="text-muted shrink-0" />
           </Link>
@@ -130,17 +133,22 @@ function RecentSessions() {
           <li key={session.id}>
             <Link
               to={`/admin/sessions/${session.id}`}
-              className="hover:bg-primary-light flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-2 py-2"
+              className="hover:bg-primary-light flex min-h-11 items-center gap-3 rounded-lg px-2 py-2"
             >
-              <span className="text-primary font-semibold">{session.patient_code}</span>
-              <span className="min-w-0 flex-1 truncate">{session.patient_name}</span>
-              <span className="text-muted whitespace-nowrap">
-                {formatDateTime(session.started_at)}
-              </span>
-              <span className="tabular-nums whitespace-nowrap">
-                {score === null
-                  ? t("admin.recentSessions.noGames")
-                  : t("admin.recentSessions.score", { score: formatNumber(score, 0) })}
+              {/* Two lines on phones (who, then when and the score); one line on wide screens. */}
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5 lg:flex-row lg:items-center lg:gap-3">
+                <span className="flex min-w-0 items-center gap-2 lg:flex-1">
+                  <span className="text-primary font-semibold">{session.patient_code}</span>
+                  <span className="truncate">{session.patient_name}</span>
+                </span>
+                <span className="text-muted flex flex-wrap gap-x-3 text-sm sm:text-base">
+                  <span className="whitespace-nowrap">{formatDateTime(session.started_at)}</span>
+                  <span className="tabular-nums whitespace-nowrap">
+                    {score === null
+                      ? t("admin.recentSessions.noGames")
+                      : t("admin.recentSessions.score", { score: formatNumber(score, 0) })}
+                  </span>
+                </span>
               </span>
               <SessionStatusBadge status={session.status} />
               <ChevronRight size={20} aria-hidden className="text-muted shrink-0" />
@@ -166,10 +174,10 @@ export function AdminOverviewPage() {
           </Button>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stats />
       </div>
-      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
           <h2 className="mb-3 text-xl font-bold">{t("admin.recentPatients")}</h2>
           <RecentPatients />

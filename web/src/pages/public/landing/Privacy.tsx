@@ -20,7 +20,7 @@ export function Privacy() {
           kicker={t("landing.privacy.kicker")}
           title={t("landing.privacy.title")}
         />
-        <ul className="grid gap-5 md:grid-cols-3 lg:gap-6">
+        <ul className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:gap-6">
           {CARDS.map(({ icon: Icon, tint, color, key }) => (
             <li key={key} className="rounded-[22px] border border-black/10 bg-white p-7">
               <span className={`mb-4 grid h-13 w-13 place-items-center rounded-2xl ${tint}`}>

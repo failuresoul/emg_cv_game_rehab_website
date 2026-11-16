@@ -89,7 +89,7 @@ function Figures({ report }: { report: SessionReport }) {
   const seconds = report.active_seconds > 0 ? report.active_seconds : report.duration_seconds;
 
   return (
-    <dl className="grid gap-4 sm:grid-cols-3">
+    <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <Figure label={t("summary.timeSpent")}>
         {seconds == null ? notRecorded : formatDuration(seconds)}
       </Figure>
@@ -229,7 +229,7 @@ function Report({ report, affectedSide }: { report: SessionReport; affectedSide:
           {t("summary.gamesTitle")}
         </h2>
         {report.games.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {report.games.map((game) => (
               <GameCard key={game.run_id} game={game} />
             ))}

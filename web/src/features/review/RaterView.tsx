@@ -18,7 +18,7 @@ import { RubricForm } from "./RubricForm";
  * says which version it is: the server never sends it. */
 export function BlindItemView({ item, rubric }: { item: BlindItem; rubric: ReactNode }) {
   return (
-    <div className="grid items-start gap-4 xl:grid-cols-[1fr_1fr]">
+    <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1fr_1fr]">
       <Card className="flex flex-col gap-3">
         <h3 className="text-lg font-bold">
           {t("review.item", { code: item.code, position: item.position, total: item.total })}

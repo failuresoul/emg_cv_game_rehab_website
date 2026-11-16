@@ -118,7 +118,7 @@ function MetricChart({ results, metric }: { results: StudyResults; metric: Resul
 /** The same numbers as a table, for screen readers and copying into the paper. */
 function ResultsTable({ results }: { results: StudyResults }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="table-sticky w-full text-left">
         <caption className="sr-only">{t("study.results.tableCaption")}</caption>
         <thead>
@@ -175,7 +175,7 @@ function ResultsTable({ results }: { results: StudyResults }) {
 export function StudyResultsCharts({ results }: { results: StudyResults }) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-4">
         {RESULT_METRICS.map((metric) => (
           <MetricChart key={metric.key} results={results} metric={metric} />
         ))}

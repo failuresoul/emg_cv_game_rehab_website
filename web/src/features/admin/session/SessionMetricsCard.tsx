@@ -16,7 +16,7 @@ export function SessionMetricsCard({ rows }: { rows: readonly SessionMetricRow[]
       {rows.length === 0 ? (
         <EmptyState icon={Gauge} title={t("adminSession.sessionMetricsEmpty")} />
       ) : (
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => {
             const worded = formatMetricValue(row.unit, row.value);
             return (

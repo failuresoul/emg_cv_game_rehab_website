@@ -33,7 +33,7 @@ export function HowItWorks() {
             aria-hidden
             className="border-primary/30 absolute top-[39px] right-[12.5%] left-[12.5%] hidden border-t-2 border-dashed lg:block"
           />
-          <ol className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-7">
+          <ol className="relative grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-7">
             {STEPS.map(({ icon: Icon, color, key }, index) => (
               <li key={key} className="relative text-center">
                 <div className="relative mx-auto mb-5 grid h-[78px] w-[78px] place-items-center rounded-3xl border border-black/10 bg-white shadow-[0_18px_30px_-22px_rgba(10,40,45,0.5)]">

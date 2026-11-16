@@ -202,7 +202,7 @@ export function AdminReportPanel({
         </Card>
       )}
       {finished && data.report && (
-        <div className="grid items-start gap-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
           <Card className="flex flex-col gap-3">
             <h3 className="text-lg font-bold">{t("feedback.admin.patientView")}</h3>
             <FeedbackReportView report={data.report} notices={data.safety_notices ?? []} />

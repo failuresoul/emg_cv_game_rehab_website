@@ -39,7 +39,7 @@ export function AdminReportsTab({ patientId }: { patientId: number }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="table-sticky w-full text-left">
           <thead>
             <tr className="border-b border-black/10">

@@ -9,10 +9,11 @@ import type { Language } from "@/types/api";
 const OPTIONS: {
   value: Language;
   labelKey: "languageSwitch.en" | "languageSwitch.bn";
+  shortKey: "languageSwitch.enShort" | "languageSwitch.bnShort";
   lang: string;
 }[] = [
-  { value: "en", labelKey: "languageSwitch.en", lang: "en" },
-  { value: "bn", labelKey: "languageSwitch.bn", lang: "bn" },
+  { value: "en", labelKey: "languageSwitch.en", shortKey: "languageSwitch.enShort", lang: "en" },
+  { value: "bn", labelKey: "languageSwitch.bn", shortKey: "languageSwitch.bnShort", lang: "bn" },
 ];
 
 /**
@@ -60,9 +61,10 @@ export function LanguageSwitch({
             lang={option.lang}
             aria-pressed={language === option.value}
             disabled={saving}
+            aria-label={t(option.labelKey)}
             onClick={() => void choose(option.value)}
             className={clsx(
-              "min-h-11 min-w-11 rounded-md px-3 font-semibold disabled:cursor-wait",
+              "min-h-11 min-w-11 rounded-md px-2 font-semibold whitespace-nowrap disabled:cursor-wait sm:px-3",
               language === option.value
                 ? tone === "dark"
                   ? "bg-white text-black"
@@ -72,7 +74,13 @@ export function LanguageSwitch({
                   : "text-ink hover:bg-primary-light",
             )}
           >
-            {t(option.labelKey)}
+            {/* Short names on phones, so the header fits in one line. */}
+            <span aria-hidden className="sm:hidden">
+              {t(option.shortKey)}
+            </span>
+            <span aria-hidden className="hidden sm:inline">
+              {t(option.labelKey)}
+            </span>
           </button>
         ))}
       </div>

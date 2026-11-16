@@ -34,6 +34,7 @@ const LATIN_IN_BANGLA = new Set<string>([
   "language.en",
   "feedback.language.en",
   "languageSwitch.en",
+  "languageSwitch.enShort",
   "setup.performance",
   "adminSession.fps",
   "landing.preview.mvcUnit",

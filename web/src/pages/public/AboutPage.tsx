@@ -52,8 +52,8 @@ function Section({ id, children }: { id: string; children: ReactNode }) {
  * Research prototype; no version number. */
 export function AboutPage() {
   return (
-    <article className="flex flex-col gap-16 pb-6 lg:gap-20">
-      <header className="relative overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#E8F2F1,#FFFFFF)] px-6 py-10 sm:px-10 sm:py-14">
+    <article className="flex flex-col gap-12 pb-6 sm:gap-16 lg:gap-20">
+      <header className="relative overflow-hidden rounded-2xl bg-[linear-gradient(180deg,#E8F2F1,#FFFFFF)] px-5 py-8 sm:rounded-[28px] sm:px-10 sm:py-14">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -68,7 +68,7 @@ export function AboutPage() {
           <p className={`mb-3 text-[0.75rem] font-bold tracking-[0.12em] uppercase ${ACCENT_TEXT}`}>
             {t("about.kicker", { name: project.name })}
           </p>
-          <h1 className="max-w-3xl text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.4rem]">
+          <h1 className="max-w-3xl text-[1.5rem] leading-tight font-extrabold tracking-tight text-balance sm:text-[2.4rem]">
             {project.researchTitle}
           </h1>
           <p className="text-muted mt-4 max-w-2xl text-[1.05rem]">
@@ -88,7 +88,7 @@ export function AboutPage() {
           kicker={t("about.background.kicker")}
           title={t("about.background.title")}
         />
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {(["home", "multimodal"] as const).map((key) => (
             <div key={key} className="rounded-[22px] border border-black/10 bg-white p-7">
               <h3 className="mb-2 text-[1.15rem] font-bold">
@@ -106,7 +106,7 @@ export function AboutPage() {
           kicker={t("about.system.kicker")}
           title={t("about.system.title")}
         />
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {PARTS.map(({ icon: Icon, key, soon }) => (
             <li key={key} className="rounded-[22px] border border-black/10 bg-white p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
@@ -146,7 +146,7 @@ export function AboutPage() {
           kicker={t("landing.privacy.kicker")}
           title={t("about.privacy.title")}
         />
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {DATA_POINTS.map(({ icon: Icon, key }) => (
             <li key={key} className="flex gap-4 rounded-[18px] border border-black/10 bg-white p-5">
               <span className="bg-primary-light grid h-11 w-11 shrink-0 place-items-center rounded-xl">

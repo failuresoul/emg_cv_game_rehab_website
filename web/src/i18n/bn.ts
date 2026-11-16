@@ -2002,6 +2002,8 @@ export const bn: Record<TranslationKey, string> = {
   "languageSwitch.label": "ভাষা",
   "languageSwitch.en": "English",
   "languageSwitch.bn": "বাংলা",
+  "languageSwitch.enShort": "EN",
+  "languageSwitch.bnShort": "বাং",
   "languageSwitch.error": "ভাষা বদলানো যায়নি। আবার চেষ্টা করুন।",
   "patient.profile.display": "ভাষা ও সংখ্যা",
   "patient.profile.language": "ভাষা",

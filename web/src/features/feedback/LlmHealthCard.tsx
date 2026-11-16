@@ -24,7 +24,7 @@ export function LlmHealthCard() {
       {health.isError && <QueryError onRetry={() => void health.refetch()} />}
       {health.data && (
         <>
-          <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-[auto_1fr]">
+          <dl className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-[auto_1fr]">
             <dt className="text-muted font-semibold">{t("feedback.health.provider")}</dt>
             <dd>{health.data.provider}</dd>
             <dt className="text-muted font-semibold">{t("feedback.health.model")}</dt>

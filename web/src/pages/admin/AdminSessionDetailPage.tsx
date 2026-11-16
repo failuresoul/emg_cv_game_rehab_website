@@ -107,7 +107,7 @@ export function AdminSessionDetailPage() {
           date: formatDateTime(data.started_at),
         })}
       />
-      <div className="grid items-start gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
         <HeaderCard session={data} />
         <Card className="lg:col-span-2">
           <h2 className="mb-2 text-xl font-bold">{t("calibrate.result.title")}</h2>

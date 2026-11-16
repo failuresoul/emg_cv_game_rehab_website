@@ -175,7 +175,7 @@ function ProgrammeEditor({ programme, patientId }: { programme: Programme; patie
         title={t("programme.section.session")}
         intro={t("programme.session.intro")}
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label={t("programme.session.minutes")}
             hint={t("programme.session.minutesHint", LIMITS.minutes)}
@@ -238,7 +238,7 @@ function ProgrammeEditor({ programme, patientId }: { programme: Programme; patie
         title={t("programme.section.warmup")}
         intro={t("programme.warmup.intro")}
       >
-        <ul className="grid gap-1 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
           {EXERCISE_ORDER.map((exercise) => (
             <li key={exercise}>
               <Switch
@@ -329,7 +329,7 @@ function ProgrammeEditor({ programme, patientId }: { programme: Programme; patie
       </Section>
 
       <Section id={`${uid}-goals`} title={t("programme.section.goals")}>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label={t("programme.field.weekly_goal")}
             hint={t("programme.goals.weeklyHint", LIMITS.weeklyGoal)}

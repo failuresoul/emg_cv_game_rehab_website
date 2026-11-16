@@ -116,7 +116,7 @@ export function PatientSessionDetailPage() {
     <>
       <BackLink />
       <PageHeader title={t("page.patient.sessionDetail.title")} />
-      <div className="grid items-start gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <dl className="flex flex-col gap-4">
             <Detail label={t("sessions.column.date")}>{formatDateTime(startedAt)}</Detail>

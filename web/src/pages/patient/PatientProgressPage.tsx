@@ -41,7 +41,7 @@ function ReachHistory({
   const same = first.session_id === latest.session_id;
 
   return (
-    <div className="grid items-center gap-6 lg:grid-cols-3">
+    <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-3">
       <div className="mx-auto w-full max-w-2xl lg:col-span-2">
         <CalibrationReachMap
           radii={latest.reach_radii_sw}

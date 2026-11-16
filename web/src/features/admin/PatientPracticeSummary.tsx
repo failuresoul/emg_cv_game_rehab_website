@@ -96,7 +96,7 @@ export function PatientPracticeSummary({ patient }: { patient: Patient }) {
       {progress.isPending && <Skeleton className="h-24" />}
       {progress.isError && <QueryError onRetry={() => void progress.refetch()} />}
       {progress.isSuccess && (
-        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div>
             <dt className="text-muted">{t("adminPractice.weeklyGoal")}</dt>
             <dd className="flex flex-wrap items-center gap-3">

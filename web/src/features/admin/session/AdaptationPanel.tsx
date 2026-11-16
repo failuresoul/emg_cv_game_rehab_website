@@ -73,7 +73,7 @@ function DecisionsTable({ logs }: { logs: readonly AdaptationLogRow[] }) {
     "adminAdaptation.column.cue",
   ] as const;
   return (
-    <div className="max-h-96 overflow-auto">
+    <div className="relative max-h-96 overflow-auto">
       {getLanguage() !== "en" && (
         <p className="text-muted mb-2 text-sm">{t("adminAdaptation.englishNote")}</p>
       )}

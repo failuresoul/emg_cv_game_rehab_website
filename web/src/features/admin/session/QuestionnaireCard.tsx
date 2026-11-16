@@ -67,7 +67,7 @@ export function QuestionnaireCard({ session }: { session: AdminSessionDetail }) 
         <EmptyState icon={ClipboardList} title={t("adminSession.questionnaire.none")} />
       ) : (
         <div className="flex flex-col gap-4">
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Answer label={t("adminSession.questionnaire.pain")}>
               {t("adminSession.questionnaire.outOf", { value: feedback.pain_0_10, max: 10 })}
             </Answer>

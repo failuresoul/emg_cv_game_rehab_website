@@ -2015,6 +2015,8 @@ export const en = {
   "languageSwitch.label": "Language",
   "languageSwitch.en": "English",
   "languageSwitch.bn": "বাংলা",
+  "languageSwitch.enShort": "EN",
+  "languageSwitch.bnShort": "বাং",
   "languageSwitch.error": "Could not change the language. Please try again.",
   "patient.profile.display": "Language and numbers",
   "patient.profile.language": "Language",
