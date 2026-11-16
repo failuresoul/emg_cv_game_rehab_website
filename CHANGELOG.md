@@ -4,6 +4,18 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Added (Day 20, task 5: the manual testing guide)
+
+- **`docs/MuVi_Rehab_Testing_Guide.docx`:** A4, title page, contents, page numbers.
+  - **130 tests in 16 sections:** from the set-up through the session, AI, LLM, EMG, replay, validation tools, error cases and the final v1.0.0 checklist.
+  - **Each test is a table row:** ID, what to do, expected, a screenshot thumbnail, Pass/Fail boxes and notes.
+- **Built by `tools/docs/build_testing_guide.py`** in the same docs environment. Every on-screen label is looked up by its key in `web/src/i18n/en.ts`, and the build fails if a key is missing. Numbers come from the code and configs (for example the EMG settings and `PAIN_FLAG_MIN`).
+- **One command:** `scripts/docs/make_testing_guide.ps1` builds the guide, fills the contents and counts pages with Word, and reads the guide back.
+
+### Fixed
+
+- **Login after too many attempts:** after 5 failed logins in 15 minutes the login page said "We could not log you in"; it now says "Too many attempts. Please wait a moment and try again." (the server's 429), with a test.
+
 ### Added (Day 20, task 4: the technical report)
 
 - **`docs/MuVi_Rehab_Technical_Report.docx`:** A4, title page, contents, numbered headings, page numbers, figure and table captions, screenshots and diagrams.

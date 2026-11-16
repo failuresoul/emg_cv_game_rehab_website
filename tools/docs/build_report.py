@@ -84,7 +84,9 @@ def load_project() -> dict[str, Any]:
 
 def load_strings() -> dict[str, str]:
     text = read("web/src/i18n/en.ts")
-    return {key: json.loads(f'"{value}"') for key, value in re.findall(r'^\s*"([^"]+)":\s*"((?:[^"\\]|\\.)*)",?$', text, re.M)}
+    # A value may be on the key's line or, when long, on the next line.
+    pattern = r'^\s*"([^"]+)":\s*\n?\s*"((?:[^"\\]|\\.)*)",?$'
+    return {key: json.loads(f'"{value}"') for key, value in re.findall(pattern, text, re.M)}
 
 
 def load_routes() -> list[tuple[str, str, str, str]]:

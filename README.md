@@ -681,6 +681,7 @@ Every route starts with `/api`; the interactive documentation is at <http://loca
 | [Session facts](docs/session-facts.md) | What the feedback model reads |
 | [Patient guide](docs/user-guide-patient.md), [Admin guide](docs/admin-guide.md), [Demo script](docs/demo-script.md) | Guides |
 | [API contract](docs/api-contract.md), [Day logs](docs/day-logs/README.md), [Docs index](docs/README.md) | Reference |
+| [Manual testing guide (Word)](docs/MuVi_Rehab_Testing_Guide.docx) | 130 step-by-step tests with expected results, screenshots and Pass/Fail boxes; rebuilt by `.\scripts\docs\make_testing_guide.ps1` |
 | [Technical report (Word)](docs/MuVi_Rehab_Technical_Report.docx) | Every part explained (what, how, why, alternatives) with 68 likely questions; rebuilt by `.\scripts\docs\make_report.ps1` |
 
 ## Results

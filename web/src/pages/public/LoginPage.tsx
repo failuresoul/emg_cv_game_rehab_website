@@ -18,9 +18,12 @@ import { t } from "@/i18n";
 import { SILENT } from "@/lib/apiErrors";
 import { taglineText } from "@/config/projectText";
 
-function errorMessage(error: unknown): string {
-  const invalid = axios.isAxiosError(error) && error.response?.status === 401;
-  return t(invalid ? "login.error.invalid" : "login.error.generic");
+/** Wrong email or password, too many attempts (5 in 15 minutes, the server's limit), or other. */
+export function errorMessage(error: unknown): string {
+  const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+  if (status === 401) return t("login.error.invalid");
+  if (status === 429) return t("apiError.tooMany");
+  return t("login.error.generic");
 }
 
 export function LoginPage() {
