@@ -28,3 +28,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# The demo video (scripts/demo/make_demo.ps1)
+demo/
