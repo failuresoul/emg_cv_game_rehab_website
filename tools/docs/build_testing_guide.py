@@ -372,7 +372,7 @@ def build(g: Guide) -> None:
         [4, 12.5],
     )
     g.tests("T12", [
-        ("Flash `firmware/emg_stream/emg_stream.ino`; Serial Monitor at 230400 baud, Newline; type `PING`.", "`PONG,1.0.0`; pressing EN/RESET prints `I,version=1.0.0,rate=500,mode=ADC,streaming=0,…`.", None),
+        ("Flash `firmware/emg_stream/emg_stream.ino`; Serial Monitor at 115200 baud, Newline; type `PING`.", "`PONG,1.0.0`; pressing EN/RESET prints `I,version=1.0.0,rate=500,mode=ADC,streaming=0,…`.", None),
         ("`server\\.venv\\Scripts\\python.exe analysis\\tools\\serial_rate.py --port COM5 --seconds 60` (your port).", "About 500 samples per second, 0 gaps, firmware drops 0.", None),
         ("`/dev/emg-monitor` → Connect ESP32 → readiness with electrodes on.", "All nine items green (table above); then calibration and an EMG game as in section 9.", "emg-readiness"),
     ])

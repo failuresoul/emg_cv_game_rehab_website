@@ -82,11 +82,11 @@ If the divider output is above 3.0 V: **stop**, turn the gain down or use a smal
 
 ## (c) Firmware upload and the Serial Monitor
 
-Upload `firmware/emg_stream/emg_stream.ino` as in the firmware guide (ESP32 Dev Module). Serial Monitor at **230400 baud**, line ending **Newline**.
+Upload `firmware/emg_stream/emg_stream.ino` as in the firmware guide (ESP32 Dev Module). Serial Monitor at **115200 baud**, line ending **Newline**.
 
 | You type | Expected | Result |
 | --- | --- | --- |
-| (press EN/RESET) | `I,version=1.0.0,rate=500,mode=ADC,streaming=0,pin=34,baud=230400,…` | |
+| (press EN/RESET) | `I,version=1.0.0,rate=500,mode=ADC,streaming=0,pin=34,baud=115200,…` | |
 | `PING` | `PONG,1.0.0` | |
 | `SIM ON` | `OK,SIM,ON` | |
 | `START` | `OK,START`, then `E,<counter>,<mV>` lines and `S,…` once a second; blue LED on | |
@@ -163,7 +163,7 @@ Follow the screen: rest for 10 s, then three strongest squeezes of 3 s with a 30
 | Attempt 1 / 2 / 3 (highest 0.5 s mean) | Similar | ___ / ___ / ___ mV |
 | Extra attempt asked for? | Only if spread > 15% | |
 | Spread (largest − smallest) / largest | ≤ 15% | ___ % |
-| MVC (saved) | ≥ 3 × rest mean | ___ mV |
+| MVC (saved) | ≥ 2 × rest mean | ___ mV |
 | Onset threshold (rest mean + 3 SD) | Shown on the summary | ___ mV |
 | Saved without an error | Yes | |
 | Gain / electrode note entered (gain position) | Yes | |
@@ -186,7 +186,7 @@ Follow the screen: rest for 10 s, then three strongest squeezes of 3 s with a 30
 
 | Check | Expected | Result |
 | --- | --- | --- |
-| Extensors: MVC | ≥ 3 × rest mean | ___ mV |
+| Extensors: MVC | ≥ 2 × rest mean | ___ mV |
 | Bloom: the badge | "Muscle sensor" | |
 | Bloom: opening the fingers opens the flower | Yes | |
 | Bloom: successes / trials | | ___ / ___ |

@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from emg_protocol import parse_line  # noqa: E402
 
-BAUD = 230400
+BAUD = 115200
 
 
 class Port(Protocol):

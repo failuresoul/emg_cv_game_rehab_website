@@ -110,7 +110,7 @@ describe("the mock board speaks the firmware protocol", () => {
     rig = new Rig();
     await rig.connect();
     expect(rig.firmware.received).toEqual(["PING", "INFO", "START"]);
-    expect(rig.serial.port.baudRate).toBe(230400);
+    expect(rig.serial.port.baudRate).toBe(115200);
     const status = rig.engine.getStatus();
     expect(status.connected && status.streaming).toBe(true);
     expect(status.firmwareVersion).toBe("1.0.0");

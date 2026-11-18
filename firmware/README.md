@@ -101,17 +101,35 @@ The Espressif ESP32 core must be installed (Tools → Board → Boards Manager �
 3. **Tools → Port:** the ESP32's COM port. If none appears, see Troubleshooting.
 4. **Tools → Upload Speed: 921600.** Use 115200 if uploads fail.
 5. Press **Upload** (the arrow). It ends with "Hard resetting via RTS pin...".
-6. Open **Tools → Serial Monitor**. Set the speed to **230400 baud** and the line ending to **Newline**. Then type, one at a time:
+6. Open **Tools → Serial Monitor**. Set the speed to **115200 baud** and the line ending to **Newline**. After a reset you see the start-up line, then values at once (about 100 lines a second, like a plain `analogRead` sketch): `raw_mV:203,envelope_mV:201,saturation_mV:3000,zero:0`. Squeeze and `raw_mV` rises. Then type, one at a time:
 
 | You type | You see |
 | --- | --- |
-| (nothing: press the EN/RESET button) | `I,version=1.0.0,rate=500,mode=ADC,streaming=0,pin=34,baud=230400,core=3.x,queue=512` |
+| (nothing: press the EN/RESET button) | `I,version=1.0.0,rate=500,mode=ADC,streaming=0,pin=34,baud=115200,core=3.x,queue=512`, then `raw_mV:…` lines |
 | `PING` | `PONG,1.0.0` |
 | `SIM ON` | `OK,SIM,ON` |
 | `START` | `OK,START`, then many lines like `E,0,203`, `E,1,198` … and every second `S,499,0,1.0.0,SIM`. The blue LED is on. |
 | `STOP` | `OK,STOP`; the E lines stop and the LED goes off |
 | `SIM OFF` | `OK,SIM,OFF` (the real sensor from now on) |
 | `INFO` | the settings again |
+| `PLOT ON` | `OK,PLOT,ON`, then lines like `raw_mV:203,envelope_mV:201,saturation_mV:3000,zero:0` (for the Serial Plotter) |
+| `PLOT OFF` | `OK,PLOT,OFF`; the lines stop |
+
+**Seeing the signal in the Serial Plotter.** Close the Serial Monitor, open **Tools → Serial Plotter**, set **115200 baud** and **Newline**, and press EN/RESET: it draws at once, with nothing to type (send `SIM ON` to see the simulated signal; `PLOT ON` restarts it after `START` or `STOP`). You get four lines, 100 points a second:
+- `raw_mV`: the sample as read;
+- `envelope_mV`: a 50 ms moving average, like the app's smoothing;
+- `saturation_mV`: a fixed line at 3000 mV, the app's saturation level, which the signal should stay below;
+- `zero`: a fixed line at 0.
+
+Status lines are not printed while plotting. `PLOT OFF` stops. `START` (what the browser sends) switches to the protocol lines, so the app is never affected (it ignores plot lines). If the plotter shows "value 1, value 2…" stuck at 0 and 1, plot mode is off and it is drawing the status line `S,0,0,1.0.0,ADC`: send `PLOT ON` or press EN/RESET.
+
+**Switch** at the top of `emg_stream.ino`: `PLOT_AT_START 1` (the default) streams plot values after every reset. Set it to `0` if you want the board to wait silently (status lines only) until `START` or `PLOT ON`.
+
+**Garbled characters inside lines** (for example `S,0,0,1 r�b`, or two lines joined by `�`) mean bytes are corrupted on the USB link, not a firmware problem. Try these, one at a time:
+1. **The ESP32 alone:** disconnect the batteries and the sensor's SIG and GND wires. If it becomes clean, the noise comes from the sensor wiring or ground.
+2. **A different USB data cable,** directly in the laptop (no hub). Run the laptop on battery.
+3. **The speed:** the link runs at 115200 baud (230400 garbled bytes on the project's board), so the monitor must be at 115200.
+4. **Measure it:** `server\.venv\Scripts\python.exe analysis\tools\serial_rate.py --port COM11 --sim --seconds 10` (Serial Monitor closed): "Broken lines" should be 0.
 
 **What the lines mean:**
 - `E,<counter>,<millivolts>` is one sample. The counter goes up by one each time, so a jump means samples were lost.
@@ -138,7 +156,7 @@ Expect about 500 per second, 0 counter gaps, firmware drops 0, and in simulation
 | --- | --- |
 | **No COM port appears** | Install the USB driver for the ESP32's USB chip: **CP210x** (Silicon Labs) or **CH340** (WCH); the chip name is printed next to the USB socket. Try another cable: many are **charge-only**. Try another USB port. |
 | **Upload fails** ("Failed to connect", "Timed out waiting for packet header") | Hold the **BOOT** button when "Connecting...." appears, and release it when the upload starts. Lower the upload speed to 115200. Close the Serial Monitor and the browser tab. |
-| **Garbled characters** in the Serial Monitor | Set the speed to **230400**. Garbage straight after a reset is the ESP32's boot message and is normal. |
+| **Garbled characters** in the Serial Monitor | Set the speed to **115200**. Garbage straight after a reset is the ESP32's boot message and is normal. Garbled bytes inside lines: see "Garbled characters inside lines" above. |
 | **Noisy signal** (jumps when the muscle is relaxed) | Fresh electrodes and clean, dry skin; press the electrodes on firmly. Keep the cable still and away from the laptop's power supply. Check the reference is on bone, and that the **common ground** is connected. The laptop must be on battery. |
 | **Flat signal** (no change on squeezing) | Check both batteries (each above about 7 V), the +Vs/GND/−Vs order, the divider, and that SIG reaches GPIO34. Check the mid and end electrodes are on the muscle, not the reference. Turn the gain up a little. In the Serial Monitor, `SIM ON` should still give a changing signal. |
 | **Saturation** (a flat top at about 3000 mV during strong squeezes) | Turn the gain down, or make the divider ratio smaller. Then measure GPIO34 again: never above 3.0 V. |

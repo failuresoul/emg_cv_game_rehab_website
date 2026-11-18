@@ -10,13 +10,20 @@
     into a queue. It never prints and never allocates memory.
   - loop() on core 1 empties the queue and prints one line per sample:  E,<counter>,<mv>
     and once per second a status line:              S,<counter>,<dropped>,<version>,<ADC|SIM>
-  - Streaming starts stopped. Commands (one per line, any case):
+  - After a reset it prints the I line, then streams plotter values at once (PLOT_AT_START), so
+    the Serial Monitor and Serial Plotter show the signal immediately. START (the app sends it)
+    switches to the protocol below. Serial Monitor / Plotter: 115200 baud, Newline.
+    Commands (one per line, any case):
       START        begin streaming (LED on); the counter starts again at 0
       STOP         stop streaming (LED off)
       PING         replies PONG,<version>
       RATE <hz>    sampling rate, 100-1000 (rounded to whole milliseconds; the reply gives it)
       SIM ON|OFF   simulated envelope instead of the ADC (no sensor needed)
       INFO         prints the settings as I,key=value,...
+      PLOT ON|OFF  for the Arduino IDE's Serial Plotter (Tools -> Serial Plotter, 115200 baud):
+                   streams raw_mV, envelope_mV (50 ms average), saturation_mV and zero as
+                   labelled values, 100 points a second, without status lines. START (which
+                   the browser sends) and a reset always return to the protocol above.
     Replies: OK,<what>   or   ERR,<why>.
 
   The sensor's SIG is already an amplified, rectified and smoothed EMG envelope, so plain
@@ -32,11 +39,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+// ---- Bench switches (change, upload, test; set back to 0 before using the app) ---------------
+
+// 1 (default): after every reset the board streams values at once, like a plain analogRead
+//    sketch, so the Serial Monitor shows numbers and Tools -> Serial Plotter draws the signal
+//    with nothing to type. The app is unaffected: it ignores these lines and its START switches
+//    to the protocol. 0: the board waits silently (status lines only) until START or PLOT ON.
+#define PLOT_AT_START 1
+
 // ---- Settings ---------------------------------------------------------------------------------
 
 static const uint8_t EMG_PIN = 34;        // ADC1 channel 6; input only
 static const uint32_t SAMPLE_HZ = 500;    // default rate; RATE <hz> changes it
-static const uint32_t BAUD = 230400;      // the Serial Monitor and the browser use the same
+// 115200: reliable on every ESP32 DevKit's USB-serial chip (230400 garbled bytes on the project
+// board). The browser (web/src/emg/serial.ts) and analysis/tools/serial_rate.py use the same.
+// 500 Hz needs about 7 KB/s of the link's 11.5 KB/s; above about 700 Hz the link cannot keep up
+// and the firmware counts the samples it could not send as dropped.
+static const uint32_t BAUD = 115200;
 static const char FW_VERSION[] = "1.0.0";
 static const uint8_t LED_PIN = 2;         // the onboard blue LED: on while streaming
 
@@ -79,7 +98,20 @@ static bool awaitingFirstSample = false;
 static volatile uint32_t periodTicks = 2;       // the sampling period, in FreeRTOS ticks
 static volatile uint32_t droppedCount = 0;      // written only by the sampler
 
+// Plot mode (PLOT ON): output for the Arduino IDE's Serial Plotter instead of the browser's
+// protocol. Every PLOT_EVERY-th sample is printed as labelled values, with a 50 ms moving average
+// (the app's smoothing) and fixed lines at 0 and at the app's saturation level. START (which the
+// browser sends) always turns it off, and it is off after every reset.
+static const uint32_t PLOT_EVERY = 5;          // 500 Hz / 5 = 100 points a second
+static const uint32_t PLOT_SMOOTH = 25;        // 25 samples = 50 ms at 500 Hz
+static const uint16_t PLOT_SATURATION_MV = 3000;  // the app's default saturation level
+
 // loop() only
+static bool plotMode = false;
+static uint16_t plotWindow[PLOT_SMOOTH];
+static uint32_t plotSum = 0;
+static uint32_t plotFilled = 0;
+static uint32_t plotIndex = 0;
 static uint32_t lastCounter = 0;
 static uint32_t lastStatusMs = 0;
 static char commandBuffer[40];
@@ -211,14 +243,26 @@ static void printInfo() {
 
 // ---- Commands ---------------------------------------------------------------------------------
 
-static void startStreaming() {
+static void resetPlot() {
+  plotSum = 0;
+  plotFilled = 0;
+  plotIndex = 0;
+}
+
+static void beginStreaming() {
   streaming = false;
   xQueueReset(sampleQueue);  // forget samples from before
   lastCounter = 0;
   restartRequested = true;   // the sampler resets its counter on its next tick
   awaitingFirstSample = true;
+  resetPlot();
   streaming = true;
   digitalWrite(LED_PIN, HIGH);
+}
+
+static void startStreaming() {
+  plotMode = false;  // the browser's protocol
+  beginStreaming();
   printLine("OK,START");
 }
 
@@ -226,6 +270,21 @@ static void stopStreaming() {
   streaming = false;
   digitalWrite(LED_PIN, LOW);
   printLine("OK,STOP");
+}
+
+// One sample in plot mode: the moving average always, a line every PLOT_EVERY samples.
+static void plotSample(const Sample &sample) {
+  if (plotFilled == PLOT_SMOOTH) plotSum -= plotWindow[plotIndex];
+  else plotFilled++;
+  plotWindow[plotIndex] = sample.mv;
+  plotSum += sample.mv;
+  plotIndex = (plotIndex + 1) % PLOT_SMOOTH;
+  if (sample.counter % PLOT_EVERY != 0) return;
+  char line[80];
+  int length = snprintf(line, sizeof(line), "raw_mV:%u,envelope_mV:%lu,saturation_mV:%u,zero:0\n",
+                        (unsigned)sample.mv, (unsigned long)(plotSum / plotFilled),
+                        (unsigned)PLOT_SATURATION_MV);
+  appendLine(line, length);
 }
 
 static void handleCommand(char *command) {
@@ -263,6 +322,16 @@ static void handleCommand(char *command) {
     printLine("OK,SIM,OFF");
   } else if (strcmp(command, "INFO") == 0) {
     printInfo();
+  } else if (strcmp(command, "PLOT ON") == 0) {
+    // For the Arduino IDE's Serial Plotter: starts streaming as labelled values.
+    plotMode = true;
+    beginStreaming();
+    printLine("OK,PLOT,ON");
+  } else if (strcmp(command, "PLOT OFF") == 0) {
+    plotMode = false;
+    streaming = false;
+    digitalWrite(LED_PIN, LOW);
+    printLine("OK,PLOT,OFF");
   } else {
     char line[64];
     snprintf(line, sizeof(line), "ERR,UNKNOWN,%s", command);
@@ -308,6 +377,10 @@ void setup() {
                           &samplerHandle, 0);
 
   printInfo();  // tells a terminal (or the browser) what is connected
+#if PLOT_AT_START
+  plotMode = true;  // the bench switch: draw at once in the Serial Plotter
+  beginStreaming();
+#endif
 }
 
 void loop() {
@@ -318,10 +391,14 @@ void loop() {
       if (sample.counter != 0) continue;  // from before START
       awaitingFirstSample = false;
     }
-    char line[24];
-    int length = snprintf(line, sizeof(line), "E,%lu,%u\n", (unsigned long)sample.counter,
-                          (unsigned)sample.mv);
-    appendLine(line, length);
+    if (plotMode) {
+      plotSample(sample);
+    } else {
+      char line[24];
+      int length = snprintf(line, sizeof(line), "E,%lu,%u\n", (unsigned long)sample.counter,
+                            (unsigned)sample.mv);
+      appendLine(line, length);
+    }
     lastCounter = sample.counter;
     handled++;
   }
@@ -329,10 +406,11 @@ void loop() {
 
   readCommands();
 
+  // The status line once a second (not while plotting: the plotter would draw it).
   const uint32_t now = millis();
   if (now - lastStatusMs >= 1000u) {
     lastStatusMs = now;
-    printStatus();
+    if (!plotMode) printStatus();
   }
 
   if (handled == 0) {

@@ -50,10 +50,11 @@ flowchart LR
 ## Step order
 
 1. **Flash:** open `firmware/emg_stream/emg_stream.ino` in the Arduino IDE (board "ESP32 Dev Module") and upload. If it does not start uploading, hold **BOOT**.
-2. **Serial Monitor:** set **230400 baud**, line ending **Newline**.
-   - Press EN/RESET: you should see `I,version=1.0.0,rate=500,mode=ADC,streaming=0,…`.
+2. **Serial Monitor:** set **115200 baud**, line ending **Newline**.
+   - Press EN/RESET: you should see `I,version=1.0.0,rate=500,mode=ADC,streaming=0,…`, then `raw_mV:…` values at once.
    - `PING` gives `PONG,1.0.0`; `INFO` prints the settings again.
-   - **Close the Serial Monitor afterwards:** only one program can use the port.
+   - **Optional, to see the signal:** close the monitor, open **Tools → Serial Plotter** (115200 baud, Newline) and press EN/RESET: it draws at once. You see raw and smoothed millivolts with the 3000 mV saturation line; squeezing should rise clearly and stay below it. `PLOT OFF` stops (`firmware/README.md`).
+   - **Close the Serial Monitor (and Plotter) afterwards:** only one program can use the port.
 3. **SIM ON in the app:**
    - Open `npm run dev`, then <http://localhost:5173/dev/emg-monitor> in Chrome or Edge, and click **Connect ESP32**.
    - Press **SIM ON**: the **Board simulation** badge appears and a 4 s squeeze cycle plots.
@@ -77,7 +78,7 @@ Thresholds can be tuned on **Admin → System → EMG settings** (defaults, limi
 | --- | --- | --- |
 | 1 Web Serial | Not Chrome or Edge, or not `localhost` | Use Chrome or Edge at `http://localhost:5173` (or 8080) |
 | 2 Connected | Port busy or no driver | Close the Serial Monitor and `serial_rate.py`; install the CP210x or CH340 driver; use a data cable |
-| 3 Responding (PONG within 2 s) | Wrong firmware, wrong baud, or a board still booting | Re-flash; check `PING` in the Serial Monitor at 230400; press **PING** again after 2 s |
+| 3 Responding (PONG within 2 s) | Wrong firmware, wrong baud, or a board still booting | Re-flash; check `PING` in the Serial Monitor at 115200; press **PING** again after 2 s |
 | 4 Rate 490–510/s | `RATE` was changed, or the board is overloaded | Send `RATE 500`; check `INFO`; run `serial_rate.py` |
 | 5 Gaps < 0.5 % | USB hub, a busy laptop, or a bad cable | Use a direct USB port; close heavy programs; change the cable; check `dropped` in the S lines |
 | 6 Contact (SD > 2 mV) | Flat line: an electrode is off, the batteries are flat, or SIG is not wired | Press the electrodes on; check both batteries > 7 V; check SIG → divider → GPIO34 and the common ground; `SIM ON` should still move |

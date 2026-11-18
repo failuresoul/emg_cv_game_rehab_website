@@ -74,9 +74,11 @@ describe("the MVC from the attempts", () => {
     expect(combineAttempts([800, 1600, 1200, 400]).consistent).toBe(false);
   });
 
-  it("must be at least 3 x the rest mean", () => {
-    expect(mvcStrongEnough(600, 200)).toBe(true);
-    expect(mvcStrongEnough(599, 200)).toBe(false);
+  it("must be at least 2 x the rest mean", () => {
+    expect(mvcStrongEnough(400, 200)).toBe(true);
+    expect(mvcStrongEnough(399, 200)).toBe(false);
+    // The bench recording that a 3 x rule refused: rest 203 mV, efforts 549, 554, 517 mV.
+    expect(mvcStrongEnough(540, 203)).toBe(true);
   });
 
   it("gives the threshold as the server computes it", () => {

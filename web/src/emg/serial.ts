@@ -1,13 +1,13 @@
 /**
  * The ESP32 over the Web Serial API (Chrome and Edge only; no library). Opens the port the person
- * chooses at 230400 baud, decodes text, splits it into lines and reads them with the firmware's
+ * chooses at 115200 baud, decodes text, splits it into lines and reads them with the firmware's
  * rules (protocol.ts). Samples are passed on in batches, with the time they arrived.
  */
 
 import { type EmgCommand, LineSplitter, parseLine } from "./protocol";
 import { EmgError, type EmgEvent, type EmgStream, EventHub } from "./stream";
 
-export const BAUD_RATE = 230400;
+export const BAUD_RATE = 115200;
 
 // The small part of the Web Serial API used here (TypeScript's DOM types do not include it).
 export interface SerialPortLike {

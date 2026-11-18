@@ -136,7 +136,7 @@ def function_body(name: str) -> str:
 
 def test_the_firmware_settings() -> None:
     for setting in (
-        "EMG_PIN = 34;", "SAMPLE_HZ = 500;", "BAUD = 230400;", 'FW_VERSION[] = "1.0.0";',
+        "EMG_PIN = 34;", "SAMPLE_HZ = 500;", "BAUD = 115200;", 'FW_VERSION[] = "1.0.0";',
         "LED_PIN = 2;", "QUEUE_LENGTH = 512;", "MIN_HZ = 100;", "MAX_HZ = 1000;",
     ):  # fmt: skip
         assert setting in INO, setting
@@ -204,7 +204,7 @@ def test_the_readme_puts_the_safety_rule_first() -> None:
     readme = (FIRMWARE / "README.md").read_text(encoding="utf-8")
     first = readme.split("\n## ")[0]
     assert "**" in first and "battery" in first.lower() and "unplugged" in first.lower()
-    for topic in ("GPIO34", "voltage divider", "flexors", "extensors", "230400", "PING", "SIM ON", "CP210x", "CH340", "BOOT"):
+    for topic in ("GPIO34", "voltage divider", "flexors", "extensors", "115200", "PING", "SIM ON", "CP210x", "CH340", "BOOT"):
         assert topic in readme, topic
 
 
@@ -234,7 +234,7 @@ def test_the_mock_board_replies_like_the_firmware() -> None:
     assert "E,${counter}," in WEB_MOCK and "S,${this.lastCounter},${this.dropped}," in WEB_MOCK
     info = re.search(r"`I,version=\$\{MOCK_VERSION\},rate=.*?queue=512", WEB_MOCK, re.S)
     assert info is not None
-    for key in ("version", "rate", "mode", "streaming", "pin=34", "baud=230400", "core", "queue=512"):
+    for key in ("version", "rate", "mode", "streaming", "pin=34", "baud=115200", "core", "queue=512"):
         assert key in info.group(0), key
 
 
@@ -250,11 +250,51 @@ def test_the_docs_list_every_command_and_line() -> None:
     assert first.startswith("Parts")
     for item in ("Web Serial", "Connected", "Responding", "Rate", "Gaps", "Contact", "Saturation", "Relaxed", "Test squeeze"):
         assert f"| {item}" in HARDWARE_DAY or f" {item} " in HARDWARE_DAY, item
-    for value in ("GPIO34", "20 kΩ", "10 kΩ", "3.0 V", "230400", "reference on the bony point of the elbow", "```mermaid"):
+    for value in ("GPIO34", "20 kΩ", "10 kΩ", "3.0 V", "115200", "reference on the bony point of the elbow", "```mermaid"):
         assert value in HARDWARE_DAY, value
 
 
 def test_the_firmware_never_sends_a_stale_sample_after_start() -> None:
-    assert "awaitingFirstSample = true;" in function_body("static void startStreaming")
+    assert "awaitingFirstSample = true;" in function_body("static void beginStreaming")
+    assert "beginStreaming();" in function_body("static void startStreaming")
+
+
+def test_plot_mode_is_for_the_serial_plotter_only() -> None:
+    """PLOT ON prints labelled values the Arduino IDE's Serial Plotter draws; START (the
+    browser's command) and a reset always return to the protocol, so the app is unaffected."""
+    body = function_body("static void handleCommand")
+    assert '"PLOT ON"' in body and '"PLOT OFF"' in body
+    assert '"OK,PLOT,ON"' in INO and '"OK,PLOT,OFF"' in INO
+    assert "plotMode = false;" in function_body("static void startStreaming")
+    assert "static bool plotMode = false;" in INO
+    fmt = re.search(r'"(raw_mV:%u,envelope_mV:%lu,saturation_mV:%u,zero:0)\\n"', INO)
+    assert fmt is not None
+    # The browser and the Python tools ignore a plot line (unknown), never mistake it for data.
+    example = "raw_mV:203,envelope_mV:201,saturation_mV:3000,zero:0"
+    assert protocol.parse_line(example) == {"type": "unknown", "line": example}
+    # No status line while plotting.
+    assert "if (!plotMode) printStatus();" in function_body("void loop")
+    # The README documents both commands.
+    readme = (FIRMWARE / "README.md").read_text(encoding="utf-8")
+    assert "`PLOT ON`" in readme and "`PLOT OFF`" in readme and "Serial Plotter" in readme
     loop = function_body("void loop")
     assert "if (sample.counter != 0) continue;" in loop
+
+
+def test_the_board_streams_plot_values_after_a_reset() -> None:
+    """Like a plain analogRead sketch, the board shows values at once after a reset (plot mode);
+    the app's START switches to the protocol. The link runs at 115200 baud."""
+    assert "#define PLOT_AT_START 1" in INO
+    assert "plotMode = false;" in function_body("static void startStreaming")
+    assert "static const uint32_t BAUD = 115200;" in INO
+    assert "plotMode = true;" in function_body("void setup")  # only inside #if PLOT_AT_START
+    setup = function_body("void setup")
+    assert setup.index("#if PLOT_AT_START") < setup.index("plotMode = true;")
+
+
+def test_the_firmware_the_browser_and_the_tool_use_one_baud_rate() -> None:
+    firmware = re.search(r"static const uint32_t BAUD = (\d+);", INO)
+    browser = re.search(r"export const BAUD_RATE = (\d+);", (FIRMWARE.parent / "web" / "src" / "emg" / "serial.ts").read_text(encoding="utf-8"))
+    tool = re.search(r"^BAUD = (\d+)", (FIRMWARE.parent / "analysis" / "tools" / "serial_rate.py").read_text(encoding="utf-8"), re.M)
+    assert firmware and browser and tool
+    assert firmware.group(1) == browser.group(1) == tool.group(1) == "115200"

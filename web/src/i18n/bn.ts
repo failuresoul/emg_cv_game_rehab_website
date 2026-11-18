@@ -1790,7 +1790,7 @@ export const bn: Record<TranslationKey, string> = {
   "emgStep.cal.next": "এরপর: {total}টির মধ্যে চেষ্টা {number}",
   "emgStep.cal.extra": "তিনটি চেষ্টা একরকম হয়নি, তাই আরও একটি।",
   "emgStep.cal.weak":
-    "বিশ্রামের তুলনায় চেষ্টা খুব কম। ইলেকট্রোডগুলো পেশির মাঝখানে সরিয়ে আবার ক্যালিব্রেশন করুন।",
+    "বিশ্রামের তুলনায় চেষ্টা খুব কম। গেইন নব একটু বাড়ান, অথবা ইলেকট্রোডগুলো পেশির মাঝখানে সরিয়ে আবার ক্যালিব্রেশন করুন।",
   "emgStep.cal.redo": "আবার ক্যালিব্রেশন করুন",
   "emgStep.cal.restValue": "বিশ্রাম: {mean} mV (SD {sd})",
   "emgStep.cal.attemptsValue": "চেষ্টা: {values} mV",

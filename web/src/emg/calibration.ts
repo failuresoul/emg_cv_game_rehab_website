@@ -109,7 +109,11 @@ export function needsExtraAttempt(peaks: readonly number[], extraUsed: boolean):
   );
 }
 
-/** The MVC must be at least 3 x the rest mean, or the electrodes are not over the muscle. */
+/**
+ * The MVC must be at least 2 x the rest mean (minMvcToRestRatio), or the electrodes are not over
+ * the muscle or the gain is too low. 2, not 3: the sensor's envelope has a resting offset of about
+ * 200 mV, so a clear real squeeze (rest 203 mV, efforts about 540 mV on the bench) is only ~2.7 x.
+ */
 export function mvcStrongEnough(mvc: number, restMean: number): boolean {
   return mvc >= CALIBRATION.minMvcToRestRatio * restMean;
 }

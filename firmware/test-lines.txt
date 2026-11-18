@@ -37,7 +37,7 @@ OK,SIM,OFF => {"type": "ok", "detail": "SIM,OFF"}
 ERR,UNKNOWN,FOO => {"type": "error", "detail": "UNKNOWN,FOO"}
 ERR,RATE,100-1000 => {"type": "error", "detail": "RATE,100-1000"}
 ERR,TOO_LONG => {"type": "error", "detail": "TOO_LONG"}
-I,version=1.0.0,rate=500,mode=ADC,streaming=0,pin=34,baud=230400,core=3.x,queue=512 => {"type": "info", "fields": {"version": "1.0.0", "rate": "500", "mode": "ADC", "streaming": "0", "pin": "34", "baud": "230400", "core": "3.x", "queue": "512"}}
+I,version=1.0.0,rate=500,mode=ADC,streaming=0,pin=34,baud=115200,core=3.x,queue=512 => {"type": "info", "fields": {"version": "1.0.0", "rate": "500", "mode": "ADC", "streaming": "0", "pin": "34", "baud": "115200", "core": "3.x", "queue": "512"}}
 I,version => {"type": "invalid", "line": "I,version"}
 #
 # Nothing to read, or not from the firmware (the ESP32's boot messages)
@@ -46,3 +46,7 @@ I,version => {"type": "invalid", "line": "I,version"}
 ets Jun  8 2016 00:22:57 => {"type": "unknown", "line": "ets Jun  8 2016 00:22:57"}
 rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT) => {"type": "unknown", "line": "rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)"}
 e,1,200 => {"type": "unknown", "line": "e,1,200"}
+#
+# Plot mode (PLOT ON, for the Arduino IDE's Serial Plotter): ignored by the browser and the tools
+raw_mV:203,envelope_mV:201,saturation_mV:3000,zero:0 => {"type": "unknown", "line": "raw_mV:203,envelope_mV:201,saturation_mV:3000,zero:0"}
+OK,PLOT,ON => {"type": "ok", "detail": "PLOT,ON"}

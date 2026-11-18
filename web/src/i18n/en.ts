@@ -1805,7 +1805,7 @@ export const en = {
   "emgStep.cal.next": "Next: attempt {number} of {total}",
   "emgStep.cal.extra": "The three efforts were not alike, so there is one more.",
   "emgStep.cal.weak":
-    "The effort was too small compared with rest. Move the electrodes onto the muscle belly, then redo the calibration.",
+    "The effort was too small compared with rest. Turn the gain knob up a little, or move the electrodes onto the muscle belly, then redo the calibration.",
   "emgStep.cal.redo": "Redo the calibration",
   "emgStep.cal.restValue": "Rest: {mean} mV (SD {sd})",
   "emgStep.cal.attemptsValue": "Efforts: {values} mV",

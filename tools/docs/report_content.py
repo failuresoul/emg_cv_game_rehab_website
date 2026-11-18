@@ -673,7 +673,7 @@ def chapter_11(r: Any, f: Any) -> None:
     )
     r.part(
         "Firmware and protocol",
-        what="`firmware/emg_stream/emg_stream.ino` samples at 500 Hz and streams text lines at 230400 baud.",
+        what="`firmware/emg_stream/emg_stream.ino` samples at 500 Hz and streams text lines at 115200 baud.",
         how=[
             "A FreeRTOS task on core 0 reads the ADC every 2 ms (`vTaskDelayUntil`) into a static queue; it never prints or allocates.",
             "`loop()` on core 1 prints `E,<counter>,<mV>` per sample and `S,<counter>,<dropped>,<version>,<ADC|SIM>` once a second.",
@@ -682,7 +682,7 @@ def chapter_11(r: Any, f: Any) -> None:
             "The browser parser (`web/src/emg/protocol.ts`) and the Python parser (`analysis/tools/emg_protocol.py`) follow the same rules, tested against `firmware/test-lines.txt`.",
         ],
         why="A counter on every sample makes lost data visible; text lines are easy to test in the Serial Monitor.",
-        alternatives=["**Binary packets:** faster but hard to debug by hand; 500 Hz text fits easily in 230400 baud."],
+        alternatives=["**Binary packets:** faster but hard to debug by hand; 500 Hz text fits easily in 115200 baud."],
     )
     r.part(
         "Timing",
@@ -709,7 +709,7 @@ def chapter_11(r: Any, f: Any) -> None:
         how=[
             "`web/src/emg/calibration.ts` and `emgFlow.ts`: 10 s relaxed (accepted if the smoothed SD is between 2 and 40 mV and the mean is at most 800 mV).",
             "Three 3 s maximum efforts after a 3 s countdown, with rests; each counts as its highest 0.5 s mean; a saturated effort is repeated; an extra effort if they differ by more than 15%.",
-            "MVC = the mean of the efforts (or the three closest of four); it must be at least 3 × the rest mean.",
+            "MVC = the mean of the efforts (or the three closest of four); it must be at least 2 × the rest mean (an admin setting).",
             "%MVC = (envelope − rest) / (MVC − rest) × 100, clamped to 0–120 (`processing.ts`); onsets at rest mean + 3 SD for 50 ms, offsets after 100 ms below.",
             "The calibration is stored as numbers only: `POST /api/sessions/{id}/emg-calibration`.",
         ],

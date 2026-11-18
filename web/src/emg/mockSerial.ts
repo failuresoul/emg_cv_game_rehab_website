@@ -165,7 +165,7 @@ export class MockFirmware {
   private infoLine(): string {
     return (
       `I,version=${MOCK_VERSION},rate=${this.rateHz},mode=${this.simulate ? "SIM" : "ADC"},` +
-      `streaming=${this.streaming ? 1 : 0},pin=34,baud=230400,core=3.x,queue=512\n`
+      `streaming=${this.streaming ? 1 : 0},pin=34,baud=115200,core=3.x,queue=512\n`
     );
   }
 
@@ -283,7 +283,7 @@ export class MockSerialPort implements SerialPortLike {
     this.writable = new WritableStream<Uint8Array>({
       write: (chunk) => {
         // The wrong speed would only give garbage on a real board.
-        if (this.baudRate === 230400) this.firmware.write(decoder.decode(chunk));
+        if (this.baudRate === 115200) this.firmware.write(decoder.decode(chunk));
       },
     });
     // Opening the port resets an ESP32 DevKit: it prints its start-up line.

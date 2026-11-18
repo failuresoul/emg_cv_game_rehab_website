@@ -4,6 +4,22 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Changed (EMG serial link: 115200 baud)
+
+- **The link runs at 115200 baud instead of 230400.** On the project's ESP32 board, 230400 garbled bytes inside lines, while 115200 was clean. Changed together in the firmware (`BAUD`), the browser (`BAUD_RATE` in `web/src/emg/serial.ts`), the mock board, `analysis/tools/serial_rate.py`, the protocol examples, the docs and both Word documents.
+  - **Capacity:** 500 Hz uses about 7 KB/s of the link's 11.5 KB/s. Above about 700 Hz the firmware reports the samples it cannot send as dropped.
+  - **A test** checks that the firmware, the browser and the tool use one speed.
+- **The `SLOW_SERIAL_TEST` bench switch was removed.**
+- **Calibration accepts an MVC from 2 × the rest mean (was 3 ×):** the sensor's envelope rests at about 200 mV, so a clear bench squeeze (rest 203 mV, efforts about 540 mV) was refused as "too small". The message now also suggests turning the gain up. Admin → System → EMG settings still changes it.
+- **Values at once after a reset (`PLOT_AT_START 1`, now the default):** like a plain `analogRead` sketch, the Serial Monitor shows `raw_mV:…` lines and the Serial Plotter draws with nothing to type. The app ignores these lines; its `START` switches to the protocol.
+
+### Added (firmware: Serial Plotter)
+
+- **`PLOT ON` / `PLOT OFF`** in `firmware/emg_stream/emg_stream.ino`, for the Arduino IDE's Serial Plotter:
+  - `raw_mV`, `envelope_mV` (a 50 ms moving average), `saturation_mV` (a 3000 mV line) and `zero`, 100 points a second, without status lines;
+  - `START` (the browser's command) and every reset return to the normal protocol, so the app is unaffected;
+  - documented in `firmware/README.md` and `docs/hardware-day.md`, with tests and protocol examples.
+
 ### Changed (Day 20: the internal code name removed)
 
 - **"MotionLab" is gone** from the identifiers, configs and docs; everything uses `muvi`:

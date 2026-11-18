@@ -108,7 +108,7 @@ describe("Web Serial support", () => {
 });
 
 describe("the serial EMG stream", () => {
-  it("opens the chosen port at 230400 baud and sends commands as lines", async () => {
+  it("opens the chosen port at 115200 baud and sends commands as lines", async () => {
     const { serial, stream, events } = await connected();
     expect(serial.port.opened).toEqual({ baudRate: BAUD_RATE });
     expect(stream.connected).toBe(true);

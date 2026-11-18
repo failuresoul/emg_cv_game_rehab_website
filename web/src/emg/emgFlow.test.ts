@@ -175,9 +175,9 @@ describe("stage C: calibration", () => {
     expect(qualityOf(state, 0).extra_attempt).toBe(true);
   });
 
-  it("stops when the effort is under 3 x rest, and can be redone", () => {
+  it("stops when the effort is under 2 x rest, and can be redone", () => {
     let state = run([...throughCheck, ...goodRest]);
-    for (const [index, peak] of [500, 520, 510].entries()) {
+    for (const [index, peak] of [350, 370, 360].entries()) {
       state = run([...attempt(peak, index * 50_000), { type: "pauseDone" }], state);
     }
     expect(state.phase).toEqual({ kind: "weak" });
