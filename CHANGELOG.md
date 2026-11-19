@@ -4,6 +4,12 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed (the collaborating university)
+
+- **The collaborator is the University of Southern Queensland (UniSQ), Australia,** not The University of Queensland: the name, short name (UniSQ) and logo (`web/public/logos/unisq.svg`, replacing `uq.png`) in `web/src/config/project.ts`, so every page, the footer, the credit line and both Word documents follow.
+- **Dr. Md. Abdul Awal:** Lecturer, Electrical and Electronic Engineering, University of Southern Queensland (was "Postdoctoral Fellow").
+- English sentences read "in collaboration with the University of Southern Queensland"; the README, demo script, day logs, demo narration and tests are updated.
+
 ### Changed (EMG serial link: 115200 baud)
 
 - **The link runs at 115200 baud instead of 230400.** On the project's ESP32 board, 230400 garbled bytes inside lines, while 115200 was clean. Changed together in the firmware (`BAUD`), the browser (`BAUD_RATE` in `web/src/emg/serial.ts`), the mock board, `analysis/tools/serial_rate.py`, the protocol examples, the docs and both Word documents.
@@ -408,7 +414,7 @@ Release candidate; no new features. See [docs/release-notes-v1.0.md](docs/releas
   - an "AI levels" card on the patient page.
 - **Demo data** replays every demo trial through the engine: Rahim's levels climb over his later sessions, and Salma's sessions show compensation and tiring overrides.
 - **Project identity:** the public name is **MuVi Rehab** (Muscle + Vision Rehabilitation).
-  - The name, research title, institutions (KUET, with The University of Queensland), supervisors and team all live in `web/src/config/project.ts`.
+  - The name, research title, institutions (KUET, with the University of Southern Queensland), supervisors and team all live in `web/src/config/project.ts`.
   - There is a new logo mark (pulse line and lens), with a generated favicon, tab title and meta description.
   - The admin System page shows the name, version, institution and collaborator.
 - **Landing page** (`/`), rebuilt as a research-grade page:

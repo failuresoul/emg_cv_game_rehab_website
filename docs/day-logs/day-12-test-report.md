@@ -48,7 +48,7 @@ Date: 2026-11-11. Nothing in this report failed at the end of the review. **MANU
 | No visible "MotionLab" | Vitest: `branding.test.ts` (translations, JSX text and attributes, `index.html`) | PASS | Internal identifiers keep the code name |
 | Every name, title, photo and logo from `project.ts` | Vitest: `identity comes only from project.ts` (all code outside `project.ts`, comments excluded) | PASS | New in this review |
 | No version on public pages | Vitest: landing and About pages | PASS | Only the admin System page shows it |
-| Missing images fall back | Vitest: initials for photos; names (or KUET, UQ) for logos; `assetExists` treats the app page served for a missing file as missing | PASS | A failed load also falls back |
+| Missing images fall back | Vitest: initials for photos; names (or KUET, UniSQ) for logos; `assetExists` treats the app page served for a missing file as missing | PASS | A failed load also falls back |
 | Headings in order, no level skipped | Vitest: landing and About pages | PASS | One `h1` each. New in this review |
 | Alt text and labels | Vitest: every `<img>` has alt text; every `role="img"` has a label | PASS | Photos "Photo of {name}", logos the institution's name |
 | Focus visible | Code review: global `:focus-visible` outline in the accent colour; white outline on the dark call-to-action and footer | PASS | **MANUAL:** tab through both pages |
@@ -137,8 +137,8 @@ Start the server and the web app ([How to run](../../README.md#how-to-run)). See
 - [ ] **Reduced motion:** with "Emulate prefers-reduced-motion: reduce", the EMG trace stays still.
 - [ ] **Team photos:**
   - The photos appear in circles: teal rings for Dr. Akhand and Dr. Awal, orange rings for Shadik and Nafis. The faces are framed, not cut off.
-  - Dr. Akhand shows "Professor, Dept. of CSE, KUET"; Dr. Awal shows "Postdoctoral Fellow, The University of Queensland".
-- [ ] **Logos:** the KUET and UQ logos appear in the hero badge, the research card and the collaboration banner, not stretched; the footer writes "KUET × UQ" as text.
+  - Dr. Akhand shows "Professor, Dept. of CSE, KUET"; Dr. Awal shows "Lecturer, Electrical and Electronic Engineering, University of Southern Queensland".
+- [ ] **Logos:** the KUET and UniSQ logos appear in the hero badge, the research card and the collaboration banner, not stretched; the footer writes "KUET × UniSQ" as text.
 - [ ] **Missing file:** rename `web/public/team/nafis.jpg` for a moment and reload: initials "NA" appear, not a broken image. Put it back.
 - [ ] **Keyboard:** Tab from the top. "Skip to the content" appears first, then every link and button shows a visible outline.
 
@@ -149,6 +149,6 @@ Start the server and the web app ([How to run](../../README.md#how-to-run)). See
   - It shows the research title, background, the system with "Coming soon" on reports, the team with photos, the collaboration, privacy and data handling, and the not-a-medical-device notice.
   - There is no version number anywhere.
 - [ ] **Login page:** the mark, "MuVi Rehab" and the tagline at the top; the credit line and both small logos under the form.
-- [ ] **Credit line:** "MuVi Rehab · Dept. of CSE, KUET · in collaboration with The University of Queensland" at the foot of admin and patient pages; none during a session.
+- [ ] **Credit line:** "MuVi Rehab · Dept. of CSE, KUET · in collaboration with the University of Southern Queensland" at the foot of admin and patient pages; none during a session.
 - [ ] **Browser tab:** the new mark as the favicon, and the title "MuVi Rehab — EMG & vision rehabilitation".
 - [ ] **No "MotionLab" visible:** look through the landing and About pages, login, the patient pages and a session, the admin pages including System, and the page in Bangla.

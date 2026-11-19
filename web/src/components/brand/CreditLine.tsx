@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { project } from "@/config/project";
 import { t } from "@/i18n";
 
-/** "MuVi Rehab · Dept. of CSE, KUET · in collaboration with The University of Queensland". */
+/** "MuVi Rehab · Dept. of CSE, KUET · in collaboration with the University of Southern Queensland". */
 export function creditText(): string {
   const { institution, collaborator } = project;
   return t("credit.line", {

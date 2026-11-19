@@ -73,7 +73,7 @@ class Guide(Report):
             (p["name"], 34, True),
             ("Manual testing guide", 16, False),
             (p["researchTitle"], 12, True),
-            (f"{p['department']}, {p['institution']}\nin collaboration with {p['collaborator']}", 11, False),
+            (f"{p['department']}, {p['institution']}\nin collaboration with the {p['collaborator']}", 11, False),
             (f"Version {self.facts.version}", 11, True),
         ):
             paragraph = self.doc.add_paragraph()
@@ -191,7 +191,7 @@ def build(g: Guide) -> None:
     # 2 ---------------------------------------------------------------------------------------
     g.heading(2, SECTIONS[2])
     g.tests("T2", [
-        ("Open the landing page `/`.", f"The title {s('landing.hero.title') if 'landing.hero.title' in f.strings else 'and tagline'}, a Log in button, the research prototype badge (KUET × The University of Queensland), the games and the team.", "landing"),
+        ("Open the landing page `/`.", f"The title {s('landing.hero.title') if 'landing.hero.title' in f.strings else 'and tagline'}, a Log in button, the research prototype badge (KUET × University of Southern Queensland), the games and the team.", "landing"),
         ("Press the language switch's {} button in the top bar.".format(s("languageSwitch.bn")), "Every text changes to Bangla at once; the button is highlighted. On a phone-width window the switch shows “বাং” and “EN”.", "bangla-ui"),
         ("Press {} again.".format(s("languageSwitch.en")), "Back to English.", None),
         ("Open `/about`.", "The research title, background, the system's parts (including personal feedback reports, without a “coming soon” badge), the people and privacy.", None),

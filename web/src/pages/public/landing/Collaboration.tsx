@@ -17,7 +17,7 @@ function LogoTile({ which }: { which: "institution" | "collaborator" }) {
   );
 }
 
-/** "KUET × The University of Queensland" with both logos and a sentence about the work. */
+/** "KUET × University of Southern Queensland" with both logos and a sentence about the work. */
 export function CollaborationCard({ titleId = "collab-title" }: { titleId?: string }) {
   const title = t("landing.collab.title", {
     institution: project.institution.shortName,

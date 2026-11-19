@@ -63,7 +63,8 @@ def load_project() -> dict[str, Any]:
     def one(key: str) -> str:
         match = re.search(rf'{key}:\s*\n?\s*"([^"]+)"', text)
         return match.group(1) if match else ""
-    people = re.findall(r'name: "([^"]+)",\s*role: "([^"]+)",\s*affiliation: "([^"]+)"', text)
+    # \s* after "affiliation:": a long value is wrapped onto the next line by the formatter.
+    people = re.findall(r'name: "([^"]+)",\s*role: "([^"]+)",\s*affiliation:\s*"([^"]+)"', text)
     supervisors = [p for p in people if p[1] == "Supervisor"]
     team = [p for p in people if p[1] != "Supervisor"]
     institution = re.search(r'institution: \{\s*name: "([^"]+)"', text)
@@ -246,7 +247,7 @@ class Report:
         doc.add_paragraph()
         inst = doc.add_paragraph()
         inst.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        inst.add_run(f"{p['department']}\n{p['institution']}\nin collaboration with {p['collaborator']}")
+        inst.add_run(f"{p['department']}\n{p['institution']}\nin collaboration with the {p['collaborator']}")
         doc.add_paragraph()
         people = doc.add_paragraph()
         people.alignment = WD_ALIGN_PARAGRAPH.CENTER

@@ -10,13 +10,13 @@ describe("project identity", () => {
     expect(project.nameLong).toBe("MuVi Rehab — Muscle + Vision Rehabilitation");
     expect(project.researchTitle).toMatch(/^Multimodal EMG and Webcam-Based/);
     expect(project.institution.name).toContain("KUET");
-    expect(project.collaborator.name).toBe("The University of Queensland");
+    expect(project.collaborator.name).toBe("University of Southern Queensland");
     expect(project.supervisors.map((person) => person.name)).toEqual([
       "Dr. Muhammad Aminul Haque Akhand",
       "Dr. Md. Abdul Awal",
     ]);
     expect(project.supervisors[1].affiliation).toBe(
-      "Postdoctoral Fellow, The University of Queensland",
+      "Lecturer, Electrical and Electronic Engineering, University of Southern Queensland",
     );
     expect(project.team.map((person) => person.name)).toEqual([
       "Nurul Absar Shadik",

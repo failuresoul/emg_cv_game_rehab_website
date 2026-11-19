@@ -54,7 +54,7 @@ describe("people and institutions", () => {
   it("shows the institution's name until its logo is known to exist", () => {
     const markup = renderToStaticMarkup(<InstitutionLogo institution={project.collaborator} />);
     expect(markup).not.toContain("<img");
-    expect(markup).toContain("The University of Queensland");
+    expect(markup).toContain("University of Southern Queensland");
   });
 });
 

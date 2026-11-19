@@ -38,7 +38,7 @@ const decode = (html: string) => html.replace(/&amp;/g, "&");
 describe("credit line", () => {
   it("names the project, department and collaborator from project.ts", () => {
     expect(creditText()).toBe(
-      "MuVi Rehab · Dept. of CSE, KUET · in collaboration with The University of Queensland",
+      "MuVi Rehab · Dept. of CSE, KUET · in collaboration with the University of Southern Queensland",
     );
   });
 

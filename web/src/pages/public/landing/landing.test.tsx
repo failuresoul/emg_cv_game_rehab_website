@@ -90,7 +90,7 @@ describe("landing page", () => {
     expect(text).toContain(project.researchTitle);
     expect(text).toContain(project.institution.name);
     expect(text).toContain(project.institution.department);
-    expect(text).toContain(`In collaboration with ${project.collaborator.name}, Australia`);
+    expect(text).toContain(`In collaboration with the ${project.collaborator.name}, Australia`);
     for (const person of [...project.supervisors, ...project.team]) {
       expect(text).toContain(person.name);
       expect(text).toContain(person.affiliation);

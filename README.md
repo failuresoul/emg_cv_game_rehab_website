@@ -13,10 +13,10 @@
 
 ![MuVi Rehab: the landing page](docs/images/screens/landing.png)
 
-A research prototype from the Department of Computer Science and Engineering, Khulna University of Engineering & Technology (KUET), Bangladesh, with The University of Queensland, Australia. It is not a medical device.
+A research prototype from the Department of Computer Science and Engineering, Khulna University of Engineering & Technology (KUET), Bangladesh, with the University of Southern Queensland, Australia. It is not a medical device.
 
 - **Research title:** Multimodal EMG and Webcam-Based Hand Posture Recognition for Real-Time Adaptive Rehabilitation Gaming
-- **Supervisors:** Dr. Muhammad Aminul Haque Akhand (Professor, Dept. of CSE, KUET) and Dr. Md. Abdul Awal (Postdoctoral Fellow, The University of Queensland)
+- **Supervisors:** Dr. Muhammad Aminul Haque Akhand (Professor, Dept. of CSE, KUET) and Dr. Md. Abdul Awal (Lecturer, Electrical and Electronic Engineering, University of Southern Queensland)
 - **Team:** Nurul Absar Shadik and Nafis Ahammad (Dept. of CSE, KUET)
 
 The project's name, institutions and people live in one file, [web/src/config/project.ts](web/src/config/project.ts). Internal identifiers use `muvi` (the database file `data/muvi.db`, browser storage keys).
@@ -61,7 +61,7 @@ MuVi Rehab is a web platform for home-based arm and hand rehabilitation after st
 - nine games each train a movement, and an adaptive engine keeps each one at the right challenge, inside safety rules and the therapist's limits;
 - movement-quality measures (reach area, smoothness, range, speed, grip) are recorded every session, and each session ends with a short plain-language report in English or Bangla.
 
-**Who made it.** The Department of Computer Science and Engineering, KUET (Bangladesh), in collaboration with The University of Queensland (Australia). Supervisors: Dr. Muhammad Aminul Haque Akhand (Professor, Dept. of CSE, KUET) and Dr. Md. Abdul Awal (Postdoctoral Fellow, The University of Queensland). Developers and researchers: Nurul Absar Shadik and Nafis Ahammad (Dept. of CSE, KUET). These names come from [web/src/config/project.ts](web/src/config/project.ts).
+**Who made it.** The Department of Computer Science and Engineering, KUET (Bangladesh), in collaboration with the University of Southern Queensland (Australia). Supervisors: Dr. Muhammad Aminul Haque Akhand (Professor, Dept. of CSE, KUET) and Dr. Md. Abdul Awal (Lecturer, Electrical and Electronic Engineering, University of Southern Queensland). Developers and researchers: Nurul Absar Shadik and Nafis Ahammad (Dept. of CSE, KUET). These names come from [web/src/config/project.ts](web/src/config/project.ts).
 
 ## Key features
 
@@ -723,15 +723,15 @@ A citation will be added when the work is published. Until then, please cite the
   author = {Shadik, Nurul Absar and Ahammad, Nafis and Akhand, Muhammad Aminul Haque and
             Awal, Md. Abdul},
   year   = {2026},
-  note   = {Research prototype. Department of CSE, KUET, with The University of Queensland.
+  note   = {Research prototype. Department of CSE, KUET, with the University of Southern Queensland.
             Citation details to be completed (PENDING)}
 }
 ```
 
 ## Acknowledgements
 
-- **Supervision:** Dr. Muhammad Aminul Haque Akhand (KUET) and Dr. Md. Abdul Awal (The University of Queensland).
-- **Institutions:** the Department of Computer Science and Engineering, Khulna University of Engineering & Technology (KUET), and The University of Queensland.
+- **Supervision:** Dr. Muhammad Aminul Haque Akhand (KUET) and Dr. Md. Abdul Awal (University of Southern Queensland).
+- **Institutions:** the Department of Computer Science and Engineering, Khulna University of Engineering & Technology (KUET), and the University of Southern Queensland (UniSQ).
 - **Open-source software:** MediaPipe, React, FastAPI, SQLModel, Ollama and every library listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Licence

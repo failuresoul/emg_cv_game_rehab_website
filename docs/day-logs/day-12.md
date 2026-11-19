@@ -35,7 +35,7 @@
   - `level_start` and `level_end` in the summary and the session facts.
 - **Demo data:** every demo trial is replayed through the engine. Rahim's levels climb over his later sessions; Salma shows compensation and tiring overrides.
 - **Identity:**
-  - `web/src/config/project.ts` holds the name, tagline, research title, KUET and UQ, supervisors and team, and the version;
+  - `web/src/config/project.ts` holds the name, tagline, research title, KUET and UniSQ, supervisors and team, and the version;
   - a logo mark with a generated favicon, tab title and meta description;
   - the admin System page;
   - every visible "MotionLab" renamed, guarded by tests.

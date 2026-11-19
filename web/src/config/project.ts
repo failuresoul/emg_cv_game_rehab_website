@@ -19,7 +19,7 @@ export interface Person {
 
 export interface Institution {
   name: string;
-  /** For tight spaces, such as "KUET × The University of Queensland". */
+  /** For tight spaces, such as "KUET × UniSQ". */
   shortName: string;
   department?: string;
   /** As in "Dept. of CSE, KUET". */
@@ -48,10 +48,10 @@ export const project = {
     logo: "/logos/kuet.png",
   } satisfies Institution,
   collaborator: {
-    name: "The University of Queensland",
-    shortName: "UQ",
+    name: "University of Southern Queensland",
+    shortName: "UniSQ",
     country: "Australia",
-    logo: "/logos/uq.png",
+    logo: "/logos/unisq.svg",
   } satisfies Institution,
   supervisors: [
     {
@@ -63,7 +63,8 @@ export const project = {
     {
       name: "Dr. Md. Abdul Awal",
       role: "Supervisor",
-      affiliation: "Postdoctoral Fellow, The University of Queensland",
+      affiliation:
+        "Lecturer, Electrical and Electronic Engineering, University of Southern Queensland",
       photo: "/team/awal.jpg",
     },
   ] satisfies Person[],
