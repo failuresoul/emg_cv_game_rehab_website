@@ -12,6 +12,11 @@ export interface CounterFrame {
   /** For a sequence: one filtered value per step, such as the thumb's distance to each finger. */
   values?: readonly number[] | null;
   rawValues?: readonly number[] | null;
+  /**
+   * Whether the arm moves in the exercise's direction (forward, or out to the side) in this frame;
+   * null or undefined when unknown. Only a counter that requires a plane uses it.
+   */
+  inPlane?: boolean | null;
 }
 
 export type CounterState = RepState | SequenceState;
@@ -27,6 +32,8 @@ export interface ExerciseCounter {
   readonly reps: readonly RepRecord[];
   /** For a sequence, the step expected next, from 0. Null for single-value counters. */
   readonly sequenceStep: number | null;
+  /** The lines in use, which a rep counter moves to the patient's own rest position. */
+  readonly lines: Thresholds;
   feed(frame: CounterFrame): void;
   /** Abandons any movement in progress, so a pause never creates or completes a rep. */
   pause(): void;
@@ -51,6 +58,8 @@ export function createCounter(
   return new RepCounter({
     direction: definition.direction,
     hysteresis: definition.hysteresis,
+    adaptiveRest: definition.adaptiveRest,
+    requirePlane: definition.preferredPlane?.required ?? false,
     ...thresholds,
   });
 }

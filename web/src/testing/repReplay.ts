@@ -8,7 +8,7 @@
 import type { Side } from "@/types/api";
 import { MotionMeasurer } from "@/vision/measures";
 import { createCounter, frameHasMeasure } from "@/warmup/counter";
-import { EXERCISES, type ExerciseId } from "@/warmup/exercises";
+import { EXERCISES, type ExerciseId, isInPlane } from "@/warmup/exercises";
 import { frameForExercise } from "@/warmup/frames";
 
 import { decodeFrame, type LandmarkRecording } from "./landmarkFormat";
@@ -77,7 +77,8 @@ export function countReps(
     const value = counted.values ? Math.min(...counted.values) : (counted.value as number);
     minValue = Math.min(minValue, value);
     maxValue = Math.max(maxValue, value);
-    counter.feed(counted);
+    // As the warm-up does: a raise in the wrong direction does not count.
+    counter.feed({ ...counted, inPlane: isInPlane(definition, counted.planeDeg) });
   }
   const partial = "partialReps" in counter ? Number(counter.partialReps) : 0;
   const { low, high } = definition.presets.standard;

@@ -85,3 +85,18 @@ describe("rep replay", () => {
     });
   });
 });
+
+describe("rep replay, raises in the wrong direction", () => {
+  const forward = [{ do: "raise", plane: "forward", deg: 110, ms: 800, holdMs: 250, back: true }];
+  const sideways = [{ do: "raise", plane: "sideways", deg: 100, ms: 800, holdMs: 250, back: true }];
+
+  it("does not count side raises as forward raises, nor forward raises as side raises", () => {
+    const side = (exercise: "shoulder_flexion" | "shoulder_abduction", steps: typeof forward) =>
+      countReps(frames(steps, 3), exercise, "right", SYNTH_FRAME_WIDTH, SYNTH_FRAME_HEIGHT);
+
+    expect(side("shoulder_flexion", forward).counted).toBe(3);
+    expect(side("shoulder_abduction", sideways).counted).toBe(3);
+    expect(side("shoulder_flexion", sideways).counted).toBe(0);
+    expect(side("shoulder_abduction", forward).counted).toBe(0);
+  });
+});

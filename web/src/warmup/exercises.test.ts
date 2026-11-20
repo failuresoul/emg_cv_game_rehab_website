@@ -33,16 +33,29 @@ describe("exercise definitions", () => {
 
   it("have the agreed measures and planes", () => {
     expect(EXERCISES.shoulder_flexion.measure).toBe("armElevationDeg");
+    // The two raises meet between 55 and 60 degrees, and each refuses the other.
     expect(EXERCISES.shoulder_flexion.preferredPlane).toEqual({
-      minDeg: 50,
-      maxDeg: 130,
+      minDeg: 60,
+      maxDeg: 150,
       feedback: "forward",
+      required: true,
     });
     expect(EXERCISES.shoulder_abduction.preferredPlane).toEqual({
-      minDeg: -30,
-      maxDeg: 40,
+      minDeg: -45,
+      maxDeg: 55,
       feedback: "sideways",
+      required: true,
     });
+    // A webcam reads a relaxed arm high, so both raises learn the patient's own rest.
+    expect(EXERCISES.shoulder_flexion.adaptiveRest).toEqual({
+      minTravel: 25,
+      stillRange: 8,
+      maxRest: 65,
+    });
+    expect(EXERCISES.shoulder_abduction.adaptiveRest).toEqual(
+      EXERCISES.shoulder_flexion.adaptiveRest,
+    );
+    expect(EXERCISES.elbow_flexion.adaptiveRest).toBeUndefined();
     expect(EXERCISES.elbow_flexion.measure).toBe("elbowFlexionDeg");
     expect(EXERCISES.elbow_flexion.direction).toBe("down");
     expect(EXERCISES.elbow_flexion.tipKey).toBeDefined();
@@ -184,5 +197,19 @@ describe("getThresholds", () => {
       low: 30,
       high: 50,
     });
+  });
+});
+
+describe("the arm demos", () => {
+  it("show the forward raise from the side and the side raise from the front", () => {
+    const view = (id: keyof typeof EXERCISES) => {
+      const demo = EXERCISES[id].demo;
+      return demo.kind === "arm" ? demo.view : null;
+    };
+
+    expect(view("shoulder_flexion")).toBe("side");
+    expect(view("shoulder_abduction")).toBe("front");
+    expect(view("elbow_flexion")).toBe("side");
+    expect(view("forward_reach")).toBe("side");
   });
 });

@@ -22,6 +22,13 @@ export function feedbackKey(feedback: ExerciseFeedback, direction: RepDirection)
       return "warmup.feedback.forward";
     case "sideways":
       return "warmup.feedback.sideways";
+    case "not_counted_forward":
+      return "warmup.feedback.notCountedForward";
+    case "not_counted_sideways":
+      return "warmup.feedback.notCountedSideways";
+    case "wrong_plane":
+      // The runner turns this into one of the two above; kept for completeness.
+      return "warmup.feedback.forward";
     case "next_index":
       return "warmup.feedback.nextIndex";
     case "next_middle":

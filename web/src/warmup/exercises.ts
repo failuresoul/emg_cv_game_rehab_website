@@ -7,7 +7,7 @@ import {
   personaliseThresholds,
   type WarmupHistoryEntry,
 } from "./personalise";
-import type { RepDirection } from "./repCounter";
+import type { AdaptiveRest, RepDirection } from "./repCounter";
 
 export type ExerciseId =
   | "shoulder_flexion"
@@ -39,6 +39,8 @@ export interface PreferredPlane {
   minDeg: number;
   maxDeg: number;
   feedback: "forward" | "sideways";
+  /** A movement mostly outside the plane does not count, rather than only getting advice. */
+  required?: boolean;
 }
 
 /** One pose of an arm demo. Positions are in shoulder widths, with the shoulder at the origin. */
@@ -59,8 +61,15 @@ export interface HandKeyframe {
   tips: [Point, Point, Point, Point, Point];
 }
 
+/**
+ * Where an arm demo is seen from. "front" shows both shoulders, for movements out to the side;
+ * "side" shows the figure in profile, so a movement in front of the body is visible.
+ */
+export type DemoView = "front" | "side";
+
 export type ExerciseDemo =
-  { kind: "arm"; keyframes: DemoKeyframe[] } | { kind: "hand"; keyframes: HandKeyframe[] };
+  | { kind: "arm"; view: DemoView; keyframes: DemoKeyframe[] }
+  | { kind: "hand"; keyframes: HandKeyframe[] };
 
 /** Words that differ from the arm exercises' defaults. */
 export interface ExerciseText {
@@ -84,6 +93,8 @@ export interface ExerciseDefinition {
   unit: MeasureUnit;
   /** Noise smaller than this cannot start or turn a movement, in the measure's unit. */
   hysteresis?: number;
+  /** Learn where the patient's arm rests, rather than trusting a fixed rest line. */
+  adaptiveRest?: AdaptiveRest;
   /** The gauge's range, in the measure's unit. */
   gauge: { min: number; max: number };
   presets: Record<ExercisePreset, Thresholds>;
@@ -103,6 +114,12 @@ const UPPER_ARM_SW = 0.9;
 const FOREARM_SW = 0.8;
 const DEMO_TIMES = [0, 0.25, 0.5, 0.75, 1];
 const DEGREE_GAUGE = { min: 0, max: 180 };
+/**
+ * A seated patient's relaxed arm often reads 40 to 60 degrees: a webcam above the screen looks
+ * down, and the elbow is often below the picture. So the raises learn the patient's own rest, and
+ * a repetition must still lift the arm at least 25 degrees from it.
+ */
+const SHOULDER_REST: AdaptiveRest = { minTravel: 25, stillRange: 8, maxRest: 65 };
 
 /** A pose from the two angles the app measures. Bending moves the forearm forward and up. */
 function armPose(time: number, elevationDeg: number, elbowDeg: number): DemoKeyframe {
@@ -123,12 +140,14 @@ function armPose(time: number, elevationDeg: number, elbowDeg: number): DemoKeyf
 
 /** Out and back: rest, halfway, furthest, halfway, rest. */
 function demoBetween(
+  view: DemoView,
   rest: { elevationDeg: number; elbowDeg: number },
   furthest: { elevationDeg: number; elbowDeg: number },
 ): ExerciseDemo {
   const shares = [0, 0.5, 1, 0.5, 0];
   return {
     kind: "arm",
+    view,
     keyframes: DEMO_TIMES.map((time, index) =>
       armPose(
         time,
@@ -226,10 +245,18 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
       standard: { low: 30, high: 90 },
       gentle: { low: 30, high: 60 },
     },
-    preferredPlane: { minDeg: 50, maxDeg: 130, feedback: "forward" },
+    // Measured from shoulder to wrist: a recorded forward raise read 70 to 96 degrees and a side
+    // raise 22 to 50, so the line between them is at 55 to 60. A side raise does not count here.
+    preferredPlane: { minDeg: 60, maxDeg: 150, feedback: "forward", required: true },
+    adaptiveRest: SHOULDER_REST,
     targetReps: TARGET_REPS,
     maxDurationSec: MAX_DURATION_SEC,
-    demo: demoBetween({ elevationDeg: 10, elbowDeg: 175 }, { elevationDeg: 110, elbowDeg: 175 }),
+    // Seen from the side, so it does not look like the raise out to the side.
+    demo: demoBetween(
+      "side",
+      { elevationDeg: 10, elbowDeg: 175 },
+      { elevationDeg: 110, elbowDeg: 175 },
+    ),
   },
   shoulder_abduction: {
     id: "shoulder_abduction",
@@ -248,10 +275,16 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
       standard: { low: 30, high: 80 },
       gentle: { low: 30, high: 50 },
     },
-    preferredPlane: { minDeg: -30, maxDeg: 40, feedback: "sideways" },
+    // The other side of the same line: a forward raise does not count here.
+    preferredPlane: { minDeg: -45, maxDeg: 55, feedback: "sideways", required: true },
+    adaptiveRest: SHOULDER_REST,
     targetReps: TARGET_REPS,
     maxDurationSec: MAX_DURATION_SEC,
-    demo: demoBetween({ elevationDeg: 10, elbowDeg: 175 }, { elevationDeg: 100, elbowDeg: 175 }),
+    demo: demoBetween(
+      "front",
+      { elevationDeg: 10, elbowDeg: 175 },
+      { elevationDeg: 100, elbowDeg: 175 },
+    ),
   },
   elbow_flexion: {
     id: "elbow_flexion",
@@ -273,7 +306,11 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
     },
     targetReps: TARGET_REPS,
     maxDurationSec: MAX_DURATION_SEC,
-    demo: demoBetween({ elevationDeg: 5, elbowDeg: 170 }, { elevationDeg: 5, elbowDeg: 60 }),
+    demo: demoBetween(
+      "side",
+      { elevationDeg: 5, elbowDeg: 170 },
+      { elevationDeg: 5, elbowDeg: 60 },
+    ),
   },
   forward_reach: {
     id: "forward_reach",
@@ -296,8 +333,11 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
     preferredPlane: { minDeg: 45, maxDeg: 135, feedback: "forward" },
     targetReps: TARGET_REPS,
     maxDurationSec: MAX_DURATION_SEC,
-    // A figure facing the viewer cannot show depth, so the arm rises as it straightens.
-    demo: demoBetween({ elevationDeg: 20, elbowDeg: 100 }, { elevationDeg: 80, elbowDeg: 175 }),
+    demo: demoBetween(
+      "side",
+      { elevationDeg: 20, elbowDeg: 100 },
+      { elevationDeg: 80, elbowDeg: 175 },
+    ),
     text: {
       feedback: {
         higher: "warmup.feedback.reachFurther",
@@ -365,6 +405,17 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
   },
 };
 
+/** Whether a plane reading is in the exercise's preferred plane; null with no plane or no reading. */
+export function isInPlane(
+  exercise: ExerciseDefinition,
+  planeDeg: number | null | undefined,
+): boolean | null {
+  const preferred = exercise.preferredPlane;
+  if (!preferred || planeDeg === null || planeDeg === undefined) return null;
+  if (!Number.isFinite(planeDeg)) return null;
+  return planeDeg >= preferred.minDeg && planeDeg <= preferred.maxDeg;
+}
+
 /** The warm-up's exercises, in order. */
 export const EXERCISE_ORDER: ExerciseId[] = [
   "shoulder_flexion",
@@ -380,7 +431,7 @@ export const ALL_EXERCISE_IDS = Object.keys(EXERCISES) as ExerciseId[];
 
 export interface ExerciseTargets {
   thresholds: Thresholds;
-  /** The preset actually used: "personal" falls back to "standard" with no history. */
+  /** The preset actually used. "personal" with no history uses the gentle preset's targets. */
   preset: ThresholdPreset;
   /** Why the thresholds are what they are; null for a fixed preset chosen directly. */
   personalisation: PersonalisedTargets | null;

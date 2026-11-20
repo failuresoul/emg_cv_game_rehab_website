@@ -5,6 +5,7 @@ import {
   type ExerciseDefinition,
   type ExerciseId,
   getTargets,
+  isInPlane,
   type ThresholdPreset,
   type Thresholds,
 } from "./exercises";
@@ -28,6 +29,9 @@ export type ExerciseFeedback =
   | SequenceFeedback
   | "forward"
   | "sideways"
+  /** A raise in the wrong direction, which did not count. */
+  | "not_counted_forward"
+  | "not_counted_sideways"
   | "compensation_back"
   | "compensation_shoulder";
 
@@ -160,6 +164,14 @@ export class ExerciseRunner {
     return this.thresholds;
   }
 
+  /**
+   * The lines the counter uses right now. For the shoulder raises they follow the patient's own
+   * rest position, so the gauge shows these rather than the planned thresholds.
+   */
+  get liveThresholds(): Thresholds {
+    return this.counter.lines;
+  }
+
   get currentPreset(): ThresholdPreset {
     return this.preset;
   }
@@ -251,7 +263,7 @@ export class ExerciseRunner {
     this.recordFrame(frame);
     // Before the counter, so this frame's posture belongs to any rep it ends.
     if (frame.posture !== undefined) this.checkPosture(frame.posture, timestamp);
-    this.counter.feed(frame);
+    this.counter.feed({ ...frame, inPlane: isInPlane(this.definition, frame.planeDeg) });
 
     if (this.counter.fullReps >= this.definition.targetReps) this.finish("DONE", timestamp);
     else this.checkTimeout(timestamp);
@@ -345,7 +357,15 @@ export class ExerciseRunner {
       return;
     }
     if (event.type === "feedback") {
-      this.emit(event);
+      if (event.feedback === "wrong_plane") {
+        const forward = this.definition.preferredPlane?.feedback === "forward";
+        this.emit({
+          type: "feedback",
+          feedback: forward ? "not_counted_forward" : "not_counted_sideways",
+        });
+      } else {
+        this.emit(event);
+      }
       return;
     }
     // The monitor returns a rep for every rep event.
@@ -357,6 +377,8 @@ export class ExerciseRunner {
 
   private reportPlane(): void {
     const preferred = this.definition.preferredPlane;
+    // A required plane is judged by the counter, which refuses the repetition instead.
+    if (preferred?.required) return;
     const total = this.onPlane + this.offPlane;
     if (preferred && total > 0 && this.offPlane / total > OFF_PLANE_SHARE) {
       this.emit({ type: "feedback", feedback: preferred.feedback });

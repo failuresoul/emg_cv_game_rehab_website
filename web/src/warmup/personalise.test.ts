@@ -28,47 +28,75 @@ function entry(changes: Partial<WarmupHistoryEntry> = {}): WarmupHistoryEntry {
 }
 
 describe("personaliseThresholds", () => {
-  it("uses the standard preset the first time", () => {
+  it("uses the gentle targets the first time", () => {
     const targets = personaliseThresholds(FLEXION, []);
 
     expect(targets).toMatchObject({
       low: 30,
-      high: 90,
-      preset: "standard",
+      high: 60,
+      preset: "personal",
       previousHigh: null,
-      newHigh: 90,
+      newHigh: 60,
       reason: "first_time",
       change: 0,
     });
   });
 
-  it("raises by one step after 10/10 with little compensation", () => {
-    const targets = personaliseThresholds(FLEXION, [entry({ compensationRate: 0.1 })]);
+  it("raises by one step, a fifth of the way to standard, after 10/10", () => {
+    const targets = personaliseThresholds(FLEXION, [
+      entry({ compensationRate: 0.1, thresholds: { low: 30, high: 60 } }),
+    ]);
 
     expect(targets).toMatchObject({
       low: 30,
-      high: 95,
+      high: 66,
       preset: "personal",
-      previousHigh: 90,
-      newHigh: 95,
+      previousHigh: 60,
+      newHigh: 66,
       reason: "raised",
       limit: null,
-      step: 5,
+      step: 6,
       change: 1,
     });
+  });
+
+  it("reaches the standard target on the sixth successful session, not before", () => {
+    const targets: number[] = [];
+    let history: WarmupHistoryEntry[] = [];
+    for (let session = 1; session <= 7; session++) {
+      const today = personaliseThresholds(FLEXION, history);
+      targets.push(today.newHigh);
+      history = [entry({ thresholds: { low: today.low, high: today.high } }), ...history];
+    }
+
+    // Gentle first, five steps to standard, then only half steps.
+    expect(targets).toEqual([60, 66, 72, 78, 84, 90, 93]);
+  });
+
+  it("never jumps past the standard target in one step", () => {
+    const targets = personaliseThresholds(FLEXION, [entry({ thresholds: { low: 30, high: 87 } })]);
+
+    expect(targets.high).toBe(90);
+    expect(targets.limit).toBeNull();
+  });
+
+  it("raises by half a step once past the standard target", () => {
+    const targets = personaliseThresholds(FLEXION, [entry({ compensationRate: 0.1 })]);
+
+    expect(targets).toMatchObject({ previousHigh: 90, newHigh: 93, step: 6, reason: "raised" });
   });
 
   it("lowers by one step after 5/10", () => {
     const targets = personaliseThresholds(FLEXION, [entry({ fullReps: 5 })]);
 
-    expect(targets.high).toBe(85);
+    expect(targets.high).toBe(84);
     expect(targets.reason).toBe("lowered_reps");
   });
 
   it("lowers after a lot of compensation, even with 10/10", () => {
     const targets = personaliseThresholds(FLEXION, [entry({ compensationRate: 0.4 })]);
 
-    expect(targets.high).toBe(85);
+    expect(targets.high).toBe(84);
     expect(targets.reason).toBe("lowered_compensation");
   });
 
@@ -89,31 +117,31 @@ describe("personaliseThresholds", () => {
 
   it("decides from the most recent result only", () => {
     const targets = personaliseThresholds(FLEXION, [
-      entry({ fullReps: 10, thresholds: { low: 30, high: 85 } }),
+      entry({ fullReps: 10, thresholds: { low: 30, high: 84 } }),
       entry({ fullReps: 2 }),
     ]);
 
-    expect(targets.previousHigh).toBe(85);
+    expect(targets.previousHigh).toBe(84);
     expect(targets.high).toBe(90);
   });
 
   it("never goes past the best peak so far plus one step", () => {
     const targets = personaliseThresholds(FLEXION, [
+      entry({ bestPeak: 85 }),
       entry({ bestPeak: 86 }),
-      entry({ bestPeak: 88 }),
     ]);
 
-    // 95 would be the next step, but the best peak was 88.
-    expect(targets.high).toBe(93);
+    // 93 would be the next (half) step, but the best peak was 86.
+    expect(targets.high).toBe(92);
     expect(targets.limit).toBe("best_peak");
     expect(targets.reason).toBe("raised");
   });
 
   it("says a limit set the target when it held the target below what was asked", () => {
-    // Asked to raise 90 to 95, but the best peak was only 80, so the target comes down to 85.
+    // Asked to raise 90 to 93, but the best peak was only 80, so the target comes down to 86.
     const targets = personaliseThresholds(FLEXION, [entry({ bestPeak: 80 })]);
 
-    expect(targets.high).toBe(85);
+    expect(targets.high).toBe(86);
     expect(targets.change).toBe(1);
     expect(targets.reason).toBe("limited");
     expect(reasonTexts(targets).map((text) => text.key)).toEqual([
@@ -173,17 +201,18 @@ describe("personaliseThresholds", () => {
     expect(targets.high - targets.low).toBeGreaterThanOrEqual(0.2 - 1e-9);
   });
 
-  it("steps ratio measures by 0.05", () => {
+  it("steps ratio measures by a fifth of the gentle-to-standard distance", () => {
     const aperture = EXERCISES.hand_open_close;
     const targets = personaliseThresholds(aperture, [
       entry({ bestPeak: 1.9, thresholds: { low: 1.2, high: 1.6 } }),
     ]);
 
-    expect(stepFor(aperture)).toBe(0.05);
-    expect(targets.high).toBe(1.65);
+    expect(stepFor(aperture)).toBe(0.03);
+    // Already at the standard 1.6, so half a step.
+    expect(targets.high).toBe(1.615);
   });
 
-  it("makes the elbow bend further to raise, and keeps its rest line", () => {
+  it("makes the elbow bend further to raise, and keeps the gentle rest line", () => {
     const harder = personaliseThresholds(ELBOW, [
       entry({ bestPeak: 55, thresholds: { low: 70, high: 140 } }),
     ]);
@@ -191,7 +220,8 @@ describe("personaliseThresholds", () => {
       entry({ fullReps: 3, bestPeak: 85, thresholds: { low: 88, high: 140 } }),
     ]);
 
-    expect(harder).toMatchObject({ low: 65, high: 140, previousHigh: 70, newHigh: 65 });
+    // Past the standard 70, half of the 4-degree step; the arm need only straighten to 125.
+    expect(harder).toMatchObject({ low: 68, high: 125, previousHigh: 70, newHigh: 68 });
     // 93 would be easier than the gentle target of 90.
     expect(easier).toMatchObject({ low: 90, limit: "gentle_floor" });
   });
@@ -201,12 +231,13 @@ describe("personaliseThresholds", () => {
     const harder = personaliseThresholds(THUMB, [entry({ ...base, fullReps: 5 })]);
     const easier = personaliseThresholds(THUMB, [entry({ ...base, fullReps: 2 })]);
 
-    expect(stepFor(THUMB)).toBe(0.03);
-    expect(harder.low).toBeCloseTo(0.22);
-    expect(easier.low).toBeCloseTo(0.28);
+    expect(stepFor(THUMB)).toBe(0.02);
+    // At the standard 0.25: half a step harder, a whole step easier.
+    expect(harder.low).toBeCloseTo(0.24);
+    expect(easier.low).toBeCloseTo(0.27);
     // The release line keeps its 0.15 gap above the touch line.
-    expect(harder.high).toBeCloseTo(0.37);
-    expect(easier.high).toBeCloseTo(0.43);
+    expect(harder.high).toBeCloseTo(0.39);
+    expect(easier.high).toBeCloseTo(0.42);
   });
 
   it("limits the thumb by its best touch and by the gentle touch distance", () => {
@@ -217,8 +248,8 @@ describe("personaliseThresholds", () => {
       entry({ fullReps: 0, targetReps: 5, bestPeak: 0.3, thresholds: { low: 0.34, high: 0.49 } }),
     ]);
 
-    // 0.22 is harder than the closest touch so far (0.24) minus one step.
-    expect(tight.low).toBeCloseTo(0.22);
+    // 0.24 is within one step of the closest touch so far (0.24).
+    expect(tight.low).toBeCloseTo(0.24);
     expect(tight.limit).toBeNull();
     expect(loose.low).toBeCloseTo(0.35);
     expect(loose.limit).toBe("gentle_floor");
@@ -249,7 +280,7 @@ describe("personaliseThresholds", () => {
 
     expect(t(reasonTexts(targets)[0].key, reasonTexts(targets)[0].params)).toContain("5/10");
     expect(reasonSummary(targets)).toBe("lowered: 5/10 reps, 0% compensated");
-    expect(reasonSummary(personaliseThresholds(FLEXION, []))).toBe("first time: standard target");
+    expect(reasonSummary(personaliseThresholds(FLEXION, []))).toBe("first time: gentle target");
   });
 });
 
@@ -259,14 +290,14 @@ describe("getTargets", () => {
 
     expect(getThresholds(FLEXION, "standard", history)).toEqual({ low: 30, high: 90 });
     expect(getThresholds(FLEXION, "gentle", history)).toEqual({ low: 30, high: 60 });
-    expect(getThresholds(FLEXION, "personal", history)).toEqual({ low: 30, high: 95 });
+    expect(getThresholds(FLEXION, "personal", history)).toEqual({ low: 30, high: 93 });
   });
 
-  it("falls back to standard for a personal preset with no history", () => {
+  it("starts a personal preset with no history at the gentle targets", () => {
     const targets = getTargets(FLEXION, "personal", []);
 
-    expect(targets.preset).toBe("standard");
-    expect(targets.thresholds).toEqual({ low: 30, high: 90 });
+    expect(targets.preset).toBe("personal");
+    expect(targets.thresholds).toEqual({ low: 30, high: 60 });
     expect(targets.personalisation?.reason).toBe("first_time");
   });
 

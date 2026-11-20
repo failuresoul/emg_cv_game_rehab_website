@@ -351,14 +351,15 @@ describe("ExerciseRunner results", () => {
 });
 
 describe("ExerciseRunner plane feedback", () => {
-  it("says forward when a flexion rep is mostly out of plane, still counting it", () => {
+  it("does not count a side raise as a forward raise, and says so", () => {
     const runner = activeRunner();
     const list = events(runner);
 
     feed(runner, cycles({ rest: 10, peak: 120, cycles: 1, startTs: FRAME_MS }), { planeDeg: 0 });
 
-    expect(feedbackOf(list)).toContain("forward");
-    expect(runner.fullReps).toBe(1);
+    expect(feedbackOf(list)).toEqual(["not_counted_forward"]);
+    expect(runner.fullReps).toBe(0);
+    expect(runner.partialReps).toBe(0);
   });
 
   it("stays quiet when flexion is in plane", () => {
@@ -370,13 +371,24 @@ describe("ExerciseRunner plane feedback", () => {
     expect(feedbackOf(list)).toEqual(["good"]);
   });
 
-  it("says sideways for abduction out of plane", () => {
+  it("does not count a forward raise as a side raise, and says so", () => {
     const runner = activeRunner(EXERCISES.shoulder_abduction);
     const list = events(runner);
 
     feed(runner, cycles({ rest: 10, peak: 120, cycles: 1, startTs: FRAME_MS }), { planeDeg: 90 });
 
-    expect(feedbackOf(list)).toContain("sideways");
+    expect(feedbackOf(list)).toEqual(["not_counted_sideways"]);
+    expect(runner.fullReps).toBe(0);
+  });
+
+  it("counts a side raise in the side raise exercise", () => {
+    const runner = activeRunner(EXERCISES.shoulder_abduction);
+    const list = events(runner);
+
+    feed(runner, cycles({ rest: 10, peak: 120, cycles: 1, startTs: FRAME_MS }), { planeDeg: 30 });
+
+    expect(feedbackOf(list)).toEqual(["good"]);
+    expect(runner.fullReps).toBe(1);
   });
 
   it("stays quiet with no plane information", () => {
@@ -395,8 +407,9 @@ describe("ExerciseRunner plane feedback", () => {
     feed(runner, cycles({ rest: 10, peak: 120, cycles: 1, startTs: FRAME_MS }), { planeDeg: 0 });
     feed(runner, cycles({ rest: 10, peak: 120, cycles: 1, startTs: 3100 }), { planeDeg: 90 });
 
-    // The first rep gets both messages, and the second only "good".
-    expect(feedbackOf(list)).toEqual(["forward", "good", "good"]);
+    // The first rep is refused, and the second counts.
+    expect(feedbackOf(list)).toEqual(["not_counted_forward", "good"]);
+    expect(runner.fullReps).toBe(1);
   });
 
   it("does not apply to an exercise with no preferred plane", () => {

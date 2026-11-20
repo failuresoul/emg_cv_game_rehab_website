@@ -1,4 +1,5 @@
 import type { CounterFrame, ExerciseCounter } from "./counter";
+import type { Thresholds } from "./exercises";
 import type { RepFeedback, RepRecord } from "./repCounter";
 
 /**
@@ -65,6 +66,10 @@ export class SequenceCounter implements ExerciseCounter {
     this.high = high;
     this.steps = steps;
     this.stepTimeoutMs = stepTimeoutMs;
+  }
+
+  get lines(): Thresholds {
+    return { low: this.low, high: this.high };
   }
 
   get state(): SequenceState {

@@ -62,7 +62,7 @@ export function useWarmupHistories(): WarmupHistories {
             params: { exercise_id: exerciseId, limit: HISTORY_LIMIT },
           })
         ).data.map(toHistoryEntry),
-      // A failure only means standard targets today, so do not keep the patient waiting.
+      // A failure only means first-time (gentle) targets today, so do not keep the patient waiting.
       retry: 1,
       staleTime: 0,
     })),

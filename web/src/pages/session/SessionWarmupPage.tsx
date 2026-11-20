@@ -325,7 +325,7 @@ function ExerciseStep({
                 <AngleGauge
                   value={value}
                   best={best}
-                  thresholds={thresholds}
+                  thresholds={runner.liveThresholds}
                   range={exercise.gauge}
                   unit={exercise.unit}
                 />

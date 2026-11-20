@@ -505,3 +505,78 @@ describe("RepCounter, hysteresis", () => {
     expect(counter.fullReps).toBe(1);
   });
 });
+
+describe("RepCounter, learning the patient's own rest", () => {
+  const LEARN: RepCounterConfig = {
+    ...UP,
+    adaptiveRest: { minTravel: 25, stillRange: 8, maxRest: 65 },
+  };
+
+  function feed(counter: RepCounter, samples: Sample[]) {
+    for (const { value, timestamp } of samples) counter.update(value, timestamp);
+  }
+
+  it("counts raises from a relaxed arm that the camera reads as 50 degrees", () => {
+    // A webcam above the screen, with the elbow below the picture, reads a relaxed arm high.
+    const signal = [
+      ...hold(50, 1500, 0, 2),
+      ...cycles({ rest: 50, peak: 100, cycles: 3, startTs: 1533, noiseDeg: 2 }),
+    ];
+    const learning = new RepCounter(LEARN);
+    const fixed = new RepCounter(UP);
+    feed(learning, signal);
+    feed(fixed, signal);
+
+    expect(learning.fullReps).toBe(3);
+    expect(learning.lines.low).toBeGreaterThan(50);
+    expect(learning.lines.low).toBeLessThan(60);
+    expect(learning.lines.high).toBe(90);
+    // The fixed rest line of 30 is never reached, so nothing counts.
+    expect(fixed.fullReps).toBe(0);
+    expect(fixed.awaitingRest).toBe(true);
+  });
+
+  it("moves the target up so a repetition is still at least the minimum travel", () => {
+    const counter = new RepCounter(LEARN);
+    feed(counter, hold(64, 1500));
+
+    // Rest line 64 + 3; the target must be 25 further.
+    expect(counter.lines).toEqual({ low: 67, high: 92 });
+    feed(counter, cycles({ rest: 64, peak: 91, cycles: 1, startTs: 1533 }));
+    expect(counter.fullReps).toBe(0);
+    feed(counter, cycles({ rest: 64, peak: 96, cycles: 1, startTs: 4600 }));
+    expect(counter.fullReps).toBe(1);
+  });
+
+  it("does not take a raised arm, held still, as rest", () => {
+    const counter = new RepCounter(LEARN);
+    feed(counter, hold(80, 2000));
+    feed(counter, cycles({ rest: 80, peak: 120, cycles: 2, startTs: 2033 }));
+
+    expect(counter.fullReps).toBe(0);
+    expect(counter.awaitingRest).toBe(true);
+  });
+
+  it("does not take a slow movement as rest", () => {
+    const counter = new RepCounter(LEARN);
+    feed(
+      counter,
+      ramp([
+        [0, 45],
+        [1500, 62],
+      ]),
+    );
+
+    expect(counter.awaitingRest).toBe(true);
+    expect(counter.lines).toEqual({ low: 30, high: 90 });
+  });
+
+  it("returns to the planned lines once the arm rests lower", () => {
+    const counter = new RepCounter(LEARN);
+    feed(counter, hold(50, 1500));
+    expect(counter.lines.low).toBe(53);
+
+    feed(counter, hold(15, 1500, 1533));
+    expect(counter.lines).toEqual({ low: 30, high: 90 });
+  });
+});

@@ -6,6 +6,7 @@ import type { Side } from "@/types/api";
 import { handPoseAt, poseAt } from "./demo";
 import {
   type DemoKeyframe,
+  type DemoView,
   type ExerciseDemo,
   HAND_KNUCKLES,
   type HandKeyframe,
@@ -18,6 +19,9 @@ const SHOULDER_Y = 170;
 const SCALE = 85;
 const HAND_WRIST_Y = 320;
 const HAND_SCALE = 140;
+// Front view: the shoulders, in shoulder widths from the centre; the other arm hangs still.
+const HALF_SHOULDERS = 0.45;
+const RESTING_ARM = 1.6;
 
 /** Time through the loop, from 0 to 1. */
 function useLoopTime(): number {
@@ -39,20 +43,57 @@ function useLoopTime(): number {
 
 function ArmFigure({
   frames,
+  view,
   outward,
   time,
 }: {
   frames: DemoKeyframe[];
+  view: DemoView;
   outward: number;
   time: number;
 }) {
   const pose = poseAt(frames, time);
-  const toX = (x: number) => CENTER_X + outward * x * SCALE;
+  // From the front, the arm hangs from its own shoulder; in profile, from the trunk.
+  const shoulderX = view === "front" ? HALF_SHOULDERS : 0;
+  const toX = (x: number) => CENTER_X + outward * (shoulderX + x) * SCALE;
   const toY = (y: number) => SHOULDER_Y - y * SCALE;
   const trunkEndY = toY(-1.4);
+  const otherShoulderX = CENTER_X - outward * HALF_SHOULDERS * SCALE;
 
   return (
     <>
+      {view === "front" ? (
+        <>
+          <line
+            x1={otherShoulderX}
+            y1={SHOULDER_Y}
+            x2={toX(0)}
+            y2={SHOULDER_Y}
+            stroke="var(--color-muted)"
+            strokeWidth={6}
+            strokeLinecap="round"
+          />
+          <line
+            x1={otherShoulderX}
+            y1={SHOULDER_Y}
+            x2={otherShoulderX}
+            y2={toY(-RESTING_ARM)}
+            stroke="var(--color-muted)"
+            strokeWidth={6}
+            strokeLinecap="round"
+          />
+        </>
+      ) : (
+        // A nose shows which way the figure faces: the arm moves in front of it.
+        <polyline
+          points={`${CENTER_X + outward * 28},${SHOULDER_Y - 72} ${CENTER_X + outward * 44},${SHOULDER_Y - 58} ${CENTER_X + outward * 28},${SHOULDER_Y - 52}`}
+          fill="none"
+          stroke="var(--color-muted)"
+          strokeWidth={5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
       <circle
         cx={CENTER_X}
         cy={SHOULDER_Y - 62}
@@ -136,17 +177,24 @@ export function DemoFigure({ demo, affectedSide }: { demo: ExerciseDemo; affecte
   const outward = affectedSide === "left" ? -1 : 1;
 
   return (
-    <svg
-      viewBox={`0 0 ${SIZE} ${SIZE}`}
-      role="img"
-      aria-label={t(demo.kind === "arm" ? "warmup.demo.label" : "warmup.demo.handLabel")}
-      className="w-full max-h-[50dvh]"
-    >
-      {demo.kind === "arm" ? (
-        <ArmFigure frames={demo.keyframes} outward={outward} time={time} />
-      ) : (
-        <HandFigure frames={demo.keyframes} outward={outward} time={time} />
+    <figure className="flex w-full flex-col items-center gap-1">
+      <svg
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        role="img"
+        aria-label={t(demo.kind === "arm" ? "warmup.demo.label" : "warmup.demo.handLabel")}
+        className="w-full max-h-[50dvh]"
+      >
+        {demo.kind === "arm" ? (
+          <ArmFigure frames={demo.keyframes} view={demo.view} outward={outward} time={time} />
+        ) : (
+          <HandFigure frames={demo.keyframes} outward={outward} time={time} />
+        )}
+      </svg>
+      {demo.kind === "arm" && (
+        <figcaption className="text-muted text-center font-medium">
+          {t(demo.view === "front" ? "warmup.demo.viewFront" : "warmup.demo.viewSide")}
+        </figcaption>
       )}
-    </svg>
+    </figure>
   );
 }

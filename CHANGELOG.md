@@ -4,6 +4,13 @@ All notable changes to MuVi Rehab (code name MotionLab). The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed (warm-up shoulder raises; a slower difficulty climb)
+
+- **The forward and side raises count again.** A webcam above the screen, with the elbow below the picture, reads a relaxed arm as 40–60°, so the fixed 30° rest line was never reached and no repetition counted. The raises now learn the patient's own rest: once the arm holds still for 1 s (within 8°, below 65°), the rest line moves to just above it, and the target moves up if needed so that a repetition is still a lift of at least 25° (`AdaptiveRest` in `web/src/warmup/repCounter.ts`). The gauge shows the lines in use. Replaying `shadik_full.json`: the forward raise counts 3 of 3 (was 0).
+- **A side raise no longer counts as a forward raise, nor the other way round.** The direction (plane) was measured from the elbow, which the webcam often only guesses: in `shadik_full.json` it read about 45° for both raises. It is now measured from shoulder to wrist (`web/src/vision/angles.ts`), which separates them clearly: forward raises 70–96°, side raises 22–50°. Both raises now *require* their plane (forward 60°–150°, side −45°–55°). A raise made mostly in the wrong direction is not counted, and the patient sees "Not counted: raise your arm forward, in front of you" (or "…out to the side"). Replaying the recorded forward raises: 3 of 3 count as forward raises, and 0 of 3 as side raises.
+- **The two raises no longer look alike in the demo.** The forward raise, elbow bend and forward reach are drawn from the side (with a nose to show the facing direction); the side raise from the front, with both shoulders. A caption says which view it is.
+- **Difficulty climbs slowly.** The first warm-up uses the gentle targets. Each successful session (9/10 or better, under 20% leaning) raises a target by one step, a fifth of the way from gentle to standard, so the standard target comes on the sixth session at the earliest. Past standard, steps are halved. Struggling still lowers it by one step, never below gentle (`web/src/warmup/personalise.ts`).
+
 ### Fixed (the collaborating university)
 
 - **The collaborator is the University of Southern Queensland (UniSQ), Australia,** not The University of Queensland: the name, short name (UniSQ) and logo (`web/public/logos/unisq.svg`, replacing `uq.png`) in `web/src/config/project.ts`, so every page, the footer, the credit line and both Word documents follow.

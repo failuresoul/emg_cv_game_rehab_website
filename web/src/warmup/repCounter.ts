@@ -1,8 +1,10 @@
 import type { CounterFrame, ExerciseCounter } from "./counter";
+import type { Thresholds } from "./exercises";
 
 export type RepDirection = "up" | "down";
 export type RepState = "REST" | "MOVING" | "AT_TARGET" | "RETURNING";
-export type RepFeedback = "higher" | "lower" | "slow" | "almost" | "good";
+/** "wrong_plane": a movement in the wrong direction, which did not count. */
+export type RepFeedback = "higher" | "lower" | "slow" | "almost" | "good" | "wrong_plane";
 
 export interface RepRecord {
   /** Position among all recorded movements, full and partial, starting at 1. */
@@ -24,6 +26,24 @@ export type RepEvent =
   | { type: "feedback"; feedback: RepFeedback }
   | { type: "stateChanged"; state: RepState };
 
+/**
+ * Learns where the patient's arm actually rests. A camera that is tilted, or that cannot see the
+ * whole arm, can read a relaxed arm as 40 to 60 degrees, so a fixed rest line is never reached and
+ * nothing counts. When the value holds still for a moment below maxRest, the rest line moves to
+ * just above it, and the target moves up if needed so that a repetition is still a real movement
+ * of at least minTravel. All values are in the measure's unit.
+ */
+export interface AdaptiveRest {
+  /** The smallest distance from the rest line to the target. */
+  minTravel: number;
+  /** How much the value may wander and still count as holding still. */
+  stillRange: number;
+  /** A still position further than this is a raised arm, not a resting one. */
+  maxRest: number;
+  /** How long the value must hold still. Default 1000 ms. */
+  stillMs?: number;
+}
+
 export interface RepCounterConfig {
   direction: RepDirection;
   low: number;
@@ -33,6 +53,14 @@ export interface RepCounterConfig {
   partialFraction?: number;
   /** Noise smaller than this cannot start a movement or turn it around. In the measure's unit. */
   hysteresis?: number;
+  /** Learn the patient's own rest position; see AdaptiveRest. Off when undefined. */
+  adaptiveRest?: AdaptiveRest;
+  /**
+   * Only count a movement made mostly in the exercise's direction, judged from the frames' inPlane
+   * while the arm is raised. A forward raise and a side raise reach the same angle, so without
+   * this either one would count for both exercises.
+   */
+  requirePlane?: boolean;
 }
 
 const DEFAULT_MIN_REP_MS = 600;
@@ -42,6 +70,9 @@ const DEFAULT_PARTIAL_FRACTION = 0.6;
 const DEFAULT_HYSTERESIS = 3;
 // A movement smaller than this share of the way is treated as noise, and gets no feedback.
 const MIN_FEEDBACK_FRACTION = 0.25;
+const DEFAULT_STILL_MS = 1000;
+// The window must cover most of the still time, so that two frames are not enough.
+const STILL_COVER = 0.8;
 
 /**
  * Counts repetitions from a filtered angle. Internally "up" and "down" share one scale that always
@@ -52,10 +83,19 @@ export class RepCounter implements ExerciseCounter {
   readonly sequenceStep = null;
   private readonly listeners = new Set<(event: RepEvent) => void>();
   private readonly sign: 1 | -1;
-  private readonly restLine: number;
-  private readonly targetLine: number;
-  private readonly partialLine: number;
-  private readonly feedbackLine: number;
+  private readonly partialFraction: number;
+  /** The planned lines; an adapted rest never goes below the first or the target below the second. */
+  private readonly baseRestLine: number;
+  private readonly baseTargetLine: number;
+  private readonly adaptiveRest: AdaptiveRest | null;
+  private readonly stillWindow: { timestamp: number; value: number }[] = [];
+  private readonly requirePlane: boolean;
+  private framesInPlane = 0;
+  private framesOutOfPlane = 0;
+  private restLine: number;
+  private targetLine: number;
+  private partialLine = 0;
+  private feedbackLine = 0;
   private readonly smallMovementFeedback: RepFeedback;
   private readonly minRepMs: number;
   private readonly maxRepMs: number;
@@ -80,15 +120,20 @@ export class RepCounter implements ExerciseCounter {
     maxRepMs = DEFAULT_MAX_REP_MS,
     partialFraction = DEFAULT_PARTIAL_FRACTION,
     hysteresis = DEFAULT_HYSTERESIS,
+    adaptiveRest,
+    requirePlane = false,
   }: RepCounterConfig) {
     if (!(low < high)) throw new RangeError(`low (${low}) must be below high (${high})`);
     const isUp = direction === "up";
     this.sign = isUp ? 1 : -1;
-    this.restLine = isUp ? low : -high;
-    this.targetLine = isUp ? high : -low;
-    const range = this.targetLine - this.restLine;
-    this.partialLine = this.restLine + partialFraction * range;
-    this.feedbackLine = this.restLine + MIN_FEEDBACK_FRACTION * range;
+    this.partialFraction = partialFraction;
+    this.baseRestLine = isUp ? low : -high;
+    this.baseTargetLine = isUp ? high : -low;
+    this.restLine = this.baseRestLine;
+    this.targetLine = this.baseTargetLine;
+    this.setLines(this.baseRestLine, this.baseTargetLine);
+    this.adaptiveRest = adaptiveRest ?? null;
+    this.requirePlane = requirePlane;
     this.smallMovementFeedback = isUp ? "higher" : "lower";
     this.minRepMs = minRepMs;
     this.maxRepMs = maxRepMs;
@@ -102,6 +147,12 @@ export class RepCounter implements ExerciseCounter {
   /** True while a movement cannot begin, because the arm has not yet been seen at rest. */
   get awaitingRest(): boolean {
     return this.currentState === "REST" && !this.armed;
+  }
+
+  /** The rest and target lines in use, which follow the patient's rest when it is learnt. */
+  get lines(): Thresholds {
+    const [a, b] = [this.restLine * this.sign, this.targetLine * this.sign];
+    return { low: Math.min(a, b), high: Math.max(a, b) };
   }
 
   get fullReps(): number {
@@ -124,16 +175,22 @@ export class RepCounter implements ExerciseCounter {
 
   feed(frame: CounterFrame): void {
     if (frame.value === null) return;
-    this.update(frame.value, frame.timestamp, frame.rawValue ?? frame.value);
+    this.update(frame.value, frame.timestamp, frame.rawValue ?? frame.value, frame.inPlane);
   }
 
   /** Counts from the filtered value. The raw value is only kept for the rep's record. */
-  update(value: number, timestamp: number, rawValue: number = value): void {
+  update(
+    value: number,
+    timestamp: number,
+    rawValue: number = value,
+    inPlane: boolean | null = null,
+  ): void {
     if (this.isPaused || !Number.isFinite(value)) return;
     const scaled = value * this.sign;
     const scaledRaw = Number.isFinite(rawValue) ? rawValue * this.sign : scaled;
 
     if (this.currentState === "REST") {
+      this.learnRest(scaled, timestamp);
       if (scaled <= this.restLine) this.armed = true;
       if (!this.armed || scaled <= this.restLine + this.hysteresis) return;
       // Carries on below, because a single frame can jump straight past the target.
@@ -150,6 +207,11 @@ export class RepCounter implements ExerciseCounter {
     if (scaled > this.peak) {
       this.peak = scaled;
       this.peakTs = timestamp;
+    }
+    // Low down, the direction means little; judge it once the arm is clearly raised.
+    if (inPlane !== null && scaled >= this.feedbackLine) {
+      if (inPlane) this.framesInPlane++;
+      else this.framesOutOfPlane++;
     }
 
     if (scaled <= this.restLine) {
@@ -168,6 +230,7 @@ export class RepCounter implements ExerciseCounter {
   /** For tracking loss. Abandons any movement in progress, so a pause never creates a rep. */
   pause(): void {
     this.isPaused = true;
+    this.stillWindow.length = 0;
     if (this.currentState !== "REST") this.abandonMovement();
     this.armed = false;
   }
@@ -177,7 +240,43 @@ export class RepCounter implements ExerciseCounter {
     this.isPaused = false;
   }
 
+  private setLines(restLine: number, targetLine: number): void {
+    this.restLine = restLine;
+    this.targetLine = targetLine;
+    const range = targetLine - restLine;
+    this.partialLine = restLine + this.partialFraction * range;
+    this.feedbackLine = restLine + MIN_FEEDBACK_FRACTION * range;
+  }
+
+  /**
+   * While at rest: once the value has held still for the still time, the rest line moves to just
+   * above it. Before the first arming it may move up; afterwards only down, towards the planned
+   * line, so that resting lower later makes the next repetition the planned one again.
+   */
+  private learnRest(scaled: number, timestamp: number): void {
+    const adaptive = this.adaptiveRest;
+    if (!adaptive) return;
+    const stillMs = adaptive.stillMs ?? DEFAULT_STILL_MS;
+    const window = this.stillWindow;
+    window.push({ timestamp, value: scaled });
+    while (window.length > 0 && window[0].timestamp < timestamp - stillMs) window.shift();
+    if (timestamp - window[0].timestamp < STILL_COVER * stillMs) return;
+
+    const values = window.map((entry) => entry.value);
+    const highest = Math.max(...values);
+    if (highest - Math.min(...values) > adaptive.stillRange) return;
+    if (highest > adaptive.maxRest * this.sign) return;
+
+    const restLine = Math.max(this.baseRestLine, highest + this.hysteresis);
+    if (this.armed && restLine >= this.restLine) return;
+    this.setLines(restLine, Math.max(this.baseTargetLine, restLine + adaptive.minTravel));
+    this.armed = true;
+  }
+
   private beginMovement(scaled: number, timestamp: number): void {
+    this.stillWindow.length = 0;
+    this.framesInPlane = 0;
+    this.framesOutOfPlane = 0;
     this.startTs = timestamp;
     this.peakTs = timestamp;
     this.peak = scaled;
@@ -192,6 +291,12 @@ export class RepCounter implements ExerciseCounter {
     // Value is at rest, so the next movement may begin straight away.
     this.armed = true;
     if (durationMs < this.minRepMs) return;
+
+    const wentFarEnough = this.reachedTarget || this.peak >= this.partialLine;
+    if (this.requirePlane && wentFarEnough && this.framesOutOfPlane > this.framesInPlane) {
+      this.emit({ type: "feedback", feedback: "wrong_plane" });
+      return;
+    }
 
     if (!this.reachedTarget && this.peak < this.partialLine) {
       if (this.peak >= this.feedbackLine) {

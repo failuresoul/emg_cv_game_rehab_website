@@ -65,7 +65,7 @@ describe("goalText", () => {
     const targets = personaliseThresholds(FLEXION, [entry()]);
 
     expect(goalText(FLEXION, targets.newHigh, targets)).toBe(
-      "Today's goal: raise to 85° (up from 80°) — you did 10 of 10 last time",
+      "Today's goal: raise to 86° (up from 80°) — you did 10 of 10 last time",
     );
   });
 
@@ -83,7 +83,7 @@ describe("goalText", () => {
     ]);
     const reach = EXERCISES.forward_reach;
 
-    expect(goalText(ELBOW, elbow.newHigh, elbow)).toContain("bend to 65° (down from 70°)");
+    expect(goalText(ELBOW, elbow.newHigh, elbow)).toContain("bend to 68° (down from 70°)");
     expect(goalText(reach, 0.8, null)).toBe("Today's goal: reach 80% of your arm's length");
   });
 
@@ -192,7 +192,7 @@ describe("rows", () => {
       exercise_id: "elbow_flexion",
       preset: "standard",
       thresholds: { low: 70, high: 140, unit: "deg" },
-      personalisation: { previous_high: null, new_high: 70, reason: "first time: standard target" },
+      personalisation: { previous_high: null, new_high: 70, reason: "first time: gentle target" },
       full_reps: 9,
       partial_reps: 1,
       target_reps: 10,

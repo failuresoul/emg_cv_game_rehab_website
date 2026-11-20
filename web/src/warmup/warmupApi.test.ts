@@ -83,13 +83,13 @@ describe("toWarmupPayload", () => {
     ]);
 
     const payload = toWarmupPayload(
-      result({ preset: "personal", thresholds: { low: 30, high: 95 }, personalisation }),
+      result({ preset: "personal", thresholds: { low: 30, high: 93 }, personalisation }),
     );
 
     expect(payload.preset).toBe("personal");
     expect(payload.personalisation).toEqual({
       previous_high: 90,
-      new_high: 95,
+      new_high: 93,
       reason: "raised: 10/10 reps, 10% compensated",
     });
   });
@@ -130,12 +130,12 @@ describe("toWarmupPayload", () => {
 
     expect(payload).toMatchObject({
       exercise_id: "thumb_opposition",
-      preset: "standard",
-      thresholds: { low: 0.25, unit: "palm_ratio" },
+      preset: "personal",
+      thresholds: { low: 0.35, unit: "palm_ratio" },
       personalisation: {
         previous_high: null,
-        new_high: 0.25,
-        reason: "first time: standard target",
+        new_high: 0.35,
+        reason: "first time: gentle target",
       },
       target_reps: 5,
       skipped: true,
@@ -197,19 +197,19 @@ describe("ExerciseRunner with a personal target", () => {
     runner.startCountdown(-3000);
     runner.update({ timestamp: 0, value: 10 });
 
-    // Peaks of 93 would reach the standard 90, but not today's 95.
-    for (const { value, timestamp } of cycles({ rest: 10, peak: 93, cycles: 2, startTs: 33 })) {
+    // Peaks of 92 would reach the standard 90, but not today's 93.
+    for (const { value, timestamp } of cycles({ rest: 10, peak: 92, cycles: 2, startTs: 33 })) {
       runner.update({ timestamp, value });
     }
 
-    expect(runner.currentThresholds).toEqual({ low: 30, high: 95 });
+    expect(runner.currentThresholds).toEqual({ low: 30, high: 93 });
     expect(runner.fullReps).toBe(0);
     runner.skip(7000);
     expect(runner.getResult()).toMatchObject({
       preset: "personal",
-      thresholds: { low: 30, high: 95 },
+      thresholds: { low: 30, high: 93 },
       partialReps: 2,
-      personalisation: { previousHigh: 90, newHigh: 95, reason: "raised" },
+      personalisation: { previousHigh: 90, newHigh: 93, reason: "raised" },
     });
   });
 });

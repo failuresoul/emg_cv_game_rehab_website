@@ -29,8 +29,8 @@ export type PersonaliseReason =
 export type PersonaliseLimit = "best_peak" | "standard_max" | "gentle_floor" | null;
 
 export interface PersonalisedTargets extends Thresholds {
-  /** "standard" when there is no history to personalise from. */
-  preset: "personal" | "standard";
+  /** Always "personal": with no history, the targets are the gentle preset's. */
+  preset: "personal";
   /**
    * The target line: high for exercises that rise to a target, low for those that fall to one
    * (bending the elbow, or the thumb's touch distance). Null with no history.
@@ -54,23 +54,40 @@ export const LOWER_SUCCESS = 0.6;
 export const LOWER_COMPENSATION = 0.3;
 /** The hardest a target may get, as a share past the standard target. */
 const MAX_PAST_STANDARD = 0.15;
-const ANGLE_STEP = 5;
-const RATIO_STEP = 0.05;
-const TOUCH_STEP = 0.03;
+/**
+ * A patient starts at the gentle target and climbs one step per successful session, so the
+ * standard target comes on the sixth session at the earliest: first session plus five steps.
+ */
+export const STEPS_TO_STANDARD = 5;
+/** Past the standard target, each step is this share of a normal one, so it gets harder slowly. */
+export const PAST_STANDARD_STEP_SHARE = 0.5;
 const ANGLE_GAP = 25;
 const RATIO_GAP = 0.2;
 
+const round = (value: number) => Math.round(value * 1000) / 1000;
+
+/** One step: a fifth of the way from the gentle target to the standard one. */
 export function stepFor(exercise: ExerciseDefinition): number {
-  if (exercise.counter === "sequence") return TOUCH_STEP;
-  return exercise.unit === "deg" ? ANGLE_STEP : RATIO_STEP;
+  const gentle = targetOf(exercise, exercise.presets.gentle);
+  const standard = targetOf(exercise, exercise.presets.standard);
+  return round(Math.abs(standard - gentle) / STEPS_TO_STANDARD);
+}
+
+/**
+ * The start line that personal targets keep: the easier of the two presets' rest lines, so that a
+ * patient never has to rest further than the gentle preset asks. A sequence keeps the standard
+ * touch and release gap.
+ */
+function restBase(exercise: ExerciseDefinition): Thresholds {
+  const { gentle, standard } = exercise.presets;
+  if (exercise.counter === "sequence") return standard;
+  return { low: Math.max(gentle.low, standard.low), high: Math.min(gentle.high, standard.high) };
 }
 
 /** The line a rep must reach: high going up, low going down. */
 export function targetOf(exercise: ExerciseDefinition, thresholds: Thresholds): number {
   return exercise.direction === "up" ? thresholds.high : thresholds.low;
 }
-
-const round = (value: number) => Math.round(value * 1000) / 1000;
 
 /** The other line, keeping the gap a rep must travel, or the touch's release gap. */
 function withTarget(exercise: ExerciseDefinition, base: Thresholds, target: number): Thresholds {
@@ -84,23 +101,26 @@ function withTarget(exercise: ExerciseDefinition, base: Thresholds, target: numb
 }
 
 /**
- * Today's thresholds from the most recent result: one step harder after a near-perfect set with
- * little compensation, one step easier after a difficult one, otherwise the same. Never past the
- * best peak so far plus a step, nor 15% past the standard target, nor easier than gentle.
+ * Today's thresholds from the most recent result. The first time is the gentle preset. After a
+ * near-perfect set with little compensation the target rises one step (a fifth of the way to the
+ * standard target), and past the standard target only half a step; after a difficult set it falls
+ * one step; otherwise it stays. Never past the best peak so far plus a step, nor 15% past the
+ * standard target, nor easier than gentle.
  */
 export function personaliseThresholds(
   exercise: ExerciseDefinition,
   history: readonly WarmupHistoryEntry[],
-  presetBase: Thresholds = exercise.presets.standard,
+  presetBase: Thresholds = restBase(exercise),
 ): PersonalisedTargets {
   const step = stepFor(exercise);
   const recent = history[0];
   if (!recent) {
+    const gentle = exercise.presets.gentle;
     return {
-      ...presetBase,
-      preset: "standard",
+      ...gentle,
+      preset: "personal",
       previousHigh: null,
-      newHigh: targetOf(exercise, presetBase),
+      newHigh: targetOf(exercise, gentle),
       reason: "first_time",
       limit: null,
       step,
@@ -127,7 +147,17 @@ export function personaliseThresholds(
   // Work in "difficulty", which rises as the exercise gets harder, whichever way it moves.
   const sign = exercise.direction === "up" ? 1 : -1;
   const previous = targetOf(exercise, recent.thresholds);
-  let difficulty = sign * previous + change * step;
+  const standardTarget = targetOf(exercise, exercise.presets.standard);
+  let difficulty = sign * previous;
+  if (change === 1) {
+    // Up to the standard target in whole steps, but never jumping past it; beyond it, half steps.
+    difficulty =
+      difficulty < sign * standardTarget
+        ? Math.min(difficulty + step, sign * standardTarget)
+        : difficulty + step * PAST_STANDARD_STEP_SHARE;
+  } else if (change === -1) {
+    difficulty -= step;
+  }
   let limit: PersonaliseLimit = null;
 
   const peaks = history.flatMap((entry) =>
@@ -140,7 +170,6 @@ export function personaliseThresholds(
       limit = "best_peak";
     }
   }
-  const standardTarget = targetOf(exercise, exercise.presets.standard);
   const hardest = sign * standardTarget * (1 + sign * MAX_PAST_STANDARD);
   if (difficulty > hardest) {
     difficulty = hardest;
@@ -211,7 +240,7 @@ export function reasonTexts(targets: PersonalisedTargets): ReasonText[] {
 /** A stable English summary for the saved record, such as "raised: 10/10 reps, 10% compensated". */
 export function reasonSummary(targets: PersonalisedTargets): string {
   const evidence = targets.evidence;
-  if (!evidence) return "first time: standard target";
+  if (!evidence) return "first time: gentle target";
   const words: Record<PersonaliseReason, string> = {
     first_time: "first time",
     raised: "raised",

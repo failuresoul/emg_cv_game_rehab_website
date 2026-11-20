@@ -170,15 +170,29 @@ export function computeJointAngles(
   const trunkLandmarks = hipVisible ? [shoulder, elbow, hip] : [shoulder, elbow];
 
   const elevation = angleBetween(upperArm, trunkDown);
+  // The plane comes from the whole arm, shoulder to wrist, when the wrist is seen. The webcam's
+  // elbow point is often a guess (it may be below the picture) and barely moves between a
+  // forward and a sideways raise, while the wrist clearly does.
+  const wristVisible = isVisible(wrist);
+  const planeArm = wristVisible ? subtract(positionOf(wrist), shoulderPosition) : upperArm;
+  const planeLandmarks = wristVisible ? [...trunkLandmarks, wrist] : trunkLandmarks;
 
   return {
     armElevationDeg: measure(elevation, trunkLandmarks),
-    elevationPlaneDeg: useWorld
-      ? measurePlane(elevation, upperArm, trunkDown, isLeft, positionOf, isVisible, (value) =>
-          measure(value, [...trunkLandmarks, POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER]),
-        )
-      : // A flat image has no depth, so it cannot tell forward from sideways.
-        null,
+    // No plane without a valid upper arm, as for the elevation itself.
+    elevationPlaneDeg:
+      useWorld && Number.isFinite(elevation)
+        ? measurePlane(
+            angleBetween(planeArm, trunkDown),
+            planeArm,
+            trunkDown,
+            isLeft,
+            positionOf,
+            isVisible,
+            (value) => measure(value, [...planeLandmarks, POSE.LEFT_SHOULDER, POSE.RIGHT_SHOULDER]),
+          )
+        : // A flat image has no depth, so it cannot tell forward from sideways.
+          null,
     elbowFlexionDeg: isVisible(wrist)
       ? measure(
           angleBetween(
@@ -242,10 +256,14 @@ function measureForwardReach(
   return toMeasure(dot(subtract(wrist, shoulder), forward) / armLength);
 }
 
-/** 0 is straight out to the side and 90 is straight forward, on either affected side. */
+/**
+ * 0 is straight out to the side and 90 is straight forward, on either affected side. `arm` is the
+ * shoulder-to-wrist line, or the upper arm when the wrist is not seen; `elevation` is its angle
+ * from the trunk.
+ */
 function measurePlane(
   elevation: number,
-  upperArm: Vec3,
+  arm: Vec3,
   trunkDown: Vec3,
   isLeft: boolean,
   positionOf: (index: number) => Vec3,
@@ -266,7 +284,7 @@ function measurePlane(
     ? personsLeft
     : { x: -personsLeft.x, y: -personsLeft.y, z: -personsLeft.z };
 
-  const flattened = projectOntoPlane(upperArm, up);
+  const flattened = projectOntoPlane(arm, up);
   const radians = Math.atan2(dot(flattened, forward), dot(flattened, outward));
   return toMeasure((radians * 180) / Math.PI);
 }
