@@ -158,7 +158,8 @@ export const en = {
   "exercise.elbowFlexion.step3": "Straighten your arm slowly.",
   "exercise.elbowFlexion.tip": "Keep your upper arm still",
   "exercise.forwardReach.name": "Reach forward and come back",
-  "exercise.forwardReach.step1": "Start with your hand resting close to your body.",
+  "exercise.forwardReach.step1":
+    "Start with your hand close to your shoulder, and hold it still for a moment.",
   "exercise.forwardReach.step2": "Reach straight forward as far as is comfortable.",
   "exercise.forwardReach.step3": "Bring your hand slowly back.",
   "exercise.handOpenClose.name": "Open your hand wide, then make a fist",
@@ -333,7 +334,7 @@ export const en = {
   "warmup.feedback.nextMiddle": "Next: middle finger",
   "warmup.feedback.nextRing": "Next: ring finger",
   "warmup.feedback.nextLittle": "Next: little finger",
-  "warmup.waiting.reachBack": "Bring your hand back to begin",
+  "warmup.waiting.reachBack": "Bring your hand back near your shoulder and hold it still",
   "warmup.waiting.makeFist": "Make a fist to begin",
   "warmup.waiting.spreadFingers": "Spread your fingers to begin",
   "warmup.summary.bestReach": "Best reach",

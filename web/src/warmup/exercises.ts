@@ -120,6 +120,13 @@ const DEGREE_GAUGE = { min: 0, max: 180 };
  * a repetition must still lift the arm at least 25 degrees from it.
  */
 const SHOULDER_REST: AdaptiveRest = { minTravel: 25, stillRange: 8, maxRest: 65 };
+/**
+ * The same for the forward reach, in shares of arm length. A webcam judges depth poorly: in a
+ * recording, a hand resting on the desk read 0.7 and a pulled-back hand rarely fell below the
+ * fixed 0.4 start line, so the exercise waited for ever. Starting from wherever the hand is held
+ * still (up to 0.65 forward), a reach must still go at least 0.15 of the arm further.
+ */
+const REACH_REST: AdaptiveRest = { minTravel: 0.15, stillRange: 0.06, maxRest: 0.65 };
 
 /** A pose from the two angles the app measures. Bending moves the forearm forward and up. */
 function armPose(time: number, elevationDeg: number, elbowDeg: number): DemoKeyframe {
@@ -331,6 +338,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
       gentle: { low: 0.4, high: 0.65 },
     },
     preferredPlane: { minDeg: 45, maxDeg: 135, feedback: "forward" },
+    adaptiveRest: REACH_REST,
     targetReps: TARGET_REPS,
     maxDurationSec: MAX_DURATION_SEC,
     demo: demoBetween(

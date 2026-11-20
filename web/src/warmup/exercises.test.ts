@@ -55,6 +55,11 @@ describe("exercise definitions", () => {
     expect(EXERCISES.shoulder_abduction.adaptiveRest).toEqual(
       EXERCISES.shoulder_flexion.adaptiveRest,
     );
+    expect(EXERCISES.forward_reach.adaptiveRest).toEqual({
+      minTravel: 0.15,
+      stillRange: 0.06,
+      maxRest: 0.65,
+    });
     expect(EXERCISES.elbow_flexion.adaptiveRest).toBeUndefined();
     expect(EXERCISES.elbow_flexion.measure).toBe("elbowFlexionDeg");
     expect(EXERCISES.elbow_flexion.direction).toBe("down");

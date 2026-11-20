@@ -580,3 +580,46 @@ describe("RepCounter, learning the patient's own rest", () => {
     expect(counter.lines).toEqual({ low: 30, high: 90 });
   });
 });
+
+describe("RepCounter, the forward reach's own start position", () => {
+  const REACH: RepCounterConfig = {
+    direction: "up",
+    low: 0.4,
+    high: 0.65,
+    hysteresis: 0.03,
+    adaptiveRest: { minTravel: 0.15, stillRange: 0.06, maxRest: 0.65 },
+  };
+
+  it("counts reaches that start from a hand the camera reads as 0.55 forward", () => {
+    const counter = new RepCounter(REACH);
+    for (const { value, timestamp } of [
+      ...hold(0.55, 1500, 0, 0.01),
+      ...cycles({ rest: 0.55, peak: 0.85, cycles: 3, startTs: 1533, noiseDeg: 0.01 }),
+    ]) {
+      counter.update(value, timestamp);
+    }
+
+    expect(counter.fullReps).toBe(3);
+    // Rest about 0.59; the target is at least 0.15 further.
+    expect(counter.lines.high).toBeGreaterThan(0.72);
+  });
+
+  it("does not count a hand moved only a little from its start", () => {
+    const counter = new RepCounter(REACH);
+    for (const { value, timestamp } of [
+      ...hold(0.55, 1500),
+      ...cycles({ rest: 0.55, peak: 0.66, cycles: 3, startTs: 1533 }),
+    ]) {
+      counter.update(value, timestamp);
+    }
+
+    expect(counter.fullReps).toBe(0);
+  });
+
+  it("does not take a hand already reaching out as the start", () => {
+    const counter = new RepCounter(REACH);
+    for (const { value, timestamp } of hold(0.75, 2000)) counter.update(value, timestamp);
+
+    expect(counter.awaitingRest).toBe(true);
+  });
+});
